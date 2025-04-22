@@ -63,8 +63,33 @@ function Metrics({ stockSymbol }: MetricsProps) {
   };
 
   const renderColoredCell = (value: number | string | null) => {
-    return <td className={colorize(value)}>{value ?? "N/A"}</td>;
+    const getColorClass = (val: number | string | null) => {
+      if (typeof val === "string") {
+        const lowerVal = val.toLowerCase();
+        if (lowerVal.includes("below") || lowerVal.includes("above") || lowerVal.includes("between") || lowerVal.includes("buy") || lowerVal.includes("sell")) {
+          return colorizeString(val);0
+        }
+      }
+      return colorize(val);
+    };
+  
+    return <td className={getColorClass(value)}>{value ?? "N/A"}</td>;
   };
+  
+
+  const colorizeString = (value: number | string | null) => {
+    if (typeof value !== "string") return "text-secondary"; // Grey if invalid
+  
+    const lowerValue = value.toLowerCase();
+    if (lowerValue.includes("below")) return "text-danger";   // red
+    if (lowerValue.includes("above")) return "text-success";  // green
+    if (lowerValue.includes("between")) return "text-warning"; // orange
+    if (lowerValue.includes("buy")) return "text-success";   // green for buy
+    if (lowerValue.includes("sell")) return "text-danger";   // red for sell
+  
+    return "text-secondary"; // fallback
+  };
+  
 
   return (
     <div className="table-responsive">
@@ -107,17 +132,17 @@ function Metrics({ stockSymbol }: MetricsProps) {
             </tr>
             <tr>
               <td>☁️ Weekly Ichimoku Cloud</td>
-              <td>{metrics.weekly_ichimoku.current ?? "N/A"}</td>
-              <td>{metrics.weekly_ichimoku.seven_days_ago ?? "N/A"}</td>
-              <td>{metrics.weekly_ichimoku.fourteen_days_ago ?? "N/A"}</td>
-              <td>{metrics.weekly_ichimoku.twentyone_days_ago ?? "N/A"}</td>
+              {renderColoredCell(metrics.weekly_ichimoku.current ?? "N/A")}
+              {renderColoredCell(metrics.weekly_ichimoku.seven_days_ago ?? "N/A")}
+              {renderColoredCell(metrics.weekly_ichimoku.fourteen_days_ago ?? "N/A")}
+              {renderColoredCell(metrics.weekly_ichimoku.twentyone_days_ago ?? "N/A")}
             </tr>
             <tr>
               <td>📉 Super Trend (Weekly)</td>
-              <td>{metrics.super_trend.current ?? "N/A"}</td>
-              <td>{metrics.super_trend.seven_days_ago ?? "N/A"}</td>
-              <td>{metrics.super_trend.fourteen_days_ago ?? "N/A"}</td>
-              <td>{metrics.super_trend.twentyone_days_ago ?? "N/A"}</td>
+              {renderColoredCell(metrics.super_trend.current ?? "N/A")}
+              {renderColoredCell(metrics.super_trend.seven_days_ago ?? "N/A")}
+              {renderColoredCell(metrics.super_trend.fourteen_days_ago ?? "N/A")}
+              {renderColoredCell(metrics.super_trend.twentyone_days_ago ?? "N/A")}
             </tr>
             <tr>
               <td>📍 ADX (Weekly)</td>
