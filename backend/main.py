@@ -17,17 +17,24 @@ app.add_middleware(
 
 # --- Models ---
 
-class StockRequest(BaseModel):
-    symbol: str
+class TimeSeriesMetric(BaseModel):
+    current: float | str | None
+    seven_days_ago: float | str | None
+    fourteen_days_ago: float | str | None
+    twentyone_days_ago: float | str | None
 
 class StockAnalysisResponse(BaseModel):
-    three_year_ma: float | None
-    two_hundred_dma: float | None
-    ichimoku_cloud: str
-    super_trend: str
-    adx: int
-    mace: str
-    forty_week_status: str
+    current_price: float | None
+    three_year_ma: TimeSeriesMetric
+    two_hundred_dma: TimeSeriesMetric
+    weekly_ichimoku: TimeSeriesMetric
+    super_trend: TimeSeriesMetric
+    adx: TimeSeriesMetric
+    mace: TimeSeriesMetric
+    forty_week_status: TimeSeriesMetric
+
+class StockRequest(BaseModel):
+    symbol: str
 
 # --- Stock Analyser Class ---
 
@@ -42,44 +49,82 @@ class StockAnalyser:
             raise HTTPException(status_code=400, detail="Stock symbol not found or data unavailable.")
         return df
 
-    def calculate_3year_ma(self) -> float | None:
-        monthly_close = self.df['Close'].resample('ME').last()
+    def _safe_value(self, series: pd.Series, idx: int) -> float | None:
+        if idx >= len(series) or idx < -len(series):
+            return None
+        value = series.iloc[idx]
+
+        if isinstance(value, pd.Series):
+            value = value.squeeze()
+
+        if pd.isna(value):
+            return None
+
+        return round(float(value), 2)
+
+    def get_current_price(self) -> float | None:
+        latest_close = self._safe_value(self.df['Close'], -1)
+        return latest_close
+
+    def calculate_3year_ma(self) -> TimeSeriesMetric:
+        monthly_close = self.df['Close'].resample('M').last()
         monthly_ma = monthly_close.rolling(window=36).mean()
-        latest_ma = monthly_ma.iloc[-1]
+        return TimeSeriesMetric(
+            current=self._safe_value(monthly_ma, -1),
+            seven_days_ago=self._safe_value(monthly_ma, -2),
+            fourteen_days_ago=self._safe_value(monthly_ma, -3),
+            twentyone_days_ago=self._safe_value(monthly_ma, -4),
+        )
 
-        if isinstance(latest_ma, (pd.Series, pd.DataFrame)):
-            latest_ma = latest_ma.squeeze()
-
-        if pd.isna(latest_ma):
-            return None
-        return round(float(latest_ma), 2)
-
-    def calculate_200dma(self) -> float | None:
+    def calculate_200dma(self) -> TimeSeriesMetric:
         daily_ma = self.df['Close'].rolling(window=200).mean()
-        latest_dma = daily_ma.iloc[-1]
+        return TimeSeriesMetric(
+            current=self._safe_value(daily_ma, -1),
+            seven_days_ago=self._safe_value(daily_ma, -7),
+            fourteen_days_ago=self._safe_value(daily_ma, -14),
+            twentyone_days_ago=self._safe_value(daily_ma, -21),
+        )
 
-        if isinstance(latest_dma, (pd.Series, pd.DataFrame)):
-            latest_dma = latest_dma.squeeze()
+    # Placeholder methods
+    def ichimoku_cloud(self) -> TimeSeriesMetric:
+        return TimeSeriesMetric(
+            current="in progress",
+            seven_days_ago="in progress",
+            fourteen_days_ago="in progress",
+            twentyone_days_ago="in progress",
+        )
 
-        if pd.isna(latest_dma):
-            return None
-        return round(float(latest_dma), 2)
+    def super_trend(self) -> TimeSeriesMetric:
+        return TimeSeriesMetric(
+            current="in progress",
+            seven_days_ago="in progress",
+            fourteen_days_ago="in progress",
+            twentyone_days_ago="in progress",
+        )
 
-    # Placeholder methods for indicators
-    def ichimoku_cloud(self) -> str:
-        return "Green"
+    def adx(self) -> TimeSeriesMetric:
+        return TimeSeriesMetric(
+            current="in progress",
+            seven_days_ago="in progress",
+            fourteen_days_ago="in progress",
+            twentyone_days_ago="in progress",
+        )
 
-    def super_trend(self) -> str:
-        return "Bullish"
+    def mace(self) -> TimeSeriesMetric:
+        return TimeSeriesMetric(
+            current="in progress",
+            seven_days_ago="in progress",
+            fourteen_days_ago="in progress",
+            twentyone_days_ago="in progress",
+        )
 
-    def adx(self) -> int:
-        return 25
-
-    def mace(self) -> str:
-        return "Neutral"
-
-    def forty_week_status(self) -> str:
-        return "Above"
+    def forty_week_status(self) -> TimeSeriesMetric:
+        return TimeSeriesMetric(
+            current="in progress",
+            seven_days_ago="in progress",
+            fourteen_days_ago="in progress",
+            twentyone_days_ago="in progress",
+        )
 
 # --- API Route ---
 
@@ -88,9 +133,10 @@ def analyse(stock_request: StockRequest):
     analyser = StockAnalyser(stock_request.symbol)
 
     return StockAnalysisResponse(
+        current_price=analyser.get_current_price(),
         three_year_ma=analyser.calculate_3year_ma(),
         two_hundred_dma=analyser.calculate_200dma(),
-        ichimoku_cloud=analyser.ichimoku_cloud(),
+        weekly_ichimoku=analyser.ichimoku_cloud(),
         super_trend=analyser.super_trend(),
         adx=analyser.adx(),
         mace=analyser.mace(),
