@@ -1,0 +1,35 @@
+/* Metrics.css */
+
+.metrics-table {
+    width: 100%;
+    font-size: 0.95rem;
+  }
+  
+  .metrics-table th,
+  .metrics-table td {
+    padding: 12px 16px;
+    text-align: center;
+    vertical-align: middle;
+  }
+  
+  .metrics-table thead th {
+    font-weight: 600;
+    font-size: 1rem;
+    color: #333;
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+  }
+  
+  .metrics-table tbody td {
+    font-size: 0.95rem;
+  }
+  
+  .table-responsive {
+    overflow-x: auto;
+  }
+  
+  .metrics-table tbody tr:hover {
+    background-color: #f1f3f5;
+    transition: background-color 0.2s ease;
+  }
+  

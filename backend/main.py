@@ -1,8 +1,9 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import yfinance as yf
 import pandas as pd
+import asyncio
 
 app = FastAPI()
 
@@ -142,3 +143,36 @@ def analyse(stock_request: StockRequest):
         mace=analyser.mace(),
         forty_week_status=analyser.forty_week_status()
     )
+
+
+@app.websocket("/ws/chart_data/{symbol}")
+async def websocket_chart_data(websocket: WebSocket, symbol: str):
+    await websocket.accept()
+    try:
+        # FIRST: send historical data (last 30 min)
+        hist_df = yf.download(tickers=symbol, period='1d', interval='1m', progress=False)
+        if not hist_df.empty:
+            historical_prices = [
+                {
+                    "time": int(ts.timestamp()),
+                    "value": round(float(row["Close"]), 2)
+                }
+                for ts, row in hist_df.iterrows()
+            ]
+            await websocket.send_json({"history": historical_prices})
+
+        # THEN: Start live updates
+        while True:
+            df = yf.download(tickers=symbol, period='1d', interval='1m', progress=False)
+            if not df.empty:
+                last_row = df.iloc[-1]
+                live_data = {
+                    "time": int(last_row.name.timestamp()),
+                    "value": round(float(last_row['Close']), 2)
+                }
+                await websocket.send_json({"live": live_data})
+
+            await asyncio.sleep(5)
+
+    except WebSocketDisconnect:
+        print(f"Client disconnected for symbol {symbol}")

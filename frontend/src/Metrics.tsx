@@ -1,3 +1,5 @@
+import "./Metrics.css";
+
 import { useEffect, useState } from "react";
 
 type TimeSeriesMetric = {
@@ -65,18 +67,20 @@ function Metrics({ stockSymbol }: MetricsProps) {
   };
 
   return (
-    <div className="card shadow-sm p-4">
+    <div className="table-responsive">
       <div className="d-flex justify-content-between align-items-center mb-3">
-        <h2>Metrics for <strong>{stockSymbol || "..."}</strong></h2>
+        <h2 className="mb-0">
+          Metrics for <strong>{stockSymbol || "..."}</strong>
+        </h2>
         {metrics?.current_price && (
-          <h4 className="text-primary">Current Price: ${metrics.current_price.toFixed(2)}</h4>
+          <h4 className="text-primary mb-0">Current Price: ${metrics.current_price.toFixed(2)}</h4>
         )}
       </div>
 
       {!metrics ? (
         <p>Loading metrics...</p>
       ) : (
-        <table className="table">
+        <table className="table table-striped table-hover metrics-table">
           <thead>
             <tr>
               <th>Metric</th>
@@ -87,7 +91,6 @@ function Metrics({ stockSymbol }: MetricsProps) {
             </tr>
           </thead>
           <tbody>
-            {/* 3-Year MA */}
             <tr>
               <td>📊 3-Year Moving Average</td>
               {renderColoredCell(metrics.three_year_ma.current)}
@@ -95,7 +98,6 @@ function Metrics({ stockSymbol }: MetricsProps) {
               {renderColoredCell(metrics.three_year_ma.fourteen_days_ago)}
               {renderColoredCell(metrics.three_year_ma.twentyone_days_ago)}
             </tr>
-            {/* 200DMA */}
             <tr>
               <td>📈 200-Day Moving Average</td>
               {renderColoredCell(metrics.two_hundred_dma.current)}
@@ -103,7 +105,6 @@ function Metrics({ stockSymbol }: MetricsProps) {
               {renderColoredCell(metrics.two_hundred_dma.fourteen_days_ago)}
               {renderColoredCell(metrics.two_hundred_dma.twentyone_days_ago)}
             </tr>
-            {/* Other metrics - no color */}
             <tr>
               <td>☁️ Weekly Ichimoku Cloud</td>
               <td>{metrics.weekly_ichimoku.current ?? "N/A"}</td>

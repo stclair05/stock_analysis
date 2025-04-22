@@ -1,42 +1,74 @@
-#root {
-  max-width: 1280px;
+/* App.css */
+
+.app-container {
+  padding-top: 50px;
+  padding-bottom: 50px;
+}
+
+/* Search Bar */
+.search-bar-container {
+  margin-bottom: 40px;
+}
+
+.search-input {
+  padding: 12px 16px;
+  font-size: 1rem;
+}
+
+.search-button {
+  padding: 12px 24px;
+  font-size: 1rem;
+}
+
+/* Cards Side-by-Side */
+.cards-wrapper-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 2rem;
+  max-width: 1800px;
   margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+/* Individual Cards */
+.metric-card,
+.chart-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  min-height: 500px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
+/* Card Widths */
+.metric-card {
+  flex: 1 1 800px; /* flex-grow, flex-shrink, flex-basis */
+  max-width: 850px;
+}
+
+
+.chart-card {
+  flex: 1 1 700px;
+  max-width: 750px;
+}
+
+
+/* Spinner */
+.spinner-border {
+  width: 3rem;
+  height: 3rem;
+}
+
+/* Responsive: Stack cards vertically on small screens */
+@media (max-width: 992px) {
+  .cards-wrapper-row {
+    flex-direction: column;
+    align-items: center;
   }
-  to {
-    transform: rotate(360deg);
+
+  .metric-card,
+  .chart-card {
+    width: 100%;
   }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
 }
