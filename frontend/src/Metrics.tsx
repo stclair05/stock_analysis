@@ -47,6 +47,7 @@ function Metrics({ stockSymbol }: MetricsProps) {
 
         const data = await response.json();
         setMetrics(data);
+        console.log("Fetched metrics for", stockSymbol, data);
       } catch (error) {
         console.error("Error fetching metrics:", error);
       }
@@ -66,8 +67,14 @@ function Metrics({ stockSymbol }: MetricsProps) {
     const getColorClass = (val: number | string | null) => {
       if (typeof val === "string") {
         const lowerVal = val.toLowerCase();
-        if (lowerVal.includes("below") || lowerVal.includes("above") || lowerVal.includes("between") || lowerVal.includes("buy") || lowerVal.includes("sell")) {
-          return colorizeString(val);0
+        if (lowerVal.includes("below") || lowerVal.includes("above") || lowerVal.includes("between") ||
+         lowerVal.includes("buy") || lowerVal.includes("sell") || 
+         lowerVal.includes("weak") || lowerVal.includes("moderate") || lowerVal.includes("strong")
+         || lowerVal.includes("u1") || lowerVal.includes("u2") || lowerVal.includes("u3")
+         || lowerVal.includes("d1") || lowerVal.includes("d2") || lowerVal.includes("d3")
+         || lowerVal.includes("above rising ma") || lowerVal.includes("above falling ma")
+         || lowerVal.includes("below rising ma") || lowerVal.includes("below falling ma")) {
+          return colorizeString(val);
         }
       }
       return colorize(val);
@@ -83,12 +90,60 @@ function Metrics({ stockSymbol }: MetricsProps) {
     const lowerValue = value.toLowerCase();
     if (lowerValue.includes("below")) return "text-danger";   // red
     if (lowerValue.includes("above")) return "text-success";  // green
+
     if (lowerValue.includes("between")) return "text-warning"; // orange
     if (lowerValue.includes("buy")) return "text-success";   // green for buy
     if (lowerValue.includes("sell")) return "text-danger";   // red for sell
+
+    if (lowerValue.includes("weak")) return "text-warning"; // ADX < 20
+    if (lowerValue.includes("moderate")) return "text-success";   // ADX 20-40
+    if (lowerValue.includes("strong")) return "text-danger";   // ADX > 40
+
+    if (lowerValue.includes("u1")) return "text-up-1"; // U1: possible uptrend
+    if (lowerValue.includes("u2")) return "text-success";   // U2: confirmed uptrend
+    if (lowerValue.includes("u3")) return "text-success fw-bold";   // U3: well defined uptrend
+    if (lowerValue.includes("d1")) return "text-warning"; // D1: possible downtrend
+    if (lowerValue.includes("d2")) return "text-danger";   // D2: confirmed downtrend
+    if (lowerValue.includes("d3")) return "text-danger fw-bold";   // D3: well defined downtrend
+
+    if (lowerValue.includes("above rising ma")) return "text-success fw-bold";   // price: +, ma:+
+    if (lowerValue.includes("above falling ma")) return "text-success"; // price: +, ma: -
+    if (lowerValue.includes("below rising ma")) return "text-warning";   // price: -, ma: +
+    if (lowerValue.includes("below falling ma")) return "text-danger";   // price: -, ma: -
   
     return "text-secondary"; // fallback
   };
+
+  const isMetricsComplete = (data: MetricsType | null): boolean => {
+    if (!data) return false;
+    if (data.current_price == null) return false;
+  
+    const metricKeys = [
+      "three_year_ma",
+      "two_hundred_dma",
+      "weekly_ichimoku",
+      "super_trend",
+      "adx",
+      "mace",
+      "forty_week_status",
+    ] as const;
+  
+    for (const key of metricKeys) {
+      const metric = data[key];
+      if (
+        metric.current === null ||
+        metric.seven_days_ago === null ||
+        metric.fourteen_days_ago === null ||
+        metric.twentyone_days_ago === null
+      ) {
+        return false;
+      }
+    }
+  
+    return true;
+  };
+  
+  
   
 
   return (
@@ -102,7 +157,7 @@ function Metrics({ stockSymbol }: MetricsProps) {
         )}
       </div>
 
-      {!metrics ? (
+      {!isMetricsComplete(metrics) ? (
         <p>Loading metrics...</p>
       ) : (
         <table className="table table-striped table-hover metrics-table">
@@ -146,24 +201,24 @@ function Metrics({ stockSymbol }: MetricsProps) {
             </tr>
             <tr>
               <td>📍 ADX (Weekly)</td>
-              <td>{metrics.adx.current ?? "N/A"}</td>
-              <td>{metrics.adx.seven_days_ago ?? "N/A"}</td>
-              <td>{metrics.adx.fourteen_days_ago ?? "N/A"}</td>
-              <td>{metrics.adx.twentyone_days_ago ?? "N/A"}</td>
+              {renderColoredCell(metrics.adx.current ?? "N/A")}
+              {renderColoredCell(metrics.adx.seven_days_ago ?? "N/A")}
+              {renderColoredCell(metrics.adx.fourteen_days_ago ?? "N/A")}
+              {renderColoredCell(metrics.adx.twentyone_days_ago ?? "N/A")}
             </tr>
             <tr>
               <td>⚖️ MACE</td>
-              <td>{metrics.mace.current ?? "N/A"}</td>
-              <td>{metrics.mace.seven_days_ago ?? "N/A"}</td>
-              <td>{metrics.mace.fourteen_days_ago ?? "N/A"}</td>
-              <td>{metrics.mace.twentyone_days_ago ?? "N/A"}</td>
+              {renderColoredCell(metrics.mace.current ?? "N/A")}
+              {renderColoredCell(metrics.mace.seven_days_ago ?? "N/A")}
+              {renderColoredCell(metrics.mace.fourteen_days_ago ?? "N/A")}
+              {renderColoredCell(metrics.mace.twentyone_days_ago ?? "N/A")}
             </tr>
             <tr>
               <td>🗓️ 40-Week Status</td>
-              <td>{metrics.forty_week_status.current ?? "N/A"}</td>
-              <td>{metrics.forty_week_status.seven_days_ago ?? "N/A"}</td>
-              <td>{metrics.forty_week_status.fourteen_days_ago ?? "N/A"}</td>
-              <td>{metrics.forty_week_status.twentyone_days_ago ?? "N/A"}</td>
+              {renderColoredCell(metrics.forty_week_status.current ?? "N/A")}
+              {renderColoredCell(metrics.forty_week_status.seven_days_ago ?? "N/A")}
+              {renderColoredCell(metrics.forty_week_status.fourteen_days_ago ?? "N/A")}
+              {renderColoredCell(metrics.forty_week_status.twentyone_days_ago ?? "N/A")}
             </tr>
           </tbody>
         </table>

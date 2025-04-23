@@ -213,16 +213,172 @@ class StockAnalyser:
     
 
     def adx(self) -> TimeSeriesMetric:
-        return TimeSeriesMetric(current="in progress", seven_days_ago="in progress",
-                                 fourteen_days_ago="in progress", twentyone_days_ago="in progress")
+        df = self.df
+
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.droplevel(1)
+
+        df = df.last('450D')  # Recent data slice
+
+        df_weekly = df.resample('W-FRI').agg({
+            'Open': 'first',
+            'High': 'max',
+            'Low': 'min',
+            'Close': 'last'
+        }).dropna()
+
+        if df_weekly.empty:
+            raise HTTPException(status_code=400, detail="Not enough data for ADX calculation.")
+
+        def calculate_adx(df: pd.DataFrame, period: int = 14) -> pd.Series:
+            delta_high = df['High'].diff()
+            delta_low = df['Low'].diff()
+
+            plus_dm = (delta_high.where((delta_high > delta_low) & (delta_high > 0), 0.0))
+            minus_dm = (delta_low.where((delta_low > delta_high) & (delta_low > 0), 0.0))
+
+            tr1 = df['High'] - df['Low']
+            tr2 = abs(df['High'] - df['Close'].shift())
+            tr3 = abs(df['Low'] - df['Close'].shift())
+            tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+
+            atr = tr.rolling(window=period, min_periods=1).mean()
+
+            plus_di = 100 * (plus_dm.rolling(window=period, min_periods=1).sum() / atr)
+            minus_di = 100 * (minus_dm.rolling(window=period, min_periods=1).sum() / atr)
+
+            dx = (abs(plus_di - minus_di) / (plus_di + minus_di)) * 100
+            adx = dx.rolling(window=period, min_periods=1).mean()
+
+            return adx
+
+        adx_series = calculate_adx(df_weekly)
+        adx_series = adx_series.dropna()
+
+        # Classify into Weak, Moderate, Strong
+        def classify_adx(value):
+            if value < 20:
+                return "Weak"
+            elif value <= 40:
+                return "Moderate"
+            else:
+                return "Strong"
+
+        classified_adx = adx_series.map(classify_adx)
+
+        return TimeSeriesMetric(
+            current=self._safe_value(classified_adx, -1),
+            seven_days_ago=self._safe_value(classified_adx, -2),
+            fourteen_days_ago=self._safe_value(classified_adx, -3),
+            twentyone_days_ago=self._safe_value(classified_adx, -4),
+        )
+
 
     def mace(self) -> TimeSeriesMetric:
-        return TimeSeriesMetric(current="in progress", seven_days_ago="in progress",
-                                 fourteen_days_ago="in progress", twentyone_days_ago="in progress")
+        df = self.df.copy()
+
+        # Flatten MultiIndex if present
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.droplevel(1)
+
+        # Slice to ~450 days for sufficient weekly data
+        df = df.last('450D')
+
+        # Weekly resampling
+        df_weekly = df.resample('W-FRI').agg({
+            'Open': 'first',
+            'High': 'max',
+            'Low': 'min',
+            'Close': 'last'
+        }).dropna()
+
+        if df_weekly.empty:
+            raise HTTPException(status_code=400, detail="Not enough data for MACE calculation.")
+
+        # Compute short (S), medium (M), long (L) weekly MAs
+        S = df_weekly['Close'].rolling(window=4).mean()
+        M = df_weekly['Close'].rolling(window=13).mean()
+        L = df_weekly['Close'].rolling(window=26).mean()
+
+        def classify_mace(s, m, l):
+            if pd.isna(s) or pd.isna(m) or pd.isna(l):
+                return None
+            if l > s > m:
+                return "U1"
+            elif s > l > m:
+                return "U2"
+            elif s > m > l:
+                return "U3"
+            elif m > s > l:
+                return "D1"
+            elif m > l > s:
+                return "D2"
+            elif l > m > s:
+                return "D3"
+            return "Unclassified"
+
+        # Generate classification series
+        mace_series = pd.Series(index=df_weekly.index, dtype='object')
+        for i in range(len(df_weekly)):
+            mace_series.iloc[i] = classify_mace(S.iloc[i], M.iloc[i], L.iloc[i])
+
+        mace_series = mace_series.dropna()
+
+        return TimeSeriesMetric(
+            current=self._safe_value(mace_series, -1),
+            seven_days_ago=self._safe_value(mace_series, -2),
+            fourteen_days_ago=self._safe_value(mace_series, -3),
+            twentyone_days_ago=self._safe_value(mace_series, -4),
+        )
+
 
     def forty_week_status(self) -> TimeSeriesMetric:
-        return TimeSeriesMetric(current="in progress", seven_days_ago="in progress",
-                                 fourteen_days_ago="in progress", twentyone_days_ago="in progress")
+        df = self.df.copy()
+
+        # Flatten columns if needed
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.droplevel(1)
+
+        # Keep last ~450 days
+        df = df.last('450D')
+
+        # Resample weekly OHLC
+        df_weekly = df.resample('W-FRI').agg({
+            'Open': 'first',
+            'High': 'max',
+            'Low': 'min',
+            'Close': 'last'
+        }).dropna()
+
+        if df_weekly.empty:
+            raise HTTPException(status_code=400, detail="Not enough weekly data for 40-week MA status.")
+
+        # Calculate 40-week moving average
+        ma_40w = df_weekly['Close'].rolling(window=40).mean()
+        ma_40w_slope = ma_40w.diff()
+
+        status_series = pd.Series(index=df_weekly.index, dtype='object')
+
+        for i in range(len(df_weekly)):
+            price = df_weekly['Close'].iloc[i]
+            ma = ma_40w.iloc[i]
+            slope = ma_40w_slope.iloc[i]
+
+            if pd.isna(price) or pd.isna(ma) or pd.isna(slope):
+                status_series.iloc[i] = None
+            elif price > ma:
+                status_series.iloc[i] = "Above Rising MA" if slope > 0 else "Above Falling MA"
+            else:
+                status_series.iloc[i] = "Below Rising MA" if slope > 0 else "Below Falling MA"
+
+        status_series = status_series.dropna()
+
+        return TimeSeriesMetric(
+            current=self._safe_value(status_series, -1),
+            seven_days_ago=self._safe_value(status_series, -2),
+            fourteen_days_ago=self._safe_value(status_series, -3),
+            twentyone_days_ago=self._safe_value(status_series, -4),
+        )
 
 # --- API Route ---
 
