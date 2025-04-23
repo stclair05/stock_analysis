@@ -73,14 +73,16 @@ class StockAnalyser:
         return latest_close
 
     def calculate_3year_ma(self) -> TimeSeriesMetric:
-        monthly_close = self.df['Close'].resample('ME').last()
-        monthly_ma = monthly_close.rolling(window=36).mean()
+        weekly_close = self.df['Close'].resample('W-FRI').last()
+        weekly_ma = weekly_close.rolling(window=156).mean()
+
         return TimeSeriesMetric(
-            current=self._safe_value(monthly_ma, -1),
-            seven_days_ago=self._safe_value(monthly_ma, -2),
-            fourteen_days_ago=self._safe_value(monthly_ma, -3),
-            twentyone_days_ago=self._safe_value(monthly_ma, -4),
+            current=self._safe_value(weekly_ma, -1),
+            seven_days_ago=self._safe_value(weekly_ma, -1 - 1),  # 1 week back
+            fourteen_days_ago=self._safe_value(weekly_ma, -1 - 2),  # 2 weeks back
+            twentyone_days_ago=self._safe_value(weekly_ma, -1 - 3),  # 3 weeks back
         )
+
 
     def calculate_200dma(self) -> TimeSeriesMetric:
         daily_ma = self.df['Close'].rolling(window=200).mean()
