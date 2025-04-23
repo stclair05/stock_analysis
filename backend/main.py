@@ -8,7 +8,6 @@ import asyncio
 
 app = FastAPI()
 
-# CORS setup
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],
@@ -16,8 +15,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# --- Models ---
 
 class TimeSeriesMetric(BaseModel):
     current: float | str | None
@@ -38,51 +35,41 @@ class StockAnalysisResponse(BaseModel):
 class StockRequest(BaseModel):
     symbol: str
 
-# --- Stock Analyser Class ---
-
 class StockAnalyser:
     def __init__(self, symbol: str):
         self.symbol = symbol.upper().strip()
         self.df = self._download_data()
 
     def _download_data(self) -> pd.DataFrame:
-        df = yf.download(self.symbol, period='5y', interval='1d', auto_adjust=False)
+        df = yf.download(self.symbol, period='10y', interval='1d', auto_adjust=False)
         if df.empty:
             raise HTTPException(status_code=400, detail="Stock symbol not found or data unavailable.")
-
-        # Flatten MultiIndex if exists
         if isinstance(df.columns, pd.MultiIndex):
             df.columns = df.columns.droplevel(1)
-
         return df
-
-       
 
     def _safe_value(self, series: pd.Series, idx: int) -> float | str | None:
         if idx >= len(series) or idx < -len(series):
-            return None
+            return "in progress"
         value = series.iloc[idx]
         if isinstance(value, pd.Series):
             value = value.squeeze()
         if pd.isna(value):
-            return None
+            return "in progress"
         return round(float(value), 2) if isinstance(value, (int, float)) else str(value)
 
     def get_current_price(self) -> float | None:
-        latest_close = self._safe_value(self.df['Close'], -1)
-        return latest_close
+        return self._safe_value(self.df['Close'], -1)
 
     def calculate_3year_ma(self) -> TimeSeriesMetric:
-        weekly_close = self.df['Close'].resample('W-FRI').last()
-        weekly_ma = weekly_close.rolling(window=156).mean()
-
-        return TimeSeriesMetric(
-            current=self._safe_value(weekly_ma, -1),
-            seven_days_ago=self._safe_value(weekly_ma, -1 - 1),  # 1 week back
-            fourteen_days_ago=self._safe_value(weekly_ma, -1 - 2),  # 2 weeks back
-            twentyone_days_ago=self._safe_value(weekly_ma, -1 - 3),  # 3 weeks back
-        )
-
+         monthly_close = self.df['Close'].resample('ME').last()
+         monthly_ma = monthly_close.rolling(window=36).mean()
+         return TimeSeriesMetric(
+             current=self._safe_value(monthly_ma, -1),
+             seven_days_ago=self._safe_value(monthly_ma, -2),
+             fourteen_days_ago=self._safe_value(monthly_ma, -3),
+             twentyone_days_ago=self._safe_value(monthly_ma, -4),
+         )
 
     def calculate_200dma(self) -> TimeSeriesMetric:
         daily_ma = self.df['Close'].rolling(window=200).mean()
@@ -92,302 +79,123 @@ class StockAnalyser:
             fourteen_days_ago=self._safe_value(daily_ma, -14),
             twentyone_days_ago=self._safe_value(daily_ma, -21),
         )
-  
-  
+
     def ichimoku_cloud(self) -> TimeSeriesMetric:
-        df = self.df
-
-        # 🧠 Slice to recent 2 years (or 90 weeks ≈ 450 trading days)
-        df = df.last('450D')  # last 450 calendar days — approx 90 weeks
-
-        # Flatten if needed
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = df.columns.droplevel(1)
-
-        df_weekly = df.resample('W-FRI').agg({
-            'Open': 'first',
-            'High': 'max',
-            'Low': 'min',
-            'Close': 'last'
-        }).dropna()
-
+        df = self.df.last('600D')
+        df_weekly = df.resample('W-FRI').agg({'Open': 'first', 'High': 'max', 'Low': 'min', 'Close': 'last'}).dropna()
         if df_weekly.empty:
-            raise HTTPException(status_code=400, detail="Not enough weekly data for Ichimoku calculation.")
-
-        # -- Ichimoku Calculations (same as before) --
-        nine_high = df_weekly['High'].rolling(window=9).max()
-        nine_low = df_weekly['Low'].rolling(window=9).min()
-        tenkan_sen = (nine_high + nine_low) / 2
-
-        twenty_six_high = df_weekly['High'].rolling(window=26).max()
-        twenty_six_low = df_weekly['Low'].rolling(window=26).min()
-        kijun_sen = (twenty_six_high + twenty_six_low) / 2
-
-        senkou_span_a = ((tenkan_sen + kijun_sen) / 2).shift(26)
-        fifty_two_high = df_weekly['High'].rolling(window=52).max()
-        fifty_two_low = df_weekly['Low'].rolling(window=52).min()
-        senkou_span_b = ((fifty_two_high + fifty_two_low) / 2).shift(26)
-
-        df_weekly['SpanA'] = senkou_span_a
-        df_weekly['SpanB'] = senkou_span_b
-
-        # -- Fast vectorized classification --
-        upper = df_weekly[['SpanA', 'SpanB']].max(axis=1)
-        lower = df_weekly[['SpanA', 'SpanB']].min(axis=1)
+            return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
+        tenkan_sen = (df_weekly['High'].rolling(9).max() + df_weekly['Low'].rolling(9).min()) / 2
+        kijun_sen = (df_weekly['High'].rolling(26).max() + df_weekly['Low'].rolling(26).min()) / 2
+        span_a = ((tenkan_sen + kijun_sen) / 2).shift(26)
+        span_b = ((df_weekly['High'].rolling(52).max() + df_weekly['Low'].rolling(52).min()) / 2).shift(26)
+        upper = pd.concat([span_a, span_b], axis=1).max(axis=1)
+        lower = pd.concat([span_a, span_b], axis=1).min(axis=1)
         close = df_weekly['Close']
-
-        conditions = [close > upper, close < lower]
-        choices = ['Above', 'Below']
-        df_weekly['CloudPosition'] = pd.Series(
-            np.select(conditions, choices, default='Inside'),
-            index=df_weekly.index
-        )
-
-        cloud_series = df_weekly['CloudPosition'].dropna()
-
+        position = pd.Series(np.select([close > upper, close < lower], ['Above', 'Below'], default='Inside'), index=close.index)
         return TimeSeriesMetric(
-            current=self._safe_value(cloud_series, -1),
-            seven_days_ago=self._safe_value(cloud_series, -2),
-            fourteen_days_ago=self._safe_value(cloud_series, -3),
-            twentyone_days_ago=self._safe_value(cloud_series, -4),
+            current=self._safe_value(position, -1),
+            seven_days_ago=self._safe_value(position, -2),
+            fourteen_days_ago=self._safe_value(position, -3),
+            twentyone_days_ago=self._safe_value(position, -4),
         )
 
-    
-    
-
-    # --- Placeholder methods for others ---
     def super_trend(self) -> TimeSeriesMetric:
-        df = self.df
-
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = df.columns.droplevel(1)
-
-        df = df.last('450D')  # Same slicing idea to be efficient
-
-        df_weekly = df.resample('W-FRI').agg({
-            'Open': 'first',
-            'High': 'max',
-            'Low': 'min',
-            'Close': 'last'
-        }).dropna()
-
-        if df_weekly.empty:
-            raise HTTPException(status_code=400, detail="Not enough data for SuperTrend calculation.")
-        
-        def calculate_supertrend(df: pd.DataFrame, period: int = 10, multiplier: float = 3.0) -> pd.Series:
-            hl2 = (df['High'] + df['Low']) / 2
-            atr = df['High'].combine(df['Low'], max) - df['High'].combine(df['Low'], min)
-            atr = atr.rolling(window=period, min_periods=1).mean()
-
-            upperband = hl2 + (multiplier * atr)
-            lowerband = hl2 - (multiplier * atr)
-
-            supertrend = pd.Series(index=df.index, dtype='object')
-            in_uptrend = True
-
-            for current in range(1, len(df.index)):
-                previous = current - 1
-
-                if df['Close'].iloc[current] > upperband.iloc[previous]:
-                    in_uptrend = True
-                elif df['Close'].iloc[current] < lowerband.iloc[previous]:
-                    in_uptrend = False
-
-                if in_uptrend:
-                    supertrend.iloc[current] = "Buy"
-                else:
-                    supertrend.iloc[current] = "Sell"
-
-            return supertrend
-
-        # Calculate SuperTrend
-        supertrend_signal = calculate_supertrend(df_weekly)
-
-        supertrend_signal = supertrend_signal.dropna()
-
+        df = self.df.last('600D')
+        df_weekly = df.resample('W-FRI').agg({'Open': 'first', 'High': 'max', 'Low': 'min', 'Close': 'last'}).dropna()
+        hl2 = (df_weekly['High'] + df_weekly['Low']) / 2
+        atr = (df_weekly['High'].combine(df_weekly['Low'], max) - df_weekly['High'].combine(df_weekly['Low'], min)).rolling(10).mean()
+        upper = hl2 + 3 * atr
+        lower = hl2 - 3 * atr
+        signal = pd.Series(index=df_weekly.index, dtype='object')
+        in_uptrend = True
+        for i in range(1, len(df_weekly)):
+            if df_weekly['Close'].iloc[i] > upper.iloc[i-1]:
+                in_uptrend = True
+            elif df_weekly['Close'].iloc[i] < lower.iloc[i-1]:
+                in_uptrend = False
+            signal.iloc[i] = "Buy" if in_uptrend else "Sell"
         return TimeSeriesMetric(
-            current=self._safe_value(supertrend_signal, -1),
-            seven_days_ago=self._safe_value(supertrend_signal, -2),
-            fourteen_days_ago=self._safe_value(supertrend_signal, -3),
-            twentyone_days_ago=self._safe_value(supertrend_signal, -4),
+            current=self._safe_value(signal, -1),
+            seven_days_ago=self._safe_value(signal, -2),
+            fourteen_days_ago=self._safe_value(signal, -3),
+            twentyone_days_ago=self._safe_value(signal, -4),
         )
-
-    
 
     def adx(self) -> TimeSeriesMetric:
-        df = self.df
-
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = df.columns.droplevel(1)
-
-        df = df.last('450D')  # Recent data slice
-
-        df_weekly = df.resample('W-FRI').agg({
-            'Open': 'first',
-            'High': 'max',
-            'Low': 'min',
-            'Close': 'last'
-        }).dropna()
-
-        if df_weekly.empty:
-            raise HTTPException(status_code=400, detail="Not enough data for ADX calculation.")
-
-        def calculate_adx(df: pd.DataFrame, period: int = 14) -> pd.Series:
-            delta_high = df['High'].diff()
-            delta_low = df['Low'].diff()
-
-            plus_dm = (delta_high.where((delta_high > delta_low) & (delta_high > 0), 0.0))
-            minus_dm = (delta_low.where((delta_low > delta_high) & (delta_low > 0), 0.0))
-
-            tr1 = df['High'] - df['Low']
-            tr2 = abs(df['High'] - df['Close'].shift())
-            tr3 = abs(df['Low'] - df['Close'].shift())
-            tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
-
-            atr = tr.rolling(window=period, min_periods=1).mean()
-
-            plus_di = 100 * (plus_dm.rolling(window=period, min_periods=1).sum() / atr)
-            minus_di = 100 * (minus_dm.rolling(window=period, min_periods=1).sum() / atr)
-
-            dx = (abs(plus_di - minus_di) / (plus_di + minus_di)) * 100
-            adx = dx.rolling(window=period, min_periods=1).mean()
-
-            return adx
-
-        adx_series = calculate_adx(df_weekly)
-        adx_series = adx_series.dropna()
-
-        # Classify into Weak, Moderate, Strong
-        def classify_adx(value):
-            if value < 20:
-                return "Weak"
-            elif value <= 40:
-                return "Moderate"
-            else:
-                return "Strong"
-
-        classified_adx = adx_series.map(classify_adx)
-
+        df = self.df.last('600D')
+        df_weekly = df.resample('W-FRI').agg({'Open': 'first', 'High': 'max', 'Low': 'min', 'Close': 'last'}).dropna()
+        plus_dm = (df_weekly['High'].diff().where(lambda x: x > df_weekly['Low'].diff())
+                   .where(lambda x: x > 0, 0))
+        minus_dm = (df_weekly['Low'].diff().where(lambda x: x > df_weekly['High'].diff())
+                    .where(lambda x: x > 0, 0))
+        tr = pd.concat([
+            df_weekly['High'] - df_weekly['Low'],
+            abs(df_weekly['High'] - df_weekly['Close'].shift()),
+            abs(df_weekly['Low'] - df_weekly['Close'].shift())
+        ], axis=1).max(axis=1)
+        atr = tr.rolling(14).mean()
+        plus_di = 100 * plus_dm.rolling(14).sum() / atr
+        minus_di = 100 * minus_dm.rolling(14).sum() / atr
+        dx = abs(plus_di - minus_di) / (plus_di + minus_di) * 100
+        adx = dx.rolling(14).mean()
+        levels = adx.map(lambda x: "Weak" if x < 20 else "Moderate" if x <= 40 else "Strong")
         return TimeSeriesMetric(
-            current=self._safe_value(classified_adx, -1),
-            seven_days_ago=self._safe_value(classified_adx, -2),
-            fourteen_days_ago=self._safe_value(classified_adx, -3),
-            twentyone_days_ago=self._safe_value(classified_adx, -4),
+            current=self._safe_value(levels, -1),
+            seven_days_ago=self._safe_value(levels, -2),
+            fourteen_days_ago=self._safe_value(levels, -3),
+            twentyone_days_ago=self._safe_value(levels, -4),
         )
-
 
     def mace(self) -> TimeSeriesMetric:
-        df = self.df.copy()
-
-        # Flatten MultiIndex if present
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = df.columns.droplevel(1)
-
-        # Slice to ~450 days for sufficient weekly data
-        df = df.last('450D')
-
-        # Weekly resampling
-        df_weekly = df.resample('W-FRI').agg({
-            'Open': 'first',
-            'High': 'max',
-            'Low': 'min',
-            'Close': 'last'
-        }).dropna()
-
-        if df_weekly.empty:
-            raise HTTPException(status_code=400, detail="Not enough data for MACE calculation.")
-
-        # Compute short (S), medium (M), long (L) weekly MAs
-        S = df_weekly['Close'].rolling(window=4).mean()
-        M = df_weekly['Close'].rolling(window=13).mean()
-        L = df_weekly['Close'].rolling(window=26).mean()
-
-        def classify_mace(s, m, l):
-            if pd.isna(s) or pd.isna(m) or pd.isna(l):
-                return None
-            if l > s > m:
-                return "U1"
-            elif s > l > m:
-                return "U2"
-            elif s > m > l:
-                return "U3"
-            elif m > s > l:
-                return "D1"
-            elif m > l > s:
-                return "D2"
-            elif l > m > s:
-                return "D3"
-            return "Unclassified"
-
-        # Generate classification series
-        mace_series = pd.Series(index=df_weekly.index, dtype='object')
+        df = self.df.last('600D')
+        df_weekly = df.resample('W-FRI').agg({'Open': 'first', 'High': 'max', 'Low': 'min', 'Close': 'last'}).dropna()
+        s = df_weekly['Close'].rolling(4).mean()
+        m = df_weekly['Close'].rolling(13).mean()
+        l = df_weekly['Close'].rolling(26).mean()
+        signal = pd.Series(index=df_weekly.index, dtype='object')
         for i in range(len(df_weekly)):
-            mace_series.iloc[i] = classify_mace(S.iloc[i], M.iloc[i], L.iloc[i])
-
-        mace_series = mace_series.dropna()
-
+            if pd.isna(s[i]) or pd.isna(m[i]) or pd.isna(l[i]):
+                continue
+            if l[i] > s[i] > m[i]: signal[i] = "U1"
+            elif s[i] > l[i] > m[i]: signal[i] = "U2"
+            elif s[i] > m[i] > l[i]: signal[i] = "U3"
+            elif m[i] > s[i] > l[i]: signal[i] = "D1"
+            elif m[i] > l[i] > s[i]: signal[i] = "D2"
+            elif l[i] > m[i] > s[i]: signal[i] = "D3"
+            else: signal[i] = "Unclassified"
         return TimeSeriesMetric(
-            current=self._safe_value(mace_series, -1),
-            seven_days_ago=self._safe_value(mace_series, -2),
-            fourteen_days_ago=self._safe_value(mace_series, -3),
-            twentyone_days_ago=self._safe_value(mace_series, -4),
+            current=self._safe_value(signal, -1),
+            seven_days_ago=self._safe_value(signal, -2),
+            fourteen_days_ago=self._safe_value(signal, -3),
+            twentyone_days_ago=self._safe_value(signal, -4),
         )
-
 
     def forty_week_status(self) -> TimeSeriesMetric:
-        df = self.df.copy()
-
-        # Flatten columns if needed
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = df.columns.droplevel(1)
-
-        # Keep last ~450 days
-        df = df.last('450D')
-
-        # Resample weekly OHLC
-        df_weekly = df.resample('W-FRI').agg({
-            'Open': 'first',
-            'High': 'max',
-            'Low': 'min',
-            'Close': 'last'
-        }).dropna()
-
-        if df_weekly.empty:
-            raise HTTPException(status_code=400, detail="Not enough weekly data for 40-week MA status.")
-
-        # Calculate 40-week moving average
-        ma_40w = df_weekly['Close'].rolling(window=40).mean()
-        ma_40w_slope = ma_40w.diff()
-
-        status_series = pd.Series(index=df_weekly.index, dtype='object')
-
+        df = self.df.last('600D')
+        df_weekly = df.resample('W-FRI').agg({'Open': 'first', 'High': 'max', 'Low': 'min', 'Close': 'last'}).dropna()
+        ma_40 = df_weekly['Close'].rolling(40).mean()
+        slope = ma_40.diff()
+        signal = pd.Series(index=df_weekly.index, dtype='object')
         for i in range(len(df_weekly)):
-            price = df_weekly['Close'].iloc[i]
-            ma = ma_40w.iloc[i]
-            slope = ma_40w_slope.iloc[i]
-
-            if pd.isna(price) or pd.isna(ma) or pd.isna(slope):
-                status_series.iloc[i] = None
-            elif price > ma:
-                status_series.iloc[i] = "Above Rising MA" if slope > 0 else "Above Falling MA"
+            p = df_weekly['Close'].iloc[i]
+            ma = ma_40.iloc[i]
+            sl = slope.iloc[i]
+            if pd.isna(p) or pd.isna(ma) or pd.isna(sl): continue
+            if p > ma:
+                signal[i] = "Above Rising MA" if sl > 0 else "Above Falling MA"
             else:
-                status_series.iloc[i] = "Below Rising MA" if slope > 0 else "Below Falling MA"
-
-        status_series = status_series.dropna()
-
+                signal[i] = "Below Rising MA" if sl > 0 else "Below Falling MA"
         return TimeSeriesMetric(
-            current=self._safe_value(status_series, -1),
-            seven_days_ago=self._safe_value(status_series, -2),
-            fourteen_days_ago=self._safe_value(status_series, -3),
-            twentyone_days_ago=self._safe_value(status_series, -4),
+            current=self._safe_value(signal, -1),
+            seven_days_ago=self._safe_value(signal, -2),
+            fourteen_days_ago=self._safe_value(signal, -3),
+            twentyone_days_ago=self._safe_value(signal, -4),
         )
-
-# --- API Route ---
 
 @app.post("/analyse", response_model=StockAnalysisResponse)
 def analyse(stock_request: StockRequest):
     analyser = StockAnalyser(stock_request.symbol)
-
     return StockAnalysisResponse(
         current_price=analyser.get_current_price(),
         three_year_ma=analyser.calculate_3year_ma(),
@@ -403,53 +211,39 @@ def analyse(stock_request: StockRequest):
 async def websocket_chart_data(websocket: WebSocket, symbol: str):
     await websocket.accept()
     try:
-        # FIRST: send historical 1-day 1-minute candles
-        hist_df = yf.download(tickers=symbol, period='1d', interval='1m', progress=False)
+        symbol = symbol.upper()
+        if symbol in ["DJI", "GSPC", "IXIC"]:
+            symbol = f"^{symbol}"
 
+        hist_df = yf.download(tickers=symbol, period='1d', interval='1m', progress=False)
         if hist_df.empty:
             await websocket.send_json({"error": f"No data found for symbol {symbol}"})
             await websocket.close()
             return
 
-        # Send historical data
-        historical_prices = [
-            {
-                "time": int(ts.timestamp()),
-                "value": round(float(row["Close"]), 2)
-            }
+        history = [
+            {"time": int(ts.timestamp()), "value": round(float(row["Close"]), 2)}
             for ts, row in hist_df.iterrows()
         ]
-        await websocket.send_json({"history": historical_prices})
+        await websocket.send_json({"history": history})
 
-        # Store latest timestamp
-        last_timestamp = hist_df.index[-1]
+        last_ts = hist_df.index[-1]
 
-        # Live updates every 5 seconds
         while True:
-            live_df = yf.download(tickers=symbol, period='1d', interval='1m', progress=False)
-
-            if live_df.empty:
-                print(f"Warning: no new data for {symbol}")
-                await asyncio.sleep(5)
-                continue
-
-            # Find new rows AFTER last sent
-            new_rows = live_df[live_df.index > last_timestamp]
-
+            new_df = yf.download(tickers=symbol, period='1d', interval='1m', progress=False)
+            new_rows = new_df[new_df.index > last_ts]
             for ts, row in new_rows.iterrows():
-                live_data = {
-                    "time": int(ts.timestamp()),
-                    "value": round(float(row['Close'].item()), 2)
-                }
-                await websocket.send_json({"live": live_data})
-                last_timestamp = ts  # Update last timestamp
-
+                await websocket.send_json({
+                    "live": {
+                        "time": int(ts.timestamp()),
+                        "value": round(float(row['Close']), 2)
+                    }
+                })
+                last_ts = ts
             await asyncio.sleep(5)
 
     except WebSocketDisconnect:
-        print(f"Client disconnected for symbol {symbol}")
+        print(f"Client disconnected for {symbol}")
     except Exception as e:
         print(f"WebSocket error for {symbol}: {e}")
         await websocket.close()
-
-

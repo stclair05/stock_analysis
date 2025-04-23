@@ -30,28 +30,51 @@ function Metrics({ stockSymbol }: MetricsProps) {
   useEffect(() => {
     if (!stockSymbol) return;
 
-    const fetchMetrics = async () => {
+    const fetchMetrics = async (retry = 0) => {
       try {
         const response = await fetch("http://localhost:8000/analyse", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ symbol: stockSymbol }),
         });
-
+    
         if (!response.ok) {
           console.error("Server error:", response.status);
           return;
         }
-
+    
         const data = await response.json();
-        setMetrics(data);
-        console.log("Fetched metrics for", stockSymbol, data);
+    
+        const keyFields: (keyof MetricsType)[] = ["three_year_ma", "mace", "forty_week_status"];
+        const keyFieldsIncomplete = keyFields.some((field) => {
+          const metric = data[field];
+          return Object.values(metric).some((v) => v === "in progress");
+        });
+    
+        // ✅ Set metrics if data is complete
+        if (!keyFieldsIncomplete) {
+          setMetrics(data);
+          console.log("✅ Fetched complete metrics for", stockSymbol, data);
+        }
+    
+        // 🔁 Retry if not yet complete
+        if (keyFieldsIncomplete && retry < 3) {
+          console.log(`🔁 Metrics incomplete, retrying (${retry + 1})...`, data);
+          setTimeout(() => fetchMetrics(retry + 1), 1000);
+        }
+    
+        // Optional: if final retry still bad, show what we have
+        if (retry === 3 && keyFieldsIncomplete) {
+          console.warn("⚠️ Max retries reached. Displaying partial data.");
+          setMetrics(data);
+        }
+    
       } catch (error) {
         console.error("Error fetching metrics:", error);
       }
     };
+    
+    
 
     fetchMetrics();
   }, [stockSymbol]);
@@ -67,7 +90,7 @@ function Metrics({ stockSymbol }: MetricsProps) {
     const getColorClass = (val: number | string | null) => {
       if (typeof val === "string") {
         const lowerVal = val.toLowerCase();
-        if (lowerVal.includes("below") || lowerVal.includes("above") || lowerVal.includes("between") ||
+        if (lowerVal.includes("below") || lowerVal.includes("above") || lowerVal.includes("inside") ||
          lowerVal.includes("buy") || lowerVal.includes("sell") || 
          lowerVal.includes("weak") || lowerVal.includes("moderate") || lowerVal.includes("strong")
          || lowerVal.includes("u1") || lowerVal.includes("u2") || lowerVal.includes("u3")
@@ -91,7 +114,7 @@ function Metrics({ stockSymbol }: MetricsProps) {
     if (lowerValue.includes("below")) return "text-danger";   // red
     if (lowerValue.includes("above")) return "text-success";  // green
 
-    if (lowerValue.includes("between")) return "text-warning"; // orange
+    if (lowerValue.includes("inside")) return "text-warning"; // orange
     if (lowerValue.includes("buy")) return "text-success";   // green for buy
     if (lowerValue.includes("sell")) return "text-danger";   // red for sell
 
@@ -115,34 +138,26 @@ function Metrics({ stockSymbol }: MetricsProps) {
   };
 
   const isMetricsComplete = (data: MetricsType | null): boolean => {
-    if (!data) return false;
-    if (data.current_price == null) return false;
+    if (!data || data.current_price == null) return false;
   
-    const metricKeys = [
+    const mustHaveMetrics: (keyof MetricsType)[] = [
       "three_year_ma",
       "two_hundred_dma",
       "weekly_ichimoku",
       "super_trend",
-      "adx",
+      "adx", 
       "mace",
-      "forty_week_status",
-    ] as const;
+      "forty_week_status"
+    ];
   
-    for (const key of metricKeys) {
-      const metric = data[key];
-      if (
-        metric.current === null ||
-        metric.seven_days_ago === null ||
-        metric.fourteen_days_ago === null ||
-        metric.twentyone_days_ago === null
-      ) {
-        return false;
-      }
-    }
-  
-    return true;
+    return mustHaveMetrics.every(key => {
+      const metric = data[key] as TimeSeriesMetric;
+      return metric.current !== null &&
+             metric.seven_days_ago !== null &&
+             metric.fourteen_days_ago !== null &&
+             metric.twentyone_days_ago !== null;
+    });
   };
-  
   
   
 
