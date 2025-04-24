@@ -33,6 +33,20 @@ class StockAnalysisResponse(BaseModel):
     mace: TimeSeriesMetric
     forty_week_status: TimeSeriesMetric
     fifty_dma_and_150_dma: TimeSeriesMetric
+    twenty_dma: TimeSeriesMetric
+    fifty_dma: TimeSeriesMetric
+    mean_rev_50dma: TimeSeriesMetric
+    mean_rev_200dma: TimeSeriesMetric
+    mean_rev_3yma: TimeSeriesMetric
+    rsi_and_ma_daily: TimeSeriesMetric
+    rsi_divergence_daily: TimeSeriesMetric
+    bollinger_band_width_percentile_daily: TimeSeriesMetric
+    rsi_ma_weekly: TimeSeriesMetric
+    rsi_divergence_weekly: TimeSeriesMetric
+    rsi_ma_monthly: TimeSeriesMetric
+    rsi_divergence_monthly: TimeSeriesMetric
+    chaikin_money_flow: TimeSeriesMetric
+
 
 class StockRequest(BaseModel):
     symbol: str
@@ -366,6 +380,360 @@ class StockAnalyser:
             fourteen_days_ago=self._safe_value(labels, -3),
             twentyone_days_ago=self._safe_value(labels, -4),
         )
+    
+    def calculate_20dma(self) -> TimeSeriesMetric:
+        ma_20 = self.df['Close'].rolling(window=20).mean()
+        return TimeSeriesMetric(
+            current=self._safe_value(ma_20, -1),
+            seven_days_ago=self._safe_value(ma_20, -7),
+            fourteen_days_ago=self._safe_value(ma_20, -14),
+            twentyone_days_ago=self._safe_value(ma_20, -21),
+        )
+    
+    def calculate_50dma(self) -> TimeSeriesMetric:
+        ma_50 = self.df['Close'].rolling(window=50).mean()
+        return TimeSeriesMetric(
+            current=self._safe_value(ma_50, -1),
+            seven_days_ago=self._safe_value(ma_50, -7),
+            fourteen_days_ago=self._safe_value(ma_50, -14),
+            twentyone_days_ago=self._safe_value(ma_50, -21),
+        )
+    
+    def mean_reversion_50dma(self) -> TimeSeriesMetric:
+        price = self.df['Close']
+        ma_50 = price.rolling(window=50).mean()
+        deviation = (price - ma_50) / ma_50 * 100
+
+        def classify(dev: float | None) -> str | None:
+            if dev is None or pd.isna(dev):
+                return None
+            if dev > 5:
+                return "Extended"
+            elif dev < -5:
+                return "Oversold"
+            else:
+                return "Average"
+
+        return TimeSeriesMetric(
+            current=classify(self._safe_value(deviation, -1)),
+            seven_days_ago=classify(self._safe_value(deviation, -7)),
+            fourteen_days_ago=classify(self._safe_value(deviation, -14)),
+            twentyone_days_ago=classify(self._safe_value(deviation, -21)),
+        )
+
+
+    def mean_reversion_200dma(self) -> TimeSeriesMetric:
+        price = self.df['Close']
+        ma_200 = price.rolling(window=200).mean()
+        deviation = (price - ma_200) / ma_200 * 100
+
+        def classify(dev: float | None) -> str | None:
+            if dev is None or pd.isna(dev):
+                return None
+            if dev > 5:
+                return "Extended"
+            elif dev < -5:
+                return "Oversold"
+            else:
+                return "Average"
+
+        return TimeSeriesMetric(
+            current=classify(self._safe_value(deviation, -1)),
+            seven_days_ago=classify(self._safe_value(deviation, -7)),
+            fourteen_days_ago=classify(self._safe_value(deviation, -14)),
+            twentyone_days_ago=classify(self._safe_value(deviation, -21)),
+        )
+
+
+    def mean_reversion_3yma(self) -> TimeSeriesMetric:
+        monthly_close = self.df['Close'].resample('ME').last()
+        ma_3y = monthly_close.rolling(window=36).mean()
+        deviation = (monthly_close - ma_3y) / ma_3y * 100
+
+        def classify(dev: float | None) -> str | None:
+            if dev is None or pd.isna(dev):
+                return None
+            if dev > 5:
+                return "Extended"
+            elif dev < -5:
+                return "Oversold"
+            else:
+                return "Average"
+
+        return TimeSeriesMetric(
+            current=classify(self._safe_value(deviation, -1)),
+            seven_days_ago=classify(self._safe_value(deviation, -2)),
+            fourteen_days_ago=classify(self._safe_value(deviation, -3)),
+            twentyone_days_ago=classify(self._safe_value(deviation, -4)),
+        )
+    
+    def rsi_and_ma_daily(self) -> TimeSeriesMetric:
+        close = self.df['Close']
+        delta = close.diff()
+
+        gain = delta.clip(lower=0)
+        loss = -delta.clip(upper=0)
+
+        avg_gain = gain.rolling(window=14).mean()
+        avg_loss = loss.rolling(window=14).mean()
+
+        rs = avg_gain / avg_loss
+        rsi = 100 - (100 / (1 + rs))
+
+        rsi_ma = rsi.rolling(window=50).mean()
+
+        comparison = (rsi > rsi_ma).map(lambda x: "Above" if x else "Below")
+
+        return TimeSeriesMetric(
+            current=self._safe_value(comparison, -1),
+            seven_days_ago=self._safe_value(comparison, -7),
+            fourteen_days_ago=self._safe_value(comparison, -14),
+            twentyone_days_ago=self._safe_value(comparison, -21),
+        )
+    
+    def rsi_divergence_daily(self, pivot_strength: int = 3, rsi_period: int = 14, rsi_threshold: float = 3.0) -> TimeSeriesMetric:
+        df = self.df[['Close']].copy()
+
+        # Compute RSI
+        delta = df['Close'].diff()
+        gain = delta.where(delta > 0, 0.0)
+        loss = -delta.where(delta < 0, 0.0)
+        avg_gain = gain.rolling(rsi_period).mean()
+        avg_loss = loss.rolling(rsi_period).mean()
+        rs = avg_gain / avg_loss
+        df['RSI'] = 100 - (100 / (1 + rs))
+        df.dropna(inplace=True)
+
+        close = df['Close'].values
+        rsi = df['RSI'].values
+        index = df.index
+
+        # Detect pivot highs and lows
+        def find_pivots(series, window=pivot_strength):
+            highs, lows = [], []
+            for i in range(window, len(series) - window):
+                left = series[i - window:i]
+                right = series[i + 1:i + window + 1]
+                if all(series[i] > x for x in np.concatenate([left, right])):
+                    highs.append(i)
+                if all(series[i] < x for x in np.concatenate([left, right])):
+                    lows.append(i)
+            return highs, lows
+
+        highs, lows = find_pivots(close, pivot_strength)
+        result = pd.Series("Normal", index=index)
+
+        # Identify divergences
+        for i in range(rsi_period + pivot_strength, len(close)):
+            recent_lows = [idx for idx in lows if idx < i]
+            recent_highs = [idx for idx in highs if idx < i]
+
+            if len(recent_lows) >= 2:
+                p1, p2 = recent_lows[-2:]
+                if close[p2] < close[p1] and rsi[p2] > rsi[p1] and abs(rsi[p2] - rsi[p1]) > rsi_threshold:
+                    result.iloc[i] = "Bullish Divergence"
+
+            if len(recent_highs) >= 2:
+                p1, p2 = recent_highs[-2:]
+                if close[p2] > close[p1] and rsi[p2] < rsi[p1] and abs(rsi[p2] - rsi[p1]) > rsi_threshold:
+                    result.iloc[i] = "Bearish Divergence"
+
+        result = result.dropna()
+
+        return TimeSeriesMetric(
+            current=self._safe_value(result, -1),
+            seven_days_ago=self._safe_value(result, -2),
+            fourteen_days_ago=self._safe_value(result, -3),
+            twentyone_days_ago=self._safe_value(result, -4),
+        )
+    
+    def bollinger_band_width_percentile_daily(self) -> TimeSeriesMetric:
+        df = self.df[['Close']].copy()
+        if len(df) < 126:
+            raise HTTPException(status_code=400, detail="Not enough data for Bollinger Band Width Percentile.")
+
+        # Bollinger Bands
+        ma = df['Close'].rolling(20).mean()
+        std = df['Close'].rolling(20).std()
+        upper = ma + 2 * std
+        lower = ma - 2 * std
+
+        # Band width
+        width = (upper - lower) / ma
+        df['Width'] = width
+
+        # Calculate rolling percentiles (over last 126 days)
+        percentiles = df['Width'].rolling(126).apply(
+            lambda x: pd.Series(x).rank(pct=True).iloc[-1] * 100, raw=False
+        )
+
+        df['Percentile'] = percentiles
+
+        def classify(p):
+            if pd.isna(p):
+                return None
+            if p >= 90:
+                return "Blue Band"
+            elif p <= 10:
+                return "Red Band"
+            return "Normal"
+
+        df['BandStatus'] = df['Percentile'].apply(classify)
+        band_series = df['BandStatus'].dropna()
+
+        return TimeSeriesMetric(
+            current=self._safe_value(band_series, -1),
+            seven_days_ago=self._safe_value(band_series, -2),
+            fourteen_days_ago=self._safe_value(band_series, -3),
+            twentyone_days_ago=self._safe_value(band_series, -4),
+        )
+    
+    def rsi_ma_weekly(self) -> TimeSeriesMetric:
+        df_weekly = self.df.resample("W-FRI").last().dropna()
+        close = df_weekly["Close"]
+        ma = close.rolling(window=14).mean()
+        delta = close.diff()
+        gain = delta.where(delta > 0, 0.0)
+        loss = -delta.where(delta < 0, 0.0)
+        avg_gain = gain.rolling(window=14).mean()
+        avg_loss = loss.rolling(window=14).mean()
+        rs = avg_gain / avg_loss
+        rsi = 100 - (100 / (1 + rs))
+
+        condition = (rsi > ma).replace({True: "Above", False: "Below"})
+
+        return TimeSeriesMetric(
+            current=self._safe_value(condition, -1),
+            seven_days_ago=self._safe_value(condition, -2),
+            fourteen_days_ago=self._safe_value(condition, -3),
+            twentyone_days_ago=self._safe_value(condition, -4),
+        )
+    
+    def rsi_divergence_weekly(self) -> TimeSeriesMetric:
+        df_weekly = self.df.resample("W-FRI").last().dropna()
+        close = df_weekly["Close"]
+        delta = close.diff()
+        gain = delta.where(delta > 0, 0.0)
+        loss = -delta.where(delta < 0, 0.0)
+        avg_gain = gain.rolling(window=14).mean()
+        avg_loss = loss.rolling(window=14).mean()
+        rs = avg_gain / avg_loss
+        rsi = 100 - (100 / (1 + rs))
+
+        def find_pivots(series: pd.Series, window: int = 3) -> list[int]:
+            """Detect local minima and maxima (pivot points) using a rolling window."""
+            pivots = []
+            for i in range(window, len(series) - window):
+                is_min = all(series[i] < series[i - j] for j in range(1, window + 1)) and \
+                        all(series[i] < series[i + j] for j in range(1, window + 1))
+                is_max = all(series[i] > series[i - j] for j in range(1, window + 1)) and \
+                        all(series[i] > series[i + j] for j in range(1, window + 1))
+                if is_min or is_max:
+                    pivots.append(i)
+            return pivots
+
+
+        # Use the same pivot-based detection as in the daily version
+        pivots = find_pivots(rsi, window=3)
+        signals = pd.Series("Normal", index=close.index)
+        for i in range(1, len(pivots)):
+            p1, p2 = pivots[i - 1], pivots[i]
+            if close.iloc[p2] < close.iloc[p1] and rsi.iloc[p2] > rsi.iloc[p1]:
+                signals.iloc[p2] = "Bullish Divergence"
+            elif close.iloc[p2] > close.iloc[p1] and rsi.iloc[p2] < rsi.iloc[p1]:
+                signals.iloc[p2] = "Bearish Divergence"
+
+        return TimeSeriesMetric(
+            current=self._safe_value(signals, -1),
+            seven_days_ago=self._safe_value(signals, -2),
+            fourteen_days_ago=self._safe_value(signals, -3),
+            twentyone_days_ago=self._safe_value(signals, -4),
+        )
+    
+    def rsi_ma_monthly(self) -> TimeSeriesMetric:
+        df_monthly = self.df.resample("M").last().dropna()
+        close = df_monthly["Close"]
+        ma = close.rolling(window=14).mean()
+        delta = close.diff()
+        gain = delta.where(delta > 0, 0.0)
+        loss = -delta.where(delta < 0, 0.0)
+        avg_gain = gain.rolling(window=14).mean()
+        avg_loss = loss.rolling(window=14).mean()
+        rs = avg_gain / avg_loss
+        rsi = 100 - (100 / (1 + rs))
+
+        condition = (rsi > ma).replace({True: "Above", False: "Below"})
+
+        return TimeSeriesMetric(
+            current=self._safe_value(condition, -1),
+            seven_days_ago=self._safe_value(condition, -2),
+            fourteen_days_ago=self._safe_value(condition, -3),
+            twentyone_days_ago=self._safe_value(condition, -4),
+        )
+    
+    def rsi_divergence_monthly(self) -> TimeSeriesMetric:
+        df_monthly = self.df.resample("M").last().dropna()
+        close = df_monthly["Close"]
+        delta = close.diff()
+        gain = delta.where(delta > 0, 0.0)
+        loss = -delta.where(delta < 0, 0.0)
+        avg_gain = gain.rolling(window=14).mean()
+        avg_loss = loss.rolling(window=14).mean()
+        rs = avg_gain / avg_loss
+        rsi = 100 - (100 / (1 + rs))
+
+        def find_pivots(series: pd.Series, window: int = 3) -> list[int]:
+            """Detect local minima and maxima (pivot points) using a rolling window."""
+            pivots = []
+            for i in range(window, len(series) - window):
+                is_min = all(series[i] < series[i - j] for j in range(1, window + 1)) and \
+                        all(series[i] < series[i + j] for j in range(1, window + 1))
+                is_max = all(series[i] > series[i - j] for j in range(1, window + 1)) and \
+                        all(series[i] > series[i + j] for j in range(1, window + 1))
+                if is_min or is_max:
+                    pivots.append(i)
+            return pivots
+        
+        pivots = find_pivots(rsi, window=2)
+        signals = pd.Series("Normal", index=close.index)
+        for i in range(1, len(pivots)):
+            p1, p2 = pivots[i - 1], pivots[i]
+            if close.iloc[p2] < close.iloc[p1] and rsi.iloc[p2] > rsi.iloc[p1]:
+                signals.iloc[p2] = "Bullish Divergence"
+            elif close.iloc[p2] > close.iloc[p1] and rsi.iloc[p2] < rsi.iloc[p1]:
+                signals.iloc[p2] = "Bearish Divergence"
+
+        return TimeSeriesMetric(
+            current=self._safe_value(signals, -1),
+            seven_days_ago=self._safe_value(signals, -2),
+            fourteen_days_ago=self._safe_value(signals, -3),
+            twentyone_days_ago=self._safe_value(signals, -4),
+        )
+    
+    def chaikin_money_flow(self) -> TimeSeriesMetric:
+        df = self.df.dropna()
+        df = df.last("100D")  # Ensure enough days for a 21-day rolling calculation
+
+        high = df["High"]
+        low = df["Low"]
+        close = df["Close"]
+        volume = df["Volume"]
+
+        mfm = ((close - low) - (high - close)) / (high - low)
+        mfm = mfm.replace([np.inf, -np.inf], 0).fillna(0)
+
+        mfv = mfm * volume
+        cmf = mfv.rolling(window=21).sum() / volume.rolling(window=21).sum()
+
+        signal = cmf.apply(lambda x: "Positive" if x > 0 else "Negative")
+
+        return TimeSeriesMetric(
+            current=self._safe_value(signal, -1),
+            seven_days_ago=self._safe_value(signal, -2),
+            fourteen_days_ago=self._safe_value(signal, -3),
+            twentyone_days_ago=self._safe_value(signal, -4),
+        )
+
 
 
 @app.post("/analyse", response_model=StockAnalysisResponse)
@@ -381,6 +749,20 @@ def analyse(stock_request: StockRequest):
         mace=analyser.mace(),
         forty_week_status=analyser.forty_week_status(),
         fifty_dma_and_150_dma=analyser.fifty_dma_and_150_dma(),
+        twenty_dma=analyser.calculate_20dma(),
+        fifty_dma=analyser.calculate_50dma(),
+        mean_rev_50dma=analyser.mean_reversion_50dma(),
+        mean_rev_200dma=analyser.mean_reversion_200dma(),
+        mean_rev_3yma=analyser.mean_reversion_3yma(),
+        rsi_and_ma_daily=analyser.rsi_and_ma_daily(),
+        rsi_divergence_daily=analyser.rsi_divergence_daily(),
+        bollinger_band_width_percentile_daily=analyser.bollinger_band_width_percentile_daily(),
+        rsi_ma_weekly=analyser.rsi_ma_weekly(),
+        rsi_divergence_weekly=analyser.rsi_divergence_weekly(),
+        rsi_ma_monthly=analyser.rsi_ma_monthly(),
+        rsi_divergence_monthly=analyser.rsi_divergence_monthly(),
+        chaikin_money_flow=analyser.chaikin_money_flow(),
+
     )
 
 @app.websocket("/ws/chart_data_weekly/{symbol}")
