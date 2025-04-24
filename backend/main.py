@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from aliases import SYMBOL_ALIASES
 import yfinance as yf
 import pandas as pd
 import numpy as np
@@ -31,13 +32,15 @@ class StockAnalysisResponse(BaseModel):
     adx: TimeSeriesMetric
     mace: TimeSeriesMetric
     forty_week_status: TimeSeriesMetric
+    fifty_dma_and_150_dma: TimeSeriesMetric
 
 class StockRequest(BaseModel):
     symbol: str
 
 class StockAnalyser:
     def __init__(self, symbol: str):
-        self.symbol = symbol.upper().strip()
+        raw_symbol = symbol.upper().strip()
+        self.symbol = SYMBOL_ALIASES.get(raw_symbol, raw_symbol)
         self.df = self._download_data()
 
     def _download_data(self) -> pd.DataFrame:
@@ -322,6 +325,48 @@ class StockAnalyser:
             fourteen_days_ago=self._safe_value(signal, -3),
             twentyone_days_ago=self._safe_value(signal, -4),
         )
+    
+    def fifty_dma_and_150_dma(self) -> TimeSeriesMetric:
+        df = self.df.copy()
+
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.droplevel(1)
+
+        close = df['Close']
+        ma50 = close.rolling(window=50).mean()
+        ma150 = close.rolling(window=150).mean()
+
+        def classify(index: int) -> str | None:
+            if index >= len(df):
+                return None
+            p = close.iloc[index]
+            m50 = ma50.iloc[index]
+            m150 = ma150.iloc[index]
+
+            if pd.isna(p) or pd.isna(m50) or pd.isna(m150):
+                return None
+
+            if p > m50 and m50 > m150:
+                return "Above Both (Uptrend)"
+            elif p > m150 and m150 > m50:
+                return "Above 150DMA Only"
+            elif p < m50 and m50 < m150:
+                return "Below Both (Downtrend)"
+            elif p < m150 and m150 < m50:
+                return "Below 150DMA Only"
+            else:
+                return "Between Averages"
+
+        labels = pd.Series([classify(i) for i in range(len(close))], index=close.index)
+        labels = labels.dropna()
+
+        return TimeSeriesMetric(
+            current=self._safe_value(labels, -1),
+            seven_days_ago=self._safe_value(labels, -2),
+            fourteen_days_ago=self._safe_value(labels, -3),
+            twentyone_days_ago=self._safe_value(labels, -4),
+        )
+
 
 @app.post("/analyse", response_model=StockAnalysisResponse)
 def analyse(stock_request: StockRequest):
@@ -334,18 +379,18 @@ def analyse(stock_request: StockRequest):
         super_trend=analyser.super_trend(),
         adx=analyser.adx(),
         mace=analyser.mace(),
-        forty_week_status=analyser.forty_week_status()
+        forty_week_status=analyser.forty_week_status(),
+        fifty_dma_and_150_dma=analyser.fifty_dma_and_150_dma(),
     )
 
-@app.websocket("/ws/chart_data/{symbol}")
+@app.websocket("/ws/chart_data_weekly/{symbol}")
 async def websocket_chart_data(websocket: WebSocket, symbol: str):
     await websocket.accept()
     try:
-        symbol = symbol.upper()
-        if symbol in ["DJI", "GSPC", "IXIC"]:
-            symbol = f"^{symbol}"
+        raw_symbol  = symbol.upper()
+        symbol = SYMBOL_ALIASES.get(raw_symbol, raw_symbol)
 
-        hist_df = yf.download(tickers=symbol, period='1d', interval='1m', progress=False)
+        hist_df = yf.download(tickers=symbol, period='10y', interval='1wk', progress=False)
         if hist_df.empty:
             await websocket.send_json({"error": f"No data found for symbol {symbol}"})
             await websocket.close()

@@ -34,7 +34,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     // ✅ KEEP YOUR WORKING LINE HERE
     const lineSeries = chart.addSeries(LineSeries);
 
-    const ws = new WebSocket(`ws://localhost:8000/ws/chart_data/${stockSymbol.toUpperCase()}`);
+    const ws = new WebSocket(`ws://localhost:8000/ws/chart_data_weekly/${stockSymbol.toUpperCase()}`);
 
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
@@ -73,7 +73,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         </a>
       )}
 
-      <h5 className="fw-bold mb-3">📈 Live Stock Chart</h5>
+      <h5 className="fw-bold mb-3">📈 Weekly Stock Chart </h5>
 
       <div ref={chartContainerRef} style={{ width: "100%", height: "400px" }} />
     </div>

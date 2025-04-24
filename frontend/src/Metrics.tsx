@@ -17,6 +17,7 @@ type MetricsType = {
   adx: TimeSeriesMetric;
   mace: TimeSeriesMetric;
   forty_week_status: TimeSeriesMetric;
+  fifty_and_150_dma: TimeSeriesMetric;
 };
 
 type MetricsProps = {
