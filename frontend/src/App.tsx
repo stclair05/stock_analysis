@@ -7,19 +7,26 @@ function App() {
   const [inputValue, setInputValue] = useState("");
   const [stockSymbol, setStockSymbol] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const isValidSymbol = (symbol: string) => /^[A-Za-z.^]{1,10}$/.test(symbol);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value.toUpperCase());
+    setError(null);
   };
 
   const handleSearch = () => {
-    if (inputValue.trim()) {
-      setLoading(true);
-      setTimeout(() => {
-        setStockSymbol(inputValue);
-        setLoading(false);
-      }, 1000); // Simulated 1 second loading
+    if (!inputValue.trim()) return;
+
+    if (!isValidSymbol(inputValue)) {
+      setError("Invalid symbol. Please enter a valid stock symbol (e.g., AAPL or ^DJI).");
+      return;
     }
+
+    setError(null);
+    setStockSymbol(inputValue);
+    setLoading(true); // Metrics will handle turning this off
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -53,37 +60,26 @@ function App() {
         </div>
       </div>
 
+      {error && (
+        <div className="text-center text-danger mt-2" style={{ fontWeight: 500 }}>
+          {error}
+        </div>
+      )}
+
       {/* Metrics + Chart Section */}
       {stockSymbol ? (
         <div className="cards-wrapper-row">
           {/* Metrics Card */}
           <div className="metric-card">
-            {loading ? (
-              <div className="d-flex justify-content-center align-items-center" style={{ height: "400px" }}>
-                <div className="spinner-border text-primary" style={{ width: "3rem", height: "3rem" }} role="status">
-                  <span className="visually-hidden">Loading...</span>
-                </div>
-              </div>
-            ) : (
-              <Metrics stockSymbol={stockSymbol} />
-            )}
+            <Metrics stockSymbol={stockSymbol} setParentLoading={setLoading} />
           </div>
 
           {/* Chart Card */}
           <div className="chart-card">
-            {loading ? (
-              <div className="d-flex justify-content-center align-items-center" style={{ height: "400px" }}>
-                <div className="spinner-border text-primary" style={{ width: "3rem", height: "3rem" }} role="status">
-                  <span className="visually-hidden">Loading...</span>
-                </div>
-              </div>
-            ) : (
-              <StockChart stockSymbol={stockSymbol} />
-            )}
+            <StockChart stockSymbol={stockSymbol} />
           </div>
         </div>
       ) : (
-        // Show this only when no stockSymbol is selected
         <div className="text-center mt-5">
           <h4 className="text-muted">🔎 Search for a stock to view metrics and chart</h4>
         </div>

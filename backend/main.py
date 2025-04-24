@@ -101,51 +101,181 @@ class StockAnalyser:
         )
 
     def super_trend(self) -> TimeSeriesMetric:
-        df = self.df.last('600D')
-        df_weekly = df.resample('W-FRI').agg({'Open': 'first', 'High': 'max', 'Low': 'min', 'Close': 'last'}).dropna()
-        hl2 = (df_weekly['High'] + df_weekly['Low']) / 2
-        atr = (df_weekly['High'].combine(df_weekly['Low'], max) - df_weekly['High'].combine(df_weekly['Low'], min)).rolling(10).mean()
-        upper = hl2 + 3 * atr
-        lower = hl2 - 3 * atr
-        signal = pd.Series(index=df_weekly.index, dtype='object')
-        in_uptrend = True
-        for i in range(1, len(df_weekly)):
-            if df_weekly['Close'].iloc[i] > upper.iloc[i-1]:
-                in_uptrend = True
-            elif df_weekly['Close'].iloc[i] < lower.iloc[i-1]:
-                in_uptrend = False
-            signal.iloc[i] = "Buy" if in_uptrend else "Sell"
+        df = self.df.copy()
+
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.droplevel(1)
+
+        # Resample daily data to weekly OHLC
+        df = df.last("600D")
+        df_weekly = df.resample("W-FRI").agg({
+            "Open": "first",
+            "High": "max",
+            "Low": "min",
+            "Close": "last"
+        }).dropna()
+        print(f"{self.symbol} weekly rows available for SuperTrend: {df_weekly.shape[0]}")
+
+        # --- ATR Calculation ---
+        high = df_weekly['High']
+        low = df_weekly['Low']
+        close = df_weekly['Close']
+        prev_close = close.shift(1)
+
+        tr = pd.concat([
+            high - low,
+            (high - prev_close).abs(),
+            (low - prev_close).abs()
+        ], axis=1).max(axis=1)
+
+        atr = tr.rolling(window=10, min_periods=1).mean()
+
+        # --- Super Trend Bands ---
+        hl2 = (high + low) / 2
+        upperband = hl2 + 3 * atr
+        lowerband = hl2 - 3 * atr
+
+        df_st = pd.DataFrame(index=df_weekly.index)
+        df_st['Close'] = close
+        df_st['UpperBand'] = upperband
+        df_st['LowerBand'] = lowerband
+        df_st['InUptrend'] = True  # Default start as uptrend
+
+        for i in range(1, len(df_st)):
+            prev = df_st.iloc[i - 1]
+            curr = df_st.iloc[i]
+
+            # Default to previous trend
+            df_st.iloc[i, df_st.columns.get_loc('InUptrend')] = prev['InUptrend']
+
+            # Check for trend change
+            if curr['Close'] > prev['UpperBand']:
+                df_st.iloc[i, df_st.columns.get_loc('InUptrend')] = True
+            elif curr['Close'] < prev['LowerBand']:
+                df_st.iloc[i, df_st.columns.get_loc('InUptrend')] = False
+            else:
+                # Continue trend, adjust bands
+                if prev['InUptrend']:
+                    if curr['LowerBand'] > prev['LowerBand']:
+                        df_st.iloc[i, df_st.columns.get_loc('LowerBand')] = curr['LowerBand']
+                    else:
+                        df_st.iloc[i, df_st.columns.get_loc('LowerBand')] = prev['LowerBand']
+                    df_st.iloc[i, df_st.columns.get_loc('UpperBand')] = np.nan
+                else:
+                    if curr['UpperBand'] < prev['UpperBand']:
+                        df_st.iloc[i, df_st.columns.get_loc('UpperBand')] = curr['UpperBand']
+                    else:
+                        df_st.iloc[i, df_st.columns.get_loc('UpperBand')] = prev['UpperBand']
+                    df_st.iloc[i, df_st.columns.get_loc('LowerBand')] = np.nan
+
+        # Final signal column
+        df_st['Signal'] = df_st['InUptrend'].map(lambda x: 'Buy' if x else 'Sell')
+
         return TimeSeriesMetric(
-            current=self._safe_value(signal, -1),
-            seven_days_ago=self._safe_value(signal, -2),
-            fourteen_days_ago=self._safe_value(signal, -3),
-            twentyone_days_ago=self._safe_value(signal, -4),
+            current=self._safe_value(df_st['Signal'], -1),
+            seven_days_ago=self._safe_value(df_st['Signal'], -2),
+            fourteen_days_ago=self._safe_value(df_st['Signal'], -3),
+            twentyone_days_ago=self._safe_value(df_st['Signal'], -4),
         )
 
+
     def adx(self) -> TimeSeriesMetric:
-        df = self.df.last('600D')
-        df_weekly = df.resample('W-FRI').agg({'Open': 'first', 'High': 'max', 'Low': 'min', 'Close': 'last'}).dropna()
-        plus_dm = (df_weekly['High'].diff().where(lambda x: x > df_weekly['Low'].diff())
-                   .where(lambda x: x > 0, 0))
-        minus_dm = (df_weekly['Low'].diff().where(lambda x: x > df_weekly['High'].diff())
-                    .where(lambda x: x > 0, 0))
-        tr = pd.concat([
-            df_weekly['High'] - df_weekly['Low'],
-            abs(df_weekly['High'] - df_weekly['Close'].shift()),
-            abs(df_weekly['Low'] - df_weekly['Close'].shift())
-        ], axis=1).max(axis=1)
-        atr = tr.rolling(14).mean()
-        plus_di = 100 * plus_dm.rolling(14).sum() / atr
-        minus_di = 100 * minus_dm.rolling(14).sum() / atr
-        dx = abs(plus_di - minus_di) / (plus_di + minus_di) * 100
-        adx = dx.rolling(14).mean()
-        levels = adx.map(lambda x: "Weak" if x < 20 else "Moderate" if x <= 40 else "Strong")
+        df = self.df.copy()
+
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.droplevel(1)
+
+        # Use the last ~600 days and resample to weekly (ending on Friday)
+        df = df.last("600D")
+        df_weekly = df.resample("W-FRI").agg({
+            "Open": "first",
+            "High": "max",
+            "Low": "min",
+            "Close": "last"
+        }).dropna()
+
+
+        high = df_weekly['High']
+        low = df_weekly['Low']
+        close = df_weekly['Close']
+
+        # Directional Movement
+        up_move = high.diff()
+        down_move = low.diff().abs()
+
+        plus_dm = np.where((up_move > down_move) & (up_move > 0), up_move, 0.0)
+        minus_dm = np.where((down_move > up_move) & (down_move > 0), down_move, 0.0)
+
+        # True Range
+        prev_close = close.shift(1)
+        tr1 = high - low
+        tr2 = (high - prev_close).abs()
+        tr3 = (low - prev_close).abs()
+        tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+
+        # Wilder's smoothing (EMA-like with alpha = 1/14)
+        atr = pd.Series(tr).ewm(alpha=1/14, adjust=False).mean()
+        plus_dm = pd.Series(plus_dm, index=df_weekly.index).ewm(alpha=1/14, adjust=False).mean()
+        minus_dm = pd.Series(minus_dm, index=df_weekly.index).ewm(alpha=1/14, adjust=False).mean()
+
+        plus_di = 100 * (plus_dm / atr)
+        minus_di = 100 * (minus_dm / atr)
+        dx = 100 * ((plus_di - minus_di).abs() / (plus_di + minus_di))
+        adx = dx.ewm(alpha=1/14, adjust=False).mean()
+
+        # Trend strength classification
+        def classify_trend(adx_series, plus_di_series, minus_di_series,
+                   hl_range=20, hl_trend=35) -> pd.Series:
+            """
+            Mimics TradingView's ADX classification logic with directional strength.
+            Returns a pandas Series with labels like:
+            'Strong Bullish', 'Bullish', 'Strong Bearish', 'Bearish', 'Weak'
+            """
+            result = []
+
+            for i in range(len(adx_series)):
+                adx = adx_series.iloc[i]
+                prev_adx = adx_series.iloc[i - 1] if i > 0 else None
+                plus_di = plus_di_series.iloc[i]
+                minus_di = minus_di_series.iloc[i]
+
+                if pd.isna(adx) or pd.isna(plus_di) or pd.isna(minus_di):
+                    result.append(None)
+                    continue
+
+                is_adx_rising = prev_adx is not None and adx > prev_adx
+                is_trend_weak = adx <= hl_range
+                is_bullish = plus_di >= minus_di
+                is_strong_plus = plus_di >= hl_trend
+                is_strong_minus = minus_di >= hl_trend
+
+                if is_trend_weak:
+                    result.append("Weak")
+                elif is_adx_rising:
+                    if is_bullish and is_strong_plus:
+                        result.append("Strong Bullish")
+                    elif is_bullish:
+                        result.append("Bullish")
+                    elif not is_bullish and is_strong_minus:
+                        result.append("Strong Bearish")
+                    else:
+                        result.append("Bearish")
+                else:
+                    result.append("Moderate")
+
+            return pd.Series(result, index=adx_series.index)
+
+
+        classification = classify_trend(adx, plus_di, minus_di)
+
         return TimeSeriesMetric(
-            current=self._safe_value(levels, -1),
-            seven_days_ago=self._safe_value(levels, -2),
-            fourteen_days_ago=self._safe_value(levels, -3),
-            twentyone_days_ago=self._safe_value(levels, -4),
+            current=self._safe_value(classification, -1),
+            seven_days_ago=self._safe_value(classification, -2),
+            fourteen_days_ago=self._safe_value(classification, -3),
+            twentyone_days_ago=self._safe_value(classification, -4),
         )
+
+
 
     def mace(self) -> TimeSeriesMetric:
         df = self.df.last('600D')
