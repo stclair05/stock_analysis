@@ -17,7 +17,20 @@ type MetricsType = {
   adx: TimeSeriesMetric;
   mace: TimeSeriesMetric;
   forty_week_status: TimeSeriesMetric;
-  fifty_and_150_dma: TimeSeriesMetric;
+  fifty_dma_and_150_dma: TimeSeriesMetric;
+  twenty_dma: TimeSeriesMetric;
+  fifty_dma: TimeSeriesMetric;
+  mean_rev_50dma: TimeSeriesMetric;
+  mean_rev_200dma: TimeSeriesMetric;
+  mean_rev_3yma: TimeSeriesMetric;
+  rsi_and_ma_daily: TimeSeriesMetric;
+  rsi_divergence_daily: TimeSeriesMetric;
+  bollinger_band_width_percentile_daily: TimeSeriesMetric;
+  rsi_ma_weekly: TimeSeriesMetric;
+  rsi_divergence_weekly: TimeSeriesMetric;
+  rsi_ma_monthly: TimeSeriesMetric;
+  rsi_divergence_monthly: TimeSeriesMetric;
+  chaikin_money_flow: TimeSeriesMetric;
 };
 
 type MetricsProps = {
@@ -88,23 +101,54 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
     if (lower.includes("below")) return "text-danger";
     if (lower.includes("above")) return "text-success";
     if (lower.includes("inside")) return "text-warning";
+    if (lower.includes("between")) return "text-warning";
+
     if (lower.includes("buy")) return "text-success";
     if (lower.includes("sell")) return "text-danger";
+
     if (lower.includes("strong bullish")) return "text-success fw-bold";
     if (lower.includes("bullish")) return "text-success";
     if (lower.includes("strong bearish")) return "text-danger fw-bold";
     if (lower.includes("bearish")) return "text-danger";
     if (lower.includes("weak")) return "text-warning";
+
     if (lower.includes("u1")) return "text-up-1";
     if (lower.includes("u2")) return "text-success";
     if (lower.includes("u3")) return "text-success fw-bold";
     if (lower.includes("d1")) return "text-warning";
     if (lower.includes("d2")) return "text-danger";
     if (lower.includes("d3")) return "text-danger fw-bold";
+
     if (lower.includes("above rising ma")) return "text-success fw-bold";
     if (lower.includes("above falling ma")) return "text-success";
     if (lower.includes("below rising ma")) return "text-warning";
     if (lower.includes("below falling ma")) return "text-danger";
+
+    if (lower.includes("oversold")) return "text-success";
+    if (lower.includes("overbought")) return "text-danger";
+    if (lower.includes("extended")) return "text-warning";
+    if (lower.includes("normal")) return "text-secondary";
+
+      // 50DMA & 150DMA Composite Signal
+  if (lower.includes("above both")) return "text-success fw-bold"; // Strong uptrend
+  if (lower.includes("above 150dma only")) return "text-success";  // Mild uptrend
+  if (lower.includes("below both")) return "text-danger fw-bold";  // Strong downtrend
+  if (lower.includes("below 150dma only")) return "text-danger";   // Mild downtrend
+  if (lower.includes("between averages")) return "text-warning";   // Choppy
+
+  // RSI Divergence Daily
+  if (lower.includes("bullish divergence")) return "text-success fw-bold";
+  if (lower.includes("bearish divergence")) return "text-danger fw-bold";
+
+  // Bollinger Band Width Percentile
+  if (lower.includes("blue band")) return "text-warning"; // Tight = breakout possible
+  if (lower.includes("red band")) return "text-danger";   // Volatile
+  if (lower.includes("normal")) return "text-info";
+
+  // Chaikin Money Flow
+  if (lower.includes("positive")) return "text-success";
+  if (lower.includes("negative")) return "text-danger";
+
 
     return "text-secondary";
   };
@@ -217,6 +261,97 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
                 {renderColoredCell(metrics.forty_week_status.seven_days_ago)}
                 {renderColoredCell(metrics.forty_week_status.fourteen_days_ago)}
                 {renderColoredCell(metrics.forty_week_status.twentyone_days_ago)}
+              </tr>
+              <tr>
+                <td>📏 50DMA & 150DMA</td>
+                {renderColoredCell(metrics.fifty_dma_and_150_dma.current)}
+                {renderColoredCell(metrics.fifty_dma_and_150_dma.seven_days_ago)}
+                {renderColoredCell(metrics.fifty_dma_and_150_dma.fourteen_days_ago)}
+                {renderColoredCell(metrics.fifty_dma_and_150_dma.twentyone_days_ago)}
+              </tr>
+              <tr>
+                <td>📉 20DMA</td>
+                {renderColoredCell(metrics.twenty_dma.current)}
+                {renderColoredCell(metrics.twenty_dma.seven_days_ago)}
+                {renderColoredCell(metrics.twenty_dma.fourteen_days_ago)}
+                {renderColoredCell(metrics.twenty_dma.twentyone_days_ago)}
+              </tr>
+              <tr>
+                <td>↔️ Mean Reversion to 50DMA</td>
+                {renderColoredCell(metrics.mean_rev_50dma.current)}
+                {renderColoredCell(metrics.mean_rev_50dma.seven_days_ago)}
+                {renderColoredCell(metrics.mean_rev_50dma.fourteen_days_ago)}
+                {renderColoredCell(metrics.mean_rev_50dma.twentyone_days_ago)}
+              </tr>
+              <tr>
+                <td>↔️ Mean Reversion to 200DMA</td>
+                {renderColoredCell(metrics.mean_rev_200dma.current)}
+                {renderColoredCell(metrics.mean_rev_200dma.seven_days_ago)}
+                {renderColoredCell(metrics.mean_rev_200dma.fourteen_days_ago)}
+                {renderColoredCell(metrics.mean_rev_200dma.twentyone_days_ago)}
+              </tr>
+              <tr>
+                <td>↔️ Mean Reversion to 3YMA</td>
+                {renderColoredCell(metrics.mean_rev_3yma.current)}
+                {renderColoredCell(metrics.mean_rev_3yma.seven_days_ago)}
+                {renderColoredCell(metrics.mean_rev_3yma.fourteen_days_ago)}
+                {renderColoredCell(metrics.mean_rev_3yma.twentyone_days_ago)}
+              </tr>
+              <tr>
+                <td>📊 RSI & MA (Daily)</td>
+                {renderColoredCell(metrics.rsi_and_ma_daily.current)}
+                {renderColoredCell(metrics.rsi_and_ma_daily.seven_days_ago)}
+                {renderColoredCell(metrics.rsi_and_ma_daily.fourteen_days_ago)}
+                {renderColoredCell(metrics.rsi_and_ma_daily.twentyone_days_ago)}
+              </tr>
+              <tr>
+                <td>📉 RSI Divergence (Daily)</td>
+                {renderColoredCell(metrics.rsi_divergence_daily.current)}
+                {renderColoredCell(metrics.rsi_divergence_daily.seven_days_ago)}
+                {renderColoredCell(metrics.rsi_divergence_daily.fourteen_days_ago)}
+                {renderColoredCell(metrics.rsi_divergence_daily.twentyone_days_ago)}
+              </tr>
+              <tr>
+                <td>📈 Bollinger Band Width % (Daily)</td>
+                {renderColoredCell(metrics.bollinger_band_width_percentile_daily.current)}
+                {renderColoredCell(metrics.bollinger_band_width_percentile_daily.seven_days_ago)}
+                {renderColoredCell(metrics.bollinger_band_width_percentile_daily.fourteen_days_ago)}
+                {renderColoredCell(metrics.bollinger_band_width_percentile_daily.twentyone_days_ago)}
+              </tr>
+              <tr>
+                <td>📊 RSI & MA (Weekly)</td>
+                {renderColoredCell(metrics.rsi_ma_weekly.current)}
+                {renderColoredCell(metrics.rsi_ma_weekly.seven_days_ago)}
+                {renderColoredCell(metrics.rsi_ma_weekly.fourteen_days_ago)}
+                {renderColoredCell(metrics.rsi_ma_weekly.twentyone_days_ago)}
+              </tr>
+              <tr>
+                <td>📉 RSI Divergence (Weekly)</td>
+                {renderColoredCell(metrics.rsi_divergence_weekly.current)}
+                {renderColoredCell(metrics.rsi_divergence_weekly.seven_days_ago)}
+                {renderColoredCell(metrics.rsi_divergence_weekly.fourteen_days_ago)}
+                {renderColoredCell(metrics.rsi_divergence_weekly.twentyone_days_ago)}
+              </tr>
+              <tr>
+                <td>📊 RSI & MA (Monthly)</td>
+                {renderColoredCell(metrics.rsi_ma_monthly.current)}
+                {renderColoredCell(metrics.rsi_ma_monthly.seven_days_ago)}
+                {renderColoredCell(metrics.rsi_ma_monthly.fourteen_days_ago)}
+                {renderColoredCell(metrics.rsi_ma_monthly.twentyone_days_ago)}
+              </tr>
+              <tr>
+                <td>📉 RSI Divergence (Monthly)</td>
+                {renderColoredCell(metrics.rsi_divergence_monthly.current)}
+                {renderColoredCell(metrics.rsi_divergence_monthly.seven_days_ago)}
+                {renderColoredCell(metrics.rsi_divergence_monthly.fourteen_days_ago)}
+                {renderColoredCell(metrics.rsi_divergence_monthly.twentyone_days_ago)}
+              </tr>
+              <tr>
+                <td>💰 Chaikin Money Flow</td>
+                {renderColoredCell(metrics.chaikin_money_flow.current)}
+                {renderColoredCell(metrics.chaikin_money_flow.seven_days_ago)}
+                {renderColoredCell(metrics.chaikin_money_flow.fourteen_days_ago)}
+                {renderColoredCell(metrics.chaikin_money_flow.twentyone_days_ago)}
               </tr>
             </tbody>
           </table>
