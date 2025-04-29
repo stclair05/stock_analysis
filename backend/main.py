@@ -1,6 +1,8 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from stock_analysis.stock_analyser import StockAnalyser, StockRequest, StockAnalysisResponse
+from stock_analysis.elliott_wave import calculate_elliott_wave
+from fastapi.responses import JSONResponse
 from aliases import SYMBOL_ALIASES
 import yfinance as yf
 import asyncio
@@ -42,6 +44,19 @@ def analyse(stock_request: StockRequest):
         rsi_divergence_monthly=analyser.rsi_divergence_monthly(),
         chaikin_money_flow=analyser.chaikin_money_flow(),
     )
+
+@app.post("/elliott")
+def elliott(stock_request: StockRequest):
+    analyser = StockAnalyser(stock_request.symbol)
+    df = analyser.df
+
+    elliott_result = calculate_elliott_wave(df)
+
+    if "error" in elliott_result:
+        return JSONResponse(status_code=400, content={"detail": elliott_result["error"]})
+
+    return elliott_result
+
 
 @app.websocket("/ws/chart_data_weekly/{symbol}")
 async def websocket_chart_data(websocket: WebSocket, symbol: str):
