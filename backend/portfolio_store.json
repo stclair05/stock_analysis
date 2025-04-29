@@ -1,0 +1,572 @@
+[
+    {
+        "ticker": "ARKK",
+        "shares": 28397.0,
+        "invested_capital": 2832316.78,
+        "average_cost": 99.74
+    },
+    {
+        "ticker": "ARKG",
+        "shares": 20520.0,
+        "invested_capital": 1395360.0,
+        "average_cost": 68.0
+    },
+    {
+        "ticker": "AI",
+        "shares": 27000.0,
+        "invested_capital": 928170.0,
+        "average_cost": 34.376666666666665
+    },
+    {
+        "ticker": "FIX",
+        "shares": 700.0,
+        "invested_capital": 320636.0,
+        "average_cost": 458.0514285714286
+    },
+    {
+        "ticker": "XLK",
+        "shares": 5000.0,
+        "invested_capital": 1163500.0,
+        "average_cost": 232.7
+    },
+    {
+        "ticker": "SNPS",
+        "shares": 2200.0,
+        "invested_capital": 1225910.0,
+        "average_cost": 557.2318181818182
+    },
+    {
+        "ticker": "SHOP",
+        "shares": 4000.0,
+        "invested_capital": 424440.0,
+        "average_cost": 106.11
+    },
+    {
+        "ticker": "NVDA",
+        "shares": 6000.0,
+        "invested_capital": 714500.0,
+        "average_cost": 119.08333333333333
+    },
+    {
+        "ticker": "ASML.AS",
+        "shares": 240.0,
+        "invested_capital": 221248.8,
+        "average_cost": 921.87
+    },
+    {
+        "ticker": "XOM",
+        "shares": 8000.0,
+        "invested_capital": 816000.0,
+        "average_cost": 102.0
+    },
+    {
+        "ticker": "STO.AX",
+        "shares": 65000.0,
+        "invested_capital": 339300.0,
+        "average_cost": 5.22
+    },
+    {
+        "ticker": "MPC",
+        "shares": 9116.0,
+        "invested_capital": 1614625.92,
+        "average_cost": 177.12
+    },
+    {
+        "ticker": "VLO",
+        "shares": 12386.0,
+        "invested_capital": 1772006.7,
+        "average_cost": 143.06529145809785
+    },
+    {
+        "ticker": "AR",
+        "shares": 58084.0,
+        "invested_capital": 1931514.72,
+        "average_cost": 33.2538172302183
+    },
+    {
+        "ticker": "DK",
+        "shares": 9400.0,
+        "invested_capital": 296758.0,
+        "average_cost": 31.57
+    },
+    {
+        "ticker": "COP",
+        "shares": 23267.0,
+        "invested_capital": 2591437.18,
+        "average_cost": 111.37822581338376
+    },
+    {
+        "ticker": "XOP",
+        "shares": 655.0,
+        "invested_capital": 99933.34999999999,
+        "average_cost": 152.57
+    },
+    {
+        "ticker": "TALO",
+        "shares": 14000.0,
+        "invested_capital": 308494.31200000003,
+        "average_cost": 22.035308000000004
+    },
+    {
+        "ticker": "OVV",
+        "shares": 22760.0,
+        "invested_capital": 1135781.6,
+        "average_cost": 49.90253075571178
+    },
+    {
+        "ticker": "DINO",
+        "shares": 4748.0,
+        "invested_capital": 303555.08999999997,
+        "average_cost": 63.933254001684915
+    },
+    {
+        "ticker": "OXY",
+        "shares": 31035.0,
+        "invested_capital": 2061970.0,
+        "average_cost": 66.44014821975189
+    },
+    {
+        "ticker": "FCG",
+        "shares": 29510.0,
+        "invested_capital": 770334.3,
+        "average_cost": 26.104178244662826
+    },
+    {
+        "ticker": "XLE",
+        "shares": 14607.0,
+        "invested_capital": 1201084.24,
+        "average_cost": 82.22662011364415
+    },
+    {
+        "ticker": "APA",
+        "shares": 59968.0,
+        "invested_capital": 2275575.9634000002,
+        "average_cost": 37.946504192235864
+    },
+    {
+        "ticker": "SM",
+        "shares": 47000.0,
+        "invested_capital": 1795438.0,
+        "average_cost": 38.200808510638296
+    },
+    {
+        "ticker": "VET",
+        "shares": 70000.0,
+        "invested_capital": 961000.0,
+        "average_cost": 13.728571428571428
+    },
+    {
+        "ticker": "VTLE",
+        "shares": 18000.0,
+        "invested_capital": 985040.0,
+        "average_cost": 54.724444444444444
+    },
+    {
+        "ticker": "CVI",
+        "shares": 19000.0,
+        "invested_capital": 637040.0,
+        "average_cost": 33.52842105263158
+    },
+    {
+        "ticker": "MTDR",
+        "shares": 25000.0,
+        "invested_capital": 1537440.0,
+        "average_cost": 61.4976
+    },
+    {
+        "ticker": "PR",
+        "shares": 126000.0,
+        "invested_capital": 1844700.0,
+        "average_cost": 14.64047619047619
+    },
+    {
+        "ticker": "BTE",
+        "shares": 277000.0,
+        "invested_capital": 1087908.01,
+        "average_cost": 3.9274657400722024
+    },
+    {
+        "ticker": "CRGY",
+        "shares": 36250.0,
+        "invested_capital": 594950.0,
+        "average_cost": 16.412413793103447
+    },
+    {
+        "ticker": "NNRG.NE",
+        "shares": 10000.0,
+        "invested_capital": 369900.0,
+        "average_cost": 36.99
+    },
+    {
+        "ticker": "ROK.V",
+        "shares": 120000.0,
+        "invested_capital": 48000.0,
+        "average_cost": 0.4
+    },
+    {
+        "ticker": "EQNR",
+        "shares": 37020.0,
+        "invested_capital": 1050045.072,
+        "average_cost": 28.364264505672608
+    },
+    {
+        "ticker": "CIVI",
+        "shares": 11000.0,
+        "invested_capital": 796520.0,
+        "average_cost": 72.41090909090909
+    },
+    {
+        "ticker": "IGE",
+        "shares": 10000.0,
+        "invested_capital": 440663.0,
+        "average_cost": 44.0663
+    },
+    {
+        "ticker": "XEG.TO",
+        "shares": 41000.0,
+        "invested_capital": 570260.0,
+        "average_cost": 13.908780487804878
+    },
+    {
+        "ticker": "TXP.TO",
+        "shares": 180000.0,
+        "invested_capital": 91463.46660000001,
+        "average_cost": 0.50813037
+    },
+    {
+        "ticker": "BIR.TO",
+        "shares": 13500.0,
+        "invested_capital": 57651.74999999999,
+        "average_cost": 4.270499999999999
+    },
+    {
+        "ticker": "YGR.TO",
+        "shares": 100000.0,
+        "invested_capital": 89764.815,
+        "average_cost": 0.89764815
+    },
+    {
+        "ticker": "BNE.TO",
+        "shares": 20000.0,
+        "invested_capital": 85409.99999999999,
+        "average_cost": 4.270499999999999
+    },
+    {
+        "ticker": "FCX",
+        "shares": 119543.0,
+        "invested_capital": 4596613.9,
+        "average_cost": 38.451552161147035
+    },
+    {
+        "ticker": "CF",
+        "shares": 10000.0,
+        "invested_capital": 899000.0,
+        "average_cost": 89.9
+    },
+    {
+        "ticker": "MOS",
+        "shares": 72200.0,
+        "invested_capital": 2682888.0,
+        "average_cost": 37.159113573407204
+    },
+    {
+        "ticker": "MP",
+        "shares": 5000.0,
+        "invested_capital": 129900.0,
+        "average_cost": 25.98
+    },
+    {
+        "ticker": "NTR",
+        "shares": 29000.0,
+        "invested_capital": 1646200.0,
+        "average_cost": 56.765517241379314
+    },
+    {
+        "ticker": "SPY",
+        "shares": 3200.0,
+        "invested_capital": 1885894.0,
+        "average_cost": 589.341875
+    },
+    {
+        "ticker": "IWM",
+        "shares": 4000.0,
+        "invested_capital": 948400.0,
+        "average_cost": 237.1
+    },
+    {
+        "ticker": "0P0000RU80.L",
+        "shares": 41700.0,
+        "invested_capital": 181112.8161,
+        "average_cost": 4.343233
+    },
+    {
+        "ticker": "U-UN.TO",
+        "shares": 19000.0,
+        "invested_capital": 407890.0,
+        "average_cost": 21.467894736842105
+    },
+    {
+        "ticker": "UEC",
+        "shares": 22500.0,
+        "invested_capital": 181581.00749999998,
+        "average_cost": 8.070267
+    },
+    {
+        "ticker": "IBIT",
+        "shares": 109000.0,
+        "invested_capital": 4752790.000000001,
+        "average_cost": 43.603577981651384
+    },
+    {
+        "ticker": "RIOT",
+        "shares": 110000.0,
+        "invested_capital": 1339800.0,
+        "average_cost": 12.18
+    },
+    {
+        "ticker": "MARA",
+        "shares": 20000.0,
+        "invested_capital": 542000.0,
+        "average_cost": 27.1
+    },
+    {
+        "ticker": "COIN",
+        "shares": 31000.0,
+        "invested_capital": 8137150.0,
+        "average_cost": 262.48870967741937
+    },
+    {
+        "ticker": "GRNY",
+        "shares": 120000.0,
+        "invested_capital": 2484093.9,
+        "average_cost": 20.7007825
+    },
+    {
+        "ticker": "PBR",
+        "shares": 20000.0,
+        "invested_capital": 270000.0,
+        "average_cost": 13.5
+    },
+    {
+        "ticker": "SGY.TO",
+        "shares": 70000.0,
+        "invested_capital": 420600.0,
+        "average_cost": 6.008571428571429
+    },
+    {
+        "ticker": "FANG",
+        "shares": 631.0,
+        "invested_capital": 100032.43000000001,
+        "average_cost": 158.53
+    },
+    {
+        "ticker": "DVN",
+        "shares": 39078.0,
+        "invested_capital": 2330922.16,
+        "average_cost": 59.64793899380726
+    },
+    {
+        "ticker": "IPOOD",
+        "shares": 30000.0,
+        "invested_capital": 66000.0,
+        "average_cost": 2.2
+    },
+    {
+        "ticker": "GLD",
+        "shares": 546.0,
+        "invested_capital": 80966.34,
+        "average_cost": 148.29
+    },
+    {
+        "ticker": "^XAU",
+        "shares": 20.0,
+        "invested_capital": 37540.399999999994,
+        "average_cost": 1877.0199999999998
+    },
+    {
+        "ticker": "SI=F",
+        "shares": 492217.0,
+        "invested_capital": 13653175.864400001,
+        "average_cost": 27.738123356974672
+    },
+    {
+        "ticker": "PAAS",
+        "shares": 20000.0,
+        "invested_capital": 508000.0,
+        "average_cost": 25.4
+    },
+    {
+        "ticker": "HL",
+        "shares": 42000.0,
+        "invested_capital": 308532.0,
+        "average_cost": 7.346
+    },
+    {
+        "ticker": "SIL",
+        "shares": 9089.0,
+        "invested_capital": 404642.28,
+        "average_cost": 44.52
+    },
+    {
+        "ticker": "SILJ",
+        "shares": 197000.0,
+        "invested_capital": 3063462.0,
+        "average_cost": 15.55056852791878
+    },
+    {
+        "ticker": "GDXJ",
+        "shares": 5500.0,
+        "invested_capital": 331430.0,
+        "average_cost": 60.26
+    },
+    {
+        "ticker": "CDE",
+        "shares": 32044.0,
+        "invested_capital": 127214.68000000001,
+        "average_cost": 3.97
+    },
+    {
+        "ticker": "EQX",
+        "shares": 45000.0,
+        "invested_capital": 267750.0,
+        "average_cost": 5.95
+    },
+    {
+        "ticker": "GFI",
+        "shares": 30000.0,
+        "invested_capital": 587400.0,
+        "average_cost": 19.58
+    },
+    {
+        "ticker": "AYA.TO",
+        "shares": 100000.0,
+        "invested_capital": 828500.0,
+        "average_cost": 8.285
+    },
+    {
+        "ticker": "SBSW",
+        "shares": 100000.0,
+        "invested_capital": 485149.99999999994,
+        "average_cost": 4.8515
+    },
+    {
+        "ticker": "SMG",
+        "shares": 10470.0,
+        "invested_capital": 1277340.0,
+        "average_cost": 122.0
+    },
+    {
+        "ticker": "PYPL",
+        "shares": 10068.0,
+        "invested_capital": 1633533.0,
+        "average_cost": 162.25
+    },
+    {
+        "ticker": "BA",
+        "shares": 2000.0,
+        "invested_capital": 343700.0,
+        "average_cost": 171.85
+    },
+    {
+        "ticker": "CW",
+        "shares": 500.0,
+        "invested_capital": 172550.0,
+        "average_cost": 345.1
+    },
+    {
+        "ticker": "CHWY",
+        "shares": 18000.0,
+        "invested_capital": 567400.0,
+        "average_cost": 31.522222222222222
+    },
+    {
+        "ticker": "BIDU",
+        "shares": 25054.0,
+        "invested_capital": 3877681.6,
+        "average_cost": 154.77295441845615
+    },
+    {
+        "ticker": "0020.HK",
+        "shares": 430000.0,
+        "invested_capital": 104987.01298701297,
+        "average_cost": 0.24415584415584413
+    },
+    {
+        "ticker": "2318.HK",
+        "shares": 333894.0,
+        "invested_capital": 3350115.302906325,
+        "average_cost": 10.033469612830196
+    },
+    {
+        "ticker": "KWEB",
+        "shares": 14256.0,
+        "invested_capital": 364072.5792,
+        "average_cost": 25.5382
+    },
+    {
+        "ticker": "0700.HK",
+        "shares": 88515.0,
+        "invested_capital": 4657451.31768576,
+        "average_cost": 52.617650315604806
+    },
+    {
+        "ticker": "9988.HK",
+        "shares": 441137.0,
+        "invested_capital": 11991066.281427097,
+        "average_cost": 27.182182137129953
+    },
+    {
+        "ticker": "9618.HK",
+        "shares": 6411.0,
+        "invested_capital": 0.0,
+        "average_cost": 0.0
+    },
+    {
+        "ticker": "3690.HK",
+        "shares": 11022.0,
+        "invested_capital": 0.0,
+        "average_cost": 0.0
+    },
+    {
+        "ticker": "FIXED INCOME",
+        "shares": 5056590.0,
+        "invested_capital": 5056590.0,
+        "average_cost": 1.0
+    },
+    {
+        "ticker": "RE DEBT STRAT 1",
+        "shares": 50.0,
+        "invested_capital": 235500.0,
+        "average_cost": 4710.0
+    },
+    {
+        "ticker": "RE DEBT STRAT 2",
+        "shares": 5.0,
+        "invested_capital": 3565.0,
+        "average_cost": 713.0
+    },
+    {
+        "ticker": "JSS PRIVATE INV",
+        "shares": 949.0,
+        "invested_capital": 949000.0,
+        "average_cost": 1000.0
+    },
+    {
+        "ticker": "SAFRA",
+        "shares": 51124.75,
+        "invested_capital": 51124.75,
+        "average_cost": 1.0
+    },
+    {
+        "ticker": "PTE EQTY",
+        "shares": 1.0,
+        "invested_capital": 2740000.0,
+        "average_cost": 2740000.0
+    },
+    {
+        "ticker": "DEEP BLUE FISH",
+        "shares": 250.0,
+        "invested_capital": 253000.0,
+        "average_cost": 1012.0
+    }
+]
