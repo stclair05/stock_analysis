@@ -1,6 +1,7 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from stock_analysis.stock_analyser import StockAnalyser, StockRequest, StockAnalysisResponse
+from stock_analysis.stock_analyser import StockAnalyser
+from stock_analysis.models import StockRequest, StockAnalysisResponse, ElliottWaveResponse
 from stock_analysis.elliott_wave import calculate_elliott_wave
 from fastapi.responses import JSONResponse
 from aliases import SYMBOL_ALIASES
@@ -45,7 +46,7 @@ def analyse(stock_request: StockRequest):
         chaikin_money_flow=analyser.chaikin_money_flow(),
     )
 
-@app.post("/elliott")
+@app.post("/elliott", response_model=ElliottWaveResponse)
 def elliott(stock_request: StockRequest):
     analyser = StockAnalyser(stock_request.symbol)
     df = analyser.df
