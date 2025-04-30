@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import Optional
 
 # === Models ===
 class TimeSeriesMetric(BaseModel):
@@ -34,8 +35,10 @@ class StockAnalysisResponse(BaseModel):
     rsi_divergence_monthly: TimeSeriesMetric
     chaikin_money_flow: TimeSeriesMetric
 
+
 class ElliottWaveResponse(BaseModel):
     current_wave: str
+    wave_type: Optional[str] = None
     wave_start_price: float
     current_price: float
     wave_end_projection: float
@@ -45,3 +48,8 @@ class ElliottWaveResponse(BaseModel):
     buy_3: float
     sell_price: float
     arrow_target: float
+    rsi_divergence: Optional[str] = None
+    volume_confirmation: Optional[str] = None
+    wave_a: Optional[float] = None
+    wave_b: Optional[float] = None
+    wave_c: Optional[float] = None
