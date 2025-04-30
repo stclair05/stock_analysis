@@ -1,15 +1,31 @@
 import { useEffect, useState } from "react";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 
 type Holding = {
   ticker: string;
   shares: number;
   average_cost: number;
-  current_price: number;
+  current_price: number | null;
   market_value: number;
   invested_capital: number;
   pnl: number;
   pnl_percent: number;
+  static_asset?: boolean;
 };
+const formatMoney = (value: number): string => {
+    if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(2)}M`;
+    if (value >= 1_000) return `$${(value / 1_000).toFixed(2)}K`;
+    return `$${value.toFixed(2)}`;
+  };
+  
+  
 
 const OverviewTab = () => {
   const [portfolio, setPortfolio] = useState<Holding[]>([]);
@@ -72,27 +88,50 @@ const OverviewTab = () => {
     );
   };
 
+  // Categorize tickers into asset classes
+  const categorizeAsset = (ticker: string): string => {
+    if (ticker === "FIXED INCOME") return "Fixed Income";
+    if (["PTE EQTY", "JSS PRIVATE INV", "DEEP BLUE FISH"].includes(ticker)) return "Private Equity";
+    if (["RE DEBT STRAT 1", "RE DEBT STRAT 2", "SAFRA"].includes(ticker)) return "Alt Debt";
+    return "Equities";
+  };
+
+  const getAllocationData = () => {
+    const groups: { [category: string]: number } = {};
+    portfolio.forEach((item) => {
+      const category = categorizeAsset(item.ticker);
+      groups[category] = (groups[category] ?? 0) + item.invested_capital;
+    });
+
+    return Object.entries(groups).map(([name, value]) => ({
+      name,
+      value: parseFloat(value.toFixed(2)),
+    }));
+  };
+
+  const COLORS = ["#3366CC", "#FF9900", "#109618", "#990099"];
+
   return (
     <div>
       {loading ? (
-         <div>
-         <div className="row g-4 mb-4">
-           {[1, 2, 3, 4].map((i) => (
-             <div className="col-md-3" key={i}>
-               <div className="p-4 rounded bg-light shadow-sm placeholder-glow h-100">
-                 <div className="placeholder col-6 mb-2"></div>
-                 <div className="placeholder col-8"></div>
-               </div>
-             </div>
-           ))}
-         </div>
-         <div className="bg-light rounded shadow-sm p-4">
-           <div className="placeholder col-4 mb-3"></div>
-           <div className="placeholder col-12" style={{ height: "160px" }}></div>
-         </div>
-       </div>
-      ) : (
         <div>
+          <div className="row g-4 mb-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div className="col-md-3" key={i}>
+                <div className="p-4 rounded bg-light shadow-sm placeholder-glow h-100">
+                  <div className="placeholder col-6 mb-2"></div>
+                  <div className="placeholder col-8"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="bg-light rounded shadow-sm p-4">
+            <div className="placeholder col-4 mb-3"></div>
+            <div className="placeholder col-12" style={{ height: "160px" }}></div>
+          </div>
+        </div>
+      ) : (
+        <>
           {/* Stat Cards */}
           <div className="row g-4 mb-4">
             <StatCard title="Total Invested" value={getSum("invested_capital")} />
@@ -101,17 +140,36 @@ const OverviewTab = () => {
             <StatCard title="PnL %" value={`${getPnlPercent()}%`} colored />
           </div>
 
-          {/* Placeholder Chart Section */}
-          <div className="bg-light rounded shadow-sm p-4">
-            <h5 className="fw-bold mb-3">Performance Chart</h5>
-            <div
-              style={{ height: "200px" }}
-              className="d-flex align-items-center justify-content-center text-muted"
-            >
-              (Chart coming soon...)
+          {/* Pie Chart */}
+          <div className="row">
+            <div className="col-md-6">
+              <div className="p-4 bg-white rounded shadow-sm">
+                <h5 className="fw-bold mb-3">Portfolio Allocation</h5>
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                  <Pie
+                    data={getAllocationData()}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    label={({ value }) => formatMoney(value)}
+                    >
+                    {getAllocationData().map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                    </Pie>
+                    <Tooltip formatter={(value: number, name: string) =>
+                    [`$${value.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, name]
+                    } />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );
