@@ -163,9 +163,17 @@ async def websocket_chart_data(websocket: WebSocket, symbol: str):
             return
 
         history = [
-            {"time": int(ts.timestamp()), "value": round(float(row["Close"]), 2)}
+            {
+                "time": int(ts.timestamp()),
+                "open": round(float(row["Open"]), 2),
+                "high": round(float(row["High"]), 2),
+                "low": round(float(row["Low"]), 2),
+                "close": round(float(row["Close"]), 2),
+                "volume": round(float(row["Volume"]), 2)
+            }
             for ts, row in hist_df.iterrows()
         ]
+
         await websocket.send_json({"history": history})
 
         last_ts = hist_df.index[-1]

@@ -32,19 +32,25 @@ const OverviewTab = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let mounted = true; // flag to track if component is still mounted
+  
     const fetchPortfolio = async () => {
       try {
         const res = await fetch("http://localhost:8000/portfolio_live_data");
         const data = await res.json();
-        setPortfolio(data);
+        if (mounted) setPortfolio(data); // only update if still mounted
       } catch (err) {
         console.error("Failed to load portfolio", err);
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false); // only update if still mounted
       }
     };
-
+  
     fetchPortfolio();
+  
+    return () => {
+      mounted = false; // cleanup when component unmounts
+    };
   }, []);
 
   const getSum = (field: keyof Holding): string => {
@@ -169,6 +175,14 @@ const OverviewTab = () => {
               </div>
             </div>
           </div>
+
+          {/* Graph */}
+          <div className="col-md-6">
+            <div className="p-4 bg-light rounded shadow-sm h-100 d-flex justify-content-center align-items-center">
+                <div className="text-muted fw-semibold">Chart coming soon...</div>
+            </div>
+          </div>
+
         </>
       )}
     </div>

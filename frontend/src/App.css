@@ -32,14 +32,31 @@
 }
 
 /* Individual Cards */
-.metric-card,
-.chart-card {
+.metric-card {
   background: white;
   border-radius: 12px;
   padding: 20px;
   min-height: 500px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  flex: 1 1 800px;
+  max-width: 850px;
 }
+
+.chart-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  flex: 1 1 900px;
+  max-width: 950px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+  overflow: visible; /* ensure no overflow clipping */
+  
+}
+
+
 
 /* Card Widths */
 .metric-card {

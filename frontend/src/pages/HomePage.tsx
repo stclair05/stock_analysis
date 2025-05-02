@@ -1,6 +1,7 @@
 import "../App.css";
 import Metrics from "../components/Metrics";
 import StockChart from "../components/StockChart";
+import ElliottWaveChart from "../components/ElliottWaveChart";
 import { useState } from "react";
 
 function HomePage() {
@@ -73,10 +74,15 @@ function HomePage() {
           <div className="metric-card">
             <Metrics stockSymbol={stockSymbol} setParentLoading={setLoading} />
           </div>
-
-          {/* Chart Card */}
+          
+          {/* Trading view Simple Chart Card 
           <div className="chart-card">
             <StockChart stockSymbol={stockSymbol} />
+          </div> */}
+
+          {/* Custom Chart Card */}
+          <div className="chart-card">
+            <ElliottWaveChart stockSymbol={stockSymbol} />
           </div>
         </div>
       ) : (

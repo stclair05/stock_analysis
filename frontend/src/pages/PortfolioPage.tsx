@@ -22,20 +22,7 @@ function PortfolioPage() {
     }
   }, [activeTab]);
 
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case "Overview":
-        return <OverviewTab />;
-      case "Market Positions":
-        return <MarketPositionsTab />;
-      case "Recent Trades":
-        return <RecentTradesTab />;
-      case "What-If Analysis":
-        return <WhatIfAnalysisTab />;
-      default:
-        return null;
-    }
-  };
+
 
   return (
     <div className="container mt-4">
@@ -59,7 +46,21 @@ function PortfolioPage() {
       </div>
 
       {/* Content */}
-      {renderTabContent()}
+      <div>
+        <div style={{ display: activeTab === "Overview" ? "block" : "none" }}>
+            <OverviewTab />
+        </div>
+        <div style={{ display: activeTab === "Market Positions" ? "block" : "none" }}>
+            <MarketPositionsTab />
+        </div>
+        <div style={{ display: activeTab === "Recent Trades" ? "block" : "none" }}>
+            <RecentTradesTab />
+        </div>
+        <div style={{ display: activeTab === "What-If Analysis" ? "block" : "none" }}>
+            <WhatIfAnalysisTab />
+        </div>
+        </div>
+
     </div>
   );
 }
