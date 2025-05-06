@@ -15,7 +15,6 @@ import React, {
     MouseCoordinateX,
     MouseCoordinateY,
     discontinuousTimeScaleProviderBuilder,
-    ZoomButtons,
     EdgeIndicator,
   } from "react-financial-charts";
   import { timeFormat } from "d3-time-format";
@@ -147,32 +146,25 @@ import React, {
             xAccessor={xAccessor}
             displayXAccessor={displayXAccessor}
             xExtents={xExtents}
-            style={{ backgroundColor: "#ffffff" }} // ✅ Prevent flash on drag
           >
-            <Chart id={1} yExtents={(d: ChartData) => [d.high, d.low]}>
-              <XAxis showGridLines />
-              <YAxis
-                showGridLines
-                tickFormat={(d) => `$${d}`}
-              />
-  
-              <CandlestickSeries />
-  
-              <MouseCoordinateX displayFormat={timeFormat("%Y-%m-%d")} />
-              <MouseCoordinateY
-                displayFormat={(d) => `$${d.toFixed(2)}`}
-              />
-  
-              <EdgeIndicator
-                itemType="last"
-                orient="right"
-                edgeAt="right"
-                yAccessor={(d) => d.close}
-                displayFormat={(n) => `$${n.toFixed(2)}`}
-              />
+            <Chart id={0} yExtents={(d: ChartData) => [d.high, d.low]}>
+                <XAxis showGridLines />
+                <YAxis showGridLines tickFormat={(d) => `$${d}`} />
+
+                <CandlestickSeries />
+
+                <MouseCoordinateX displayFormat={timeFormat("%Y-%m-%d")} />
+                <MouseCoordinateY displayFormat={(d) => `$${d.toFixed(2)}`} />
+
+                <EdgeIndicator
+                    itemType="last"
+                    orient="right"
+                    edgeAt="right"
+                    yAccessor={(d) => d.close}
+                    displayFormat={(n) => `$${n.toFixed(2)}`}
+                />
             </Chart>
-  
-            <CrossHairCursor />
+            <CrossHairCursor strokeStyle="#888"/>
           </ChartCanvas>
         )}
       </div>
