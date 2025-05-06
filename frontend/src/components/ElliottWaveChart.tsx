@@ -16,9 +16,10 @@ import React, {
     MouseCoordinateY,
     discontinuousTimeScaleProviderBuilder,
     EdgeIndicator,
-    TrendLine
+    TrendLine,
   } from "react-financial-charts";
   import { timeFormat } from "d3-time-format";
+
   
   type ChartData = {
     date: Date;
@@ -33,14 +34,6 @@ import React, {
     stockSymbol: string;
   };
 
-  type TrendLineType = {
-    id: string;
-    start: { x: number; y: number };
-    end: { x: number; y: number };
-    stroke: string;
-    strokeWidth: number;
-  };
-  
   
   const ElliottWaveChart: React.FC<Props> = ({ stockSymbol }) => {
     const [data, setData] = useState<ChartData[]>([]);
@@ -48,7 +41,8 @@ import React, {
     const containerRef = useRef<HTMLDivElement>(null);
     const [dimensions, setDimensions] = useState({ width: 800, height: 500 });
 
-    const [trendLines, setTrendLines] = useState<TrendLineType[]>([]);
+    const [trendLines, setTrendLines] = useState<any[]>([]);
+
     const [selectedColor, setSelectedColor] = useState('#000000');
 
   
@@ -140,38 +134,6 @@ import React, {
     );
     const end = xAccessor(chartData[chartData.length - 1]);
     const xExtents = [start, end];
-
-    const handleComplete = (
-        _e: React.MouseEvent<Element, MouseEvent>,
-        newTrends: any[],
-        _moreProps: any
-      ) => {
-        const last = newTrends[newTrends.length - 1];
-      
-        const alreadyExists = trendLines.some(
-          (line) =>
-            line.start.x === last.start.x &&
-            line.start.y === last.start.y &&
-            line.end.x === last.end.x &&
-            line.end.y === last.end.y
-        );
-      
-        if (!alreadyExists) {
-          const styledLine: TrendLineType = {
-            id: crypto.randomUUID(),
-            start: last.start,
-            end: last.end,
-            stroke: selectedColor,
-            strokeWidth: 2,
-          };
-      
-          // Use rAF to defer the state update to the next frame
-          requestAnimationFrame(() => {
-            setTrendLines((prev) => [...prev, styledLine]);
-          });
-        }
-      };     
-
   
     return (
       <div
@@ -217,15 +179,17 @@ import React, {
                             displayFormat={(n) => `$${n.toFixed(2)}`}
                         />
 
-                    
+
 
                         <TrendLine
-                            enabled={true} 
-                            snap={false}
-                            shouldDisableSnap={() => true}
-                            trends={trendLines}
-                            onComplete={handleComplete}
+                        enabled={true}
+                        trends={trendLines}
+                        onComplete={(e, newTrends) => setTrendLines(newTrends)}
+                        snap={false}
                         />
+
+
+
 
                     </Chart>
                     <CrossHairCursor strokeStyle="#888"/>
