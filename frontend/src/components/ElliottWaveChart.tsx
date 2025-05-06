@@ -19,6 +19,7 @@ import React, {
     TrendLine,
   } from "react-financial-charts";
   import DrawingToolbar from "./DrawingToolbar"; // adjust the path if needed
+  import SkeletonCard from "./SkeletonCard";
   import { timeFormat } from "d3-time-format";
 
   
@@ -36,6 +37,8 @@ import React, {
   };
   
   const ElliottWaveChart: React.FC<Props> = ({ stockSymbol }) => {
+    const [isLoading, setIsLoading] = useState(true);
+
     const [data, setData] = useState<ChartData[]>([]);
     const [lastUpdate, setLastUpdate] = useState<number>(Date.now());
     const containerRef = useRef<HTMLDivElement>(null);
@@ -95,7 +98,11 @@ import React, {
             close: d.close,
             volume: d.volume,
           }));
-          if (candles.length > 10) setData(candles);
+          if (candles.length > 10) {
+            setData(candles);
+            setIsLoading(false);  // ✅ Add this line
+          }
+          
         }
   
         if (message.live && Date.now() - lastUpdate > 1000) {
@@ -130,7 +137,12 @@ import React, {
       [xScaleProvider, data]
     );
   
-    if (chartData.length === 0) return <div>Loading chart...</div>;
+    if (isLoading) {
+        return (
+            <SkeletonCard type="chart"/>
+        );
+      }
+      
   
     const start = xAccessor(
       chartData[Math.max(0, chartData.length - 100)]

@@ -1,5 +1,6 @@
 import "./Metrics.css";
 import { useEffect, useState } from "react";
+import SkeletonCard from "./SkeletonCard";
 
 type TimeSeriesMetric = {
   current: number | string | null;
@@ -200,161 +201,163 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
         </div>
 
         {!isMetricsComplete(metrics) ? (
-          <p>Loading metrics...</p>
+          <SkeletonCard type="metrics" />
         ) : (
-          <table className="table table-striped table-hover metrics-table">
-            <thead>
-              <tr>
-                <th>Metric</th>
-                <th>Current</th>
-                <th>7 Days Ago</th>
-                <th>14 Days Ago</th>
-                <th>21 Days Ago</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>📊 3-Year Moving Average</td>
-                {renderColoredCell(metrics.three_year_ma.current)}
-                {renderColoredCell(metrics.three_year_ma.seven_days_ago)}
-                {renderColoredCell(metrics.three_year_ma.fourteen_days_ago)}
-                {renderColoredCell(metrics.three_year_ma.twentyone_days_ago)}
-              </tr>
-              <tr>
-                <td>📈 200-Day Moving Average</td>
-                {renderColoredCell(metrics.two_hundred_dma.current)}
-                {renderColoredCell(metrics.two_hundred_dma.seven_days_ago)}
-                {renderColoredCell(metrics.two_hundred_dma.fourteen_days_ago)}
-                {renderColoredCell(metrics.two_hundred_dma.twentyone_days_ago)}
-              </tr>
-              <tr>
-                <td>☁️ Weekly Ichimoku Cloud</td>
-                {renderColoredCell(metrics.weekly_ichimoku.current)}
-                {renderColoredCell(metrics.weekly_ichimoku.seven_days_ago)}
-                {renderColoredCell(metrics.weekly_ichimoku.fourteen_days_ago)}
-                {renderColoredCell(metrics.weekly_ichimoku.twentyone_days_ago)}
-              </tr>
-              <tr>
-                <td>📉 Super Trend (Weekly)</td>
-                {renderColoredCell(metrics.super_trend.current)}
-                {renderColoredCell(metrics.super_trend.seven_days_ago)}
-                {renderColoredCell(metrics.super_trend.fourteen_days_ago)}
-                {renderColoredCell(metrics.super_trend.twentyone_days_ago)}
-              </tr>
-              <tr>
-                <td>📍 ADX (Weekly)</td>
-                {renderColoredCell(metrics.adx.current)}
-                {renderColoredCell(metrics.adx.seven_days_ago)}
-                {renderColoredCell(metrics.adx.fourteen_days_ago)}
-                {renderColoredCell(metrics.adx.twentyone_days_ago)}
-              </tr>
-              <tr>
-                <td>⚖️ MACE</td>
-                {renderColoredCell(metrics.mace.current)}
-                {renderColoredCell(metrics.mace.seven_days_ago)}
-                {renderColoredCell(metrics.mace.fourteen_days_ago)}
-                {renderColoredCell(metrics.mace.twentyone_days_ago)}
-              </tr>
-              <tr>
-                <td>🗓️ 40-Week Status</td>
-                {renderColoredCell(metrics.forty_week_status.current)}
-                {renderColoredCell(metrics.forty_week_status.seven_days_ago)}
-                {renderColoredCell(metrics.forty_week_status.fourteen_days_ago)}
-                {renderColoredCell(metrics.forty_week_status.twentyone_days_ago)}
-              </tr>
-              <tr>
-                <td>📏 50DMA & 150DMA</td>
-                {renderColoredCell(metrics.fifty_dma_and_150_dma.current)}
-                {renderColoredCell(metrics.fifty_dma_and_150_dma.seven_days_ago)}
-                {renderColoredCell(metrics.fifty_dma_and_150_dma.fourteen_days_ago)}
-                {renderColoredCell(metrics.fifty_dma_and_150_dma.twentyone_days_ago)}
-              </tr>
-              <tr>
-                <td>📉 20DMA</td>
-                {renderColoredCell(metrics.twenty_dma.current)}
-                {renderColoredCell(metrics.twenty_dma.seven_days_ago)}
-                {renderColoredCell(metrics.twenty_dma.fourteen_days_ago)}
-                {renderColoredCell(metrics.twenty_dma.twentyone_days_ago)}
-              </tr>
-              <tr>
-                <td>↔️ Mean Reversion to 50DMA</td>
-                {renderColoredCell(metrics.mean_rev_50dma.current)}
-                {renderColoredCell(metrics.mean_rev_50dma.seven_days_ago)}
-                {renderColoredCell(metrics.mean_rev_50dma.fourteen_days_ago)}
-                {renderColoredCell(metrics.mean_rev_50dma.twentyone_days_ago)}
-              </tr>
-              <tr>
-                <td>↔️ Mean Reversion to 200DMA</td>
-                {renderColoredCell(metrics.mean_rev_200dma.current)}
-                {renderColoredCell(metrics.mean_rev_200dma.seven_days_ago)}
-                {renderColoredCell(metrics.mean_rev_200dma.fourteen_days_ago)}
-                {renderColoredCell(metrics.mean_rev_200dma.twentyone_days_ago)}
-              </tr>
-              <tr>
-                <td>↔️ Mean Reversion to 3YMA</td>
-                {renderColoredCell(metrics.mean_rev_3yma.current)}
-                {renderColoredCell(metrics.mean_rev_3yma.seven_days_ago)}
-                {renderColoredCell(metrics.mean_rev_3yma.fourteen_days_ago)}
-                {renderColoredCell(metrics.mean_rev_3yma.twentyone_days_ago)}
-              </tr>
-              <tr>
-                <td>📊 RSI & MA (Daily)</td>
-                {renderColoredCell(metrics.rsi_and_ma_daily.current)}
-                {renderColoredCell(metrics.rsi_and_ma_daily.seven_days_ago)}
-                {renderColoredCell(metrics.rsi_and_ma_daily.fourteen_days_ago)}
-                {renderColoredCell(metrics.rsi_and_ma_daily.twentyone_days_ago)}
-              </tr>
-              <tr>
-                <td>📉 RSI Divergence (Daily)</td>
-                {renderColoredCell(metrics.rsi_divergence_daily.current)}
-                {renderColoredCell(metrics.rsi_divergence_daily.seven_days_ago)}
-                {renderColoredCell(metrics.rsi_divergence_daily.fourteen_days_ago)}
-                {renderColoredCell(metrics.rsi_divergence_daily.twentyone_days_ago)}
-              </tr>
-              <tr>
-                <td>📈 Bollinger Band Width % (Daily)</td>
-                {renderColoredCell(metrics.bollinger_band_width_percentile_daily.current)}
-                {renderColoredCell(metrics.bollinger_band_width_percentile_daily.seven_days_ago)}
-                {renderColoredCell(metrics.bollinger_band_width_percentile_daily.fourteen_days_ago)}
-                {renderColoredCell(metrics.bollinger_band_width_percentile_daily.twentyone_days_ago)}
-              </tr>
-              <tr>
-                <td>📊 RSI & MA (Weekly)</td>
-                {renderColoredCell(metrics.rsi_ma_weekly.current)}
-                {renderColoredCell(metrics.rsi_ma_weekly.seven_days_ago)}
-                {renderColoredCell(metrics.rsi_ma_weekly.fourteen_days_ago)}
-                {renderColoredCell(metrics.rsi_ma_weekly.twentyone_days_ago)}
-              </tr>
-              <tr>
-                <td>📉 RSI Divergence (Weekly)</td>
-                {renderColoredCell(metrics.rsi_divergence_weekly.current)}
-                {renderColoredCell(metrics.rsi_divergence_weekly.seven_days_ago)}
-                {renderColoredCell(metrics.rsi_divergence_weekly.fourteen_days_ago)}
-                {renderColoredCell(metrics.rsi_divergence_weekly.twentyone_days_ago)}
-              </tr>
-              <tr>
-                <td>📊 RSI & MA (Monthly)</td>
-                {renderColoredCell(metrics.rsi_ma_monthly.current)}
-                {renderColoredCell(metrics.rsi_ma_monthly.seven_days_ago)}
-                {renderColoredCell(metrics.rsi_ma_monthly.fourteen_days_ago)}
-                {renderColoredCell(metrics.rsi_ma_monthly.twentyone_days_ago)}
-              </tr>
-              <tr>
-                <td>📉 RSI Divergence (Monthly)</td>
-                {renderColoredCell(metrics.rsi_divergence_monthly.current)}
-                {renderColoredCell(metrics.rsi_divergence_monthly.seven_days_ago)}
-                {renderColoredCell(metrics.rsi_divergence_monthly.fourteen_days_ago)}
-                {renderColoredCell(metrics.rsi_divergence_monthly.twentyone_days_ago)}
-              </tr>
-              <tr>
-                <td>💰 Chaikin Money Flow</td>
-                {renderColoredCell(metrics.chaikin_money_flow.current)}
-                {renderColoredCell(metrics.chaikin_money_flow.seven_days_ago)}
-                {renderColoredCell(metrics.chaikin_money_flow.fourteen_days_ago)}
-                {renderColoredCell(metrics.chaikin_money_flow.twentyone_days_ago)}
-              </tr>
-            </tbody>
-          </table>
+          <div className={'fade-in'}>
+            <table className="table table-striped table-hover metrics-table">
+              <thead>
+                <tr>
+                  <th>Metric</th>
+                  <th>Current</th>
+                  <th>7 Days Ago</th>
+                  <th>14 Days Ago</th>
+                  <th>21 Days Ago</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>📊 3-Year Moving Average</td>
+                  {renderColoredCell(metrics.three_year_ma.current)}
+                  {renderColoredCell(metrics.three_year_ma.seven_days_ago)}
+                  {renderColoredCell(metrics.three_year_ma.fourteen_days_ago)}
+                  {renderColoredCell(metrics.three_year_ma.twentyone_days_ago)}
+                </tr>
+                <tr>
+                  <td>📈 200-Day Moving Average</td>
+                  {renderColoredCell(metrics.two_hundred_dma.current)}
+                  {renderColoredCell(metrics.two_hundred_dma.seven_days_ago)}
+                  {renderColoredCell(metrics.two_hundred_dma.fourteen_days_ago)}
+                  {renderColoredCell(metrics.two_hundred_dma.twentyone_days_ago)}
+                </tr>
+                <tr>
+                  <td>☁️ Weekly Ichimoku Cloud</td>
+                  {renderColoredCell(metrics.weekly_ichimoku.current)}
+                  {renderColoredCell(metrics.weekly_ichimoku.seven_days_ago)}
+                  {renderColoredCell(metrics.weekly_ichimoku.fourteen_days_ago)}
+                  {renderColoredCell(metrics.weekly_ichimoku.twentyone_days_ago)}
+                </tr>
+                <tr>
+                  <td>📉 Super Trend (Weekly)</td>
+                  {renderColoredCell(metrics.super_trend.current)}
+                  {renderColoredCell(metrics.super_trend.seven_days_ago)}
+                  {renderColoredCell(metrics.super_trend.fourteen_days_ago)}
+                  {renderColoredCell(metrics.super_trend.twentyone_days_ago)}
+                </tr>
+                <tr>
+                  <td>📍 ADX (Weekly)</td>
+                  {renderColoredCell(metrics.adx.current)}
+                  {renderColoredCell(metrics.adx.seven_days_ago)}
+                  {renderColoredCell(metrics.adx.fourteen_days_ago)}
+                  {renderColoredCell(metrics.adx.twentyone_days_ago)}
+                </tr>
+                <tr>
+                  <td>⚖️ MACE</td>
+                  {renderColoredCell(metrics.mace.current)}
+                  {renderColoredCell(metrics.mace.seven_days_ago)}
+                  {renderColoredCell(metrics.mace.fourteen_days_ago)}
+                  {renderColoredCell(metrics.mace.twentyone_days_ago)}
+                </tr>
+                <tr>
+                  <td>🗓️ 40-Week Status</td>
+                  {renderColoredCell(metrics.forty_week_status.current)}
+                  {renderColoredCell(metrics.forty_week_status.seven_days_ago)}
+                  {renderColoredCell(metrics.forty_week_status.fourteen_days_ago)}
+                  {renderColoredCell(metrics.forty_week_status.twentyone_days_ago)}
+                </tr>
+                <tr>
+                  <td>📏 50DMA & 150DMA</td>
+                  {renderColoredCell(metrics.fifty_dma_and_150_dma.current)}
+                  {renderColoredCell(metrics.fifty_dma_and_150_dma.seven_days_ago)}
+                  {renderColoredCell(metrics.fifty_dma_and_150_dma.fourteen_days_ago)}
+                  {renderColoredCell(metrics.fifty_dma_and_150_dma.twentyone_days_ago)}
+                </tr>
+                <tr>
+                  <td>📉 20DMA</td>
+                  {renderColoredCell(metrics.twenty_dma.current)}
+                  {renderColoredCell(metrics.twenty_dma.seven_days_ago)}
+                  {renderColoredCell(metrics.twenty_dma.fourteen_days_ago)}
+                  {renderColoredCell(metrics.twenty_dma.twentyone_days_ago)}
+                </tr>
+                <tr>
+                  <td>↔️ Mean Reversion to 50DMA</td>
+                  {renderColoredCell(metrics.mean_rev_50dma.current)}
+                  {renderColoredCell(metrics.mean_rev_50dma.seven_days_ago)}
+                  {renderColoredCell(metrics.mean_rev_50dma.fourteen_days_ago)}
+                  {renderColoredCell(metrics.mean_rev_50dma.twentyone_days_ago)}
+                </tr>
+                <tr>
+                  <td>↔️ Mean Reversion to 200DMA</td>
+                  {renderColoredCell(metrics.mean_rev_200dma.current)}
+                  {renderColoredCell(metrics.mean_rev_200dma.seven_days_ago)}
+                  {renderColoredCell(metrics.mean_rev_200dma.fourteen_days_ago)}
+                  {renderColoredCell(metrics.mean_rev_200dma.twentyone_days_ago)}
+                </tr>
+                <tr>
+                  <td>↔️ Mean Reversion to 3YMA</td>
+                  {renderColoredCell(metrics.mean_rev_3yma.current)}
+                  {renderColoredCell(metrics.mean_rev_3yma.seven_days_ago)}
+                  {renderColoredCell(metrics.mean_rev_3yma.fourteen_days_ago)}
+                  {renderColoredCell(metrics.mean_rev_3yma.twentyone_days_ago)}
+                </tr>
+                <tr>
+                  <td>📊 RSI & MA (Daily)</td>
+                  {renderColoredCell(metrics.rsi_and_ma_daily.current)}
+                  {renderColoredCell(metrics.rsi_and_ma_daily.seven_days_ago)}
+                  {renderColoredCell(metrics.rsi_and_ma_daily.fourteen_days_ago)}
+                  {renderColoredCell(metrics.rsi_and_ma_daily.twentyone_days_ago)}
+                </tr>
+                <tr>
+                  <td>📉 RSI Divergence (Daily)</td>
+                  {renderColoredCell(metrics.rsi_divergence_daily.current)}
+                  {renderColoredCell(metrics.rsi_divergence_daily.seven_days_ago)}
+                  {renderColoredCell(metrics.rsi_divergence_daily.fourteen_days_ago)}
+                  {renderColoredCell(metrics.rsi_divergence_daily.twentyone_days_ago)}
+                </tr>
+                <tr>
+                  <td>📈 Bollinger Band Width % (Daily)</td>
+                  {renderColoredCell(metrics.bollinger_band_width_percentile_daily.current)}
+                  {renderColoredCell(metrics.bollinger_band_width_percentile_daily.seven_days_ago)}
+                  {renderColoredCell(metrics.bollinger_band_width_percentile_daily.fourteen_days_ago)}
+                  {renderColoredCell(metrics.bollinger_band_width_percentile_daily.twentyone_days_ago)}
+                </tr>
+                <tr>
+                  <td>📊 RSI & MA (Weekly)</td>
+                  {renderColoredCell(metrics.rsi_ma_weekly.current)}
+                  {renderColoredCell(metrics.rsi_ma_weekly.seven_days_ago)}
+                  {renderColoredCell(metrics.rsi_ma_weekly.fourteen_days_ago)}
+                  {renderColoredCell(metrics.rsi_ma_weekly.twentyone_days_ago)}
+                </tr>
+                <tr>
+                  <td>📉 RSI Divergence (Weekly)</td>
+                  {renderColoredCell(metrics.rsi_divergence_weekly.current)}
+                  {renderColoredCell(metrics.rsi_divergence_weekly.seven_days_ago)}
+                  {renderColoredCell(metrics.rsi_divergence_weekly.fourteen_days_ago)}
+                  {renderColoredCell(metrics.rsi_divergence_weekly.twentyone_days_ago)}
+                </tr>
+                <tr>
+                  <td>📊 RSI & MA (Monthly)</td>
+                  {renderColoredCell(metrics.rsi_ma_monthly.current)}
+                  {renderColoredCell(metrics.rsi_ma_monthly.seven_days_ago)}
+                  {renderColoredCell(metrics.rsi_ma_monthly.fourteen_days_ago)}
+                  {renderColoredCell(metrics.rsi_ma_monthly.twentyone_days_ago)}
+                </tr>
+                <tr>
+                  <td>📉 RSI Divergence (Monthly)</td>
+                  {renderColoredCell(metrics.rsi_divergence_monthly.current)}
+                  {renderColoredCell(metrics.rsi_divergence_monthly.seven_days_ago)}
+                  {renderColoredCell(metrics.rsi_divergence_monthly.fourteen_days_ago)}
+                  {renderColoredCell(metrics.rsi_divergence_monthly.twentyone_days_ago)}
+                </tr>
+                <tr>
+                  <td>💰 Chaikin Money Flow</td>
+                  {renderColoredCell(metrics.chaikin_money_flow.current)}
+                  {renderColoredCell(metrics.chaikin_money_flow.seven_days_ago)}
+                  {renderColoredCell(metrics.chaikin_money_flow.fourteen_days_ago)}
+                  {renderColoredCell(metrics.chaikin_money_flow.twentyone_days_ago)}
+                </tr>
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </>
