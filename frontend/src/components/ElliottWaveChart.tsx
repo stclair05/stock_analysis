@@ -148,7 +148,6 @@ import React, {
       ) => {
         const last = newTrends[newTrends.length - 1];
       
-        // Avoid adding duplicate lines
         const alreadyExists = trendLines.some(
           (line) =>
             line.start.x === last.start.x &&
@@ -158,19 +157,20 @@ import React, {
         );
       
         if (!alreadyExists) {
-          const styledLine = {
+          const styledLine: TrendLineType = {
             id: crypto.randomUUID(),
             start: last.start,
             end: last.end,
             stroke: selectedColor,
             strokeWidth: 2,
           };
-          setTrendLines((prev) => [...prev, styledLine]);
+      
+          // Use rAF to defer the state update to the next frame
+          requestAnimationFrame(() => {
+            setTrendLines((prev) => [...prev, styledLine]);
+          });
         }
-      };
-      
-      
-      
+      };     
 
   
     return (
