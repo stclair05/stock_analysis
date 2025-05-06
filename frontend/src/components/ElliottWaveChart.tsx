@@ -226,6 +226,7 @@ import React, {
                         }}
                         snap={false}
                         shouldDisableSnap={() => true}
+                        hoverText={{ enable: false }}
                         appearance={{
                             strokeStyle: selectedColor,
                             strokeWidth: 2,
