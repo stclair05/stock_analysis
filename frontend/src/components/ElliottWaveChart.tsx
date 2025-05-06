@@ -16,6 +16,7 @@ import React, {
     MouseCoordinateY,
     discontinuousTimeScaleProviderBuilder,
     EdgeIndicator,
+    TrendLine
   } from "react-financial-charts";
   import { timeFormat } from "d3-time-format";
   
@@ -31,12 +32,25 @@ import React, {
   type Props = {
     stockSymbol: string;
   };
+
+  type TrendLineType = {
+    id: string;
+    start: { x: number; y: number };
+    end: { x: number; y: number };
+    stroke: string;
+    strokeWidth: number;
+  };
+  
   
   const ElliottWaveChart: React.FC<Props> = ({ stockSymbol }) => {
     const [data, setData] = useState<ChartData[]>([]);
     const [lastUpdate, setLastUpdate] = useState<number>(Date.now());
     const containerRef = useRef<HTMLDivElement>(null);
     const [dimensions, setDimensions] = useState({ width: 800, height: 500 });
+
+    const [trendLines, setTrendLines] = useState<TrendLineType[]>([]);
+    const [selectedColor, setSelectedColor] = useState('#000000');
+
   
     const chartMargin = useMemo(
       () => ({ left: 60, right: 120, top: 10, bottom: 20 }),
@@ -126,6 +140,38 @@ import React, {
     );
     const end = xAccessor(chartData[chartData.length - 1]);
     const xExtents = [start, end];
+
+    const handleComplete = (
+        _e: React.MouseEvent<Element, MouseEvent>,
+        newTrends: any[],
+        _moreProps: any
+      ) => {
+        const last = newTrends[newTrends.length - 1];
+      
+        // Avoid adding duplicate lines
+        const alreadyExists = trendLines.some(
+          (line) =>
+            line.start.x === last.start.x &&
+            line.start.y === last.start.y &&
+            line.end.x === last.end.x &&
+            line.end.y === last.end.y
+        );
+      
+        if (!alreadyExists) {
+          const styledLine = {
+            id: crypto.randomUUID(),
+            start: last.start,
+            end: last.end,
+            stroke: selectedColor,
+            strokeWidth: 2,
+          };
+          setTrendLines((prev) => [...prev, styledLine]);
+        }
+      };
+      
+      
+      
+
   
     return (
       <div
@@ -134,38 +180,57 @@ import React, {
       >
         <h5 className="fw-bold mb-3">📈 Elliott Wave Candlestick Chart</h5>
         {dimensions.width > 0 && dimensions.height > 0 && (
-          <ChartCanvas
-            key={stockSymbol}
-            seriesName={stockSymbol}
-            height={dimensions.height}
-            width={dimensions.width}
-            margin={chartMargin}
-            ratio={1}
-            data={chartData}
-            xScale={xScale}
-            xAccessor={xAccessor}
-            displayXAccessor={displayXAccessor}
-            xExtents={xExtents}
-          >
-            <Chart id={0} yExtents={(d: ChartData) => [d.high, d.low]}>
-                <XAxis showGridLines />
-                <YAxis showGridLines tickFormat={(d) => `$${d}`} />
-
-                <CandlestickSeries />
-
-                <MouseCoordinateX displayFormat={timeFormat("%Y-%m-%d")} />
-                <MouseCoordinateY displayFormat={(d) => `$${d.toFixed(2)}`} />
-
-                <EdgeIndicator
-                    itemType="last"
-                    orient="right"
-                    edgeAt="right"
-                    yAccessor={(d) => d.close}
-                    displayFormat={(n) => `$${n.toFixed(2)}`}
+            <>
+                 <input
+                    type="color"
+                    value={selectedColor}
+                    onChange={(e) => setSelectedColor(e.target.value)}
+                    style={{ marginBottom: "10px", width: "60px" }}
                 />
-            </Chart>
-            <CrossHairCursor strokeStyle="#888"/>
-          </ChartCanvas>
+                <ChartCanvas
+                    key={stockSymbol}
+                    seriesName={stockSymbol}
+                    height={dimensions.height}
+                    width={dimensions.width}
+                    margin={chartMargin}
+                    ratio={1}
+                    data={chartData}
+                    xScale={xScale}
+                    xAccessor={xAccessor}
+                    displayXAccessor={displayXAccessor}
+                    xExtents={xExtents}
+                >
+                    <Chart id={0} yExtents={(d: ChartData) => [d.high, d.low]}>
+                        <XAxis showGridLines />
+                        <YAxis showGridLines tickFormat={(d) => `$${d}`} />
+
+                        <CandlestickSeries />
+
+                        <MouseCoordinateX displayFormat={timeFormat("%Y-%m-%d")} />
+                        <MouseCoordinateY displayFormat={(d) => `$${d.toFixed(2)}`} />
+
+                        <EdgeIndicator
+                            itemType="last"
+                            orient="right"
+                            edgeAt="right"
+                            yAccessor={(d) => d.close}
+                            displayFormat={(n) => `$${n.toFixed(2)}`}
+                        />
+
+                    
+
+                        <TrendLine
+                            enabled={true} 
+                            snap={false}
+                            shouldDisableSnap={() => true}
+                            trends={trendLines}
+                            onComplete={handleComplete}
+                        />
+
+                    </Chart>
+                    <CrossHairCursor strokeStyle="#888"/>
+                </ChartCanvas>
+            </>
         )}
       </div>
     );
