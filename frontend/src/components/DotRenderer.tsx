@@ -1,5 +1,4 @@
 import React from "react";
-// @ts-ignore: TypeScript doesn't recognize 'chartId', but it's required at runtime
 import { GenericComponent } from "react-financial-charts";
 
 type Dot = {
@@ -8,30 +7,42 @@ type Dot = {
   color?: string;
 };
 
-type Props = {
-  dots: Dot[];
-};
+export function DotRenderer(dots: Dot[]) {
+  console.log("📍 DotRenderer called with dots:", dots);
 
-const DotRenderer: React.FC<Props> = ({ dots }) => {
-  const canvasDraw = (ctx: CanvasRenderingContext2D, moreProps: any) => {
-    console.log("🎨 canvasDraw fired");
-
-    if (!moreProps || !dots.length) return;
-
-    const { xScale, chartConfig, chartId } = moreProps;
-    console.log("📊 chartId:", chartId, "🧩 chartConfig:", chartConfig);
-
-    const yScale = chartConfig?.yScale;
-    if (typeof yScale !== "function") {
-      console.warn("❌ yScale not valid:", yScale);
+  const canvasDraw = (
+    ctx: CanvasRenderingContext2D,
+    moreProps: any
+  ) => {
+    console.log("🎨 canvasDraw fired with moreProps:", moreProps);
+  
+    if (!moreProps || !dots.length) {
+      console.warn("❗️ No moreProps or empty dots array");
       return;
     }
-
+  
+    const { xScale, chartConfigs, currentCharts } = moreProps;
+    const chartId = currentCharts?.[0] ?? 0;
+    const chartConfig = chartConfigs?.find((c: any) => c.id === chartId);
+  
+    if (!chartConfig) {
+      console.error("🚫 Cannot find chartConfig for chartId:", chartId);
+      return;
+    }
+  
+    const yScale = chartConfig.yScale;
+    if (typeof yScale !== "function") {
+      console.error("🚫 Invalid yScale:", yScale);
+      return;
+    }
+  
     ctx.save();
     for (const dot of dots) {
       const cx = xScale(dot.x);
       const cy = yScale(dot.y);
-
+  
+      console.log(`🟢 Drawing dot at (x: ${cx}, y: ${cy})`, dot);
+  
       ctx.beginPath();
       ctx.arc(cx, cy, 6, 0, 2 * Math.PI);
       ctx.fillStyle = dot.color || "blue";
@@ -42,16 +53,15 @@ const DotRenderer: React.FC<Props> = ({ dots }) => {
     }
     ctx.restore();
   };
+  
 
-  return (
-    // @ts-expect-error: 'chartId' is required at runtime but not defined in types
-    <GenericComponent
-      useCanvas={true}
-      canvasDraw={canvasDraw}
-      drawOn={["click", "mousemove", "pan"]}
-      isHover={() => false}
-    />
-  );
-};
+  // ⛑ Force TS to accept GenericComponent as a valid React component
+  const GenericHack = GenericComponent as unknown as React.ComponentType<any>;
 
-export default DotRenderer;
+  return React.createElement(GenericHack, {
+    useCanvas: true,
+    canvasDraw,
+    drawOn: ["mousemove", "pan", "click"],
+    isHover: () => false,
+  });
+}

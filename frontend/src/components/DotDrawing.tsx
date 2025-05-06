@@ -15,12 +15,19 @@ const DotDrawing: React.FC<Props> = ({ enabled, onDotPlaced }) => {
       
         const { xAccessor, currentItem } = moreProps;
         if (!currentItem) return;
-      
-        const x = xAccessor(currentItem); // <-- data x value, not screen px
-        const y = currentItem.close;
-      
-        console.log("Dot placed at:", x, y); // Should be something like 17097, not 521
+
+        // This gets actual data value on X (like 2023-12-01 or index)
+        const x = xAccessor(currentItem);      // ✅ Data-space X
+        if (typeof x !== "number" || x > 1_000_000) { // or use your known x range
+          throw new Error(`🚫 xAccessor(currentItem) is giving invalid x: ${x}`);
+        }
+        const y = currentItem.close;           // ✅ Data-space Y
+        console.log("📌 currentItem:", currentItem);
+        console.log("📌 xAccessor(currentItem):", xAccessor(currentItem));
+
+
         onDotPlaced(x, y);
+
       };
       
 

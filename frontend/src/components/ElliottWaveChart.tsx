@@ -22,7 +22,7 @@ import {
 import DrawingToolbar from "./DrawingToolbar";
 import SkeletonCard from "./SkeletonCard";
 import DotDrawing from "./DotDrawing";
-import DotRenderer from "./DotRenderer";
+import { DotRenderer } from "./DotRenderer";
 
 import { timeFormat } from "d3-time-format";
 
@@ -230,7 +230,7 @@ const ElliottWaveChart: React.FC<Props> = ({ stockSymbol }) => {
               <DotDrawing
                 enabled={dotMode}
                 onDotPlaced={(x, y) => {
-                  console.log("Dot registered in parent at:", x, y); // ✅ Ensure the callback propagates
+                  console.log("✅ Dot received in ElliottWaveChart.tsx:", { x, y });
                   setDots((prev) => [
                     ...prev,
                     {
@@ -241,8 +241,9 @@ const ElliottWaveChart: React.FC<Props> = ({ stockSymbol }) => {
                     },
                   ]);
                 }}
+                
               />
-              <DotRenderer dots={dots} />
+              {DotRenderer(dots)}
             </Chart>
             
             <CrossHairCursor strokeStyle="#888" />
