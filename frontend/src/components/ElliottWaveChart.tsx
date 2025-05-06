@@ -33,6 +33,13 @@ import React, {
   type Props = {
     stockSymbol: string;
   };
+  type DrawingToolbarProps = {
+    drawingEnabled: boolean;
+    setDrawingEnabled: React.Dispatch<React.SetStateAction<boolean>>;
+    clearTrendLines: () => void;
+    selectedColor: string;
+    setSelectedColor: React.Dispatch<React.SetStateAction<string>>;
+  };
 
   
   const ElliottWaveChart: React.FC<Props> = ({ stockSymbol }) => {
@@ -42,6 +49,8 @@ import React, {
     const [dimensions, setDimensions] = useState({ width: 800, height: 500 });
 
     const [trendLines, setTrendLines] = useState<any[]>([]);
+    const [drawingEnabled, setDrawingEnabled] = useState<boolean>(false);
+
 
     const [selectedColor, setSelectedColor] = useState('#000000');
 
@@ -50,6 +59,31 @@ import React, {
       () => ({ left: 60, right: 120, top: 10, bottom: 20 }),
       []
     );
+
+    const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
+        drawingEnabled,
+        setDrawingEnabled,
+        clearTrendLines,
+        selectedColor,
+        setSelectedColor,
+      }) => {
+        return (
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+            <button onClick={() => setDrawingEnabled(!drawingEnabled)}>
+              {drawingEnabled ? '🖱️ Stop Drawing' : '✏️ Draw Line'}
+            </button>
+            <button onClick={clearTrendLines}>
+              ❌ Clear All Lines
+            </button>
+            <input
+              type="color"
+              value={selectedColor}
+              onChange={(e) => setSelectedColor(e.target.value)}
+              style={{ width: '60px' }}
+            />
+          </div>
+        );
+      };
   
     // ✅ Responsive resizing
     useLayoutEffect(() => {
@@ -143,11 +177,12 @@ import React, {
         <h5 className="fw-bold mb-3">📈 Elliott Wave Candlestick Chart</h5>
         {dimensions.width > 0 && dimensions.height > 0 && (
             <>
-                 <input
-                    type="color"
-                    value={selectedColor}
-                    onChange={(e) => setSelectedColor(e.target.value)}
-                    style={{ marginBottom: "10px", width: "60px" }}
+                <DrawingToolbar
+                        drawingEnabled={drawingEnabled}
+                        setDrawingEnabled={setDrawingEnabled}
+                        clearTrendLines={() => setTrendLines([])}
+                        selectedColor={selectedColor}
+                        setSelectedColor={setSelectedColor}
                 />
                 <ChartCanvas
                     key={stockSymbol}
@@ -179,13 +214,26 @@ import React, {
                             displayFormat={(n) => `$${n.toFixed(2)}`}
                         />
 
+                        
 
 
                         <TrendLine
-                        enabled={true}
+                        enabled={drawingEnabled}
                         trends={trendLines}
-                        onComplete={(e, newTrends) => setTrendLines(newTrends)}
+                        onComplete={(e, newTrends) => {
+                            setTrendLines(newTrends);
+                            setDrawingEnabled(false); // Auto-exit after one line
+                        }}
                         snap={false}
+                        shouldDisableSnap={() => true}
+                        appearance={{
+                            strokeStyle: selectedColor,
+                            strokeWidth: 2,
+                            strokeDasharray: "Solid", // or "ShortDash", "Dot", etc.
+                            edgeStrokeWidth: 1,
+                            edgeFill: selectedColor,
+                            edgeStroke: "#000000",
+                        }}
                         />
 
 
