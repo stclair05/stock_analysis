@@ -34,14 +34,6 @@ import React, {
   type Props = {
     stockSymbol: string;
   };
-  type DrawingToolbarProps = {
-    drawingEnabled: boolean;
-    setDrawingEnabled: React.Dispatch<React.SetStateAction<boolean>>;
-    clearTrendLines: () => void;
-    selectedColor: string;
-    setSelectedColor: React.Dispatch<React.SetStateAction<string>>;
-  };
-
   
   const ElliottWaveChart: React.FC<Props> = ({ stockSymbol }) => {
     const [data, setData] = useState<ChartData[]>([]);
@@ -201,9 +193,6 @@ import React, {
                             yAccessor={(d) => d.close}
                             displayFormat={(n) => `$${n.toFixed(2)}`}
                         />
-
-                        
-
 
                         <TrendLine
                         enabled={drawingEnabled}
