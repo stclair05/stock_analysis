@@ -51,9 +51,13 @@ const ElliottWaveChart: React.FC<Props> = ({ stockSymbol }) => {
   const [selectedColor, setSelectedColor] = useState("#000000");
 
   const [dotMode, setDotMode] = useState(false);
-  const [dots, setDots] = useState<
-    { x: number; y: number; label?: string; color: string }[]
-  >([]);
+  const [dots, setDots] = useState<{
+    x: Date;
+    y: number;
+    label?: string;
+    color: string;
+  }[]>([]);
+  
 
   const chartMargin = useMemo(
     () => ({ left: 60, right: 120, top: 10, bottom: 20 }),
@@ -123,6 +127,18 @@ const ElliottWaveChart: React.FC<Props> = ({ stockSymbol }) => {
     return () => ws.close();
   }, [stockSymbol, lastUpdate]);
 
+  // 🔴 Force a test dot for rendering
+    useEffect(() => {
+      setDots([
+        {
+          x: new Date("2025-03-03"),
+          y: 180,
+          color: "red",
+        },
+      ]);
+    }, []);
+
+
   const xScaleProvider = useMemo(
     () =>
       discontinuousTimeScaleProviderBuilder().inputDateAccessor(
@@ -138,12 +154,17 @@ const ElliottWaveChart: React.FC<Props> = ({ stockSymbol }) => {
 
   if (isLoading) return <SkeletonCard type="chart" />;
 
-  const start = xAccessor(chartData[Math.max(0, chartData.length - 100)]);
-  const end = xAccessor(chartData[chartData.length - 1]);
+  let xExtents: [Date, Date] = [new Date(), new Date()]; // default safe value
 
-  // Add buffer: 5 extra candles worth of x-axis space
-  const extendedEnd = end + (end - start) * 0.1; // ~10% future room
-  const xExtents = [start, extendedEnd];
+  if (chartData.length > 1) {
+    const startDate = chartData[Math.max(0, chartData.length - 100)].date;
+    const endDate = chartData[chartData.length - 1].date;
+
+    const diffMs = endDate.getTime() - startDate.getTime();
+    const extendedEnd = new Date(endDate.getTime() + diffMs * 0.1);
+
+    xExtents = [startDate, extendedEnd];
+  }
 
 
   return (
@@ -172,7 +193,7 @@ const ElliottWaveChart: React.FC<Props> = ({ stockSymbol }) => {
           />
 
 
-          <ChartCanvas
+          <ChartCanvas<Date>
             key={stockSymbol}
             seriesName={stockSymbol}
             height={dimensions.height}
@@ -181,8 +202,6 @@ const ElliottWaveChart: React.FC<Props> = ({ stockSymbol }) => {
             ratio={1}
             data={chartData}
             xScale={xScale}
-            xAccessor={xAccessor}
-            displayXAccessor={displayXAccessor}
             xExtents={xExtents}
           >
             <Chart id={0} yExtents={(d) => [d.high, d.low]}>
@@ -229,7 +248,7 @@ const ElliottWaveChart: React.FC<Props> = ({ stockSymbol }) => {
               />
               <DotDrawing
                 enabled={dotMode}
-                onDotPlaced={(x, y) => {
+                onDotPlaced={(x: Date, y: number) => {
                   console.log("✅ Dot received in ElliottWaveChart.tsx:", { x, y });
                   setDots((prev) => [
                     ...prev,
@@ -241,8 +260,8 @@ const ElliottWaveChart: React.FC<Props> = ({ stockSymbol }) => {
                     },
                   ]);
                 }}
-                
               />
+
               {DotRenderer(dots)}
             </Chart>
             

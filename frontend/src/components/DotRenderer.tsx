@@ -2,10 +2,13 @@ import React from "react";
 import { GenericComponent } from "react-financial-charts";
 
 type Dot = {
-  x: number;
-  y: number;
-  color?: string;
-};
+    x: Date;
+    y: number;
+    label?: string;
+    color: string;
+  };
+  
+  
 
 export function DotRenderer(dots: Dot[]) {
   console.log("📍 DotRenderer called with dots:", dots);
@@ -40,6 +43,9 @@ export function DotRenderer(dots: Dot[]) {
     for (const dot of dots) {
       const cx = xScale(dot.x); // dot.x is already in the same space
       const cy = yScale(dot.y);
+
+      console.log("🧪 dot.x instanceof Date:", dot.x instanceof Date);
+
   
       console.log(`🟢 Drawing dot at (x: ${cx}, y: ${cy})`, dot);
   

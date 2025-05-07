@@ -5,9 +5,10 @@ import { GenericComponent } from "react-financial-charts";
 const TypedGenericComponent = GenericComponent as unknown as React.ComponentType<any>;
 
 type Props = {
-  enabled: boolean;
-  onDotPlaced: (x: number, y: number) => void;
-};
+    enabled: boolean;
+    onDotPlaced: (x: Date, y: number) => void;
+  };
+  
 
 const DotDrawing: React.FC<Props> = ({ enabled, onDotPlaced }) => {
     const handleClick = (_: any, moreProps: any) => {
@@ -30,7 +31,7 @@ const DotDrawing: React.FC<Props> = ({ enabled, onDotPlaced }) => {
           return;
         }
       
-        const x = xAccessor(currentItem); // index or x domain value
+        const x = currentItem.date; // index or x domain value
         const yPixel = mouseXY?.[1];
         const y = chartConfig.yScale.invert(yPixel); // pixel Y to price
       
