@@ -1,6 +1,6 @@
 import { createChart, LineSeries } from "lightweight-charts";
 import { useEffect, useRef } from "react";
-import { getTradingViewUrl } from "./utils";
+import { getTradingViewUrl } from "../utils";
 
 type StockChartProps = {
   stockSymbol: string;
