@@ -1,7 +1,7 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from stock_analysis.stock_analyser import StockAnalyser
-from stock_analysis.models import StockRequest, StockAnalysisResponse, ElliottWaveResponse
+from stock_analysis.models import StockRequest, StockAnalysisResponse, ElliottWaveResponse, FinancialMetrics
 from stock_analysis.elliott_wave import calculate_elliott_wave
 from fastapi.responses import JSONResponse
 from pathlib import Path
@@ -147,6 +147,22 @@ def get_portfolio_live_data():
 
     except Exception as e:
         return {"error": str(e)}
+    
+
+@app.get("/financials/{symbol}", response_model=FinancialMetrics)
+def get_financials(symbol: str):
+    stock = yf.Ticker(symbol)
+    info = stock.info
+
+    return FinancialMetrics(
+        ticker=symbol,
+        revenue=info.get("totalRevenue"),
+        net_income=info.get("netIncomeToCommon"),
+        dividend_yield=info.get("dividendYield"),
+        pe_ratio=info.get("trailingPE"),
+        ps_ratio=info.get("priceToSalesTrailing12Months"),
+        beta=info.get("beta")
+    )
 
 
 @app.websocket("/ws/chart_data_weekly/{symbol}")
