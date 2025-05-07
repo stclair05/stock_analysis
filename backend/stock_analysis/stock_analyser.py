@@ -4,7 +4,7 @@ import numpy as np
 from fastapi import HTTPException
 from .models import TimeSeriesMetric
 from aliases import SYMBOL_ALIASES
-from .utils import safe_value
+from .utils import safe_value, detect_rsi_divergence, find_pivots, compute_wilder_rsi
 
 
 
@@ -440,53 +440,12 @@ class StockAnalyser:
         )
     
     def rsi_divergence_daily(self, pivot_strength: int = 3, rsi_period: int = 14, rsi_threshold: float = 3.0) -> TimeSeriesMetric:
-        df = self.df[['Close']].copy()
-
-        # Compute RSI
-        delta = df['Close'].diff()
-        gain = delta.where(delta > 0, 0.0)
-        loss = -delta.where(delta < 0, 0.0)
-        avg_gain = gain.rolling(rsi_period).mean()
-        avg_loss = loss.rolling(rsi_period).mean()
-        rs = avg_gain / avg_loss
-        df['RSI'] = 100 - (100 / (1 + rs))
-        df.dropna(inplace=True)
-
-        close = df['Close'].values
-        rsi = df['RSI'].values
-        index = df.index
-
-        # Detect pivot highs and lows
-        def find_pivots(series, window=pivot_strength):
-            highs, lows = [], []
-            for i in range(window, len(series) - window):
-                left = series[i - window:i]
-                right = series[i + 1:i + window + 1]
-                if all(series[i] > x for x in np.concatenate([left, right])):
-                    highs.append(i)
-                if all(series[i] < x for x in np.concatenate([left, right])):
-                    lows.append(i)
-            return highs, lows
-
-        highs, lows = find_pivots(close, pivot_strength)
-        result = pd.Series("Normal", index=index)
-
-        # Identify divergences
-        for i in range(rsi_period + pivot_strength, len(close)):
-            recent_lows = [idx for idx in lows if idx < i]
-            recent_highs = [idx for idx in highs if idx < i]
-
-            if len(recent_lows) >= 2:
-                p1, p2 = recent_lows[-2:]
-                if close[p2] < close[p1] and rsi[p2] > rsi[p1] and abs(rsi[p2] - rsi[p1]) > rsi_threshold:
-                    result.iloc[i] = "Bullish Divergence"
-
-            if len(recent_highs) >= 2:
-                p1, p2 = recent_highs[-2:]
-                if close[p2] > close[p1] and rsi[p2] < rsi[p1] and abs(rsi[p2] - rsi[p1]) > rsi_threshold:
-                    result.iloc[i] = "Bearish Divergence"
-
-        result = result.dropna()
+        result = detect_rsi_divergence(
+            self.df,
+            rsi_period=rsi_period,
+            pivot_strength=pivot_strength,
+            rsi_threshold=rsi_threshold
+        )
 
         return TimeSeriesMetric(
             current=safe_value(result, -1),
@@ -494,6 +453,7 @@ class StockAnalyser:
             fourteen_days_ago=safe_value(result, -3),
             twentyone_days_ago=safe_value(result, -4),
         )
+
     
     def bollinger_band_width_percentile_daily(self) -> TimeSeriesMetric:
         df = self.df[['Close']].copy()
@@ -508,11 +468,11 @@ class StockAnalyser:
 
         # Band width
         width = (upper - lower) / ma
-        df['Width'] = width
+        df['Width'] = np.where(ma != 0, (upper - lower) / ma, np.nan)
 
         # Calculate rolling percentiles (over last 126 days)
         percentiles = df['Width'].rolling(126).apply(
-            lambda x: pd.Series(x).rank(pct=True).iloc[-1] * 100, raw=False
+            lambda x: (x[-1] > x).mean() * 100, raw=False
         )
 
         df['Percentile'] = percentiles
@@ -539,16 +499,11 @@ class StockAnalyser:
     def rsi_ma_weekly(self) -> TimeSeriesMetric:
         df_weekly = self.df.resample("W-FRI").last().dropna()
         close = df_weekly["Close"]
-        ma = close.rolling(window=14).mean()
-        delta = close.diff()
-        gain = delta.where(delta > 0, 0.0)
-        loss = -delta.where(delta < 0, 0.0)
-        avg_gain = gain.rolling(window=14).mean()
-        avg_loss = loss.rolling(window=14).mean()
-        rs = avg_gain / avg_loss
-        rsi = 100 - (100 / (1 + rs))
+        rsi = compute_wilder_rsi(close)
 
-        condition = (rsi > ma).replace({True: "Above", False: "Below"})
+        # Compare RSI to its 14-period MA (or keep price MA if that's intended)
+        rsi_ma = pd.Series(rsi, index=close.index).rolling(window=14).mean()
+        condition = (rsi > rsi_ma).replace({True: "Above", False: "Below"})
 
         return TimeSeriesMetric(
             current=safe_value(condition, -1),
@@ -556,40 +511,51 @@ class StockAnalyser:
             fourteen_days_ago=safe_value(condition, -3),
             twentyone_days_ago=safe_value(condition, -4),
         )
+
+
     
-    def rsi_divergence_weekly(self) -> TimeSeriesMetric:
+    def rsi_divergence_weekly(self, pivot_strength: int = 3, rsi_period: int = 14, rsi_threshold: float = 3.0) -> TimeSeriesMetric:
+        # Resample to weekly frequency using Friday as the week-end
         df_weekly = self.df.resample("W-FRI").last().dropna()
         close = df_weekly["Close"]
-        delta = close.diff()
-        gain = delta.where(delta > 0, 0.0)
-        loss = -delta.where(delta < 0, 0.0)
-        avg_gain = gain.rolling(window=14).mean()
-        avg_loss = loss.rolling(window=14).mean()
-        rs = avg_gain / avg_loss
-        rsi = 100 - (100 / (1 + rs))
 
-        def find_pivots(series: pd.Series, window: int = 3) -> list[int]:
-            """Detect local minima and maxima (pivot points) using a rolling window."""
-            pivots = []
-            for i in range(window, len(series) - window):
-                is_min = all(series[i] < series[i - j] for j in range(1, window + 1)) and \
-                        all(series[i] < series[i + j] for j in range(1, window + 1))
-                is_max = all(series[i] > series[i - j] for j in range(1, window + 1)) and \
-                        all(series[i] > series[i + j] for j in range(1, window + 1))
-                if is_min or is_max:
-                    pivots.append(i)
-            return pivots
+        # Compute RSI and align valid index
+        rsi = compute_wilder_rsi(close, rsi_period)
+        rsi = rsi.dropna()
+        close = close[rsi.index]  # align with RSI (since first few will be NaN)
 
+        close_values = close.values
+        rsi_values = rsi.values
+        index = close.index
 
-        # Use the same pivot-based detection as in the daily version
-        pivots = find_pivots(rsi, window=3)
-        signals = pd.Series("Normal", index=close.index)
-        for i in range(1, len(pivots)):
-            p1, p2 = pivots[i - 1], pivots[i]
-            if close.iloc[p2] < close.iloc[p1] and rsi.iloc[p2] > rsi.iloc[p1]:
-                signals.iloc[p2] = "Bullish Divergence"
-            elif close.iloc[p2] > close.iloc[p1] and rsi.iloc[p2] < rsi.iloc[p1]:
-                signals.iloc[p2] = "Bearish Divergence"
+        # Find pivot highs and lows on price (not RSI)
+        highs, lows = find_pivots(close_values, window=pivot_strength)
+
+        signals = pd.Series("Normal", index=index)
+
+        for i in range(len(index)):
+            for lookback in range(5, 30):  # Compare against prior pivot up to 30 weeks back
+                j = i - lookback
+                if j < 0:
+                    break
+
+                # Bullish Divergence: price makes lower low, RSI makes higher low
+                if j in lows and i in lows:
+                    if (close_values[i] < close_values[j] and
+                        rsi_values[i] > rsi_values[j] and
+                        abs(rsi_values[i] - rsi_values[j]) >= rsi_threshold and
+                        rsi_values[i] < 50):
+                        signals.iloc[i] = "Bullish Divergence"
+                        break
+
+                # Bearish Divergence: price makes higher high, RSI makes lower high
+                if j in highs and i in highs:
+                    if (close_values[i] > close_values[j] and
+                        rsi_values[i] < rsi_values[j] and
+                        abs(rsi_values[i] - rsi_values[j]) >= rsi_threshold and
+                        rsi_values[i] > 50):
+                        signals.iloc[i] = "Bearish Divergence"
+                        break
 
         return TimeSeriesMetric(
             current=safe_value(signals, -1),
@@ -597,59 +563,70 @@ class StockAnalyser:
             fourteen_days_ago=safe_value(signals, -3),
             twentyone_days_ago=safe_value(signals, -4),
         )
-    
+
     def rsi_ma_monthly(self) -> TimeSeriesMetric:
+        # Resample to month-end data (last trading day of each month)
         df_monthly = self.df.resample("M").last().dropna()
         close = df_monthly["Close"]
-        ma = close.rolling(window=14).mean()
-        delta = close.diff()
-        gain = delta.where(delta > 0, 0.0)
-        loss = -delta.where(delta < 0, 0.0)
-        avg_gain = gain.rolling(window=14).mean()
-        avg_loss = loss.rolling(window=14).mean()
-        rs = avg_gain / avg_loss
-        rsi = 100 - (100 / (1 + rs))
 
-        condition = (rsi > ma).replace({True: "Above", False: "Below"})
+        # Compute Wilder's RSI (standard)
+        rsi = compute_wilder_rsi(close)
 
+        # Compare RSI to its 14-period RSI moving average
+        rsi_ma = rsi.rolling(window=14).mean()
+        condition = (rsi > rsi_ma).replace({True: "Above", False: "Below"})
+
+        # For monthly frequency, use month-wise offsets
         return TimeSeriesMetric(
             current=safe_value(condition, -1),
             seven_days_ago=safe_value(condition, -2),
             fourteen_days_ago=safe_value(condition, -3),
             twentyone_days_ago=safe_value(condition, -4),
         )
+
     
-    def rsi_divergence_monthly(self) -> TimeSeriesMetric:
+    def rsi_divergence_monthly(self, pivot_strength: int = 2, rsi_period: int = 14, rsi_threshold: float = 3.0) -> TimeSeriesMetric:
+        # Resample to month-end data
         df_monthly = self.df.resample("M").last().dropna()
         close = df_monthly["Close"]
-        delta = close.diff()
-        gain = delta.where(delta > 0, 0.0)
-        loss = -delta.where(delta < 0, 0.0)
-        avg_gain = gain.rolling(window=14).mean()
-        avg_loss = loss.rolling(window=14).mean()
-        rs = avg_gain / avg_loss
-        rsi = 100 - (100 / (1 + rs))
 
-        def find_pivots(series: pd.Series, window: int = 3) -> list[int]:
-            """Detect local minima and maxima (pivot points) using a rolling window."""
-            pivots = []
-            for i in range(window, len(series) - window):
-                is_min = all(series[i] < series[i - j] for j in range(1, window + 1)) and \
-                        all(series[i] < series[i + j] for j in range(1, window + 1))
-                is_max = all(series[i] > series[i - j] for j in range(1, window + 1)) and \
-                        all(series[i] > series[i + j] for j in range(1, window + 1))
-                if is_min or is_max:
-                    pivots.append(i)
-            return pivots
-        
-        pivots = find_pivots(rsi, window=2)
-        signals = pd.Series("Normal", index=close.index)
-        for i in range(1, len(pivots)):
-            p1, p2 = pivots[i - 1], pivots[i]
-            if close.iloc[p2] < close.iloc[p1] and rsi.iloc[p2] > rsi.iloc[p1]:
-                signals.iloc[p2] = "Bullish Divergence"
-            elif close.iloc[p2] > close.iloc[p1] and rsi.iloc[p2] < rsi.iloc[p1]:
-                signals.iloc[p2] = "Bearish Divergence"
+        # Compute RSI using Wilder's method
+        rsi = compute_wilder_rsi(close, rsi_period)
+        rsi = rsi.dropna()
+        close = close[rsi.index]
+
+        close_values = close.values
+        rsi_values = rsi.values
+        index = close.index
+
+        # Find pivot highs and lows on price
+        highs, lows = find_pivots(close_values, window=pivot_strength)
+
+        signals = pd.Series("Normal", index=index)
+
+        for i in range(len(index)):
+            for lookback in range(3, 12):  # lookback range of 3 to 12 months
+                j = i - lookback
+                if j < 0:
+                    break
+
+                # Bullish Divergence: price lower low, RSI higher low
+                if j in lows and i in lows:
+                    if (close_values[i] < close_values[j] and
+                        rsi_values[i] > rsi_values[j] and
+                        abs(rsi_values[i] - rsi_values[j]) >= rsi_threshold and
+                        rsi_values[i] < 50):
+                        signals.iloc[i] = "Bullish Divergence"
+                        break
+
+                # Bearish Divergence: price higher high, RSI lower high
+                if j in highs and i in highs:
+                    if (close_values[i] > close_values[j] and
+                        rsi_values[i] < rsi_values[j] and
+                        abs(rsi_values[i] - rsi_values[j]) >= rsi_threshold and
+                        rsi_values[i] > 50):
+                        signals.iloc[i] = "Bearish Divergence"
+                        break
 
         return TimeSeriesMetric(
             current=safe_value(signals, -1),
@@ -660,15 +637,20 @@ class StockAnalyser:
     
     def chaikin_money_flow(self) -> TimeSeriesMetric:
         df = self.df.dropna()
-        df = df.last("100D")  # Ensure enough days for a 21-day rolling calculation
+
+        if len(df) < 30:
+            raise HTTPException(status_code=400, detail="Not enough data for CMF.")
+
+        df = df.tail(100)  # use last 100 days to get enough for 21-day CMF
 
         high = df["High"]
         low = df["Low"]
         close = df["Close"]
-        volume = df["Volume"]
+        volume = pd.to_numeric(df["Volume"], errors="coerce").fillna(0)
 
-        mfm = ((close - low) - (high - close)) / (high - low)
-        mfm = mfm.replace([np.inf, -np.inf], 0).fillna(0)
+        hl_range = (high - low).replace(0, np.nan)
+        mfm = ((close - low) - (high - close)) / hl_range
+        mfm = mfm.fillna(0)
 
         mfv = mfm * volume
         cmf = mfv.rolling(window=21).sum() / volume.rolling(window=21).sum()

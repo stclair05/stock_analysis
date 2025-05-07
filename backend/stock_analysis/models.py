@@ -35,7 +35,6 @@ class StockAnalysisResponse(BaseModel):
     rsi_divergence_monthly: TimeSeriesMetric
     chaikin_money_flow: TimeSeriesMetric
 
-
 class ElliottWaveResponse(BaseModel):
     current_wave: str
     wave_type: Optional[str] = None
@@ -53,3 +52,12 @@ class ElliottWaveResponse(BaseModel):
     wave_a: Optional[float] = None
     wave_b: Optional[float] = None
     wave_c: Optional[float] = None
+
+class FinancialMetrics(BaseModel):
+    ticker: str
+    revenue: Optional[float]
+    net_income: Optional[float]
+    dividend_yield: Optional[float]
+    pe_ratio: Optional[float]
+    ps_ratio: Optional[float]
+    beta: Optional[float]
