@@ -38,7 +38,7 @@ export function DotRenderer(dots: Dot[]) {
   
     ctx.save();
     for (const dot of dots) {
-      const cx = xScale(dot.x);
+      const cx = xScale(dot.x); // dot.x is already in the same space
       const cy = yScale(dot.y);
   
       console.log(`🟢 Drawing dot at (x: ${cx}, y: ${cy})`, dot);

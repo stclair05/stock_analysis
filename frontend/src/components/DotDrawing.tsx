@@ -13,22 +13,38 @@ const DotDrawing: React.FC<Props> = ({ enabled, onDotPlaced }) => {
     const handleClick = (_: any, moreProps: any) => {
         if (!enabled) return;
       
-        const { xAccessor, currentItem } = moreProps;
-        if (!currentItem) return;
-
-        // This gets actual data value on X (like 2023-12-01 or index)
-        const x = xAccessor(currentItem);      // ✅ Data-space X
-        if (typeof x !== "number" || x > 1_000_000) { // or use your known x range
-          throw new Error(`🚫 xAccessor(currentItem) is giving invalid x: ${x}`);
+        const {
+          xAccessor,
+          xScale,
+          currentItem,
+          mouseXY,
+          chartConfigs,
+          currentCharts,
+        } = moreProps;
+      
+        const chartId = currentCharts?.[0] ?? 0;
+        const chartConfig = chartConfigs?.find((c: any) => c.id === chartId);
+      
+        if (!currentItem || !chartConfig) {
+          console.warn("⚠️ Missing currentItem or resolved chartConfig:", { currentItem, chartConfig });
+          return;
         }
-        const y = currentItem.close;           // ✅ Data-space Y
+      
+        const x = xAccessor(currentItem); // index or x domain value
+        const yPixel = mouseXY?.[1];
+        const y = chartConfig.yScale.invert(yPixel); // pixel Y to price
+      
         console.log("📌 currentItem:", currentItem);
-        console.log("📌 xAccessor(currentItem):", xAccessor(currentItem));
-
-
+        console.log("📐 xAccessor(currentItem):", x);
+        console.log("🖱️ mouseXY:", mouseXY);
+        console.log("📊 chartId:", chartId);
+        console.log("🔄 yScale.invert(mouseY):", y);
+      
         onDotPlaced(x, y);
-
       };
+      
+      
+      
       
 
   return (
