@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from stock_analysis.stock_analyser import StockAnalyser
 from stock_analysis.models import StockRequest, StockAnalysisResponse, ElliottWaveResponse, FinancialMetrics
 from stock_analysis.elliott_wave import calculate_elliott_wave
+from stock_analysis.fundamentals import Fundamentals
+from stock_analysis.utils import sortino_ratio as compute_sortino_ratio
 from fastapi.responses import JSONResponse
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -151,17 +153,44 @@ def get_portfolio_live_data():
 
 @app.get("/financials/{symbol}", response_model=FinancialMetrics)
 def get_financials(symbol: str):
-    stock = yf.Ticker(symbol)
-    info = stock.info
+    f = Fundamentals(symbol)
+    fcf_yield = f.fcf_yield()
+    fcf_growth = f.fcf_growth()
+    yield_plus_growth = (
+        round(fcf_yield + fcf_growth, 2)
+        if fcf_yield is not None and fcf_growth is not None
+        else None
+    )
+    roce = f.roce()
+    wacc = f.wacc()
+    roce_minus_wacc = (
+        round(roce - wacc, 2)
+        if roce is not None and wacc is not None
+        else None
+    )
+    cash_conversion = f.cash_conversion()
+    rule_of_40 = f.rule_of_40()
+    gross_margin = f.gross_margin()
+    sortino_ratio = compute_sortino_ratio(symbol)
 
     return FinancialMetrics(
-        ticker=symbol,
-        revenue=info.get("totalRevenue"),
-        net_income=info.get("netIncomeToCommon"),
-        dividend_yield=info.get("dividendYield"),
-        pe_ratio=info.get("trailingPE"),
-        ps_ratio=info.get("priceToSalesTrailing12Months"),
-        beta=info.get("beta")
+        ticker=symbol.upper(),
+        revenue=f.revenue(),
+        net_income=f.net_income(),
+        dividend_yield=f.dividend_yield(),
+        pe_ratio=f.pe_ratio(),
+        ps_ratio=f.ps_ratio(),
+        beta=f.beta(),
+        fcf_yield=fcf_yield,
+        fcf_growth=fcf_growth,
+        yield_plus_growth=yield_plus_growth,
+        roce=roce,
+        wacc=wacc,
+        roce_minus_wacc=roce_minus_wacc,
+        cash_conversion=cash_conversion,
+        rule_of_40=rule_of_40,
+        gross_margin=gross_margin,
+        sortino_ratio=sortino_ratio,
     )
 
 

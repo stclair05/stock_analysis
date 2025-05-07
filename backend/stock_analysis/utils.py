@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 from typing import List
+import yfinance as yf
+from typing import Optional
 
 def safe_value(series: pd.Series, idx: int):
     if idx >= len(series) or idx < -len(series):
@@ -126,3 +128,71 @@ def detect_rsi_divergence(df: pd.DataFrame, rsi_period=14, pivot_strength=3, rsi
     # print(labels[labels != "Normal"].tail(10))  # print last 10 non-Normal labels
 
     return labels
+
+def get_risk_free_rate() -> float:
+    try:
+        tnx = yf.Ticker("^TNX")
+        rate = tnx.info.get("regularMarketPrice")
+        if rate is None:
+            raise ValueError("Missing ^TNX price")
+        return rate / 100  # Convert from e.g., 45.0 to 0.045
+    except Exception as e:
+        print(f"❌ Failed to fetch 10Y yield: {e}")
+        return 0.045  # fallback to historical average
+    
+
+def get_equity_risk_premium() -> float:
+    return 0.055  # 5.5% — global average, based on Damodaran's ERP estimates
+
+
+def sortino_ratio(symbol: str, period: str = "1y", interval: str = "1d") -> Optional[float]:
+    '''
+    Calculates the 1-year daily Sortino Ratio using Yahoo Finance data.
+
+    Disclaimer:
+    - This is a simplified retail/institutional-grade Sortino Ratio.
+    - Uses 1 year of daily returns (252 trading days).
+    - Downside deviation is calculated relative to the daily risk-free rate (10Y U.S. Treasury yield annualized).
+    - Returns are arithmetic (not log).
+    - Risk-free rate is constant over the period (no term-matching or forward curve).
+    - Suitable for dashboards, high-level analytics, or early-stage quant models.
+    - NOT equivalent to Bloomberg/FactSet/Barra-calculated Sortino ratios, which may use MAR thresholds, exponential weighting, or term structure adjustments.
+    
+    '''
+    try:
+        print(f"📈 Calculating Sortino Ratio for {symbol} over {period}...")
+
+        data = yf.download(symbol, period=period, interval=interval, progress=False)
+        if data.empty:
+            print("❌ No price data.")
+            return None
+
+        returns = data["Close"].pct_change().dropna()
+        rf_daily = get_risk_free_rate() / 252
+
+        downside_returns = returns[returns < rf_daily]
+        downside_std = downside_returns.std()
+
+        # Force scalar float
+        if isinstance(downside_std, pd.Series):
+            downside_std = downside_std.iloc[0]
+        downside_std = float(downside_std)
+
+        if np.isnan(downside_std) or downside_std == 0:
+            print("⚠️ No downside volatility — Sortino undefined.")
+            return None
+
+        mean_return = returns.mean()
+        if isinstance(mean_return, pd.Series):
+            mean_return = mean_return.iloc[0]
+        mean_return = float(mean_return)
+
+        excess_returns = mean_return - rf_daily
+        sortino = excess_returns / downside_std
+
+        print(f"✅ Sortino Ratio: {sortino:.2f}")
+        return round(sortino, 2)
+
+    except Exception as e:
+        print(f"❌ Error calculating Sortino Ratio: {e}")
+        return None
