@@ -44,9 +44,11 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
   const drawingModeRef = useRef<"trendline" | "horizontal" | null>(null);
   const lineBufferRef = useRef<{ time: UTCTimestamp; value: number }[]>([]);
   const drawnSeriesRef = useRef<Map<number, ISeriesApi<"Line">>>(new Map());
+  const previewSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
 
   const [drawings, setDrawings] = useState<Drawing[]>([]);
-  const [, forceRerender] = useState(false); // for UI toggle highlight
+  const [hoverPoint, setHoverPoint] = useState<{ time: UTCTimestamp; value: number } | null>(null);
+  const [, forceRerender] = useState(false);
 
   useEffect(() => {
     if (!stockSymbol || !chartContainerRef.current) return;
@@ -59,7 +61,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         textColor: "#000000",
       },
       crosshair: {
-        mode: CrosshairMode.Normal, // ✅ Free movement
+        mode: CrosshairMode.Normal,
       },
       grid: {
         vertLines: { color: "#eee" },
@@ -131,8 +133,11 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           };
           setDrawings((prev) => [...prev, newLine]);
           lineBufferRef.current = [];
-          // keep it active — don't clear drawingMode
-          // this allows continuous drawing
+          setHoverPoint(null);
+          if (previewSeriesRef.current) {
+            chartRef.current?.removeSeries(previewSeriesRef.current);
+            previewSeriesRef.current = null;
+          }
         }
       } else if (drawingModeRef.current === "horizontal") {
         const horizontalLine: DrawingHorizontal = {
@@ -141,10 +146,29 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           time,
         };
         setDrawings((prev) => [...prev, horizontalLine]);
-        // keep it active — don't clear drawingMode
-        // this allows continuous drawing
       }
     });
+
+    chart.subscribeCrosshairMove((param) => {
+      if (!param.time || !param.point || lineBufferRef.current.length !== 1) {
+        setHoverPoint((prev) => (prev !== null ? null : prev));
+        return;
+      }
+    
+      const price = candleSeries.coordinateToPrice(param.point.y);
+      if (price == null) return;
+    
+      const time = param.time as UTCTimestamp;
+    
+      // Only update if value changed
+      setHoverPoint((prev) => {
+        if (!prev || prev.time !== time || prev.value !== price) {
+          return { time, value: price };
+        }
+        return prev;
+      });
+    });
+    
 
     ws.onclose = () => console.log("WebSocket closed");
 
@@ -188,6 +212,39 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     });
   }, [drawings]);
 
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart) return;
+  
+    if (
+      drawingModeRef.current === "trendline" &&
+      lineBufferRef.current.length === 1 &&
+      hoverPoint
+    ) {
+      const [p1, p2] = [lineBufferRef.current[0], hoverPoint];
+  
+      // If timestamps are the same, skip to avoid assertion error
+      if (p1.time === p2.time) return;
+  
+      const previewData = [p1, p2].sort((a, b) => a.time - b.time);
+  
+      if (!previewSeriesRef.current) {
+        previewSeriesRef.current = chart.addSeries(LineSeries, {
+          color: "rgba(255, 152, 0, 0.5)",
+          lineWidth: 1,
+          lineStyle: 1,
+        });
+      }
+      previewSeriesRef.current.setData(previewData);
+    } else {
+      if (previewSeriesRef.current) {
+        chart.removeSeries(previewSeriesRef.current);
+        previewSeriesRef.current = null;
+      }
+    }
+  }, [hoverPoint]);
+  
+
   const clearDrawings = () => {
     const chart = chartRef.current;
     if (chart) {
@@ -198,12 +255,17 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     drawnSeriesRef.current.clear();
     setDrawings([]);
     lineBufferRef.current = [];
+    if (previewSeriesRef.current) {
+      chart?.removeSeries(previewSeriesRef.current);
+      previewSeriesRef.current = null;
+    }
   };
 
   const toggleMode = (mode: "trendline" | "horizontal") => {
     drawingModeRef.current =
       drawingModeRef.current === mode ? null : mode;
-    lineBufferRef.current = []; // clear mid-progress lines
+    lineBufferRef.current = [];
+    setHoverPoint(null);
     forceRerender((v) => !v);
   };
 
@@ -225,12 +287,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
       <div className="toolbar mb-2">
         <button
-          onClick={() => {
-            const isActive = drawingModeRef.current === "trendline";
-            drawingModeRef.current = isActive ? null : "trendline";
-            lineBufferRef.current = [];
-            forceRerender((v) => !v);
-          }}
+          onClick={() => toggleMode("trendline")}
           className={`btn btn-sm me-2 ${
             drawingModeRef.current === "trendline"
               ? "btn-success"
@@ -240,13 +297,8 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           📏 Trendline {drawingModeRef.current === "trendline" ? "✓" : ""}
         </button>
 
-
         <button
-          onClick={() => {
-            const isActive = drawingModeRef.current === "horizontal";
-            drawingModeRef.current = isActive ? null : "horizontal";
-            forceRerender((v) => !v);
-          }}
+          onClick={() => toggleMode("horizontal")}
           className={`btn btn-sm me-2 ${
             drawingModeRef.current === "horizontal"
               ? "btn-success"
@@ -255,7 +307,6 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         >
           ➖ Horizontal {drawingModeRef.current === "horizontal" ? "✓" : ""}
         </button>
-
 
         <button onClick={clearDrawings} className="btn btn-danger btn-sm">
           ❌ Clear
