@@ -162,7 +162,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         if (lineBufferRef.current.length === 6) {
           const newSixPoint: DrawingSixPoint = {
             type: "sixpoint",
-            points: [...lineBufferRef.current],
+            points: [...lineBufferRef.current].sort((a, b) => a.time - b.time),
           };
           setDrawings((prev) => [...prev, newSixPoint]);
           lineBufferRef.current = [];
@@ -235,8 +235,10 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           color: "#673AB7",
           lineWidth: 2,
         });
-      
-        series.setData(drawing.points);
+        
+        const sortedPoints = [...drawing.points].sort((a, b) => a.time - b.time);
+
+        series.setData(sortedPoints);
         drawnSeriesRef.current.set(i, series);
       
         // Add labels 0–5
