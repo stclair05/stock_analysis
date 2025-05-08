@@ -9,6 +9,7 @@ import {
   IChartApi,
 } from "lightweight-charts";
 import { useEffect, useRef, useState } from "react";
+import { Trash2, Ruler, Minus } from "lucide-react";
 import { getTradingViewUrl } from "../utils";
 
 interface Candle {
@@ -44,9 +45,11 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
   const drawingModeRef = useRef<"trendline" | "horizontal" | null>(null);
   const lineBufferRef = useRef<{ time: UTCTimestamp; value: number }[]>([]);
   const drawnSeriesRef = useRef<Map<number, ISeriesApi<"Line">>>(new Map());
+  const previewSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
 
   const [drawings, setDrawings] = useState<Drawing[]>([]);
-  const [, forceRerender] = useState(false); // for UI toggle highlight
+  const [hoverPoint, setHoverPoint] = useState<{ time: UTCTimestamp; value: number } | null>(null);
+  const [, forceRerender] = useState(false);
 
   useEffect(() => {
     if (!stockSymbol || !chartContainerRef.current) return;
@@ -59,7 +62,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         textColor: "#000000",
       },
       crosshair: {
-        mode: CrosshairMode.Normal, // ✅ Free movement
+        mode: CrosshairMode.Normal,
       },
       grid: {
         vertLines: { color: "#eee" },
@@ -131,8 +134,11 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           };
           setDrawings((prev) => [...prev, newLine]);
           lineBufferRef.current = [];
-          drawingModeRef.current = null;
-          forceRerender((v) => !v);
+          setHoverPoint(null);
+          if (previewSeriesRef.current) {
+            chartRef.current?.removeSeries(previewSeriesRef.current);
+            previewSeriesRef.current = null;
+          }
         }
       } else if (drawingModeRef.current === "horizontal") {
         const horizontalLine: DrawingHorizontal = {
@@ -141,10 +147,29 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           time,
         };
         setDrawings((prev) => [...prev, horizontalLine]);
-        drawingModeRef.current = null;
-        forceRerender((v) => !v);
       }
     });
+
+    chart.subscribeCrosshairMove((param) => {
+      if (!param.time || !param.point || lineBufferRef.current.length !== 1) {
+        setHoverPoint((prev) => (prev !== null ? null : prev));
+        return;
+      }
+    
+      const price = candleSeries.coordinateToPrice(param.point.y);
+      if (price == null) return;
+    
+      const time = param.time as UTCTimestamp;
+    
+      // Only update if value changed
+      setHoverPoint((prev) => {
+        if (!prev || prev.time !== time || prev.value !== price) {
+          return { time, value: price };
+        }
+        return prev;
+      });
+    });
+    
 
     ws.onclose = () => console.log("WebSocket closed");
 
@@ -170,8 +195,10 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         drawnSeriesRef.current.set(i, series);
       } else if (drawing.type === "horizontal") {
         const t = drawing.time;
-        const lineStart = (t - 86400 * 10) as UTCTimestamp;
-        const lineEnd = (t + 86400 * 10) as UTCTimestamp;
+        const YEARS = 10;
+        const secondsPerDay = 86400;
+        const lineStart = (t - secondsPerDay * 365 * YEARS) as UTCTimestamp;
+        const lineEnd = (t + secondsPerDay * 365 * YEARS) as UTCTimestamp;
 
         const series = chart.addSeries(LineSeries, {
           color: "#03A9F4",
@@ -186,6 +213,39 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     });
   }, [drawings]);
 
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart) return;
+  
+    if (
+      drawingModeRef.current === "trendline" &&
+      lineBufferRef.current.length === 1 &&
+      hoverPoint
+    ) {
+      const [p1, p2] = [lineBufferRef.current[0], hoverPoint];
+  
+      // If timestamps are the same, skip to avoid assertion error
+      if (p1.time === p2.time) return;
+  
+      const previewData = [p1, p2].sort((a, b) => a.time - b.time);
+  
+      if (!previewSeriesRef.current) {
+        previewSeriesRef.current = chart.addSeries(LineSeries, {
+          color: "rgba(255, 152, 0, 0.5)",
+          lineWidth: 1,
+          lineStyle: 1,
+        });
+      }
+      previewSeriesRef.current.setData(previewData);
+    } else {
+      if (previewSeriesRef.current) {
+        chart.removeSeries(previewSeriesRef.current);
+        previewSeriesRef.current = null;
+      }
+    }
+  }, [hoverPoint]);
+  
+
   const clearDrawings = () => {
     const chart = chartRef.current;
     if (chart) {
@@ -196,12 +256,17 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     drawnSeriesRef.current.clear();
     setDrawings([]);
     lineBufferRef.current = [];
+    if (previewSeriesRef.current) {
+      chart?.removeSeries(previewSeriesRef.current);
+      previewSeriesRef.current = null;
+    }
   };
 
   const toggleMode = (mode: "trendline" | "horizontal") => {
     drawingModeRef.current =
       drawingModeRef.current === mode ? null : mode;
-    lineBufferRef.current = []; // clear mid-progress lines
+    lineBufferRef.current = [];
+    setHoverPoint(null);
     forceRerender((v) => !v);
   };
 
@@ -221,41 +286,25 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
       <h5 className="fw-bold mb-3">📈 Weekly Candlestick Chart</h5>
 
-      <div className="toolbar mb-2">
+      <div className="toolbar mb-2 d-flex gap-2">
         <button
           onClick={() => toggleMode("trendline")}
-          className={`btn btn-sm me-2 ${
-            drawingModeRef.current === "trendline"
-              ? "btn-success"
-              : "btn-outline-primary"
-          }`}
+          className={`tool-button ${drawingModeRef.current === "trendline" ? "active" : ""}`}
+          title="Trendline"
         >
-          📏 Trendline
+          <Ruler size={16} />
         </button>
 
         <button
           onClick={() => toggleMode("horizontal")}
-          className={`btn btn-sm me-2 ${
-            drawingModeRef.current === "horizontal"
-              ? "btn-success"
-              : "btn-outline-secondary"
-          }`}
+          className={`tool-button ${drawingModeRef.current === "horizontal" ? "active" : ""}`}
+          title="Horizontal Line"
         >
-          ➖ Horizontal
+          <Minus size={16} />
         </button>
 
-        <button
-          onClick={() => {
-            drawingModeRef.current = null;
-            forceRerender((v) => !v);
-          }}
-          className="btn btn-outline-dark btn-sm me-2"
-        >
-          🖱 Cursor
-        </button>
-
-        <button onClick={clearDrawings} className="btn btn-danger btn-sm">
-          ❌ Clear
+        <button onClick={clearDrawings} className="tool-button danger" title="Clear All">
+          <Trash2 size={16} />
         </button>
       </div>
 
