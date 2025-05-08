@@ -131,8 +131,8 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           };
           setDrawings((prev) => [...prev, newLine]);
           lineBufferRef.current = [];
-          drawingModeRef.current = null;
-          forceRerender((v) => !v);
+          // keep it active — don't clear drawingMode
+          // this allows continuous drawing
         }
       } else if (drawingModeRef.current === "horizontal") {
         const horizontalLine: DrawingHorizontal = {
@@ -141,8 +141,8 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           time,
         };
         setDrawings((prev) => [...prev, horizontalLine]);
-        drawingModeRef.current = null;
-        forceRerender((v) => !v);
+        // keep it active — don't clear drawingMode
+        // this allows continuous drawing
       }
     });
 
@@ -170,8 +170,10 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         drawnSeriesRef.current.set(i, series);
       } else if (drawing.type === "horizontal") {
         const t = drawing.time;
-        const lineStart = (t - 86400 * 10) as UTCTimestamp;
-        const lineEnd = (t + 86400 * 10) as UTCTimestamp;
+        const YEARS = 10;
+        const secondsPerDay = 86400;
+        const lineStart = (t - secondsPerDay * 365 * YEARS) as UTCTimestamp;
+        const lineEnd = (t + secondsPerDay * 365 * YEARS) as UTCTimestamp;
 
         const series = chart.addSeries(LineSeries, {
           color: "#03A9F4",
@@ -223,36 +225,37 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
       <div className="toolbar mb-2">
         <button
-          onClick={() => toggleMode("trendline")}
+          onClick={() => {
+            const isActive = drawingModeRef.current === "trendline";
+            drawingModeRef.current = isActive ? null : "trendline";
+            lineBufferRef.current = [];
+            forceRerender((v) => !v);
+          }}
           className={`btn btn-sm me-2 ${
             drawingModeRef.current === "trendline"
               ? "btn-success"
               : "btn-outline-primary"
           }`}
         >
-          📏 Trendline
+          📏 Trendline {drawingModeRef.current === "trendline" ? "✓" : ""}
         </button>
 
+
         <button
-          onClick={() => toggleMode("horizontal")}
+          onClick={() => {
+            const isActive = drawingModeRef.current === "horizontal";
+            drawingModeRef.current = isActive ? null : "horizontal";
+            forceRerender((v) => !v);
+          }}
           className={`btn btn-sm me-2 ${
             drawingModeRef.current === "horizontal"
               ? "btn-success"
               : "btn-outline-secondary"
           }`}
         >
-          ➖ Horizontal
+          ➖ Horizontal {drawingModeRef.current === "horizontal" ? "✓" : ""}
         </button>
 
-        <button
-          onClick={() => {
-            drawingModeRef.current = null;
-            forceRerender((v) => !v);
-          }}
-          className="btn btn-outline-dark btn-sm me-2"
-        >
-          🖱 Cursor
-        </button>
 
         <button onClick={clearDrawings} className="btn btn-danger btn-sm">
           ❌ Clear
