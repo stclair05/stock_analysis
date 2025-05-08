@@ -52,8 +52,9 @@ const ElliottWaveChart: React.FC<Props> = ({ stockSymbol }) => {
 
   const [dotMode, setDotMode] = useState(false);
   const [dots, setDots] = useState<
-    { x: number; y: number; label?: string; color: string }[]
+    { x: Date; y: number; label?: string; color: string }[]
   >([]);
+
 
   const chartMargin = useMemo(
     () => ({ left: 60, right: 120, top: 10, bottom: 20 }),
@@ -243,10 +244,11 @@ const ElliottWaveChart: React.FC<Props> = ({ stockSymbol }) => {
                 }}
                 
               />
-              {DotRenderer(dots)}
+              
             </Chart>
             
             <CrossHairCursor strokeStyle="#888" />
+            {DotRenderer(dots)}
           </ChartCanvas>
         </>
       )}

@@ -6,7 +6,7 @@ const TypedGenericComponent = GenericComponent as unknown as React.ComponentType
 
 type Props = {
   enabled: boolean;
-  onDotPlaced: (x: number, y: number) => void;
+  onDotPlaced: (x: Date, y: number) => void;
 };
 
 const DotDrawing: React.FC<Props> = ({ enabled, onDotPlaced }) => {
@@ -14,33 +14,45 @@ const DotDrawing: React.FC<Props> = ({ enabled, onDotPlaced }) => {
         if (!enabled) return;
       
         const {
-          xAccessor,
-          xScale,
-          currentItem,
-          mouseXY,
-          chartConfigs,
-          currentCharts,
-        } = moreProps;
-      
-        const chartId = currentCharts?.[0] ?? 0;
-        const chartConfig = chartConfigs?.find((c: any) => c.id === chartId);
-      
-        if (!currentItem || !chartConfig) {
-          console.warn("⚠️ Missing currentItem or resolved chartConfig:", { currentItem, chartConfig });
-          return;
-        }
-      
-        const x = xAccessor(currentItem); // index or x domain value
-        const yPixel = mouseXY?.[1];
-        const y = chartConfig.yScale.invert(yPixel); // pixel Y to price
-      
-        console.log("📌 currentItem:", currentItem);
-        console.log("📐 xAccessor(currentItem):", x);
-        console.log("🖱️ mouseXY:", mouseXY);
-        console.log("📊 chartId:", chartId);
-        console.log("🔄 yScale.invert(mouseY):", y);
-      
-        onDotPlaced(x, y);
+            xScale,
+            mouseXY,
+            chartConfigs,
+            currentCharts,
+          } = moreProps;
+          
+          const chartId = currentCharts?.[0] ?? 0;
+          const chartConfig = chartConfigs?.find((c: any) => c.id === chartId);
+          
+          if (!mouseXY || !chartConfig) return;
+          
+          const [originX, originY] = chartConfig.origin;
+            const xPixel = mouseXY[0] - originX;
+            const yPixel = mouseXY[1] - originY;
+
+            console.log("🖱️ Raw mouseXY:", mouseXY);
+            console.log("🗺️ Chart origin:", chartConfig.origin);
+            console.log("🧮 xPixel:", xPixel);
+
+            const plotData = moreProps.plotData as { date: Date }[];
+            const xAccessor = moreProps.xAccessor;
+
+            // Type-safe nearest match
+            const closestItem = plotData.reduce((prev: { date: Date }, curr: { date: Date }) => {
+            const prevDist = Math.abs(xScale(xAccessor(prev)) - xPixel);
+            const currDist = Math.abs(xScale(xAccessor(curr)) - xPixel);
+            return currDist < prevDist ? curr : prev;
+            });
+            const x = closestItem.date; // ✅ now this is 100% a real Date
+
+
+            const y = chartConfig.yScale.invert(yPixel);
+
+            console.log("🕒 Inverted x (Date?):", x);
+            console.log("💵 Inverted y (Price):", y);
+
+            onDotPlaced(x, y);
+
+    
       };
       
       

@@ -2,7 +2,7 @@ import React from "react";
 import { GenericComponent } from "react-financial-charts";
 
 type Dot = {
-  x: number;
+  x: Date;
   y: number;
   color?: string;
 };
@@ -37,20 +37,46 @@ export function DotRenderer(dots: Dot[]) {
     }
   
     ctx.save();
+
+    ctx.beginPath();
+    ctx.strokeStyle = "purple";
+    ctx.lineWidth = 1;
+    ctx.rect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    ctx.stroke();
+
     for (const dot of dots) {
-      const cx = xScale(dot.x); // dot.x is already in the same space
-      const cy = yScale(dot.y);
-  
-      console.log(`🟢 Drawing dot at (x: ${cx}, y: ${cy})`, dot);
-  
-      ctx.beginPath();
-      ctx.arc(cx, cy, 6, 0, 2 * Math.PI);
-      ctx.fillStyle = dot.color || "blue";
-      ctx.fill();
-      ctx.strokeStyle = "black";
-      ctx.lineWidth = 1;
-      ctx.stroke();
-    }
+        let xValue = dot.x;
+        if (!(xValue instanceof Date)) {
+          try {
+            xValue = new Date(xValue);
+          } catch {
+            console.warn("⚠️ Invalid x:", dot.x);
+            continue;
+          }
+        }
+      
+        const matchingDatum = moreProps.plotData.find(
+          (d: any) => d.date.getTime() === xValue.getTime()
+        );
+      
+        if (!matchingDatum) {
+          console.warn("❗ Could not find matching x in plotData:", xValue);
+          continue;
+        }
+      
+        const xAccessor = moreProps.xAccessor;
+        const cx = xScale(xAccessor(matchingDatum));
+        const cy = yScale(dot.y);
+      
+        ctx.beginPath();
+        ctx.arc(cx, cy, 6, 0, 2 * Math.PI);
+        ctx.fillStyle = dot.color || "blue";
+        ctx.fill();
+        ctx.strokeStyle = "black";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+      
     ctx.restore();
   };
   
