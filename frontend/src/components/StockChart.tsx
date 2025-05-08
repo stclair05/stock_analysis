@@ -31,20 +31,27 @@ interface DrawingHorizontal {
   time: UTCTimestamp;
 }
 
-type Drawing = DrawingLine | DrawingHorizontal;
+type Drawing = DrawingLine | DrawingHorizontal | DrawingSixPoint;
 
 interface StockChartProps {
   stockSymbol: string;
 }
+
+interface DrawingSixPoint {
+  type: "sixpoint";
+  points: { time: UTCTimestamp; value: number }[];
+}
+
 
 const StockChart = ({ stockSymbol }: StockChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
 
-  const drawingModeRef = useRef<"trendline" | "horizontal" | null>(null);
+  const drawingModeRef = useRef<"trendline" | "horizontal" | "sixpoint" | null>(null);
   const lineBufferRef = useRef<{ time: UTCTimestamp; value: number }[]>([]);
   const drawnSeriesRef = useRef<Map<number, ISeriesApi<"Line">>>(new Map());
+  const labelSeriesRef = useRef<Map<number, ISeriesApi<"Line">[]>>(new Map()); // NEW
   const previewSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
 
   const [drawings, setDrawings] = useState<Drawing[]>([]);
@@ -147,6 +154,20 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           time,
         };
         setDrawings((prev) => [...prev, horizontalLine]);
+      } else if (drawingModeRef.current === "sixpoint") {
+        const point = { time, value: price };
+        if (lineBufferRef.current.some((p) => p.time === time)) return; // Prevent duplicates
+        lineBufferRef.current.push(point);
+      
+        if (lineBufferRef.current.length === 6) {
+          const newSixPoint: DrawingSixPoint = {
+            type: "sixpoint",
+            points: [...lineBufferRef.current],
+          };
+          setDrawings((prev) => [...prev, newSixPoint]);
+          lineBufferRef.current = [];
+        }
+        return;
       }
     });
 
@@ -209,7 +230,39 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           { time: lineEnd, value: drawing.price },
         ]);
         drawnSeriesRef.current.set(i, series);
+      } else if (drawing.type === "sixpoint") {
+        const series = chart.addSeries(LineSeries, {
+          color: "#673AB7",
+          lineWidth: 2,
+        });
+      
+        series.setData(drawing.points);
+        drawnSeriesRef.current.set(i, series);
+      
+        // Add labels 0–5
+        const labels: ISeriesApi<"Line">[] = [];
+        drawing.points.forEach((p, idx) => {
+          const label = chart.addSeries(LineSeries, {
+            color: "#000",
+            lineWidth: 1, // must be valid
+          });
+          label.applyOptions({
+            priceLineVisible: false,
+            lastValueVisible: true,
+            lineVisible: false, // ⬅ optional, if your version supports it
+            title: `${idx}`,
+          });
+          label.setData([{ time: p.time, value: p.value }]);
+          label.applyOptions({
+            priceLineVisible: false,
+            lastValueVisible: true,
+            title: `${idx}`,
+          });
+          labels.push(label);
+        });
+        labelSeriesRef.current.set(i, labels);
       }
+      
     });
   }, [drawings]);
 
@@ -252,6 +305,10 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       drawnSeriesRef.current.forEach((series) => {
         if (series) chart.removeSeries(series);
       });
+      labelSeriesRef.current.forEach((seriesArr) => {
+        seriesArr.forEach((s) => chart?.removeSeries(s));
+      });
+      labelSeriesRef.current.clear();
     }
     drawnSeriesRef.current.clear();
     setDrawings([]);
@@ -262,7 +319,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     }
   };
 
-  const toggleMode = (mode: "trendline" | "horizontal") => {
+  const toggleMode = (mode: "trendline" | "horizontal" | "sixpoint") => {
     drawingModeRef.current =
       drawingModeRef.current === mode ? null : mode;
     lineBufferRef.current = [];
@@ -302,10 +359,20 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         >
           <Minus size={16} />
         </button>
+        <button
+          onClick={() => toggleMode("sixpoint")}
+          className={`tool-button ${drawingModeRef.current === "sixpoint" ? "active" : ""}`}
+          title="6 Point Tool"
+        >
+          {/* you can use a new icon here, e.g., Plus or custom SVG */}
+          1→5
+        </button>
+
 
         <button onClick={clearDrawings} className="tool-button danger" title="Clear All">
           <Trash2 size={16} />
         </button>
+        
       </div>
 
       <div
