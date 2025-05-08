@@ -1,9 +1,27 @@
-import { createChart, LineSeries } from "lightweight-charts";
+import { createChart, CandlestickSeries, Time } from "lightweight-charts";
 import { useEffect, useRef } from "react";
 import { getTradingViewUrl } from "../utils";
 
+type Candle = {
+  time: number; // Unix timestamp (seconds)
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+};
+
 type StockChartProps = {
   stockSymbol: string;
+};
+
+// Converts Unix timestamp (in seconds) to lightweight-charts Time object
+const convertToChartTime = (timestamp: number): Time => {
+  const date = new Date(timestamp * 1000); // Convert from seconds to ms
+  return {
+    year: date.getUTCFullYear(),
+    month: date.getUTCMonth() + 1,
+    day: date.getUTCDate(),
+  };
 };
 
 const StockChart = ({ stockSymbol }: StockChartProps) => {
@@ -19,7 +37,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       height: 400,
       layout: {
         background: { color: "#ffffff" },
-        textColor: "#000",
+        textColor: "#000000",
       },
       grid: {
         vertLines: { color: "#eee" },
@@ -28,23 +46,43 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       timeScale: {
         timeVisible: true,
         secondsVisible: false,
-      }, 
+      },
     });
 
-    // ✅ KEEP YOUR WORKING LINE HERE
-    const lineSeries = chart.addSeries(LineSeries);
+    const candleSeries = chart.addSeries(CandlestickSeries, {
+      upColor: "#26a69a",
+      downColor: "#ef5350",
+      borderVisible: false,
+      wickUpColor: "#26a69a",
+      wickDownColor: "#ef5350",
+    });
 
-    const ws = new WebSocket(`ws://localhost:8000/ws/chart_data_weekly/${stockSymbol.toUpperCase()}`);
+    const ws = new WebSocket(
+      `ws://localhost:8000/ws/chart_data_weekly/${stockSymbol.toUpperCase()}`
+    );
 
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
 
       if (data.history) {
-        lineSeries.setData(data.history);
+        const formattedData = (data.history as Candle[]).map((candle) => ({
+          time: convertToChartTime(candle.time),
+          open: candle.open,
+          high: candle.high,
+          low: candle.low,
+          close: candle.close,
+        }));
+        candleSeries.setData(formattedData);
       }
 
       if (data.live) {
-        lineSeries.update(data.live);
+        candleSeries.update({
+          time: convertToChartTime(data.live.time),
+          open: data.live.value,
+          high: data.live.value,
+          low: data.live.value,
+          close: data.live.value,
+        });
       }
     };
 
@@ -60,7 +98,6 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
   return (
     <div className="position-relative bg-white p-3 shadow-sm rounded border">
-      {/* Floating button */}
       {stockSymbol && (
         <a
           href={getTradingViewUrl(stockSymbol)}
@@ -73,8 +110,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         </a>
       )}
 
-      <h5 className="fw-bold mb-3">📈 Weekly Stock Chart </h5>
-
+      <h5 className="fw-bold mb-3">📈 Weekly Candlestick Chart</h5>
       <div ref={chartContainerRef} style={{ width: "100%", height: "400px" }} />
     </div>
   );

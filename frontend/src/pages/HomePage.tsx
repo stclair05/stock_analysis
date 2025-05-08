@@ -76,13 +76,15 @@ function HomePage() {
           </div>
           
           {/* Trading view Simple Chart Card 
-          <div className="chart-card">
-            <StockChart stockSymbol={stockSymbol} />
-          </div> */}
+            <div className="chart-card">
+            <ElliottWaveChart stockSymbol={stockSymbol} />
+          </div>
+           */}
 
           {/* Custom Chart Card */}
+          
           <div className="chart-card">
-            <ElliottWaveChart stockSymbol={stockSymbol} />
+            <StockChart stockSymbol={stockSymbol} />
           </div>
         </div>
       ) : (
