@@ -9,6 +9,7 @@ import {
   IChartApi,
 } from "lightweight-charts";
 import { useEffect, useRef, useState } from "react";
+import { Trash2, Ruler, Minus } from "lucide-react";
 import { getTradingViewUrl } from "../utils";
 
 interface Candle {
@@ -285,31 +286,25 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
       <h5 className="fw-bold mb-3">📈 Weekly Candlestick Chart</h5>
 
-      <div className="toolbar mb-2">
+      <div className="toolbar mb-2 d-flex gap-2">
         <button
           onClick={() => toggleMode("trendline")}
-          className={`btn btn-sm me-2 ${
-            drawingModeRef.current === "trendline"
-              ? "btn-success"
-              : "btn-outline-primary"
-          }`}
+          className={`tool-button ${drawingModeRef.current === "trendline" ? "active" : ""}`}
+          title="Trendline"
         >
-          📏 Trendline {drawingModeRef.current === "trendline" ? "✓" : ""}
+          <Ruler size={16} />
         </button>
 
         <button
           onClick={() => toggleMode("horizontal")}
-          className={`btn btn-sm me-2 ${
-            drawingModeRef.current === "horizontal"
-              ? "btn-success"
-              : "btn-outline-secondary"
-          }`}
+          className={`tool-button ${drawingModeRef.current === "horizontal" ? "active" : ""}`}
+          title="Horizontal Line"
         >
-          ➖ Horizontal {drawingModeRef.current === "horizontal" ? "✓" : ""}
+          <Minus size={16} />
         </button>
 
-        <button onClick={clearDrawings} className="btn btn-danger btn-sm">
-          ❌ Clear
+        <button onClick={clearDrawings} className="tool-button danger" title="Clear All">
+          <Trash2 size={16} />
         </button>
       </div>
 
