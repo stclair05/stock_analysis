@@ -9,7 +9,7 @@ import {
   IChartApi,
 } from "lightweight-charts";
 import { useEffect, useRef, useState } from "react";
-import { Trash2, Ruler, Minus } from "lucide-react";
+import { Trash2, Ruler, Minus, RotateCcw } from "lucide-react";
 import { getTradingViewUrl } from "../utils";
 
 interface Candle {
@@ -31,20 +31,29 @@ interface DrawingHorizontal {
   time: UTCTimestamp;
 }
 
-type Drawing = DrawingLine | DrawingHorizontal;
+type Drawing = DrawingLine | DrawingHorizontal | DrawingSixPoint;
 
 interface StockChartProps {
   stockSymbol: string;
 }
 
+interface DrawingSixPoint {
+  type: "sixpoint";
+  points: { time: UTCTimestamp; value: number }[];
+}
+
+
 const StockChart = ({ stockSymbol }: StockChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+  const sixPointPreviewRef = useRef<ISeriesApi<"Line"> | null>(null);
 
-  const drawingModeRef = useRef<"trendline" | "horizontal" | null>(null);
+
+  const drawingModeRef = useRef<"trendline" | "horizontal" | "sixpoint" | null>(null);
   const lineBufferRef = useRef<{ time: UTCTimestamp; value: number }[]>([]);
   const drawnSeriesRef = useRef<Map<number, ISeriesApi<"Line">>>(new Map());
+  const labelSeriesRef = useRef<Map<number, ISeriesApi<"Line">[]>>(new Map()); // NEW
   const previewSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
 
   const [drawings, setDrawings] = useState<Drawing[]>([]);
@@ -117,6 +126,11 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
     chart.subscribeClick((param) => {
       if (!param.time || !param.point || !drawingModeRef.current) return;
+      if (!chartRef.current || !candleSeriesRef.current) {
+        console.warn("Chart not ready, ignoring click");
+        return;
+      }
+      
 
       const price = candleSeries.coordinateToPrice(param.point.y);
       if (price == null) return;
@@ -140,6 +154,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
             previewSeriesRef.current = null;
           }
         }
+
       } else if (drawingModeRef.current === "horizontal") {
         const horizontalLine: DrawingHorizontal = {
           type: "horizontal",
@@ -147,6 +162,49 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           time,
         };
         setDrawings((prev) => [...prev, horizontalLine]);
+
+      } else if (drawingModeRef.current === "sixpoint") {
+
+        const point = { time, value: price };
+        if (lineBufferRef.current.some((p) => p.time === time)) return; // Prevent duplicates
+        if (lineBufferRef.current.length > 6) {
+          console.warn("Resetting buffer: too many points");
+          lineBufferRef.current = [];
+        }
+        
+        lineBufferRef.current.push(point);
+        console.log("Added point", point, "Total:", lineBufferRef.current.length + 1);
+
+        // Update preview series
+        const chart = chartRef.current;
+        if (chart) {
+          const sortedPoints = [...lineBufferRef.current].sort((a, b) => a.time - b.time);
+
+          if (!sixPointPreviewRef.current) {
+            sixPointPreviewRef.current = chart.addSeries(LineSeries, {
+              color: "#9C27B0",
+              lineWidth: 2,
+            });
+          }
+
+          sixPointPreviewRef.current.setData(sortedPoints);
+        }
+      
+        if (lineBufferRef.current.length === 6) {
+          const newSixPoint: DrawingSixPoint = {
+            type: "sixpoint",
+            points: [...lineBufferRef.current].sort((a, b) => a.time - b.time),
+          };
+          setDrawings((prev) => [...prev, newSixPoint]);
+          lineBufferRef.current = [];
+
+          // Clear preview
+          if (sixPointPreviewRef.current) {
+            chartRef.current?.removeSeries(sixPointPreviewRef.current);
+            sixPointPreviewRef.current = null;
+          }
+        }
+        return;
       }
     });
 
@@ -209,7 +267,46 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           { time: lineEnd, value: drawing.price },
         ]);
         drawnSeriesRef.current.set(i, series);
+      } else if (drawing.type === "sixpoint") {
+
+        if (drawing.points.length !== 6) {
+          console.warn("Invalid sixpoint drawing skipped", drawing.points);
+          return;
+        }
+        const series = chart.addSeries(LineSeries, {
+          color: "#673AB7",
+          lineWidth: 2,
+        });
+        
+        const sortedPoints = [...drawing.points].sort((a, b) => a.time - b.time);
+
+        series.setData(sortedPoints);
+        drawnSeriesRef.current.set(i, series);
+      
+        // Add labels 0–5
+        const labels: ISeriesApi<"Line">[] = [];
+        drawing.points.forEach((p, idx) => {
+          const label = chart.addSeries(LineSeries, {
+            color: "#000",
+            lineWidth: 1, // must be valid
+          });
+          label.applyOptions({
+            priceLineVisible: false,
+            lastValueVisible: true,
+            lineVisible: false, // ⬅ optional, if your version supports it
+            title: `${idx}`,
+          });
+          label.setData([{ time: p.time, value: p.value }]);
+          label.applyOptions({
+            priceLineVisible: false,
+            lastValueVisible: true,
+            title: `${idx}`,
+          });
+          labels.push(label);
+        });
+        labelSeriesRef.current.set(i, labels);
       }
+      
     });
   }, [drawings]);
 
@@ -252,6 +349,10 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       drawnSeriesRef.current.forEach((series) => {
         if (series) chart.removeSeries(series);
       });
+      labelSeriesRef.current.forEach((seriesArr) => {
+        seriesArr.forEach((s) => chart?.removeSeries(s));
+      });
+      labelSeriesRef.current.clear();
     }
     drawnSeriesRef.current.clear();
     setDrawings([]);
@@ -260,15 +361,29 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       chart?.removeSeries(previewSeriesRef.current);
       previewSeriesRef.current = null;
     }
+    if (sixPointPreviewRef.current) {
+      chart?.removeSeries(sixPointPreviewRef.current);
+      sixPointPreviewRef.current = null;
+    }
+    
   };
 
-  const toggleMode = (mode: "trendline" | "horizontal") => {
+  const toggleMode = (mode: "trendline" | "horizontal" | "sixpoint") => {
     drawingModeRef.current =
       drawingModeRef.current === mode ? null : mode;
     lineBufferRef.current = [];
     setHoverPoint(null);
     forceRerender((v) => !v);
   };
+
+  const resetChart = () => {
+    clearDrawings();                    // Remove existing drawings
+    lineBufferRef.current = [];         // Reset input buffer
+    drawingModeRef.current = null;      // Exit drawing mode
+    setHoverPoint(null);                // Clear hover preview
+    forceRerender((v) => !v);           // Trigger re-render if needed
+  };
+  
 
   return (
     <div className="position-relative bg-white p-3 shadow-sm rounded border">
@@ -302,10 +417,30 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         >
           <Minus size={16} />
         </button>
+        <button
+          onClick={() => toggleMode("sixpoint")}
+          className={`tool-button ${drawingModeRef.current === "sixpoint" ? "active" : ""}`}
+          title="6 Point Tool"
+        >
+          {/* you can use a new icon here, e.g., Plus or custom SVG */}
+          1→5
+        </button>
+
 
         <button onClick={clearDrawings} className="tool-button danger" title="Clear All">
           <Trash2 size={16} />
         </button>
+
+        <button
+          onClick={resetChart}
+          className="tool-button"
+          title="Reload Chart"
+        >
+          <RotateCcw size={16} />
+        </button>
+
+
+        
       </div>
 
       <div
