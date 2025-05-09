@@ -9,7 +9,7 @@ import {
   IChartApi,
 } from "lightweight-charts";
 import { useEffect, useRef, useState } from "react";
-import { Trash2, Ruler, Minus } from "lucide-react";
+import { Trash2, Ruler, Minus, RotateCcw } from "lucide-react";
 import { getTradingViewUrl } from "../utils";
 
 interface Candle {
@@ -124,6 +124,11 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
     chart.subscribeClick((param) => {
       if (!param.time || !param.point || !drawingModeRef.current) return;
+      if (!chartRef.current || !candleSeriesRef.current) {
+        console.warn("Chart not ready, ignoring click");
+        return;
+      }
+      
 
       const price = candleSeries.coordinateToPrice(param.point.y);
       if (price == null) return;
@@ -147,6 +152,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
             previewSeriesRef.current = null;
           }
         }
+
       } else if (drawingModeRef.current === "horizontal") {
         const horizontalLine: DrawingHorizontal = {
           type: "horizontal",
@@ -154,10 +160,19 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           time,
         };
         setDrawings((prev) => [...prev, horizontalLine]);
+
       } else if (drawingModeRef.current === "sixpoint") {
+
         const point = { time, value: price };
         if (lineBufferRef.current.some((p) => p.time === time)) return; // Prevent duplicates
+        if (lineBufferRef.current.length > 6) {
+          console.warn("Resetting buffer: too many points");
+          lineBufferRef.current = [];
+        }
+        
         lineBufferRef.current.push(point);
+        console.log("Added point", point, "Total:", lineBufferRef.current.length + 1);
+
       
         if (lineBufferRef.current.length === 6) {
           const newSixPoint: DrawingSixPoint = {
@@ -231,6 +246,11 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         ]);
         drawnSeriesRef.current.set(i, series);
       } else if (drawing.type === "sixpoint") {
+
+        if (drawing.points.length !== 6) {
+          console.warn("Invalid sixpoint drawing skipped", drawing.points);
+          return;
+        }
         const series = chart.addSeries(LineSeries, {
           color: "#673AB7",
           lineWidth: 2,
@@ -329,6 +349,15 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     forceRerender((v) => !v);
   };
 
+  const resetChart = () => {
+    clearDrawings();                    // Remove existing drawings
+    lineBufferRef.current = [];         // Reset input buffer
+    drawingModeRef.current = null;      // Exit drawing mode
+    setHoverPoint(null);                // Clear hover preview
+    forceRerender((v) => !v);           // Trigger re-render if needed
+  };
+  
+
   return (
     <div className="position-relative bg-white p-3 shadow-sm rounded border">
       {stockSymbol && (
@@ -374,6 +403,16 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         <button onClick={clearDrawings} className="tool-button danger" title="Clear All">
           <Trash2 size={16} />
         </button>
+
+        <button
+          onClick={resetChart}
+          className="tool-button"
+          title="Reload Chart"
+        >
+          <RotateCcw size={16} />
+        </button>
+
+
         
       </div>
 
