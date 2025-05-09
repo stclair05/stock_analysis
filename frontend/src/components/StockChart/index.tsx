@@ -6,6 +6,9 @@ import {
   CrosshairMode,
   ISeriesApi,
   IChartApi,
+  DeepPartial,
+  LineStyleOptions,
+  SeriesOptionsCommon,
 } from "lightweight-charts";
 import { useEffect, useRef, useState } from "react";
 import { Ruler, Minus, RotateCcw } from "lucide-react";
@@ -38,11 +41,20 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
   const drawnSeriesRef = useRef<Map<number, ISeriesApi<"Line">>>(new Map());
   const previewSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
 
+  const meanRevChartRef = useRef<HTMLDivElement>(null);
+  const meanRevChartInstance = useRef<IChartApi | null>(null);
+  const meanRevLineRef = useRef<ISeriesApi<"Line"> | null>(null);
+
+
   const [overlayData, setOverlayData] = useState<{
     three_year_ma?: { time: number; value: number }[];
     dma_50?: { time: number; value: number }[];
     mace?: { time: number; value: number }[];
+    mean_rev_50dma?: { time: number; value: number }[];
+    mean_rev_200dma?: { time: number; value: number }[];
+    mean_rev_3yma?: { time: number; value: number }[];
   }>({});
+  
   
   const [show3YMA, setShow3YMA] = useState(false);
   const [show50DMA, setShow50DMA] = useState(false);
@@ -52,10 +64,6 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
   const dma50Ref = useRef<ISeriesApi<"Line"> | null>(null);
   const maceRef = useRef<ISeriesApi<"Line"> | null>(null);
   
-
-
-  
-
 
   
   const {
@@ -125,7 +133,45 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       },
     });
 
+    if (!meanRevChartRef.current) return;
+
+    const meanChart = createChart(meanRevChartRef.current, {
+      width: meanRevChartRef.current.clientWidth,
+      height: 200,
+      layout: {
+        background: { color: "#ffffff" },
+        textColor: "#000000",
+      },
+      crosshair: {
+        mode: CrosshairMode.Normal,
+      },
+      grid: {
+        vertLines: { color: "#eee" },
+        horzLines: { color: "#eee" },
+      },
+      timeScale: {
+        timeVisible: true,
+        secondsVisible: false,
+      },
+    });
+
     chartRef.current = chart;
+
+    meanRevChartInstance.current = meanChart;
+
+    // 🔗 Sync crosshair: main → mean reversion
+    chart.subscribeCrosshairMove((param) => {
+      if (param?.time) {
+        (meanChart as any).applyCrosshairMove(param);
+      }
+    });
+    
+    meanChart.subscribeCrosshairMove((param) => {
+      if (param?.time) {
+        (chart as any).applyCrosshairMove(param);
+      }
+    });
+    
     
 
     const candleSeries = chart.addSeries(CandlestickSeries, {
@@ -158,7 +204,6 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         return prev;
       });
     });
-    
 
 
     return () => {
@@ -332,6 +377,52 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       timeScale.setVisibleRange(currentRange); // 👈 restore it
     }
   }, [show3YMA, show50DMA, showMACE, overlayData]);
+
+  useEffect(() => {
+    const chart = meanRevChartInstance.current;
+    if (!chart) return;
+  
+    const lineOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
+      lineWidth: 2,
+      priceLineVisible: false,
+      lastValueVisible: false,
+    };
+  
+    const colors = {
+      mean_rev_50dma: "#ff5722",   // orange
+      mean_rev_200dma: "#4caf50",  // green
+      mean_rev_3yma: "#3f51b5",    // indigo
+    };
+  
+    // Clear old series if any
+    meanRevLineRef.current && chart.removeSeries(meanRevLineRef.current);
+    meanRevLineRef.current = null;
+  
+    // Optional: use a map to keep track of multiple lines
+    const lines: Record<string, ISeriesApi<"Line">> = {};
+  
+    (["mean_rev_50dma", "mean_rev_200dma", "mean_rev_3yma"] as const).forEach((key) => {
+      const data = overlayData[key];
+      if (!data) return;
+  
+      const series = chart.addSeries(LineSeries, {
+        color: colors[key],
+        ...lineOptions,
+      });
+  
+      series.setData(data.map((d) => ({
+        time: d.time as UTCTimestamp,
+        value: d.value,
+      })));
+  
+      lines[key] = series;
+    });
+  }, [
+    overlayData.mean_rev_50dma,
+    overlayData.mean_rev_200dma,
+    overlayData.mean_rev_3yma,
+  ]);
+  
   
   
 
@@ -395,10 +486,8 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
 
 
-      <div
-        ref={chartContainerRef}
-        style={{ width: "100%", height: "400px", marginBottom: "1rem" }}
-      />
+      <div ref={chartContainerRef} style={{ width: "100%", height: "400px" }} />
+      <div ref={meanRevChartRef} style={{ width: "100%", height: "200px", marginTop: "1rem" }} />
     </div>
   );
 };
