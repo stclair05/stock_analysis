@@ -12,36 +12,16 @@ import { useEffect, useRef, useState } from "react";
 import { Trash2, Ruler, Minus, RotateCcw } from "lucide-react";
 import { getTradingViewUrl } from "../utils";
 
-interface Candle {
-  time: number;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-}
+import {
+  Candle,
+  Drawing,
+  DrawingLine,
+  DrawingHorizontal,
+  DrawingSixPoint,
+  StockChartProps,
+} from "./StockChart/types";
 
-interface DrawingLine {
-  type: "line";
-  points: { time: UTCTimestamp; value: number }[];
-}
-
-interface DrawingHorizontal {
-  type: "horizontal";
-  price: number;
-  time: UTCTimestamp;
-}
-
-type Drawing = DrawingLine | DrawingHorizontal | DrawingSixPoint;
-
-interface StockChartProps {
-  stockSymbol: string;
-}
-
-interface DrawingSixPoint {
-  type: "sixpoint";
-  points: { time: UTCTimestamp; value: number }[];
-}
-
+import { useWebSocketData } from "./StockChart/useWebSocketData";
 
 const StockChart = ({ stockSymbol }: StockChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -85,6 +65,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     });
 
     chartRef.current = chart;
+    
 
     const candleSeries = chart.addSeries(CandlestickSeries, {
       upColor: "#26a69a",
@@ -95,36 +76,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     });
 
     candleSeriesRef.current = candleSeries;
-
-    const ws = new WebSocket(
-      `ws://localhost:8000/ws/chart_data_weekly/${stockSymbol.toUpperCase()}`
-    );
-
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-
-      if (data.history) {
-        const formattedData = (data.history as Candle[]).map((candle) => ({
-          time: candle.time as UTCTimestamp,
-          open: candle.open,
-          high: candle.high,
-          low: candle.low,
-          close: candle.close,
-        }));
-        candleSeries.setData(formattedData);
-      }
-
-      if (data.live) {
-        candleSeries.update({
-          time: data.live.time as UTCTimestamp,
-          open: data.live.value,
-          high: data.live.value,
-          low: data.live.value,
-          close: data.live.value,
-        });
-      }
-    };
-
+    
     chart.subscribeClick((param) => {
       if (!param.time || !param.point || !drawingModeRef.current) return;
       if (!chartRef.current || !candleSeriesRef.current) {
@@ -286,13 +238,12 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     });
     
 
-    ws.onclose = () => console.log("WebSocket closed");
 
     return () => {
-      ws.close();
       chart.remove();
     };
   }, [stockSymbol]);
+  useWebSocketData(stockSymbol, candleSeriesRef);
 
   useEffect(() => {
     const chart = chartRef.current;
