@@ -266,6 +266,9 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
   useEffect(() => {
     const chart = chartRef.current;
     if (!chart) return;
+
+    const timeScale = chart.timeScale();
+    const currentRange = timeScale.getVisibleRange(); // 👈 capture current range
   
     // --- 3Y MA ---
     if (show3YMA && overlayData.three_year_ma) {
@@ -323,6 +326,10 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     } else if (!showMACE && maceRef.current) {
       chart.removeSeries(maceRef.current);
       maceRef.current = null;
+    }
+
+    if (currentRange) {
+      timeScale.setVisibleRange(currentRange); // 👈 restore it
     }
   }, [show3YMA, show50DMA, showMACE, overlayData]);
   
