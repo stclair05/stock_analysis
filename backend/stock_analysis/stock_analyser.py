@@ -663,3 +663,42 @@ class StockAnalyser:
             fourteen_days_ago=safe_value(signal, -3),
             twentyone_days_ago=safe_value(signal, -4),
         )
+    
+    def get_overlay_lines(self) -> dict:
+        df = self.df.copy()
+
+        # 3Y MA (monthly)
+        monthly_close = df["Close"].resample("ME").last()
+        ma3y = monthly_close.rolling(window=36).mean().dropna()
+        ma3y_series = [
+            {"time": int(ts.timestamp()), "value": round(val, 2)}
+            for ts, val in ma3y.items()
+            if not pd.isna(val)
+        ]
+
+        # 50DMA (daily)
+        dma50 = df["Close"].rolling(window=50).mean().dropna()
+        dma50_series = [
+            {"time": int(ts.timestamp()), "value": round(val, 2)}
+            for ts, val in dma50.items()
+            if not pd.isna(val)
+        ]
+
+        # MACE (weekly)
+        df_weekly = df.resample("W-FRI").agg({"Open": "first", "High": "max", "Low": "min", "Close": "last"}).dropna()
+        s = df_weekly["Close"].rolling(4).mean()
+        m = df_weekly["Close"].rolling(13).mean()
+        l = df_weekly["Close"].rolling(26).mean()
+        mace = (s + m + l) / 3
+        mace_series = [
+            {"time": int(ts.timestamp()), "value": round(val, 2)}
+            for ts, val in mace.items()
+            if not pd.isna(val)
+        ]
+
+        return {
+            "three_year_ma": ma3y_series,
+            "dma_50": dma50_series,
+            "mace": mace_series
+        }
+

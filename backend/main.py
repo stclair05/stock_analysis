@@ -241,3 +241,12 @@ async def websocket_chart_data(websocket: WebSocket, symbol: str):
     except Exception as e:
         print(f"WebSocket error for {symbol}: {e}")
         await websocket.close()
+
+    @app.get("/overlay_data/{symbol}")
+    def get_overlay_data(symbol: str):
+        try:
+            analyser = StockAnalyser(symbol)
+            overlays = analyser.get_overlay_lines()
+            return JSONResponse(content=overlays)
+        except Exception as e:
+            return JSONResponse(status_code=500, content={"error": str(e)})
