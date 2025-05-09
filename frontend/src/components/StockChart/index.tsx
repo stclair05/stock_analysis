@@ -100,7 +100,6 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     sixPointPreviewRef,
     sixPointHoverLineRef
   );
-  
 
   
   useEffect(() => {

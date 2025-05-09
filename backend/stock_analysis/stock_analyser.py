@@ -2,6 +2,7 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 from fastapi import HTTPException
+from functools import lru_cache
 from .models import TimeSeriesMetric
 from aliases import SYMBOL_ALIASES
 from .utils import safe_value, detect_rsi_divergence, find_pivots, compute_wilder_rsi
@@ -12,15 +13,36 @@ class StockAnalyser:
     def __init__(self, symbol: str):
         raw_symbol = symbol.upper().strip()
         self.symbol = SYMBOL_ALIASES.get(raw_symbol, raw_symbol)
-        self.df = self._download_data()
+        self.df = StockAnalyser.get_price_data(self.symbol)
 
     def _download_data(self) -> pd.DataFrame:
-        df = yf.download(self.symbol, period='10y', interval='1d', auto_adjust=False)
+        df = yf.download(self.symbol, period='12y', interval='1d', auto_adjust=False)
         if df.empty:
             raise HTTPException(status_code=400, detail="Stock symbol not found or data unavailable.")
         if isinstance(df.columns, pd.MultiIndex):
             df.columns = df.columns.droplevel(1)
         return df
+    
+    @staticmethod
+    @lru_cache(maxsize=100)
+    def get_price_data(symbol: str) -> pd.DataFrame:
+        df = yf.download(symbol, period="12y", interval="1d", auto_adjust=False)
+        if df.empty:
+            return df
+
+        # Patch with today’s close (1D)
+        try:
+            live_df = yf.download(symbol, period="1d", interval="1d")
+            if not live_df.empty:
+                df.loc[live_df.index[-1]] = live_df.iloc[-1]
+        except Exception:
+            pass
+
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.droplevel(1)
+
+        return df
+
 
 
     def get_current_price(self) -> float | None:
