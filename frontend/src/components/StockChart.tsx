@@ -2,19 +2,16 @@ import {
   createChart,
   CandlestickSeries,
   LineSeries,
-  Time,
   UTCTimestamp,
   CrosshairMode,
   ISeriesApi,
   IChartApi,
 } from "lightweight-charts";
-import { useEffect, useRef, useState } from "react";
-import { Trash2, Ruler, Minus, RotateCcw } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { Ruler, Minus, RotateCcw } from "lucide-react";
 import { getTradingViewUrl } from "../utils";
 
 import {
-  Candle,
-  Drawing,
   DrawingLine,
   DrawingHorizontal,
   DrawingSixPoint,
@@ -22,6 +19,15 @@ import {
 } from "./StockChart/types";
 
 import { useWebSocketData } from "./StockChart/useWebSocketData";
+
+import { useDrawingManager } from "./StockChart/DrawingManager";
+
+import { usePreviewManager } from "./StockChart/PreviewManager";
+
+import { useDrawingRenderer } from "./StockChart/DrawingRenderer";
+
+import { useClickHandler } from "./StockChart/ClickHandler";
+
 
 const StockChart = ({ stockSymbol }: StockChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -32,15 +38,55 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
   const sixPointDotPreviewRef = useRef<ISeriesApi<"Line"> | null>(null);
   const sixPointHoverLineRef = useRef<ISeriesApi<"Line"> | null>(null);
 
-  const drawingModeRef = useRef<"trendline" | "horizontal" | "sixpoint" | null>(null);
-  const lineBufferRef = useRef<{ time: UTCTimestamp; value: number }[]>([]);
   const drawnSeriesRef = useRef<Map<number, ISeriesApi<"Line">>>(new Map());
   const previewSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
 
-  const [drawings, setDrawings] = useState<Drawing[]>([]);
-  const [hoverPoint, setHoverPoint] = useState<{ time: UTCTimestamp; value: number } | null>(null);
-  const [, forceRerender] = useState(false);
+  
+  const {
+    drawingModeRef,
+    lineBufferRef,
+    drawings,
+    setDrawings,
+    hoverPoint,
+    setHoverPoint,
+    toggleMode,
+    resetChart,
+    clearDrawings,
+  } = useDrawingManager(
+    chartRef,
+    previewSeriesRef,
+    sixPointPreviewRef,
+    sixPointHoverLineRef,
+    dotLabelSeriesRef,
+    drawnSeriesRef
+  );
 
+  usePreviewManager(
+    chartRef,
+    drawingModeRef,
+    lineBufferRef,
+    hoverPoint,
+    previewSeriesRef,
+    sixPointHoverLineRef
+  );
+
+  useDrawingRenderer(chartRef, drawings, drawnSeriesRef, dotLabelSeriesRef);
+
+  useClickHandler(
+    chartRef,
+    candleSeriesRef,
+    drawingModeRef,
+    lineBufferRef,
+    setDrawings,
+    setHoverPoint,
+    previewSeriesRef,
+    sixPointDotPreviewRef,
+    sixPointPreviewRef,
+    sixPointHoverLineRef
+  );
+  
+
+  
   useEffect(() => {
     if (!stockSymbol || !chartContainerRef.current) return;
 
@@ -77,145 +123,6 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
     candleSeriesRef.current = candleSeries;
     
-    chart.subscribeClick((param) => {
-      if (!param.time || !param.point || !drawingModeRef.current) return;
-      if (!chartRef.current || !candleSeriesRef.current) {
-        console.warn("Chart not ready, ignoring click");
-        return;
-      }
-      
-
-      const price = candleSeries.coordinateToPrice(param.point.y);
-      if (price == null) return;
-
-      const time = param.time as UTCTimestamp;
-
-      if (drawingModeRef.current === "trendline") {
-        const point = { time, value: price };
-        if (lineBufferRef.current.length === 0) {
-          lineBufferRef.current = [point];
-        } else {
-          const newLine: DrawingLine = {
-            type: "line",
-            points: [lineBufferRef.current[0], point],
-          };
-          setDrawings((prev) => [...prev, newLine]);
-          lineBufferRef.current = [];
-          setHoverPoint(null);
-          if (previewSeriesRef.current) {
-            chartRef.current?.removeSeries(previewSeriesRef.current);
-            previewSeriesRef.current = null;
-          }
-        }
-
-      } else if (drawingModeRef.current === "horizontal") {
-        const horizontalLine: DrawingHorizontal = {
-          type: "horizontal",
-          price,
-          time,
-        };
-        setDrawings((prev) => [...prev, horizontalLine]);
-
-      } else if (drawingModeRef.current === "sixpoint") {
-
-        const point = { time, value: price };
-        if (
-          lineBufferRef.current.length >= 6 ||
-          lineBufferRef.current.some((p) => p.time === time)
-        ) {
-          console.warn("Duplicate or too many points. Ignoring click.");         // Prevent duplicates
-          return;
-        }
-        if (lineBufferRef.current.length > 6) {
-          console.warn("Resetting buffer: too many points");
-          lineBufferRef.current = [];
-        }
-        
-        lineBufferRef.current.push(point);
-        console.log("Added point", point, "Total:", lineBufferRef.current.length + 1);
-
-        // Update preview series
-        const chart = chartRef.current;
-
-        const previewDotColor = '#1f77b4';
-        const seen = new Set();
-        const sortedPoints = [...lineBufferRef.current]
-          .filter((p) => {
-            if (seen.has(p.time)) return false;
-            seen.add(p.time);
-            return true;
-          })
-          .sort((a, b) => a.time - b.time);
-
-
-        if (!sixPointDotPreviewRef.current) {
-          sixPointDotPreviewRef.current = chart.addSeries(LineSeries, {
-            color: previewDotColor,
-            lineWidth: 1,
-            pointMarkersVisible: true,
-            pointMarkersRadius: 4,
-          });
-        }
-
-        sixPointDotPreviewRef.current.setData(sortedPoints);
-
-        const label = ['A', 'B', 'C', 'D', 'E', 'X'][lineBufferRef.current.length - 1];
-        sixPointDotPreviewRef.current.applyOptions({
-          priceLineVisible: false,
-          lastValueVisible: true,
-          title: label,
-        });
-
-
-        if (chart) {
-          const sortedPoints = [...lineBufferRef.current].sort((a, b) => a.time - b.time);
-
-          if (!sixPointPreviewRef.current) {
-            sixPointPreviewRef.current = chart.addSeries(LineSeries, {
-              color: "#444",
-              lineWidth: 1,
-              lineStyle: 1,
-            });
-          }
-
-          sixPointPreviewRef.current.setData(sortedPoints);
-        }
-        
-        // Clear the 6 preview dot labels before drawing the final version
-        if (sixPointDotPreviewRef.current) {
-          chart.removeSeries(sixPointDotPreviewRef.current);
-          sixPointDotPreviewRef.current = null;
-        }
-        
-
-
-        if (lineBufferRef.current.length === 6) {
-          if (sixPointDotPreviewRef.current) {
-            chart.removeSeries(sixPointDotPreviewRef.current);
-            sixPointDotPreviewRef.current = null;
-          }
-          
-          const newSixPoint: DrawingSixPoint = {
-            type: "sixpoint",
-            points: [...lineBufferRef.current].sort((a, b) => a.time - b.time),
-          };
-          if (sixPointHoverLineRef.current) {
-            chart.removeSeries(sixPointHoverLineRef.current);
-            sixPointHoverLineRef.current = null;
-          }
-          
-          setDrawings((prev) => [...prev, newSixPoint]);
-          lineBufferRef.current = [];
-
-          // Clear preview
-          if (sixPointPreviewRef.current) {
-            chartRef.current?.removeSeries(sixPointPreviewRef.current);
-            sixPointPreviewRef.current = null;
-          }
-        }
-        return;
-      }
-    });
 
     chart.subscribeCrosshairMove((param) => {
       if (!param.time || !param.point || lineBufferRef.current.length === 0 || lineBufferRef.current.length >= 6) {
@@ -243,6 +150,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       chart.remove();
     };
   }, [stockSymbol]);
+
   useWebSocketData(stockSymbol, candleSeriesRef);
 
   useEffect(() => {
@@ -326,126 +234,6 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     });
   }, [drawings]);
 
-  useEffect(() => {
-    const chart = chartRef.current;
-    if (!chart) return;
-  
-    if (
-      drawingModeRef.current === "trendline" &&
-      lineBufferRef.current.length === 1 &&
-      hoverPoint
-    ) {
-      const [p1, p2] = [lineBufferRef.current[0], hoverPoint];
-  
-      // If timestamps are the same, skip to avoid assertion error
-      if (p1.time === p2.time) return;
-  
-      const previewData = [p1, p2].sort((a, b) => a.time - b.time);
-  
-      if (!previewSeriesRef.current) {
-        previewSeriesRef.current = chart.addSeries(LineSeries, {
-          color: "#708090",
-          lineWidth: 1,
-          lineStyle: 1,
-        });
-      }
-      previewSeriesRef.current.setData(previewData);
-    } else if (
-      drawingModeRef.current === "sixpoint" &&
-      lineBufferRef.current.length >= 1 &&
-      hoverPoint
-    ) {
-      const lastPoint = lineBufferRef.current[lineBufferRef.current.length - 1];
-
-      if (lastPoint?.time === hoverPoint.time) return;
-
-      const previewLine = [...lineBufferRef.current]; // all clicked points so far
-      if (hoverPoint.time !== lastPoint.time) {
-        previewLine.push(hoverPoint); // add the hover point only if it's not overlapping
-      }
-
-      previewLine.sort((a, b) => a.time - b.time);
-
-
-      if (!sixPointHoverLineRef.current) {
-        sixPointHoverLineRef.current = chart.addSeries(LineSeries, {
-          color: "#708090",
-          lineWidth: 1,
-          lineStyle: 1,
-        });
-      }
-
-      sixPointHoverLineRef.current.setData(previewLine);
-     } else {
-      if (previewSeriesRef.current) {
-        chart.removeSeries(previewSeriesRef.current);
-        previewSeriesRef.current = null;
-      }
-    }
-  }, [hoverPoint]);
-  
-
-  const clearDrawings = () => {
-    const chart = chartRef.current;
-    if (!chart) return; // ✅ avoids undefined crash
-  
-    drawnSeriesRef.current.forEach((series) => {
-      chart.removeSeries(series);
-    });
-  
-    dotLabelSeriesRef.current.forEach((seriesArr) => {
-      if (!Array.isArray(seriesArr)) return;
-      for (const s of seriesArr) {
-        try {
-          if (s && typeof s.setData === "function") {
-            chart.removeSeries(s);
-          }
-        } catch (err) {
-          console.warn("Failed to remove series:", s, err);
-        }
-      }
-    });
-    
-  
-    dotLabelSeriesRef.current.clear();
-    drawnSeriesRef.current.clear();
-    setDrawings([]);
-    lineBufferRef.current = [];
-  
-    if (previewSeriesRef.current) {
-      chart.removeSeries(previewSeriesRef.current);
-      previewSeriesRef.current = null;
-    }
-  
-    if (sixPointPreviewRef.current) {
-      chart.removeSeries(sixPointPreviewRef.current);
-      sixPointPreviewRef.current = null;
-    }
-
-    if (sixPointHoverLineRef.current) {
-      chart.removeSeries(sixPointHoverLineRef.current);
-      sixPointHoverLineRef.current = null;
-    }
-    
-    
-  };
-  
-
-  const toggleMode = (mode: "trendline" | "horizontal" | "sixpoint") => {
-    drawingModeRef.current =
-      drawingModeRef.current === mode ? null : mode;
-    lineBufferRef.current = [];
-    setHoverPoint(null);
-    forceRerender((v) => !v);
-  };
-
-  const resetChart = () => {
-    clearDrawings();                    // Remove existing drawings
-    lineBufferRef.current = [];         // Reset input buffer
-    drawingModeRef.current = null;      // Exit drawing mode
-    setHoverPoint(null);                // Clear hover preview
-    forceRerender((v) => !v);           // Trigger re-render if needed
-  };
   
 
   return (
@@ -480,6 +268,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         >
           <Minus size={16} />
         </button>
+
         <button
           onClick={() => toggleMode("sixpoint")}
           className={`tool-button ${drawingModeRef.current === "sixpoint" ? "active" : ""}`}
@@ -497,8 +286,6 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           <RotateCcw size={16} />
         </button>
 
-
-        
       </div>
 
       <div
