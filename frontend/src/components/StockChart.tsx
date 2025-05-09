@@ -47,6 +47,8 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+  const sixPointPreviewRef = useRef<ISeriesApi<"Line"> | null>(null);
+
 
   const drawingModeRef = useRef<"trendline" | "horizontal" | "sixpoint" | null>(null);
   const lineBufferRef = useRef<{ time: UTCTimestamp; value: number }[]>([]);
@@ -173,6 +175,20 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         lineBufferRef.current.push(point);
         console.log("Added point", point, "Total:", lineBufferRef.current.length + 1);
 
+        // Update preview series
+        const chart = chartRef.current;
+        if (chart) {
+          const sortedPoints = [...lineBufferRef.current].sort((a, b) => a.time - b.time);
+
+          if (!sixPointPreviewRef.current) {
+            sixPointPreviewRef.current = chart.addSeries(LineSeries, {
+              color: "#9C27B0",
+              lineWidth: 2,
+            });
+          }
+
+          sixPointPreviewRef.current.setData(sortedPoints);
+        }
       
         if (lineBufferRef.current.length === 6) {
           const newSixPoint: DrawingSixPoint = {
@@ -181,6 +197,12 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           };
           setDrawings((prev) => [...prev, newSixPoint]);
           lineBufferRef.current = [];
+
+          // Clear preview
+          if (sixPointPreviewRef.current) {
+            chartRef.current?.removeSeries(sixPointPreviewRef.current);
+            sixPointPreviewRef.current = null;
+          }
         }
         return;
       }
@@ -339,6 +361,11 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       chart?.removeSeries(previewSeriesRef.current);
       previewSeriesRef.current = null;
     }
+    if (sixPointPreviewRef.current) {
+      chart?.removeSeries(sixPointPreviewRef.current);
+      sixPointPreviewRef.current = null;
+    }
+    
   };
 
   const toggleMode = (mode: "trendline" | "horizontal" | "sixpoint") => {
