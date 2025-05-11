@@ -158,20 +158,6 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     chartRef.current = chart;
 
     meanRevChartInstance.current = meanChart;
-
-    // 🔗 Sync crosshair: main → mean reversion
-    chart.subscribeCrosshairMove((param) => {
-      if (param?.time) {
-        (meanChart as any).applyCrosshairMove(param);
-      }
-    });
-    
-    meanChart.subscribeCrosshairMove((param) => {
-      if (param?.time) {
-        (chart as any).applyCrosshairMove(param);
-      }
-    });
-    
     
 
     const candleSeries = chart.addSeries(CandlestickSeries, {
@@ -204,6 +190,21 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         return prev;
       });
     });
+
+    chart.timeScale().subscribeVisibleTimeRangeChange((range) => {
+      const bottom = meanRevChartInstance.current;
+      if (bottom && range) {
+        bottom.timeScale().setVisibleRange(range);
+      }
+    });
+    
+    meanRevChartInstance.current?.timeScale().subscribeVisibleTimeRangeChange((range) => {
+      const top = chartRef.current;
+      if (top && range) {
+        top.timeScale().setVisibleRange(range);
+      }
+    });
+    
 
 
     return () => {
