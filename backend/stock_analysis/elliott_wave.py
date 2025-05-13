@@ -157,7 +157,15 @@ def evaluate_wave_scenario(pivots, df):
 
     entry_price = wave1 if current_wave == "Wave 3" else wave0
     stop_loss = wave0 if entry_type == "Long" else wave1
-    take_profit = target if target else wave3
+    take_profit = target if target is not None else wave3
+
+    # 🚨 Disable entry if profit potential is zero (float-safe)
+    if abs(take_profit - entry_price) < 1e-3:
+        entry_type = "None"
+        confidence = 0.0
+        entry_signal = False
+    else:
+        entry_signal = True
 
     confidence = score_wave_count(wave_type, rsi_divergence, volume_confirmation, passed_rules)
 
@@ -176,7 +184,7 @@ def evaluate_wave_scenario(pivots, df):
         "rsi_divergence": rsi_divergence,
         "volume_confirmation": volume_confirmation,
         "confidence": confidence,
-        "entry_signal": True,
+        "entry_signal": entry_signal,
         "entry_type": entry_type,
         "entry_price": float(entry_price),
         "stop_loss": float(stop_loss),
