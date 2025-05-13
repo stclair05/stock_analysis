@@ -1,10 +1,10 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from stock_analysis.stock_analyser import StockAnalyser
-from stock_analysis.models import StockRequest, StockAnalysisResponse, ElliottWaveResponse, FinancialMetrics
+from stock_analysis.models import StockRequest, StockAnalysisResponse, ElliottWaveScenariosResponse, FinancialMetrics
 from stock_analysis.elliott_wave import calculate_elliott_wave
 from stock_analysis.fundamentals import Fundamentals
-from stock_analysis.utils import compute_sortino_ratio_cached as compute_sortino_ratio
+from stock_analysis.utils import compute_sortino_ratio_cached as compute_sortino_ratio, convert_numpy_types
 from fastapi.responses import JSONResponse
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -55,7 +55,7 @@ def analyse(stock_request: StockRequest):
         chaikin_money_flow=analyser.chaikin_money_flow(),
     )
 
-@app.post("/elliott", response_model=ElliottWaveResponse)
+@app.post("/elliott", response_model=ElliottWaveScenariosResponse)
 def elliott(stock_request: StockRequest):
     analyser = StockAnalyser(stock_request.symbol)
     df = analyser.df
@@ -65,7 +65,8 @@ def elliott(stock_request: StockRequest):
     if "error" in elliott_result:
         return JSONResponse(status_code=400, content={"detail": elliott_result["error"]})
 
-    return elliott_result
+    return convert_numpy_types(elliott_result)
+
 
 @app.get("/portfolio_live_data")
 def get_portfolio_live_data():

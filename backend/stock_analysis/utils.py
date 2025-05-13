@@ -202,3 +202,14 @@ def sortino_ratio(symbol: str, period: str = "1y", interval: str = "1d") -> Opti
 @lru_cache(maxsize=500)
 def compute_sortino_ratio_cached(symbol: str):
     return sortino_ratio(symbol)
+
+def convert_numpy_types(obj):
+    if isinstance(obj, dict):
+        return {k: convert_numpy_types(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_numpy_types(v) for v in obj]
+    elif isinstance(obj, (np.float32, np.float64)):
+        return float(obj)
+    elif isinstance(obj, (np.int32, np.int64)):
+        return int(obj)
+    return obj
