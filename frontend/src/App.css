@@ -39,16 +39,18 @@
   padding: 20px;
   min-height: 500px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  flex: 1 1 0;
-  max-width: none;
+  flex: 1 1 30%;
+  max-width: 30%;
+  min-width: 300px;
 }
 
 .chart-card {
   background: white;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  flex: 1 1 0;
-  max-width: none;
+  flex: 1 1 50%;
+  max-width: 50%;
+  min-width: 400px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -56,6 +58,20 @@
   overflow: visible; /* ensure no overflow clipping */
   
 }
+
+.fundamental-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  min-height: 500px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  flex: 1 1 20%;
+  max-width: 20%;
+  min-width: 280px;
+  display: flex;
+  flex-direction: column;
+}
+
 
 
 
@@ -111,16 +127,6 @@
   background-color: #d32f2f;
 }
 
-.fundamental-card {
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
-  min-height: 500px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  flex: 1 1 0;
-  max-width: none;
-  min-width: 300px;
-}
 
 /* Optional: stack vertically on smaller screens */
 @media (max-width: 1200px) {

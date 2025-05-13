@@ -57,7 +57,7 @@ const Fundamentals = ({ stockSymbol }: Props) => {
   if (!data) return <div className="placeholder">Loading fundamentals...</div>;
 
   return (
-    <div className="table-responsive fade-in fundamental-card">
+    <div className="table-responsive fade-in" style={{ width: "100%" }}>
       <h2 className="mb-3">📘 Fundamentals for <strong>{data.ticker}</strong></h2>
       <table className="table table-striped metrics-table">
         <tbody>
