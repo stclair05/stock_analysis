@@ -108,7 +108,7 @@ const Fundamentals = ({ stockSymbol }: Props) => {
 
   return (
     <div className="table-responsive fade-in" style={{ width: "100%" }}>
-      <h2 className="mb-3">📘 Fundamentals for <strong>{data.ticker}</strong></h2>
+      <h2 className="mb-3">Fundamentals for <strong>{data.ticker}</strong></h2>
       <table className="table table-striped metrics-table">
         <tbody>
           {renderRow("Revenue", data.revenue ? `$${(data.revenue / 1_000_000_000).toFixed(1)}B` : "N/A")}

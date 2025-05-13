@@ -18,13 +18,23 @@ class Fundamentals:
         self.info = self.ticker_obj.info
 
         # Preload all FMP data
-        self.income_data = self._fetch_statement("income-statement")
-        self.balance_data = self._fetch_statement("balance-sheet-statement")
-        self.cashflow_data = self._fetch_statement("cash-flow-statement")
-        self.profile_data = self._fetch_statement("profile")
-        self.quote_data = self._fetch_statement("quote")
+        endpoints = [
+            ("income", "income-statement"),
+            ("balance", "balance-sheet-statement"),
+            ("cashflow", "cash-flow-statement"),
+            ("profile", "profile"),
+            ("quote", "quote"),
+        ]
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            futures = {
+                executor.submit(self._fetch_statement, endpoint): name
+                for name, endpoint in endpoints
+            }
+            for future in futures:
+                name = futures[future]
+                setattr(self, f"{name}_data", future.result())
 
-    def _fetch_statement(self, endpoint: str, limit: int = 3):
+    def _fetch_statement(self, endpoint: str, limit: int = 5):
         url = f"{FMP_BASE_URL}/api/v3/{endpoint}/{self.symbol}?limit={limit}&apikey={FMP_API_KEY}"
         try:
             response = requests.get(url)
@@ -71,15 +81,28 @@ class Fundamentals:
 
     def fcf_growth(self, years: int = 3) -> Optional[float]:
         try:
-            if len(self.cashflow_data) < years + 1:
+            fcf_values = [
+                entry.get("freecashflow")
+                for entry in self.cashflow_data[:years + 1]
+                if entry.get("freecashflow") is not None
+            ]
+
+            if len(fcf_values) < years + 1:
+                print("⚠️ Not enough FCF data:", fcf_values)
                 return None
-            fcf_values = [entry.get("freecashflow") for entry in self.cashflow_data[:years+1]]
-            if None in fcf_values or fcf_values[0] <= 0 or fcf_values[-1] <= 0:
+
+            start, end = fcf_values[-1], fcf_values[0]
+            if start <= 0 or end <= 0:
+                print("❌ Invalid FCF values for CAGR:", fcf_values)
                 return None
-            cagr = (fcf_values[0] / fcf_values[-1]) ** (1 / years) - 1
+
+            cagr = (end / start) ** (1 / years) - 1
+            print(f"✅ FCF CAGR for {self.symbol}: {round(cagr * 100, 2)}% using {fcf_values}")
             return round(cagr * 100, 2)
-        except:
+        except Exception as e:
+            print(f"❌ Exception in fcf_growth for {self.symbol}: {e}")
             return None
+
 
     def roce(self) -> Optional[float]:
         try:
