@@ -114,8 +114,8 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     if (!stockSymbol || !chartContainerRef.current) return;
 
     const chart = createChart(chartContainerRef.current, {
-      width: chartContainerRef.current.clientWidth,
       height: 400,
+      width: 0,
       layout: {
         background: { color: "#ffffff" },
         textColor: "#000000",
@@ -156,6 +156,17 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     });
 
     chartRef.current = chart;
+
+    const resizeObserver = new ResizeObserver(entries => {
+      for (let entry of entries) {
+        if (entry.contentRect) {
+          chart.resize(entry.contentRect.width, 400);
+          meanChart.resize(entry.contentRect.width, 200);
+        }
+      }
+    });
+    
+    resizeObserver.observe(chartContainerRef.current);
 
     meanRevChartInstance.current = meanChart;
     
