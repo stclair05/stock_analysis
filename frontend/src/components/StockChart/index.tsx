@@ -111,7 +111,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
   
   useEffect(() => {
-    if (!stockSymbol || !chartContainerRef.current) return;
+    if (!stockSymbol || !chartContainerRef.current || !meanRevChartRef.current) return;
 
     const chart = createChart(chartContainerRef.current, {
       height: 400,
@@ -156,6 +156,23 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     });
 
     chartRef.current = chart;
+    meanRevChartInstance.current = meanChart;
+      // Create and assign the line series for the bottom chart
+      const meanRevLineSeries = meanChart.addSeries(LineSeries, {
+        color: "#000000",
+        lineWidth: 2,
+      });
+  
+      
+  
+      meanRevLineSeries.setData([
+        {
+          time: Date.now() / 1000 as UTCTimestamp, // dummy time
+          value: 0,                                // dummy value
+        },
+      ]);
+      
+      meanRevLineRef.current = meanRevLineSeries;
 
     const resizeObserver = new ResizeObserver(entries => {
       for (let entry of entries) {
@@ -168,8 +185,6 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     
     resizeObserver.observe(chartContainerRef.current);
 
-    meanRevChartInstance.current = meanChart;
-    
 
     const candleSeries = chart.addSeries(CandlestickSeries, {
       upColor: "#26a69a",
@@ -180,30 +195,83 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     });
 
     candleSeriesRef.current = candleSeries;
+
+   
+
+    function findClosestTime(series: ISeriesApi<any>, time: UTCTimestamp): UTCTimestamp | null {
+      const data = series?.data?.() ?? [];  // If you're storing data elsewhere, replace this
+      if (!data.length) return null;
+    
+      let closest = data[0].time;
+      let minDiff = Math.abs(time - closest);
+    
+      for (let i = 1; i < data.length; i++) {
+        const diff = Math.abs(data[i].time - time);
+        if (diff < minDiff) {
+          closest = data[i].time;
+          minDiff = diff;
+        }
+      }
+    
+      return closest;
+    }
+    
     
 
     chart.subscribeCrosshairMove((param) => {
-      if (!param.time || !param.point || lineBufferRef.current.length === 0 || lineBufferRef.current.length >= 6) {
-        setHoverPoint((prev) => (prev !== null ? null : prev));
-        return;
-      }
+      if (!param.time || !param.point) return;
     
       const price = candleSeries.coordinateToPrice(param.point.y);
       if (price == null) return;
     
       const time = param.time as UTCTimestamp;
     
-      // Only update if value changed
-      setHoverPoint((prev) => {
-        if (!prev || prev.time !== time || prev.value !== price) {
-          return { time, value: price };
+      if (!(lineBufferRef.current.length === 0 || lineBufferRef.current.length >= 6)) {
+        setHoverPoint((prev) => {
+          if (!prev || prev.time !== time || prev.value !== price) {
+            return { time, value: price };
+          }
+          return prev;
+        });
+      }
+    
+      const bottomChart = meanRevChartInstance.current;
+      const bottomSeries = meanRevLineRef.current;
+      if (bottomChart && bottomSeries) {
+        const snappedTime = findClosestTime(bottomSeries, time);
+        if (snappedTime) {
+          bottomChart.setCrosshairPosition(0, snappedTime, bottomSeries);
         }
-        return prev;
+      }
+      console.log("🧪 Top chart move:", {
+        time: param.time,
+        point: param.point,
+        bottomChartExists: !!meanRevChartInstance.current,
+        bottomSeriesExists: !!meanRevLineRef.current,
       });
+      
+    });
+    
+
+    meanChart.subscribeCrosshairMove((param) => {
+      if (!param.time || !param.point) return;
+  
+      const topChart = chartRef.current;
+      const topSeries = candleSeriesRef.current;
+      if (topChart && topSeries) {
+        const price = topSeries.coordinateToPrice(param.point.y) ?? 0;
+        const snappedTime = findClosestTime(topSeries, param.time as UTCTimestamp);
+        if (snappedTime) {
+          topChart.setCrosshairPosition(price, snappedTime, topSeries);
+        }
+      }
     });
 
+
+    // Sync zoom/range
     chart.timeScale().subscribeVisibleTimeRangeChange((range) => {
       const bottom = meanRevChartInstance.current;
+      if (!range || !bottom) return; 
       if (bottom && range) {
         bottom.timeScale().setVisibleRange(range);
       }
@@ -211,15 +279,16 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     
     meanRevChartInstance.current?.timeScale().subscribeVisibleTimeRangeChange((range) => {
       const top = chartRef.current;
+      if (!range || !top) return;
       if (top && range) {
         top.timeScale().setVisibleRange(range);
       }
     });
-    
-
 
     return () => {
       chart.remove();
+      meanChart.remove();
+      resizeObserver.disconnect();
     };
   }, [stockSymbol]);
 
@@ -385,9 +454,6 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       maceRef.current = null;
     }
 
-    if (currentRange) {
-      timeScale.setVisibleRange(currentRange); // 👈 restore it
-    }
   }, [show3YMA, show50DMA, showMACE, overlayData]);
 
   useEffect(() => {
