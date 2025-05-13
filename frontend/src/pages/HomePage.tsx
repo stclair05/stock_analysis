@@ -1,5 +1,6 @@
 import "../App.css";
 import Metrics from "../components/Metrics";
+import Fundamentals from "../components/Fundamentals";
 import StockChart from "../components/StockChart";
 import { useState } from "react";
 
@@ -68,23 +69,29 @@ function HomePage() {
 
       {/* Metrics + Chart Section */}
       {stockSymbol ? (
-        <div className="cards-wrapper-row">
-          {/* Metrics Card */}
-          <div className="metric-card">
-            <Metrics stockSymbol={stockSymbol} setParentLoading={setLoading} />
-          </div>
+        <>
+          <div className="cards-wrapper-row">
+            <div className="metric-card">
+              <Metrics stockSymbol={stockSymbol} setParentLoading={setLoading} />
+            </div>
 
-          {/* Custom Chart Card */}
-          
-          <div className="chart-card">
-            <StockChart stockSymbol={stockSymbol} />
-          </div>
-        </div>
+            <div className="chart-card">
+              <StockChart stockSymbol={stockSymbol} />
+            </div>
+
+            {/* 👉 New Fundamental Metrics Table */}
+            <div className="fundamental-card">
+              <Fundamentals stockSymbol={stockSymbol} />
+            </div>
+          </div>   
+        </>
       ) : (
         <div className="text-center mt-5">
           <h4 className="text-muted">🔎 Search for a stock to view metrics and chart</h4>
         </div>
       )}
+
+
     </div>
   );
 }
