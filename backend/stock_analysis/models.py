@@ -35,23 +35,40 @@ class StockAnalysisResponse(BaseModel):
     rsi_divergence_monthly: TimeSeriesMetric
     chaikin_money_flow: TimeSeriesMetric
 
-class ElliottWaveResponse(BaseModel):
+class WaveLabel(BaseModel):
+    index: int
+    price: float
+    label: str
+
+class Scenario(BaseModel):
+    wave_type: str
     current_wave: str
-    wave_type: Optional[str] = None
     wave_start_price: float
     current_price: float
-    wave_end_projection: float
+    wave_end_projection: Optional[float] = None
     invalidation_level: float
     buy_1: float
     buy_2: float
     buy_3: float
     sell_price: float
-    arrow_target: float
-    rsi_divergence: Optional[str] = None
-    volume_confirmation: Optional[str] = None
+    arrow_target: Optional[float] = None
+    rsi_divergence: str
+    volume_confirmation: str
+    confidence: float
+    entry_signal: bool
+    entry_type: str
+    entry_price: float
+    stop_loss: float
+    take_profit: float
+    wave_labels: list[WaveLabel]
     wave_a: Optional[float] = None
     wave_b: Optional[float] = None
     wave_c: Optional[float] = None
+    pivot_count: Optional[int] = None
+
+class ElliottWaveScenariosResponse(BaseModel):
+    scenarios: list[Scenario]
+
 
 class FinancialMetrics(BaseModel):
     ticker: str
