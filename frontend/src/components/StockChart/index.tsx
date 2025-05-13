@@ -6,8 +6,11 @@ import {
   CrosshairMode,
   ISeriesApi,
   IChartApi,
+  DeepPartial,
+  LineStyleOptions,
+  SeriesOptionsCommon,
 } from "lightweight-charts";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Ruler, Minus, RotateCcw } from "lucide-react";
 import { getTradingViewUrl } from "../../utils";
 
@@ -37,6 +40,30 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
   const drawnSeriesRef = useRef<Map<number, ISeriesApi<"Line">>>(new Map());
   const previewSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
+
+  const meanRevChartRef = useRef<HTMLDivElement>(null);
+  const meanRevChartInstance = useRef<IChartApi | null>(null);
+  const meanRevLineRef = useRef<ISeriesApi<"Line"> | null>(null);
+
+
+  const [overlayData, setOverlayData] = useState<{
+    three_year_ma?: { time: number; value: number }[];
+    dma_50?: { time: number; value: number }[];
+    mace?: { time: number; value: number }[];
+    mean_rev_50dma?: { time: number; value: number }[];
+    mean_rev_200dma?: { time: number; value: number }[];
+    mean_rev_3yma?: { time: number; value: number }[];
+  }>({});
+  
+  
+  const [show3YMA, setShow3YMA] = useState(false);
+  const [show50DMA, setShow50DMA] = useState(false);
+  const [showMACE, setShowMACE] = useState(false);
+  
+  const ma3YRef = useRef<ISeriesApi<"Line"> | null>(null);
+  const dma50Ref = useRef<ISeriesApi<"Line"> | null>(null);
+  const maceRef = useRef<ISeriesApi<"Line"> | null>(null);
+  
 
   
   const {
@@ -81,7 +108,6 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     sixPointPreviewRef,
     sixPointHoverLineRef
   );
-  
 
   
   useEffect(() => {
@@ -107,7 +133,31 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       },
     });
 
+    if (!meanRevChartRef.current) return;
+
+    const meanChart = createChart(meanRevChartRef.current, {
+      width: meanRevChartRef.current.clientWidth,
+      height: 200,
+      layout: {
+        background: { color: "#ffffff" },
+        textColor: "#000000",
+      },
+      crosshair: {
+        mode: CrosshairMode.Normal,
+      },
+      grid: {
+        vertLines: { color: "#eee" },
+        horzLines: { color: "#eee" },
+      },
+      timeScale: {
+        timeVisible: true,
+        secondsVisible: false,
+      },
+    });
+
     chartRef.current = chart;
+
+    meanRevChartInstance.current = meanChart;
     
 
     const candleSeries = chart.addSeries(CandlestickSeries, {
@@ -139,6 +189,20 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         }
         return prev;
       });
+    });
+
+    chart.timeScale().subscribeVisibleTimeRangeChange((range) => {
+      const bottom = meanRevChartInstance.current;
+      if (bottom && range) {
+        bottom.timeScale().setVisibleRange(range);
+      }
+    });
+    
+    meanRevChartInstance.current?.timeScale().subscribeVisibleTimeRangeChange((range) => {
+      const top = chartRef.current;
+      if (top && range) {
+        top.timeScale().setVisibleRange(range);
+      }
     });
     
 
@@ -231,6 +295,136 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     });
   }, [drawings]);
 
+  useEffect(() => {
+    const fetchOverlayData = async () => {
+      try {
+        const res = await fetch(`http://localhost:8000/overlay_data/${stockSymbol}`);
+        const data = await res.json();
+        setOverlayData(data);
+      } catch (err) {
+        console.error("Failed to fetch overlay data", err);
+      }
+    };
+  
+    fetchOverlayData();
+  }, [stockSymbol]);
+
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart) return;
+
+    const timeScale = chart.timeScale();
+    const currentRange = timeScale.getVisibleRange(); // 👈 capture current range
+  
+    // --- 3Y MA ---
+    if (show3YMA && overlayData.three_year_ma) {
+      if (!ma3YRef.current) {
+        ma3YRef.current = chart.addSeries(LineSeries, {
+          color: "#0066ff",
+          lineWidth: 1,
+          lineStyle: 2, // dotted
+          priceLineVisible: false,
+          lastValueVisible: false,
+        });        
+      }
+      ma3YRef.current.setData(
+        overlayData.three_year_ma?.map(d => ({ time: d.time as UTCTimestamp, value: d.value })) || []
+      );
+      
+    } else if (!show3YMA && ma3YRef.current) {
+      chart.removeSeries(ma3YRef.current);
+      ma3YRef.current = null;
+    }
+  
+    // --- 50DMA ---
+    if (show50DMA && overlayData.dma_50) {
+      if (!dma50Ref.current) {
+        dma50Ref.current = chart.addSeries(LineSeries, {
+          color: "#00bcd4",
+          lineWidth: 2,
+          lineStyle: 0, // solid
+          priceLineVisible: false,
+          lastValueVisible: false,
+        });        
+      }
+      dma50Ref.current.setData(
+        overlayData.dma_50.map(d => ({ time: d.time as UTCTimestamp, value: d.value }))
+      );
+    } else if (!show50DMA && dma50Ref.current) {
+      chart.removeSeries(dma50Ref.current);
+      dma50Ref.current = null;
+    }
+  
+    // --- MACE ---
+    if (showMACE && overlayData.mace) {
+      if (!maceRef.current) {
+        maceRef.current = chart.addSeries(LineSeries, {
+          color: "#9c27b0",
+          lineWidth: 1,
+          lineStyle: 1, // dashed
+          priceLineVisible: false,
+          lastValueVisible: false,
+        });        
+      }
+      maceRef.current.setData(
+        overlayData.mace.map(d => ({ time: d.time as UTCTimestamp, value: d.value }))
+      );
+    } else if (!showMACE && maceRef.current) {
+      chart.removeSeries(maceRef.current);
+      maceRef.current = null;
+    }
+
+    if (currentRange) {
+      timeScale.setVisibleRange(currentRange); // 👈 restore it
+    }
+  }, [show3YMA, show50DMA, showMACE, overlayData]);
+
+  useEffect(() => {
+    const chart = meanRevChartInstance.current;
+    if (!chart) return;
+  
+    const lineOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
+      lineWidth: 2,
+      priceLineVisible: false,
+      lastValueVisible: false,
+    };
+  
+    const colors = {
+      mean_rev_50dma: "#ff5722",   // orange
+      mean_rev_200dma: "#4caf50",  // green
+      mean_rev_3yma: "#3f51b5",    // indigo
+    };
+  
+    // Clear old series if any
+    meanRevLineRef.current && chart.removeSeries(meanRevLineRef.current);
+    meanRevLineRef.current = null;
+  
+    // Optional: use a map to keep track of multiple lines
+    const lines: Record<string, ISeriesApi<"Line">> = {};
+  
+    (["mean_rev_50dma", "mean_rev_200dma", "mean_rev_3yma"] as const).forEach((key) => {
+      const data = overlayData[key];
+      if (!data) return;
+  
+      const series = chart.addSeries(LineSeries, {
+        color: colors[key],
+        ...lineOptions,
+      });
+  
+      series.setData(data.map((d) => ({
+        time: d.time as UTCTimestamp,
+        value: d.value,
+      })));
+  
+      lines[key] = series;
+    });
+  }, [
+    overlayData.mean_rev_50dma,
+    overlayData.mean_rev_200dma,
+    overlayData.mean_rev_3yma,
+  ]);
+  
+  
   
 
   return (
@@ -285,10 +479,16 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
       </div>
 
-      <div
-        ref={chartContainerRef}
-        style={{ width: "100%", height: "400px", marginBottom: "1rem" }}
-      />
+      <div className="indicator-panel d-flex flex-column gap-2 mt-3">
+        <label><input type="checkbox" checked={show3YMA} onChange={() => setShow3YMA(v => !v)} /> 3Y MA</label>
+        <label><input type="checkbox" checked={show50DMA} onChange={() => setShow50DMA(v => !v)} /> 50DMA</label>
+        <label><input type="checkbox" checked={showMACE} onChange={() => setShowMACE(v => !v)} /> MACE</label>
+      </div>
+
+
+
+      <div ref={chartContainerRef} style={{ width: "100%", height: "400px" }} />
+      <div ref={meanRevChartRef} style={{ width: "100%", height: "200px", marginTop: "1rem" }} />
     </div>
   );
 };

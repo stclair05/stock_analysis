@@ -2,6 +2,7 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 from fastapi import HTTPException
+from functools import lru_cache
 from .models import TimeSeriesMetric
 from aliases import SYMBOL_ALIASES
 from .utils import safe_value, detect_rsi_divergence, find_pivots, compute_wilder_rsi
@@ -12,15 +13,36 @@ class StockAnalyser:
     def __init__(self, symbol: str):
         raw_symbol = symbol.upper().strip()
         self.symbol = SYMBOL_ALIASES.get(raw_symbol, raw_symbol)
-        self.df = self._download_data()
+        self.df = StockAnalyser.get_price_data(self.symbol)
 
     def _download_data(self) -> pd.DataFrame:
-        df = yf.download(self.symbol, period='10y', interval='1d', auto_adjust=False)
+        df = yf.download(self.symbol, period='12y', interval='1d', auto_adjust=False)
         if df.empty:
             raise HTTPException(status_code=400, detail="Stock symbol not found or data unavailable.")
         if isinstance(df.columns, pd.MultiIndex):
             df.columns = df.columns.droplevel(1)
         return df
+    
+    @staticmethod
+    @lru_cache(maxsize=100)
+    def get_price_data(symbol: str) -> pd.DataFrame:
+        df = yf.download(symbol, period="12y", interval="1d", auto_adjust=False)
+        if df.empty:
+            return df
+
+        # Patch with today’s close (1D)
+        try:
+            live_df = yf.download(symbol, period="1d", interval="1d")
+            if not live_df.empty:
+                df.loc[live_df.index[-1]] = live_df.iloc[-1]
+        except Exception:
+            pass
+
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.droplevel(1)
+
+        return df
+
 
 
     def get_current_price(self) -> float | None:
@@ -663,3 +685,73 @@ class StockAnalyser:
             fourteen_days_ago=safe_value(signal, -3),
             twentyone_days_ago=safe_value(signal, -4),
         )
+    
+    def get_overlay_lines(self) -> dict:
+        df = self.df.copy()
+
+        # 3Y MA (monthly)
+        monthly_close = df["Close"].resample("ME").last()
+        ma3y = monthly_close.rolling(window=36).mean().dropna()
+        ma3y_series = [
+            {"time": int(ts.timestamp()), "value": round(val, 2)}
+            for ts, val in ma3y.items()
+            if not pd.isna(val)
+        ]
+
+        # 50DMA (daily)
+        dma50 = df["Close"].rolling(window=50).mean().dropna()
+        dma50_series = [
+            {"time": int(ts.timestamp()), "value": round(val, 2)}
+            for ts, val in dma50.items()
+            if not pd.isna(val)
+        ]
+
+        # MACE (weekly)
+        df_weekly = df.resample("W-FRI").agg({"Open": "first", "High": "max", "Low": "min", "Close": "last"}).dropna()
+        s = df_weekly["Close"].rolling(4).mean()
+        m = df_weekly["Close"].rolling(13).mean()
+        l = df_weekly["Close"].rolling(26).mean()
+        mace = (s + m + l) / 3
+        mace_series = [
+            {"time": int(ts.timestamp()), "value": round(val, 2)}
+            for ts, val in mace.items()
+            if not pd.isna(val)
+        ]
+
+        # Mean reversion
+        mean_rev = self.get_mean_reversion_deviation_lines()
+
+        return {
+            "three_year_ma": ma3y_series,
+            "dma_50": dma50_series,
+            "mace": mace_series,
+            **mean_rev
+        }
+    
+    def get_mean_reversion_deviation_lines(self) -> dict:
+        price = self.df["Close"]
+        ma50 = price.rolling(window=50).mean()
+        ma200 = price.rolling(window=200).mean()
+        monthly = price.resample("ME").last()
+        ma3y = monthly.rolling(window=36).mean()
+
+        dev_50 = ((price - ma50) / ma50 * 100).dropna()
+        dev_200 = ((price - ma200) / ma200 * 100).dropna()
+        dev_3y = ((monthly - ma3y) / ma3y * 100).dropna()
+
+        return {
+            "mean_rev_50dma": [
+                {"time": int(ts.timestamp()), "value": round(val, 2)}
+                for ts, val in dev_50.items()
+            ],
+            "mean_rev_200dma": [
+                {"time": int(ts.timestamp()), "value": round(val, 2)}
+                for ts, val in dev_200.items()
+            ],
+            "mean_rev_3yma": [
+                {"time": int(ts.timestamp()), "value": round(val, 2)}
+                for ts, val in dev_3y.items()
+            ],
+        }
+
+

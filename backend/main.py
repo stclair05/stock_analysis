@@ -201,7 +201,15 @@ async def websocket_chart_data(websocket: WebSocket, symbol: str):
         raw_symbol = symbol.upper()
         symbol = SYMBOL_ALIASES.get(raw_symbol, raw_symbol)
 
-        hist_df = yf.download(tickers=symbol, period='10y', interval='1wk', progress=False)
+        analyser = StockAnalyser(symbol)
+        df_daily = analyser.get_price_data(symbol)
+        hist_df = df_daily.resample("W-FRI").agg({
+            "Open": "first",
+            "High": "max",
+            "Low": "min",
+            "Close": "last",
+            "Volume": "sum"
+        }).dropna()
         if hist_df.empty:
             await websocket.send_json({"error": f"No data found for symbol {symbol}"})
             await websocket.close()
@@ -241,3 +249,12 @@ async def websocket_chart_data(websocket: WebSocket, symbol: str):
     except Exception as e:
         print(f"WebSocket error for {symbol}: {e}")
         await websocket.close()
+
+@app.get("/overlay_data/{symbol}")
+def get_overlay_data(symbol: str):
+    try:
+        analyser = StockAnalyser(symbol)
+        overlays = analyser.get_overlay_lines()
+        return JSONResponse(content=overlays)
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
