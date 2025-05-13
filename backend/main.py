@@ -4,7 +4,7 @@ from stock_analysis.stock_analyser import StockAnalyser
 from stock_analysis.models import StockRequest, StockAnalysisResponse, ElliottWaveResponse, FinancialMetrics
 from stock_analysis.elliott_wave import calculate_elliott_wave
 from stock_analysis.fundamentals import Fundamentals
-from stock_analysis.utils import sortino_ratio as compute_sortino_ratio
+from stock_analysis.utils import compute_sortino_ratio_cached as compute_sortino_ratio
 from fastapi.responses import JSONResponse
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -168,24 +168,28 @@ def get_cached_fundamentals(symbol: str, ttl: int = 900):
 @app.get("/financials/{symbol}", response_model=FinancialMetrics)
 def get_financials(symbol: str):
     f = get_cached_fundamentals(symbol)
-    fcf_yield = f.fcf_yield()
-    fcf_growth = f.fcf_growth()
-    yield_plus_growth = (
-        round(fcf_yield + fcf_growth, 2)
-        if fcf_yield is not None and fcf_growth is not None
-        else None
-    )
-    roce = f.roce()
-    wacc = f.wacc()
-    roce_minus_wacc = (
-        round(roce - wacc, 2)
-        if roce is not None and wacc is not None
-        else None
-    )
-    cash_conversion = f.cash_conversion()
-    rule_of_40 = f.rule_of_40()
-    gross_margin = f.gross_margin()
-    sortino_ratio = compute_sortino_ratio(symbol)
+
+    with ThreadPoolExecutor() as executor:
+        sortino_future = executor.submit(compute_sortino_ratio, symbol)
+
+        fcf_yield = f.fcf_yield()
+        fcf_growth = f.fcf_growth()
+        yield_plus_growth = (
+            round(fcf_yield + fcf_growth, 2)
+            if fcf_yield is not None and fcf_growth is not None
+            else None
+        )
+        roce = f.roce()
+        wacc = f.wacc()
+        roce_minus_wacc = (
+            round(roce - wacc, 2)
+            if roce is not None and wacc is not None
+            else None
+        )
+        cash_conversion = f.cash_conversion()
+        rule_of_40 = f.rule_of_40()
+        gross_margin = f.gross_margin()
+        sortino_ratio = sortino_future.result()
 
     return FinancialMetrics(
         ticker=symbol.upper(),

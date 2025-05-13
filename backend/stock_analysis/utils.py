@@ -3,6 +3,7 @@ import numpy as np
 from typing import List
 import yfinance as yf
 from typing import Optional
+from functools import lru_cache
 
 def safe_value(series: pd.Series, idx: int):
     if idx >= len(series) or idx < -len(series):
@@ -129,6 +130,7 @@ def detect_rsi_divergence(df: pd.DataFrame, rsi_period=14, pivot_strength=3, rsi
 
     return labels
 
+@lru_cache(maxsize=100)
 def get_risk_free_rate() -> float:
     try:
         tnx = yf.Ticker("^TNX")
@@ -196,3 +198,7 @@ def sortino_ratio(symbol: str, period: str = "1y", interval: str = "1d") -> Opti
     except Exception as e:
         print(f"❌ Error calculating Sortino Ratio: {e}")
         return None
+
+@lru_cache(maxsize=500)
+def compute_sortino_ratio_cached(symbol: str):
+    return sortino_ratio(symbol)
