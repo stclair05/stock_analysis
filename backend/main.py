@@ -8,6 +8,7 @@ from stock_analysis.utils import sortino_ratio as compute_sortino_ratio
 from fastapi.responses import JSONResponse
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from time import time
 from aliases import SYMBOL_ALIASES
 import yfinance as yf
 import asyncio
@@ -22,6 +23,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Symbol → (Fundamentals, timestamp)
+_fundamentals_cache = {}
 
 @app.post("/analyse", response_model=StockAnalysisResponse)
 def analyse(stock_request: StockRequest):
@@ -149,11 +153,21 @@ def get_portfolio_live_data():
 
     except Exception as e:
         return {"error": str(e)}
-    
+
+def get_cached_fundamentals(symbol: str, ttl: int = 900):
+    symbol = symbol.upper()
+    now = time()
+    if symbol in _fundamentals_cache:
+        fundamentals, timestamp = _fundamentals_cache[symbol]
+        if now - timestamp < ttl:
+            return fundamentals
+    fundamentals = Fundamentals(symbol)
+    _fundamentals_cache[symbol] = (fundamentals, now)
+    return fundamentals
 
 @app.get("/financials/{symbol}", response_model=FinancialMetrics)
 def get_financials(symbol: str):
-    f = Fundamentals(symbol)
+    f = get_cached_fundamentals(symbol)
     fcf_yield = f.fcf_yield()
     fcf_growth = f.fcf_growth()
     yield_plus_growth = (

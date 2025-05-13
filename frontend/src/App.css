@@ -23,12 +23,13 @@
 /* Cards Side-by-Side */
 .cards-wrapper-row {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  flex-wrap: nowrap;
+  justify-content: space-between;
   align-items: flex-start;
   gap: 2rem;
-  max-width: 1800px;
-  margin: 0 auto;
+  width: 100%;
+  padding: 0 2rem;
+  box-sizing: border-box;
 }
 
 /* Individual Cards */
@@ -38,16 +39,16 @@
   padding: 20px;
   min-height: 500px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  flex: 1 1 800px;
-  max-width: 850px;
+  flex: 1 1 0;
+  max-width: none;
 }
 
 .chart-card {
   background: white;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  flex: 1 1 900px;
-  max-width: 950px;
+  flex: 1 1 0;
+  max-width: none;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -56,19 +57,6 @@
   
 }
 
-
-
-/* Card Widths */
-.metric-card {
-  flex: 1 1 800px; /* flex-grow, flex-shrink, flex-basis */
-  max-width: 850px;
-}
-
-
-.chart-card {
-  flex: 1 1 700px;
-  max-width: 750px;
-}
 
 
 /* Spinner */
@@ -121,4 +109,30 @@
 
 .tool-button.danger:hover {
   background-color: #d32f2f;
+}
+
+.fundamental-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  min-height: 500px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  flex: 1 1 0;
+  max-width: none;
+  min-width: 300px;
+}
+
+/* Optional: stack vertically on smaller screens */
+@media (max-width: 1200px) {
+  .cards-wrapper-row {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .metric-card,
+  .chart-card,
+  .fundamental-card {
+    width: 100%;
+    max-width: none;
+  }
 }
