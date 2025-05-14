@@ -47,6 +47,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
   const [limitDrawingMode, setLimitDrawingMode] = useState(false);
   const [meanRevLimitLines, setMeanRevLimitLines] = useState<number[]>([]);
+
   const meanRevLimitSeries = useRef<ISeriesApi<"Line">[]>([]);
   const limitDrawingModeRef = useRef(false);
 
@@ -323,6 +324,8 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           { time: latestTime, value: val },
         ]);
         meanRevLimitSeries.current.push(series);
+        setMeanRevLimitLines([upper, lower]);
+
       });
 
       // 🔚 Exit draw mode
@@ -633,19 +636,21 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       <button
         onClick={() => {
           const chart = meanRevChartInstance.current;
-
-          meanRevLimitSeries.current.forEach((s) => chart?.removeSeries(s));
-          meanRevLimitSeries.current = [];
-          setMeanRevLimitLines([]);
-
-          setLimitDrawingMode((prev) => {
-            const newState = !prev;
-            limitDrawingModeRef.current = newState;
-            console.log("🖱️ Toggled limit drawing mode:", newState);
-            return newState;
-          });
+        
+          if (meanRevLimitLines.length > 0) {
+            // Clear lines if already present
+            meanRevLimitSeries.current.forEach((s) => chart?.removeSeries(s));
+            meanRevLimitSeries.current = [];
+            setMeanRevLimitLines([]);
+            console.log("🧹 Cleared limit lines.");
+          } else {
+            setLimitDrawingMode(true);
+            limitDrawingModeRef.current = true;
+            console.log("🖱️ Activated limit drawing mode.");
+          }
         }}
-        className={`tool-button ${limitDrawingMode ? "active" : ""}`}
+        
+        className={`tool-button ${limitDrawingMode || meanRevLimitLines.length > 0 ? "active" : ""}`}
         title="Symmetric Bound Lines"
       >
         <ArrowUpDown size={16} />
