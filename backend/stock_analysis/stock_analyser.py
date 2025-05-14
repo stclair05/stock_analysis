@@ -718,6 +718,13 @@ class StockAnalyser:
             if not pd.isna(val)
         ]
 
+        # RSI (weekly)
+        rsi = compute_wilder_rsi(df_weekly["Close"]).dropna()
+        rsi_series = [
+            {"time": int(ts.timestamp()), "value": round(val, 2)}
+            for ts, val in rsi.items()
+        ]
+
         # Mean reversion
         mean_rev = self.get_mean_reversion_deviation_lines()
 
@@ -725,6 +732,7 @@ class StockAnalyser:
             "three_year_ma": ma3y_series,
             "dma_50": dma50_series,
             "mace": mace_series,
+            "rsi": rsi_series, 
             **mean_rev
         }
     
