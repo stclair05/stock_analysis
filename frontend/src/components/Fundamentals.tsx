@@ -74,19 +74,25 @@ type Props = {
 const Fundamentals = ({ stockSymbol }: Props) => {
   const [data, setData] = useState<FinancialMetrics | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
 
   useEffect(() => {
     if (!stockSymbol) return;
 
     const fetchData = async () => {
-      try {
-        const res = await fetch(`http://localhost:8000/financials/${stockSymbol}`);
-        if (!res.ok) throw new Error("Failed to fetch financials.");
-        const json = await res.json();
-        setData(json);
-      } catch (err: any) {
-        setError(err.message || "Unexpected error");
-      }
+        try {
+            setError(null);
+            setLoading(true); // Start loading
+            const res = await fetch(`http://localhost:8000/financials/${stockSymbol}`);
+            if (!res.ok) throw new Error("Failed to fetch financials.");
+            const json = await res.json();
+            setData(json);
+          } catch (err: any) {
+            setError(err.message || "Unexpected error");
+          } finally {
+            setLoading(false); // Stop loading
+          }
     };
 
     fetchData();
@@ -104,6 +110,7 @@ const Fundamentals = ({ stockSymbol }: Props) => {
   };
 
   if (error) return <div className="alert alert-danger">{error}</div>;
+  if (loading) return <div className="placeholder">Loading fundamentals...</div>;
   if (!data) return <div className="placeholder">Loading fundamentals...</div>;
 
   return (
