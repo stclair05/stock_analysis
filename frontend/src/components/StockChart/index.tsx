@@ -11,7 +11,7 @@ import {
   SeriesOptionsCommon,
 } from "lightweight-charts";
 import { useEffect, useRef, useState } from "react";
-import { Ruler, Minus, RotateCcw } from "lucide-react";
+import { Ruler, Minus, RotateCcw, ArrowUpDown } from "lucide-react";
 import { getTradingViewUrl } from "../../utils";
 
 import {
@@ -297,39 +297,38 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         return;
       }
     
-      setMeanRevLimitLines((prev) => {
-        const updated = [...prev, price];
-        console.log("📏 Limit prices selected so far:", updated);
-    
-        if (updated.length === 2) {
-          const baseTime = param.time as UTCTimestamp;
-          const earliestTime = (baseTime - 365 * 86400 * 5) as UTCTimestamp;
-          const latestTime = (baseTime + 365 * 86400 * 5) as UTCTimestamp;
-    
-          console.log("📆 Drawing horizontal lines from", earliestTime, "to", latestTime);
-    
-          updated.forEach((p, idx) => {
-            const line = meanChart.addSeries(LineSeries, {
-              color: idx === 0 ? "#e91e63" : "#009688",  // different color for upper/lower
-              lineWidth: 1,
-            });
-    
-            const data = [
-              { time: earliestTime, value: p },
-              { time: latestTime, value: p },
-            ];
-    
-            console.log(`📈 Drawing line ${idx + 1} at price ${p}`, data);
-    
-            line.setData(data);
-            meanRevLimitSeries.current.push(line);
-          });
-    
-          setLimitDrawingMode(false);  // Exit drawing mode
-        }
-    
-        return updated.slice(0, 2); // only keep 2
+      const baseTime = param.time as UTCTimestamp;
+      const earliestTime = (baseTime - 5 * 365 * 86400) as UTCTimestamp;
+      const latestTime = (baseTime + 5 * 365 * 86400) as UTCTimestamp;
+
+      if (price == null) {
+        console.warn("⚠️ Could not compute price from coordinate.");
+        return;
+      }
+
+      const chart = meanRevChartInstance.current;
+      if (!chart) return;
+
+      // Mirror price around 0
+      const upper = price;
+      const lower = -price;
+
+      [upper, lower].forEach((val, idx) => {
+        const series = chart.addSeries(LineSeries, {
+          color: idx === 0 ? "#e91e63" : "#009688",
+          lineWidth: 1,
+        });
+        series.setData([
+          { time: earliestTime, value: val },
+          { time: latestTime, value: val },
+        ]);
+        meanRevLimitSeries.current.push(series);
       });
+
+      // 🔚 Exit draw mode
+      setLimitDrawingMode(false);
+      limitDrawingModeRef.current = false;
+
     });
     
     
@@ -635,26 +634,22 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         onClick={() => {
           const chart = meanRevChartInstance.current;
 
-          // Clear existing lines
           meanRevLimitSeries.current.forEach((s) => chart?.removeSeries(s));
           meanRevLimitSeries.current = [];
           setMeanRevLimitLines([]);
 
-          // ✅ Enter draw mode if we were NOT already in it
           setLimitDrawingMode((prev) => {
             const newState = !prev;
-            limitDrawingModeRef.current = newState; // ✅ sync the ref
+            limitDrawingModeRef.current = newState;
             console.log("🖱️ Toggled limit drawing mode:", newState);
             return newState;
           });
-          
         }}
         className={`tool-button ${limitDrawingMode ? "active" : ""}`}
-        title="Draw Mean Rev Limits"
+        title="Symmetric Bound Lines"
       >
-      Limits
+        <ArrowUpDown size={16} />
       </button>
-
 
 
       <div ref={meanRevChartRef} style={{ width: "100%", height: "200px", marginTop: "1rem" }} />
