@@ -128,7 +128,12 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
   
   useEffect(() => {
-    if (!stockSymbol || !chartContainerRef.current || !meanRevChartRef.current) return;
+    if (!stockSymbol || !chartContainerRef.current || !meanRevChartRef.current || !rsiChartRef.current ) return;
+
+    chartContainerRef.current.innerHTML = "";
+    meanRevChartRef.current.innerHTML = "";
+    rsiChartRef.current.innerHTML = "";
+
 
     const chart = createChart(chartContainerRef.current, {
       height: 400,
@@ -441,7 +446,16 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     return () => {
       chart.remove();
       meanChart.remove();
+      rsiChart.remove(); 
       resizeObserver.disconnect();
+
+      // Reset the refs
+      chartRef.current = null;
+      meanRevChartInstance.current = null;
+      rsiChartInstance.current = null;
+      rsiLineRef.current = null;
+      meanRevLineRef.current = null;
+      candleSeriesRef.current = null;
     };
   }, [stockSymbol]);
 
