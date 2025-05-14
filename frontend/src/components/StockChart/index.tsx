@@ -45,6 +45,14 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
   const meanRevChartInstance = useRef<IChartApi | null>(null);
   const meanRevLineRef = useRef<ISeriesApi<"Line"> | null>(null);
 
+  const [limitDrawingMode, setLimitDrawingMode] = useState(false);
+  const [meanRevLimitLines, setMeanRevLimitLines] = useState<number[]>([]);
+  const meanRevLimitSeries = useRef<ISeriesApi<"Line">[]>([]);
+  const limitDrawingModeRef = useRef(false);
+
+
+
+
 
   const [overlayData, setOverlayData] = useState<{
     three_year_ma?: { time: number; value: number }[];
@@ -243,12 +251,6 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           bottomChart.setCrosshairPosition(0, snappedTime, bottomSeries);
         }
       }
-      console.log("🧪 Top chart move:", {
-        time: param.time,
-        point: param.point,
-        bottomChartExists: !!meanRevChartInstance.current,
-        bottomSeriesExists: !!meanRevLineRef.current,
-      });
       
     });
     
@@ -267,6 +269,70 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       }
     });
 
+    meanChart.subscribeClick((param) => {
+      console.log("📌 Click detected on meanRev chart:", param);
+    
+      if (!limitDrawingModeRef.current) {
+        console.log("🚫 Not in limit drawing mode — ignoring click.");
+        return;
+      }
+    
+      if (!param.point || param.time === undefined) {
+        console.warn("⚠️ Invalid click param:", param.point, param.time);
+        return;
+      }
+    
+      const seriesFromMap = param.seriesData?.keys().next().value;
+
+      if (!seriesFromMap) {
+        console.error("❌ No series found at click point.");
+        return;
+      }
+
+      const price = seriesFromMap.coordinateToPrice(param.point.y);
+
+      console.log("💵 Price from Y:", price);
+      if (price == null) {
+        console.warn("⚠️ Could not compute price from coordinate.");
+        return;
+      }
+    
+      setMeanRevLimitLines((prev) => {
+        const updated = [...prev, price];
+        console.log("📏 Limit prices selected so far:", updated);
+    
+        if (updated.length === 2) {
+          const baseTime = param.time as UTCTimestamp;
+          const earliestTime = (baseTime - 365 * 86400 * 5) as UTCTimestamp;
+          const latestTime = (baseTime + 365 * 86400 * 5) as UTCTimestamp;
+    
+          console.log("📆 Drawing horizontal lines from", earliestTime, "to", latestTime);
+    
+          updated.forEach((p, idx) => {
+            const line = meanChart.addSeries(LineSeries, {
+              color: idx === 0 ? "#e91e63" : "#009688",  // different color for upper/lower
+              lineWidth: 1,
+            });
+    
+            const data = [
+              { time: earliestTime, value: p },
+              { time: latestTime, value: p },
+            ];
+    
+            console.log(`📈 Drawing line ${idx + 1} at price ${p}`, data);
+    
+            line.setData(data);
+            meanRevLimitSeries.current.push(line);
+          });
+    
+          setLimitDrawingMode(false);  // Exit drawing mode
+        }
+    
+        return updated.slice(0, 2); // only keep 2
+      });
+    });
+    
+    
 
     // Sync zoom/range
     chart.timeScale().subscribeVisibleTimeRangeChange((range) => {
@@ -565,6 +631,32 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
 
       <div ref={chartContainerRef} style={{ width: "100%", height: "400px" }} />
+      <button
+        onClick={() => {
+          const chart = meanRevChartInstance.current;
+
+          // Clear existing lines
+          meanRevLimitSeries.current.forEach((s) => chart?.removeSeries(s));
+          meanRevLimitSeries.current = [];
+          setMeanRevLimitLines([]);
+
+          // ✅ Enter draw mode if we were NOT already in it
+          setLimitDrawingMode((prev) => {
+            const newState = !prev;
+            limitDrawingModeRef.current = newState; // ✅ sync the ref
+            console.log("🖱️ Toggled limit drawing mode:", newState);
+            return newState;
+          });
+          
+        }}
+        className={`tool-button ${limitDrawingMode ? "active" : ""}`}
+        title="Draw Mean Rev Limits"
+      >
+      Limits
+      </button>
+
+
+
       <div ref={meanRevChartRef} style={{ width: "100%", height: "200px", marginTop: "1rem" }} />
     </div>
   );

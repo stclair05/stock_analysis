@@ -731,26 +731,13 @@ class StockAnalyser:
     def get_mean_reversion_deviation_lines(self) -> dict:
         price = self.df["Close"]
         ma50 = price.rolling(window=50).mean()
-        ma200 = price.rolling(window=200).mean()
-        monthly = price.resample("ME").last()
-        ma3y = monthly.rolling(window=36).mean()
 
         dev_50 = ((price - ma50) / ma50 * 100).dropna()
-        dev_200 = ((price - ma200) / ma200 * 100).dropna()
-        dev_3y = ((monthly - ma3y) / ma3y * 100).dropna()
 
         return {
             "mean_rev_50dma": [
                 {"time": int(ts.timestamp()), "value": round(val, 2)}
                 for ts, val in dev_50.items()
-            ],
-            "mean_rev_200dma": [
-                {"time": int(ts.timestamp()), "value": round(val, 2)}
-                for ts, val in dev_200.items()
-            ],
-            "mean_rev_3yma": [
-                {"time": int(ts.timestamp()), "value": round(val, 2)}
-                for ts, val in dev_3y.items()
             ],
         }
 
