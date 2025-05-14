@@ -215,11 +215,50 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     });
     rsiChartInstance.current = rsiChart;
 
+    // === 🔁 Full 3-Way Safe Sync ===
+
+    function safeSetVisibleRange(chart: IChartApi | null, range: any) {
+      if (
+        !chart ||
+        !chart.timeScale ||
+        typeof chart.timeScale !== "function" ||
+        !range ||
+        range.from == null ||
+        range.to == null
+      ) return;
+    
+      try {
+        chart.timeScale().setVisibleRange(range);
+      } catch (err) {
+        console.warn("⛔ safeSetVisibleRange failed", err);
+      }
+    }
+
+    chart.timeScale().subscribeVisibleTimeRangeChange((range) => {
+      safeSetVisibleRange(meanRevChartInstance.current, range);
+      safeSetVisibleRange(rsiChartInstance.current, range);
+    });
+
+    meanRevChartInstance.current?.timeScale().subscribeVisibleTimeRangeChange((range) => {
+      safeSetVisibleRange(chartRef.current, range);
+      safeSetVisibleRange(rsiChartInstance.current, range);
+    });
+
+    rsiChartInstance.current?.timeScale().subscribeVisibleTimeRangeChange((range) => {
+      safeSetVisibleRange(chartRef.current, range);
+      safeSetVisibleRange(meanRevChartInstance.current, range);
+    });
+
+
+
     const rsiLine = rsiChart.addSeries(LineSeries, {
       color: "#f44336",
       lineWidth: 1,
     });
-    rsiLineRef.current = rsiLine;
+    rsiLine.setData([
+      { time: Date.now() / 1000 as UTCTimestamp, value: 50 }, // Mid-band dummy
+    ]);
+    rsiLineRef.current = rsiLine;   
 
 
     const resizeObserver = new ResizeObserver(entries => {
@@ -283,18 +322,28 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         });
       }
     
-      const bottomChart = meanRevChartInstance.current;
-      const bottomSeries = meanRevLineRef.current;
-      if (bottomChart && bottomSeries) {
-        const snappedTime = findClosestTime(bottomSeries, time);
+      const meanChart = meanRevChartInstance.current;
+      const meanSeries = meanRevLineRef.current;
+      const rsiChart = rsiChartInstance.current;
+      const rsiSeries = rsiLineRef.current;
+
+      if (meanChart && meanSeries) {
+        const snappedTime = findClosestTime(meanSeries, time);
         if (snappedTime) {
-          bottomChart.setCrosshairPosition(0, snappedTime, bottomSeries);
+          meanChart.setCrosshairPosition(0, snappedTime, meanSeries);
+        }
+      }
+      if (rsiChart && rsiSeries) {
+        const snappedTime = findClosestTime(rsiSeries, time);
+        if (snappedTime) {
+          rsiChart.setCrosshairPosition(0, snappedTime, rsiSeries);
         }
       }
       
+      
     });
     
-
+    // SYNC CROSS HAIRS 
     meanChart.subscribeCrosshairMove((param) => {
       if (!param.time || !param.point) return;
   
@@ -308,6 +357,21 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         }
       }
     });
+    rsiChart.subscribeCrosshairMove((param) => {
+      if (!param.time || !param.point) return;
+    
+      const main = chartRef.current;
+      const mainSeries = candleSeriesRef.current;
+    
+      if (main && mainSeries) {
+        const price = mainSeries.coordinateToPrice(param.point.y) ?? 0;
+        const snappedTime = findClosestTime(mainSeries, param.time as UTCTimestamp);
+        if (snappedTime) {
+          main.setCrosshairPosition(price, snappedTime, mainSeries);
+        }
+      }
+    });
+    
 
     meanChart.subscribeClick((param) => {
       console.log("📌 Click detected on meanRev chart:", param);
@@ -373,31 +437,6 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
     });
     
-    
-
-    // Sync zoom/range
-    chart.timeScale().subscribeVisibleTimeRangeChange((range) => {
-      const bottom = meanRevChartInstance.current;
-      if (!range || !bottom) return; 
-      if (bottom && range) {
-        bottom.timeScale().setVisibleRange(range);
-      }
-    });
-    
-    meanRevChartInstance.current?.timeScale().subscribeVisibleTimeRangeChange((range) => {
-      const top = chartRef.current;
-      if (!range || !top) return;
-      if (top && range) {
-        top.timeScale().setVisibleRange(range);
-      }
-    });
-    rsiChart.timeScale().subscribeVisibleTimeRangeChange((range) => {
-      const top = chartRef.current;
-      if (!range || !top) return;
-      if (top && range) {
-        chart.timeScale().setVisibleRange(range);
-      }
-    });
 
     return () => {
       chart.remove();
