@@ -1,49 +1,64 @@
-import { useEffect } from "react";
-import { ISeriesApi, UTCTimestamp } from "lightweight-charts";
-import { Candle } from "./types";
+import { useEffect, useRef } from "react";
+import { ISeriesApi } from "lightweight-charts";
 
 export function useWebSocketData(
   stockSymbol: string,
   candleSeriesRef: React.MutableRefObject<ISeriesApi<"Candlestick"> | null>
 ) {
+  const socketRef = useRef<WebSocket | null>(null);
+  const isActive = useRef(true);
+
   useEffect(() => {
-    if (!stockSymbol || !candleSeriesRef.current) return;
+    if (!stockSymbol) return;
 
-    const ws = new WebSocket(
-      `ws://localhost:8000/ws/chart_data_weekly/${stockSymbol.toUpperCase()}`
-    );
+    isActive.current = true;
 
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      const candleSeries = candleSeriesRef.current;
-      if (!candleSeries) return;
+    const timeout = setTimeout(() => {
+      const ws = new WebSocket(`ws://localhost:8000/ws/chart_data_weekly/${stockSymbol}`);
+      socketRef.current = ws;
 
-      if (data.history) {
-        const formattedData = (data.history as Candle[]).map((c) => ({
-          time: c.time as UTCTimestamp,
-          open: c.open,
-          high: c.high,
-          low: c.low,
-          close: c.close,
-        }));
-        candleSeries.setData(formattedData);
-      }
+      ws.onmessage = (event) => {
+        if (!isActive.current) return;
 
-      if (data.live) {
-        candleSeries.update({
-          time: data.live.time as UTCTimestamp,
-          open: data.live.value,
-          high: data.live.value,
-          low: data.live.value,
-          close: data.live.value,
-        });
-      }
-    };
+        try {
+          const message = JSON.parse(event.data);
+          const series = candleSeriesRef.current;
 
-    ws.onclose = () => console.log("WebSocket closed");
+          if (!series || !message || typeof message !== "object") return;
+
+          if (message.history && Array.isArray(message.history)) {
+            series.setData(message.history);
+          }
+
+          if (message.live && message.live.time && message.live.value !== undefined) {
+            series.update({
+              time: message.live.time,
+              open: message.live.value,
+              high: message.live.value,
+              low: message.live.value,
+              close: message.live.value,
+            });
+          }
+        } catch (err) {
+          console.error("WebSocket parse error:", err);
+        }
+      };
+
+      ws.onclose = () => {
+        console.info("WebSocket closed:", stockSymbol);
+      };
+
+      ws.onerror = (err) => {
+        console.error("WebSocket error:", err);
+      };
+    }, 30); // 💡 small delay ensures refs are initialized
 
     return () => {
-      ws.close();
+      isActive.current = false;
+      clearTimeout(timeout);
+      if (socketRef.current?.readyState === WebSocket.OPEN || socketRef.current?.readyState === WebSocket.CONNECTING) {
+        socketRef.current.close();
+      }
     };
-  }, [stockSymbol, candleSeriesRef]);
+  }, [stockSymbol]);
 }

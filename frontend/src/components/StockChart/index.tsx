@@ -223,7 +223,7 @@ const StockChart = ({ stockSymbol, setParentLoading }: StockChartProps) => {
     
     
 
-    chart.subscribeCrosshairMove((param) => {
+    const crosshairHandlerTop = (param: any) => {
       if (!param.time || !param.point) return;
     
       const price = candleSeries.coordinateToPrice(param.point.y);
@@ -252,11 +252,10 @@ const StockChart = ({ stockSymbol, setParentLoading }: StockChartProps) => {
           }
         }
       }
+    }
+    chart.subscribeCrosshairMove(crosshairHandlerTop);
 
-    });
-    
-
-    meanChart.subscribeCrosshairMove((param) => {
+    const crosshairHandlerBottom = (param: any) => {
       if (!param.time || !param.point) return;
   
       const topChart = chartRef.current;
@@ -268,7 +267,9 @@ const StockChart = ({ stockSymbol, setParentLoading }: StockChartProps) => {
           topChart.setCrosshairPosition(price, snappedTime, topSeries);
         }
       }
-    });
+    }
+
+    meanChart.subscribeCrosshairMove(crosshairHandlerBottom);
 
 
     // Sync zoom/range
@@ -289,6 +290,8 @@ const StockChart = ({ stockSymbol, setParentLoading }: StockChartProps) => {
     });
 
     return () => {
+      chart.unsubscribeCrosshairMove(crosshairHandlerTop);
+      meanChart.unsubscribeCrosshairMove(crosshairHandlerBottom);
       chart.remove();
       meanChart.remove();
       resizeObserver.disconnect();
