@@ -48,30 +48,34 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
 
     const fetchMetrics = async (retry = 0) => {
       try {
-        setError(null);
+        if (retry === 0) setError(null);
         if (setParentLoading) setParentLoading(true);
-
+    
         const response = await fetch("http://localhost:8000/analyse", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ symbol: stockSymbol }),
         });
-
+    
         if (!response.ok) {
-          const errorData = await response.json();
-          setError(errorData.detail || "Unexpected error.");
-          if (setParentLoading) setParentLoading(false);
+          if (retry >= 3) {
+            const errorData = await response.json();
+            setError(errorData.detail || "Unexpected error.");
+            if (setParentLoading) setParentLoading(false);
+          } else {
+            setTimeout(() => fetchMetrics(retry + 1), 1000);
+          }
           return;
         }
-
+    
         const data = await response.json();
-
+    
         const keyFields: (keyof MetricsType)[] = ["three_year_ma", "mace", "forty_week_status"];
         const keyFieldsIncomplete = keyFields.some((field) => {
           const metric = data[field];
           return Object.values(metric).some((v) => v === "in progress");
         });
-
+    
         if (!keyFieldsIncomplete || retry >= 3) {
           setMetrics(data);
           if (setParentLoading) setParentLoading(false);
@@ -79,11 +83,16 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
           setTimeout(() => fetchMetrics(retry + 1), 1000);
         }
       } catch (err) {
-        console.error("Error fetching metrics:", err);
-        setError("Failed to connect to backend.");
-        if (setParentLoading) setParentLoading(false);
+        if (retry >= 3) {
+          console.error("Error fetching metrics:", err);
+          setError("Failed to connect to backend.");
+          if (setParentLoading) setParentLoading(false);
+        } else {
+          setTimeout(() => fetchMetrics(retry + 1), 1000);
+        }
       }
     };
+    
 
     fetchMetrics();
   }, [stockSymbol, setParentLoading]);
