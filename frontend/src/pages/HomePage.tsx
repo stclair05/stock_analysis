@@ -79,10 +79,10 @@ function HomePage() {
               <StockChart stockSymbol={stockSymbol} />
             </div>
 
-            {/* 👉 New Fundamental Metrics Table */}
             <div className="fundamental-card">
               <Fundamentals stockSymbol={stockSymbol} />
             </div>
+        
           </div>   
         </>
       ) : (

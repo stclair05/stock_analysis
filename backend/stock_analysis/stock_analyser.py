@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from functools import lru_cache
 from .models import TimeSeriesMetric
 from aliases import SYMBOL_ALIASES
-from .utils import safe_value, detect_rsi_divergence, find_pivots, compute_wilder_rsi
+from .utils import safe_value, detect_rsi_divergence, find_pivots, compute_wilder_rsi, compute_weekly_natr
 
 
 
@@ -728,11 +728,19 @@ class StockAnalyser:
         # Mean reversion
         mean_rev = self.get_mean_reversion_deviation_lines()
 
+        # Volatility, ie. Normalized Average True Range
+        natr = compute_weekly_natr(df_weekly)
+        volatility_series = [
+            {"time": int(ts.timestamp()), "value": round(val, 2)}
+            for ts, val in natr.items()
+        ]
+
         return {
             "three_year_ma": ma3y_series,
             "dma_50": dma50_series,
             "mace": mace_series,
             "rsi": rsi_series, 
+            "volatility": volatility_series,
             **mean_rev
         }
     

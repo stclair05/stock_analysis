@@ -57,6 +57,10 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
   const rsiChartInstance = useRef<IChartApi | null>(null);
   const rsiLineRef = useRef<ISeriesApi<"Line"> | null>(null);
 
+  // Volatility Chart
+  const volChartRef = useRef<HTMLDivElement>(null);
+  const volChartInstance = useRef<IChartApi | null>(null);
+  const volLineRef = useRef<ISeriesApi<"Line"> | null>(null);
 
 
 
@@ -70,6 +74,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     mean_rev_200dma?: { time: number; value: number }[];
     mean_rev_3yma?: { time: number; value: number }[];
     rsi?: { time: number; value: number }[];
+    volatility?: { time: number; value: number }[];
   }>({});
   
   
@@ -128,11 +133,13 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
   
   useEffect(() => {
-    if (!stockSymbol || !chartContainerRef.current || !meanRevChartRef.current || !rsiChartRef.current ) return;
+    if (!stockSymbol || !chartContainerRef.current || !meanRevChartRef.current || !rsiChartRef.current || !volChartRef.current) return;
 
     chartContainerRef.current.innerHTML = "";
     meanRevChartRef.current.innerHTML = "";
     rsiChartRef.current.innerHTML = "";
+    volChartRef.current.innerHTML = "";
+
 
 
     const chart = createChart(chartContainerRef.current, {
@@ -220,6 +227,56 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     });
     rsiChartInstance.current = rsiChart;
 
+    const rsiLine = rsiChart.addSeries(LineSeries, {
+      color: "#f44336",
+      lineWidth: 1,
+    });
+    rsiLine.setData([
+      { time: Date.now() / 1000 as UTCTimestamp, value: 50 }, // Mid-band dummy
+    ]);
+    rsiLineRef.current = rsiLine;   
+
+
+    const resizeObserver = new ResizeObserver(entries => {
+      for (let entry of entries) {
+        if (entry.contentRect) {
+          chart.resize(entry.contentRect.width, 400);
+          meanChart.resize(entry.contentRect.width, 200);
+        }
+      }
+    });
+
+    // Volatility Chart 
+    const volChart = createChart(volChartRef.current, {
+      width: volChartRef.current.clientWidth,
+      height: 150,
+      layout: {
+        background: { color: "#ffffff" },
+        textColor: "#000000",
+      },
+      grid: {
+        vertLines: { color: "#eee" },
+        horzLines: { color: "#eee" },
+      },
+      crosshair: {
+        mode: CrosshairMode.Normal,
+      },
+      timeScale: {
+        timeVisible: true,
+        secondsVisible: false,
+      },
+    });
+
+    volChartInstance.current = volChart;
+    
+    const volLine = volChart.addSeries(LineSeries, {
+      color: "#795548", // brown-ish for volatility
+      lineWidth: 1,
+    });
+    volLine.setData([{ time: Date.now() / 1000 as UTCTimestamp, value: 0 }]);
+    volLineRef.current = volLine;
+    
+
     // === 🔁 Full 3-Way Safe Sync ===
 
     function safeSetVisibleRange(chart: IChartApi | null, range: any) {
@@ -242,38 +299,32 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     chart.timeScale().subscribeVisibleTimeRangeChange((range) => {
       safeSetVisibleRange(meanRevChartInstance.current, range);
       safeSetVisibleRange(rsiChartInstance.current, range);
+      safeSetVisibleRange(volChartInstance.current, range);
+
     });
 
     meanRevChartInstance.current?.timeScale().subscribeVisibleTimeRangeChange((range) => {
       safeSetVisibleRange(chartRef.current, range);
       safeSetVisibleRange(rsiChartInstance.current, range);
+      safeSetVisibleRange(volChartInstance.current, range);
+
     });
 
     rsiChartInstance.current?.timeScale().subscribeVisibleTimeRangeChange((range) => {
       safeSetVisibleRange(chartRef.current, range);
       safeSetVisibleRange(meanRevChartInstance.current, range);
+      safeSetVisibleRange(volChartInstance.current, range);
+
     });
 
+    volChartInstance.current?.timeScale().subscribeVisibleTimeRangeChange((range) => {
+      safeSetVisibleRange(chartRef.current, range);
+      safeSetVisibleRange(meanRevChartInstance.current, range);
+      safeSetVisibleRange(rsiChartInstance.current, range);
 
-
-    const rsiLine = rsiChart.addSeries(LineSeries, {
-      color: "#f44336",
-      lineWidth: 1,
     });
-    rsiLine.setData([
-      { time: Date.now() / 1000 as UTCTimestamp, value: 50 }, // Mid-band dummy
-    ]);
-    rsiLineRef.current = rsiLine;   
 
-
-    const resizeObserver = new ResizeObserver(entries => {
-      for (let entry of entries) {
-        if (entry.contentRect) {
-          chart.resize(entry.contentRect.width, 400);
-          meanChart.resize(entry.contentRect.width, 200);
-        }
-      }
-    });
+  
     
     resizeObserver.observe(chartContainerRef.current);
 
@@ -331,6 +382,8 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       const meanSeries = meanRevLineRef.current;
       const rsiChart = rsiChartInstance.current;
       const rsiSeries = rsiLineRef.current;
+      const volChart = volChartInstance.current;
+      const volSeries = volLineRef.current;
 
       if (meanChart && meanSeries) {
         const snappedTime = findClosestTime(meanSeries, time);
@@ -344,38 +397,73 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           rsiChart.setCrosshairPosition(0, snappedTime, rsiSeries);
         }
       }
+
+      if (volChart && volSeries) {
+        const snappedTime = findClosestTime(volSeries, time);
+        if (snappedTime) {
+          volChart.setCrosshairPosition(0, snappedTime, volSeries);
+        }
+      }
       
       
     });
     
     // SYNC CROSS HAIRS 
+    function syncCrosshair(
+      sourceChart: IChartApi,
+      sourceSeries: ISeriesApi<"Line"> | ISeriesApi<"Candlestick">,
+      time: UTCTimestamp
+    ) {
+      const allCharts: [IChartApi | null, ISeriesApi<any> | null][] = [
+        [chartRef.current, candleSeriesRef.current],
+        [meanRevChartInstance.current, meanRevLineRef.current],
+        [rsiChartInstance.current, rsiLineRef.current],
+        [volChartInstance.current, volLineRef.current],
+      ];
+    
+      for (const [chart, series] of allCharts) {
+        if (!chart || !series || chart === sourceChart) continue;
+        const snapped = findClosestTime(series, time);
+        if (snapped != null) {
+          chart.setCrosshairPosition(0, snapped, series);
+        }
+      }
+    }
+    
+
+    chart.subscribeCrosshairMove((param) => {
+      if (!param.time || !param.point) return;
+      const time = param.time as UTCTimestamp;
+      if (candleSeriesRef.current) {
+        syncCrosshair(chart, candleSeriesRef.current, time);
+      }
+    });
+    
     meanChart.subscribeCrosshairMove((param) => {
       if (!param.time || !param.point) return;
-  
-      const topChart = chartRef.current;
-      const topSeries = candleSeriesRef.current;
-      if (topChart && topSeries) {
-        const price = topSeries.coordinateToPrice(param.point.y) ?? 0;
-        const snappedTime = findClosestTime(topSeries, param.time as UTCTimestamp);
-        if (snappedTime) {
-          topChart.setCrosshairPosition(price, snappedTime, topSeries);
-        }
+      const time = param.time as UTCTimestamp;
+      if (meanRevLineRef.current) {
+        syncCrosshair(meanChart, meanRevLineRef.current, time);
       }
     });
+    
     rsiChart.subscribeCrosshairMove((param) => {
       if (!param.time || !param.point) return;
-    
-      const main = chartRef.current;
-      const mainSeries = candleSeriesRef.current;
-    
-      if (main && mainSeries) {
-        const price = mainSeries.coordinateToPrice(param.point.y) ?? 0;
-        const snappedTime = findClosestTime(mainSeries, param.time as UTCTimestamp);
-        if (snappedTime) {
-          main.setCrosshairPosition(price, snappedTime, mainSeries);
-        }
+      const time = param.time as UTCTimestamp;
+      if (rsiLineRef.current) {
+        syncCrosshair(rsiChart, rsiLineRef.current, time);
       }
     });
+    
+    volChart.subscribeCrosshairMove((param) => {
+      if (!param.time || !param.point) return;
+      const time = param.time as UTCTimestamp;
+      if (volLineRef.current) {
+        syncCrosshair(volChart, volLineRef.current, time);
+      }
+    });
+    
+    
     
 
     meanChart.subscribeClick((param) => {
@@ -447,6 +535,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       chart.remove();
       meanChart.remove();
       rsiChart.remove(); 
+      volChart.remove();
       resizeObserver.disconnect();
 
       // Reset the refs
@@ -454,6 +543,8 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       meanRevChartInstance.current = null;
       rsiChartInstance.current = null;
       rsiLineRef.current = null;
+      volChartInstance.current = null;
+      volLineRef.current = null;
       meanRevLineRef.current = null;
       candleSeriesRef.current = null;
     };
@@ -643,25 +734,25 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     meanRevLineRef.current && chart.removeSeries(meanRevLineRef.current);
     meanRevLineRef.current = null;
   
-    // Optional: use a map to keep track of multiple lines
-    const lines: Record<string, ISeriesApi<"Line">> = {};
-  
-    (["mean_rev_50dma", "mean_rev_200dma", "mean_rev_3yma"] as const).forEach((key) => {
+    (["mean_rev_50dma", "mean_rev_200dma", "mean_rev_3yma"] as const).forEach((key, idx) => {
       const data = overlayData[key];
       if (!data) return;
-  
+    
       const series = chart.addSeries(LineSeries, {
         color: colors[key],
         ...lineOptions,
       });
-  
+    
       series.setData(data.map((d) => ({
         time: d.time as UTCTimestamp,
         value: d.value,
       })));
-  
-      lines[key] = series;
+    
+      if (idx === 0) {
+        meanRevLineRef.current = series; // ✅ use the first one for syncing
+      }
     });
+    
   }, [
     overlayData.mean_rev_50dma,
     overlayData.mean_rev_200dma,
@@ -696,6 +787,35 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       rsiLineRef.current = series;
     }
   }, [overlayData.rsi]);
+
+  useEffect(() => {
+    const chart = volChartInstance.current;
+    if (!chart) return;
+  
+    if (volLineRef.current) {
+      chart.removeSeries(volLineRef.current);
+      volLineRef.current = null;
+    }
+  
+    const lineOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
+      lineWidth: 2,
+      priceLineVisible: false,
+      lastValueVisible: false,
+      color: "#795548",
+    };
+  
+    if (overlayData.volatility) {
+      const series = chart.addSeries(LineSeries, lineOptions);
+      series.setData(
+        overlayData.volatility.map((d) => ({
+          time: d.time as UTCTimestamp,
+          value: d.value,
+        }))
+      );
+      volLineRef.current = series;
+    }
+  }, [overlayData.volatility]);
+  
   
   
 
@@ -785,6 +905,8 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
       <div ref={meanRevChartRef} style={{ width: "100%", height: "200px", marginTop: "1rem" }} />
       <div ref={rsiChartRef} style={{ width: "100%", height: "150px", marginTop: "1rem" }} />
+      <div ref={volChartRef} style={{ width: "100%", height: "150px", marginTop: "1rem" }} />
+
 
     </div>
   );

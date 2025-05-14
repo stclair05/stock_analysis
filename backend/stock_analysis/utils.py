@@ -130,6 +130,29 @@ def detect_rsi_divergence(df: pd.DataFrame, rsi_period=14, pivot_strength=3, rsi
 
     return labels
 
+def compute_weekly_natr(df_weekly: pd.DataFrame, period: int = 14) -> pd.Series:
+    """
+    Computes Normalized Average True Range (NATR) on weekly data.
+    NATR = (ATR / Close) * 100
+    ATR is calculated using the True Range (TR) method.
+    """
+
+    high = df_weekly["High"]
+    low = df_weekly["Low"]
+    close = df_weekly["Close"]
+    prev_close = close.shift(1)
+
+    tr1 = high - low
+    tr2 = (high - prev_close).abs()
+    tr3 = (low - prev_close).abs()
+
+    true_range = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+
+    atr = true_range.rolling(window=period).mean()
+    natr = (atr / close) * 100
+
+    return natr.dropna()
+
 @lru_cache(maxsize=100)
 def get_risk_free_rate() -> float:
     try:
