@@ -29,7 +29,7 @@ import { useDrawingRenderer } from "./DrawingRenderer";
 import { useClickHandler } from "./ClickHandler";
 
 
-const StockChart = ({ stockSymbol }: StockChartProps) => {
+const StockChart = ({ stockSymbol, setParentLoading }: StockChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
@@ -174,6 +174,9 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       
       meanRevLineRef.current = meanRevLineSeries;
 
+    setParentLoading?.(false);
+
+
     const resizeObserver = new ResizeObserver(entries => {
       for (let entry of entries) {
         if (entry.contentRect) {
@@ -199,7 +202,9 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
    
 
     function findClosestTime(series: ISeriesApi<any>, time: UTCTimestamp): UTCTimestamp | null {
-      const data = series?.data?.() ?? [];  // If you're storing data elsewhere, replace this
+      if (!series || typeof series.data !== "function") return null;
+      const data = series.data();
+
       if (!data.length) return null;
     
       let closest = data[0].time;
@@ -222,7 +227,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       if (!param.time || !param.point) return;
     
       const price = candleSeries.coordinateToPrice(param.point.y);
-      if (price == null) return;
+      if (price == null || isNaN(price)) return;
     
       const time = param.time as UTCTimestamp;
     
@@ -240,16 +245,14 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       if (bottomChart && bottomSeries) {
         const snappedTime = findClosestTime(bottomSeries, time);
         if (snappedTime) {
-          bottomChart.setCrosshairPosition(0, snappedTime, bottomSeries);
+          try {
+            bottomChart.setCrosshairPosition(0, snappedTime, bottomSeries);
+          } catch (e) {
+            console.warn("Crosshair sync failed:", e);
+          }
         }
       }
-      console.log("🧪 Top chart move:", {
-        time: param.time,
-        point: param.point,
-        bottomChartExists: !!meanRevChartInstance.current,
-        bottomSeriesExists: !!meanRevLineRef.current,
-      });
-      
+
     });
     
 

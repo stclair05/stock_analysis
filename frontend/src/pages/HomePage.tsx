@@ -2,12 +2,17 @@ import "../App.css";
 import Metrics from "../components/Metrics";
 import Fundamentals from "../components/Fundamentals";
 import StockChart from "../components/StockChart";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 function HomePage() {
   const [inputValue, setInputValue] = useState("");
   const [stockSymbol, setStockSymbol] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loadingState, setLoadingState] = useState({
+    metrics: false,
+    fundamentals: false,
+    chart: false,
+  });
+  
   const [error, setError] = useState<string | null>(null);
 
   const isValidSymbol = (symbol: string) => /^[A-Za-z.^]{1,10}$/.test(symbol);
@@ -27,8 +32,24 @@ function HomePage() {
 
     setError(null);
     setStockSymbol(inputValue);
-    setLoading(true); // Metrics will handle turning this off
+    setLoadingState({ metrics: true, fundamentals: true, chart: true });
   };
+
+  const setMetricsLoading = useCallback(
+    (v: boolean) => setLoadingState((prev) => ({ ...prev, metrics: v })),
+    []
+  );
+  
+  const setChartLoading = useCallback(
+    (v: boolean) => setLoadingState((prev) => ({ ...prev, chart: v })),
+    []
+  );
+  
+  const setFundamentalsLoading = useCallback(
+    (v: boolean) => setLoadingState((prev) => ({ ...prev, fundamentals: v })),
+    []
+  );
+  
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") handleSearch();
@@ -50,7 +71,7 @@ function HomePage() {
             onKeyPress={handleKeyPress}
           />
           <button className="btn btn-primary search-button" onClick={handleSearch}>
-            {loading ? (
+            {Object.values(loadingState).some(Boolean) ? (
               <div className="spinner-border spinner-border-sm text-light" role="status">
                 <span className="visually-hidden">Loading...</span>
               </div>
@@ -72,16 +93,16 @@ function HomePage() {
         <>
           <div className="cards-wrapper-row">
             <div className="metric-card">
-              <Metrics stockSymbol={stockSymbol} setParentLoading={setLoading} />
+              <Metrics key={stockSymbol} stockSymbol={stockSymbol} setParentLoading={setMetricsLoading} />
             </div>
 
             <div className="chart-card">
-              <StockChart stockSymbol={stockSymbol} />
+              <StockChart key={stockSymbol} stockSymbol={stockSymbol} setParentLoading={setChartLoading} />
             </div>
 
             {/* 👉 New Fundamental Metrics Table */}
             <div className="fundamental-card">
-              <Fundamentals stockSymbol={stockSymbol} />
+              <Fundamentals key={stockSymbol} stockSymbol={stockSymbol} setParentLoading={setFundamentalsLoading} />
             </div>
           </div>   
         </>

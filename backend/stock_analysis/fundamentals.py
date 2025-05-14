@@ -15,7 +15,12 @@ class Fundamentals:
     def __init__(self, symbol: str):
         self.symbol = symbol.upper()
         self.ticker_obj = yf.Ticker(self.symbol)
-        self.info = self.ticker_obj.info
+        try: 
+            self.info = self.ticker_obj.info
+            print(f"✅ Info fetched for {self.symbol}: {self.info}")
+        except Exception as e: 
+            print(f"⚠️ Failed to fetch info for {self.symbol}: {e}")
+            self.info = {}
 
         # Preload all FMP data
         endpoints = [

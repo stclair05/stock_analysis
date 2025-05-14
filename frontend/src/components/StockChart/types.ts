@@ -28,4 +28,5 @@ export type Drawing = DrawingLine | DrawingHorizontal | DrawingSixPoint;
 
 export interface StockChartProps {
   stockSymbol: string;
+  setParentLoading?: (value: boolean) => void;
 }

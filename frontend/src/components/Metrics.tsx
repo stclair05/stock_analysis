@@ -37,18 +37,19 @@ type MetricsType = {
 type MetricsProps = {
   stockSymbol: string;
   setParentLoading?: (value: boolean) => void;
+  setError?: (msg: string | null) => void;
+  error?: string | null;
 };
 
-function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
+function Metrics({ stockSymbol, setParentLoading, setError, error }: MetricsProps) {
   const [metrics, setMetrics] = useState<MetricsType | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!stockSymbol || stockSymbol.trim() === "") return;
 
     const fetchMetrics = async (retry = 0) => {
       try {
-        setError(null);
+        setError?.(null);
         if (setParentLoading) setParentLoading(true);
 
         const response = await fetch("http://localhost:8000/analyse", {
@@ -59,7 +60,7 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
 
         if (!response.ok) {
           const errorData = await response.json();
-          setError(errorData.detail || "Unexpected error.");
+          setError?.(errorData.detail || "Unexpected error.");
           if (setParentLoading) setParentLoading(false);
           return;
         }
@@ -80,13 +81,13 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
         }
       } catch (err) {
         console.error("Error fetching metrics:", err);
-        setError("Failed to connect to backend.");
-        if (setParentLoading) setParentLoading(false);
+        setError?.("Failed to connect to backend.");
+        setParentLoading?.(false);
       }
     };
 
     fetchMetrics();
-  }, [stockSymbol, setParentLoading]);
+  }, [stockSymbol]);
 
   const colorize = (value: number | string | null) => {
     if (metrics?.current_price == null || typeof value !== "number") {
