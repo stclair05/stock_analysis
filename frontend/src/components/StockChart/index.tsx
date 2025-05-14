@@ -45,6 +45,9 @@ const StockChart = ({ stockSymbol, setParentLoading }: StockChartProps) => {
   const meanRevChartInstance = useRef<IChartApi | null>(null);
   const meanRevLineRef = useRef<ISeriesApi<"Line"> | null>(null);
 
+  const [activeChartTarget, setActiveChartTarget] = useState<"main" | "meanrev">("main");
+
+
 
   const [overlayData, setOverlayData] = useState<{
     three_year_ma?: { time: number; value: number }[];
@@ -64,7 +67,8 @@ const StockChart = ({ stockSymbol, setParentLoading }: StockChartProps) => {
   const dma50Ref = useRef<ISeriesApi<"Line"> | null>(null);
   const maceRef = useRef<ISeriesApi<"Line"> | null>(null);
   
-
+  
+  const targetChartRef = activeChartTarget === "main" ? chartRef : meanRevChartInstance;
   
   const {
     drawingModeRef,
@@ -77,7 +81,7 @@ const StockChart = ({ stockSymbol, setParentLoading }: StockChartProps) => {
     resetChart,
     clearDrawings,
   } = useDrawingManager(
-    chartRef,
+    targetChartRef,
     previewSeriesRef,
     sixPointPreviewRef,
     sixPointHoverLineRef,
@@ -86,7 +90,7 @@ const StockChart = ({ stockSymbol, setParentLoading }: StockChartProps) => {
   );
 
   usePreviewManager(
-    chartRef,
+    targetChartRef,
     drawingModeRef,
     lineBufferRef,
     hoverPoint,
@@ -94,10 +98,10 @@ const StockChart = ({ stockSymbol, setParentLoading }: StockChartProps) => {
     sixPointHoverLineRef
   );
 
-  useDrawingRenderer(chartRef, drawings, drawnSeriesRef, dotLabelSeriesRef);
+  useDrawingRenderer(targetChartRef, drawings, drawnSeriesRef, dotLabelSeriesRef);
 
   useClickHandler(
-    chartRef,
+    targetChartRef,
     candleSeriesRef,
     drawingModeRef,
     lineBufferRef,
@@ -301,7 +305,7 @@ const StockChart = ({ stockSymbol, setParentLoading }: StockChartProps) => {
   useWebSocketData(stockSymbol, candleSeriesRef);
 
   useEffect(() => {
-    const chart = chartRef.current;
+    const chart = activeChartTarget === "main" ? chartRef.current : meanRevChartInstance.current;
     if (!chart) return;
 
     drawings.forEach((drawing, i) => {
@@ -559,6 +563,22 @@ const StockChart = ({ stockSymbol, setParentLoading }: StockChartProps) => {
         >
           <RotateCcw size={16} />
         </button>
+
+        <div className="btn-group mb-2">
+          <button
+            className={`btn btn-sm ${activeChartTarget === "main" ? "btn-primary" : "btn-outline-secondary"}`}
+            onClick={() => setActiveChartTarget("main")}
+          >
+            Draw on Main
+          </button>
+          <button
+            className={`btn btn-sm ${activeChartTarget === "meanrev" ? "btn-primary" : "btn-outline-secondary"}`}
+            onClick={() => setActiveChartTarget("meanrev")}
+          >
+            Draw on Mean Rev
+          </button>
+        </div>
+
 
       </div>
 
