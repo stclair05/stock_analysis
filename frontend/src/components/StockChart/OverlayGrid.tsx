@@ -17,25 +17,25 @@ interface OverlayGridProps {
 
 const chartConfigs = [
   {
-    label: "3Y MA + Price",
+    label: "3Y MA",
     keys: ["three_year_ma"],
     colors: ["#3f51b5"],
     names: ["3Y MA"],
   },
   {
-    label: "200DMA + Ichimoku + Supertrend + Price",
+    label: "200DMA + Ichimoku + Supertrend",
     keys: ["dma_200", "ichimoku_span_a", "ichimoku_span_b", "supertrend_buy", "supertrend_sell"],
     colors: ["#009688", "#9c27b0", "#03a9f4", "#4caf50", "#f44336"],
     names: ["200DMA", "Ichimoku Span A", "Ichimoku Span B", "Supertrend Buy", "Supertrend Sell"],
   },
   {
-    label: "MACE + 40W MA + Price",
+    label: "MACE + 40W MA",
     keys: ["mace", "forty_week_ma"],
     colors: ["#e91e63", "#795548"],
     names: ["MACE", "40W MA"],
   },
   {
-    label: "50DMA + 150DMA + Price",
+    label: "50DMA + 150DMA",
     keys: ["dma_50", "dma_150"],
     colors: ["#ff9800", "#607d8b"],
     names: ["50DMA", "150DMA"],
