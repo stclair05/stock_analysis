@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from functools import lru_cache
 from .models import TimeSeriesMetric
 from aliases import SYMBOL_ALIASES
-from .utils import safe_value, detect_rsi_divergence, find_pivots, compute_wilder_rsi, compute_bbwp
+from .utils import safe_value, detect_rsi_divergence, find_pivots, compute_wilder_rsi, compute_bbwp, compute_ichimoku_lines, compute_supertrend_lines, to_series
 
 
 
@@ -686,75 +686,119 @@ class StockAnalyser:
             twentyone_days_ago=safe_value(signal, -4),
         )
     
-    def get_overlay_lines(self) -> dict:
-        df = self.df.copy()
+    def get_price_line(self):
+        return to_series(self.df["Close"].dropna())
 
-        # 3Y MA (monthly)
-        monthly_close = df["Close"].resample("ME").last()
-        ma3y = monthly_close.rolling(window=36).mean().dropna()
-        ma3y_series = [
-            {"time": int(ts.timestamp()), "value": round(val, 2)}
-            for ts, val in ma3y.items()
-            if not pd.isna(val)
-        ]
 
-        # 50DMA (daily)
-        dma50 = df["Close"].rolling(window=50).mean().dropna()
-        dma50_series = [
-            {"time": int(ts.timestamp()), "value": round(val, 2)}
-            for ts, val in dma50.items()
-            if not pd.isna(val)
-        ]
+    def get_3year_ma_series(self):
+        monthly_close = self.df["Close"].resample("ME").last()
+        ma = monthly_close.rolling(window=36).mean()
+        return to_series(ma)
 
-        # MACE (weekly)
-        df_weekly = df.resample("W-FRI").agg({"Open": "first", "High": "max", "Low": "min", "Close": "last"}).dropna()
+
+    def get_200dma_series(self):
+        return to_series(self.df["Close"].rolling(200).mean())
+
+    def get_150dma_series(self):
+        return to_series(self.df["Close"].rolling(150).mean())
+    
+    def get_50dma_series(self):
+        return to_series(self.df["Close"].rolling(window=50).mean())
+
+
+    
+    def get_mace_series(self): 
+        df_weekly = self.df.resample("W-FRI").agg({"Open": "first", "High": "max", "Low": "min", "Close": "last"}).dropna()
         s = df_weekly["Close"].rolling(4).mean()
         m = df_weekly["Close"].rolling(13).mean()
         l = df_weekly["Close"].rolling(26).mean()
         mace = (s + m + l) / 3
-        mace_series = [
-            {"time": int(ts.timestamp()), "value": round(val, 2)}
-            for ts, val in mace.items()
-            if not pd.isna(val)
-        ]
+        return to_series(mace)
 
-        # RSI (weekly)
+    
+    def get_40_week_ma_series(self):
+        df_weekly = self.df.resample("W-FRI").last().dropna()
+        ma = df_weekly["Close"].rolling(window=40).mean()
+        return to_series(ma)
+    
+    def get_rsi_series(self):
+        df_weekly = self.df.resample("W-FRI").last().dropna()
         rsi = compute_wilder_rsi(df_weekly["Close"]).dropna()
-        rsi_series = [
-            {"time": int(ts.timestamp()), "value": round(val, 2)}
-            for ts, val in rsi.items()
-        ]
-
-        # Mean reversion
-        mean_rev = self.get_mean_reversion_deviation_lines()
-
-        # Volatility, ie. BBWP (Bollinger Band Width Percentile)
+        return to_series(rsi)
+    
+    def get_volatility_bbwp(self):
+        df_weekly = self.df.resample("W-FRI").last().dropna()
         bbwp = compute_bbwp(df_weekly["Close"])
-        volatility_series = [
-            {"time": int(ts.timestamp()), "value": round(val, 2)}
-            for ts, val in bbwp.items()
-        ]
+        return to_series(bbwp)
+    
+
+    def get_ichimoku_lines(self):
+        df_weekly = self.df.resample("W-FRI").agg({
+            "Open": "first", "High": "max", "Low": "min", "Close": "last"
+        }).dropna()
+
+        tenkan, kijun, span_a, span_b = compute_ichimoku_lines(df_weekly)
 
         return {
-            "three_year_ma": ma3y_series,
-            "dma_50": dma50_series,
-            "mace": mace_series,
-            "rsi": rsi_series, 
-            "volatility": volatility_series,
-            **mean_rev
+            "ichimoku_tenkan": to_series(tenkan),
+            "ichimoku_kijun": to_series(kijun),
+            "ichimoku_span_a": to_series(span_a),
+            "ichimoku_span_b": to_series(span_b)
         }
+
+
+    def get_supertrend_lines(self):
+        df_weekly = self.df.resample("W-FRI").agg({
+            "Open": "first", "High": "max", "Low": "min", "Close": "last"
+        }).dropna()
+
+        df_st = compute_supertrend_lines(df_weekly)
+
+        return {
+            "supertrend_sell": to_series(df_st["UpperBand"]),
+            "supertrend_buy": to_series(df_st["LowerBand"]),
+            # Optional signal export (e.g., 1 = buy, 0 = sell)
+            # "supertrend_signal": to_series(df_st["Signal"].map(lambda x: 1 if x == "Buy" else 0))
+        }
+
+
     
     def get_mean_reversion_deviation_lines(self) -> dict:
         price = self.df["Close"]
         ma50 = price.rolling(window=50).mean()
-
         dev_50 = ((price - ma50) / ma50 * 100).dropna()
 
         return {
-            "mean_rev_50dma": [
-                {"time": int(ts.timestamp()), "value": round(val, 2)}
-                for ts, val in dev_50.items()
-            ],
+            "mean_rev_50dma": to_series(dev_50)
         }
+
+    
+    def get_overlay_lines(self) -> dict:
+        return {
+            "price_line": self.get_price_line(),
+            
+            # First Chart
+            "three_year_ma": self.get_3year_ma_series(),
+
+            # Second Chart
+            "dma_200": self.get_200dma_series(),
+            **self.get_ichimoku_lines(),
+            **self.get_supertrend_lines(),
+
+            # Third Chart
+            "mace": self.get_mace_series(),
+            "forty_week_ma": self.get_40_week_ma_series(),
+
+            # Fourth Chart
+            "dma_50": self.get_50dma_series(),
+            "dma_150": self.get_150dma_series(),
+
+            # Others
+            "rsi": self.get_rsi_series(),
+            "volatility": self.get_volatility_bbwp(),
+            **self.get_mean_reversion_deviation_lines(),
+        }
+
+
 
 

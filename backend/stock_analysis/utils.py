@@ -176,6 +176,60 @@ def compute_bbwp(close: pd.Series, length: int = 20, bbwp_window: int = 252) -> 
 
     return bbwp
 
+def compute_ichimoku_lines(df_weekly: pd.DataFrame) -> tuple[pd.Series, pd.Series, pd.Series, pd.Series]:
+    tenkan_sen = (df_weekly['High'].rolling(9).max() + df_weekly['Low'].rolling(9).min()) / 2
+    kijun_sen = (df_weekly['High'].rolling(26).max() + df_weekly['Low'].rolling(26).min()) / 2
+    span_a = ((tenkan_sen + kijun_sen) / 2).shift(26)
+    span_b = ((df_weekly['High'].rolling(52).max() + df_weekly['Low'].rolling(52).min()) / 2).shift(26)
+    return tenkan_sen, kijun_sen, span_a, span_b
+
+def compute_supertrend_lines(df_weekly: pd.DataFrame):
+    high = df_weekly['High']
+    low = df_weekly['Low']
+    close = df_weekly['Close']
+    prev_close = close.shift(1)
+
+    tr = pd.concat([
+        high - low,
+        (high - prev_close).abs(),
+        (low - prev_close).abs()
+    ], axis=1).max(axis=1)
+
+    atr = tr.rolling(window=10, min_periods=1).mean()
+    hl2 = (high + low) / 2
+
+    upperband = hl2 + 3 * atr
+    lowerband = hl2 - 3 * atr
+
+    df_st = pd.DataFrame(index=df_weekly.index)
+    df_st['Close'] = close
+    df_st['UpperBand'] = upperband
+    df_st['LowerBand'] = lowerband
+    df_st['InUptrend'] = True
+
+    for i in range(1, len(df_st)):
+        prev = df_st.iloc[i - 1]
+        curr = df_st.iloc[i]
+
+        df_st.iloc[i, df_st.columns.get_loc('InUptrend')] = prev['InUptrend']
+
+        if curr['Close'] > prev['UpperBand']:
+            df_st.iloc[i, df_st.columns.get_loc('InUptrend')] = True
+        elif curr['Close'] < prev['LowerBand']:
+            df_st.iloc[i, df_st.columns.get_loc('InUptrend')] = False
+        else:
+            if prev['InUptrend']:
+                df_st.iloc[i, df_st.columns.get_loc('LowerBand')] = min(curr['LowerBand'], prev['LowerBand'])
+                df_st.iloc[i, df_st.columns.get_loc('UpperBand')] = np.nan
+            else:
+                df_st.iloc[i, df_st.columns.get_loc('UpperBand')] = max(curr['UpperBand'], prev['UpperBand'])
+                df_st.iloc[i, df_st.columns.get_loc('LowerBand')] = np.nan
+
+    df_st['Signal'] = df_st['InUptrend'].map(lambda x: 'Buy' if x else 'Sell')
+
+    return df_st[['UpperBand', 'LowerBand', 'Signal']]
+
+
 @lru_cache(maxsize=100)
 def get_risk_free_rate() -> float:
     try:
@@ -259,3 +313,12 @@ def convert_numpy_types(obj):
     elif isinstance(obj, (np.int32, np.int64)):
         return int(obj)
     return obj
+
+def to_series(series: pd.Series) -> list[dict]:
+    if not isinstance(series, pd.Series):
+        raise TypeError(f"Expected pd.Series, got {type(series)}")
+    return [
+        {"time": int(ts.timestamp()), "value": round(val, 2)}
+        for ts, val in series.items()
+        if not pd.isna(val)
+    ]
