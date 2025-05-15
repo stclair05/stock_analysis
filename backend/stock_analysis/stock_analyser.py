@@ -111,7 +111,6 @@ class StockAnalyser:
     def super_trend(self) -> TimeSeriesMetric:
         df = self.df.last("600D")
 
-        # Resample to weekly OHLC
         df_weekly = df.resample("W-FRI").agg({
             "Open": "first",
             "High": "max",
@@ -130,6 +129,7 @@ class StockAnalyser:
             fourteen_days_ago=safe_value(df_st["Signal"], -3),
             twentyone_days_ago=safe_value(df_st["Signal"], -4),
         )
+
 
 
     def adx(self) -> TimeSeriesMetric:
@@ -322,15 +322,16 @@ class StockAnalyser:
         ma_3y = monthly_close.rolling(window=36).mean()
         deviation = (monthly_close - ma_3y) / ma_3y * 100
 
-        def classify(dev: float | None) -> str | None:
-            if dev is None or pd.isna(dev):
-                return None
+        def classify(dev: float | str | None) -> str | None:
+            if dev is None or pd.isna(dev) or dev == "in progress":
+                return "in progress"
             if dev > 5:
                 return "Extended"
             elif dev < -5:
                 return "Oversold"
             else:
                 return "Average"
+
 
         return TimeSeriesMetric(
             current=classify(safe_value(deviation, -1)),
