@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from functools import lru_cache
 from .models import TimeSeriesMetric
 from aliases import SYMBOL_ALIASES
-from .utils import safe_value, detect_rsi_divergence, find_pivots, compute_wilder_rsi, compute_weekly_natr
+from .utils import safe_value, detect_rsi_divergence, find_pivots, compute_wilder_rsi, compute_bbwp
 
 
 
@@ -728,11 +728,11 @@ class StockAnalyser:
         # Mean reversion
         mean_rev = self.get_mean_reversion_deviation_lines()
 
-        # Volatility, ie. Normalized Average True Range
-        natr = compute_weekly_natr(df_weekly)
+        # Volatility, ie. BBWP (Bollinger Band Width Percentile)
+        bbwp = compute_bbwp(df_weekly["Close"])
         volatility_series = [
             {"time": int(ts.timestamp()), "value": round(val, 2)}
-            for ts, val in natr.items()
+            for ts, val in bbwp.items()
         ]
 
         return {

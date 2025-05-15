@@ -9,6 +9,7 @@ import {
   DeepPartial,
   LineStyleOptions,
   SeriesOptionsCommon,
+  HistogramSeries,
 } from "lightweight-charts";
 import { useEffect, useRef, useState } from "react";
 import { Ruler, Minus, RotateCcw, ArrowUpDown } from "lucide-react";
@@ -791,32 +792,50 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
   useEffect(() => {
     const chart = volChartInstance.current;
     if (!chart) return;
-  
+
     if (volLineRef.current) {
       chart.removeSeries(volLineRef.current);
       volLineRef.current = null;
     }
-  
-    const lineOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
-      lineWidth: 2,
+
+    if (!overlayData.volatility) return;
+
+    // Line overlay for BBWP (percentile line)
+    const bbwpLine = chart.addSeries(LineSeries, {
+      color: "#8d6e63", // brown
+      lineWidth: 1,
       priceLineVisible: false,
       lastValueVisible: false,
-      color: "#795548",
-    };
-  
-    if (overlayData.volatility) {
-      const series = chart.addSeries(LineSeries, lineOptions);
-      series.setData(
-        overlayData.volatility.map((d) => ({
-          time: d.time as UTCTimestamp,
-          value: d.value,
-        }))
-      );
-      volLineRef.current = series;
-    }
+    });
+
+    bbwpLine.setData(
+      overlayData.volatility.map((d) => ({
+        time: d.time as UTCTimestamp,
+        value: d.value,
+      }))
+    );
+    volLineRef.current = bbwpLine;
+
+    // Vertical bars
+    const histogramSeries = chart.addSeries(HistogramSeries, {
+      priceLineVisible: false,
+      lastValueVisible: false,
+      color: "#aaa",
+      base: 0,
+    });
+
+    const histogramData = overlayData.volatility.map((point) => {
+      const { time, value } = point;
+      return {
+        time: time as UTCTimestamp,
+        value: 100,
+        color: value >= 90 ? "#f44336" : value <= 10 ? "#2196f3" : "rgba(0,0,0,0)", // red, blue, or invisible
+      };
+    });
+
+    histogramSeries.setData(histogramData);
+
   }, [overlayData.volatility]);
-  
-  
   
 
   return (
