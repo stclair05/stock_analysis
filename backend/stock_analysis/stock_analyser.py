@@ -16,7 +16,7 @@ class StockAnalyser:
         self.df = StockAnalyser.get_price_data(self.symbol)
 
     def _download_data(self) -> pd.DataFrame:
-        df = yf.download(self.symbol, period='12y', interval='1d', auto_adjust=False)
+        df = yf.download(self.symbol, period='20y', interval='1d', auto_adjust=False)
         if df.empty:
             raise HTTPException(status_code=400, detail="Stock symbol not found or data unavailable.")
         if isinstance(df.columns, pd.MultiIndex):
