@@ -29,10 +29,10 @@ const chartConfigs = [
     names: ["200DMA", "Ichimoku Span A", "Ichimoku Span B", "Supertrend Buy", "Supertrend Sell"],
   },
   {
-    label: "MACE + 40W MA",
-    keys: ["mace", "forty_week_ma"],
-    colors: ["#e91e63", "#795548"],
-    names: ["MACE", "40W MA"],
+    label: "MACE (4W/13W/26W) + 40W MA",
+    keys: ["mace_4w", "mace_13w", "mace_26w", "forty_week_ma"],
+    colors: ["#e91e63", "#9c27b0", "#03a9f4", "#795548"],
+    names: ["MACE 4W", "MACE 13W", "MACE 26W", "40W MA"],
   },
   {
     label: "50DMA + 150DMA",
@@ -54,7 +54,7 @@ export default function OverlayGrid({ overlayData }: OverlayGridProps) {
     if (!container) return;
 
     const chart = createChart(container, {
-        height: 220,
+        height: 250,
         width: container.clientWidth,
         layout: {
         background: { color: "#ffffff" },
@@ -146,7 +146,7 @@ export default function OverlayGrid({ overlayData }: OverlayGridProps) {
                     ref={(el) => {
                     chartRefs.current[index] = el;
                     }}
-                    style={{ width: "100%", height: "220px" }}
+                    style={{ width: "100%", height: "250px" }}
                 />
             {/* ⬇️ Legend UI */}
                 <div className="d-flex flex-wrap mt-1">
