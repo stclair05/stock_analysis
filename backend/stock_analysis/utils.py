@@ -319,54 +319,62 @@ def compute_ichimoku_lines(df_weekly: pd.DataFrame) -> tuple[pd.Series, pd.Serie
     span_b = ((df_weekly['High'].rolling(52).max() + df_weekly['Low'].rolling(52).min()) / 2).shift(26)
     return tenkan_sen, kijun_sen, span_a, span_b
 
-def compute_supertrend_lines(df_weekly: pd.DataFrame):
-    df_weekly = df_weekly.copy()
-    df_weekly.index = df_weekly.index.tz_localize(None)
+def compute_supertrend_lines(df: pd.DataFrame, period: int = 10, multiplier: float = 3.0) -> pd.DataFrame:
+    df = df.copy()
+    df.index = df.index.tz_localize(None)
 
-    high = df_weekly['High']
-    low = df_weekly['Low']
-    close = df_weekly['Close']
-
+    high = df["High"]
+    low = df["Low"]
+    close = df["Close"]
+    
+    # Step 1: Calculate HL2 and True Range (TR)
     hl2 = (high + low) / 2
-    atr = (pd.concat([
-        high - low,
-        (high - close.shift(1)).abs(),
-        (low - close.shift(1)).abs()
-    ], axis=1).max(axis=1)).rolling(window=10, min_periods=1).mean()
+    tr1 = high - low
+    tr2 = (high - close.shift(1)).abs()
+    tr3 = (low - close.shift(1)).abs()
+    tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
 
-    multiplier = 1.5
+    # Step 2: Wilder's Smoothing for ATR
+    atr = tr.ewm(alpha=1 / period, adjust=False).mean()
+
+    # Step 3: Calculate Basic Bands
     upperband = hl2 + multiplier * atr
     lowerband = hl2 - multiplier * atr
 
-    df = pd.DataFrame(index=df_weekly.index)
-    df['Close'] = close
-    df['UpperBand'] = upperband
-    df['LowerBand'] = lowerband
-    df['InUptrend'] = True
+    # Step 4: Initialize Supertrend columns
+    supertrend = pd.DataFrame(index=df.index)
+    supertrend["Close"] = close
+    supertrend["UpperBand"] = upperband
+    supertrend["LowerBand"] = lowerband
+    supertrend["InUptrend"] = True
 
-    for i in range(1, len(df)):
-        prev = df.iloc[i - 1]
-        curr = df.iloc[i]
+    # Step 5: Loop through rows for signal logic
+    for i in range(1, len(supertrend)):
+        prev = supertrend.iloc[i - 1]
+        curr = supertrend.iloc[i]
 
-        if curr['Close'] > prev['UpperBand']:
-            df.iat[i, df.columns.get_loc('InUptrend')] = True
-        elif curr['Close'] < prev['LowerBand']:
-            df.iat[i, df.columns.get_loc('InUptrend')] = False
+        if curr["Close"] > prev["UpperBand"]:
+            supertrend.iat[i, supertrend.columns.get_loc("InUptrend")] = True
+        elif curr["Close"] < prev["LowerBand"]:
+            supertrend.iat[i, supertrend.columns.get_loc("InUptrend")] = False
         else:
-            df.iat[i, df.columns.get_loc('InUptrend')] = prev['InUptrend']
-            if prev['InUptrend']:
-                df.iat[i, df.columns.get_loc('LowerBand')] = max(curr['LowerBand'], prev['LowerBand'])
-                df.iat[i, df.columns.get_loc('UpperBand')] = np.nan
+            supertrend.iat[i, supertrend.columns.get_loc("InUptrend")] = prev["InUptrend"]
+            if prev["InUptrend"]:
+                if curr["LowerBand"] < prev["LowerBand"]:
+                    supertrend.iat[i, supertrend.columns.get_loc("LowerBand")] = prev["LowerBand"]
+                supertrend.iat[i, supertrend.columns.get_loc("UpperBand")] = np.nan
             else:
-                df.iat[i, df.columns.get_loc('UpperBand')] = min(curr['UpperBand'], prev['UpperBand'])
-                df.iat[i, df.columns.get_loc('LowerBand')] = np.nan
+                if curr["UpperBand"] > prev["UpperBand"]:
+                    supertrend.iat[i, supertrend.columns.get_loc("UpperBand")] = prev["UpperBand"]
+                supertrend.iat[i, supertrend.columns.get_loc("LowerBand")] = np.nan
 
-    df['Signal'] = df['InUptrend'].map(lambda x: 'Buy' if x else 'Sell')
-    df['ST_Line_Up'] = np.where(df['InUptrend'], df['LowerBand'], np.nan)
-    df['ST_Line_Down'] = np.where(df['InUptrend'], np.nan, df['UpperBand'])  # ← Enforces clean break
+    # Step 6: Derive Signal and Final Plot Lines
+    supertrend["Signal"] = supertrend["InUptrend"].map(lambda x: "Buy" if x else "Sell")
+    supertrend["ST_Line_Up"] = np.where(supertrend["InUptrend"], supertrend["LowerBand"], np.nan)
+    supertrend["ST_Line_Down"] = np.where(supertrend["InUptrend"], np.nan, supertrend["UpperBand"])
 
+    return supertrend[["Close", "ST_Line_Up", "ST_Line_Down", "Signal", "InUptrend"]]
 
-    return df[['ST_Line_Up', 'ST_Line_Down', 'Signal']]
 
 
 
