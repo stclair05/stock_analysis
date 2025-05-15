@@ -292,9 +292,13 @@ def compute_weekly_natr(df_weekly: pd.DataFrame, period: int = 14) -> pd.Series:
 
 def compute_bbwp(close: pd.Series, length: int = 20, bbwp_window: int = 252) -> pd.Series:
     """
-    Computes Bollinger Band Width Percentile (BBWP).
-    Based on TradingView logic.
+    Computes Bollinger Band Width Percentile (BBWP), adapted to support shorter histories.
     """
+    if len(close.dropna()) < length + 10:
+        # Not enough data to even compute BBW
+        print(f"⚠️ Not enough data to compute BBWP base (need ~{length + 10}, got {len(close)})")
+        return pd.Series(dtype=float)
+
     sma = close.rolling(window=length).mean()
     std = close.rolling(window=length).std()
 
@@ -302,9 +306,14 @@ def compute_bbwp(close: pd.Series, length: int = 20, bbwp_window: int = 252) -> 
     lower = sma - 2 * std
     mid = sma
 
-    bbw = (upper - lower) / mid  # raw width
+    bbw = (upper - lower) / mid
 
-    # Calculate rolling percentile (BBWP)
+    # Adaptive BBWP window fallback
+    if len(bbw.dropna()) < bbwp_window:
+        old_window = bbwp_window
+        bbwp_window = max(26, len(bbw.dropna()) // 2)  # fallback to half of what we have
+        print(f"⚠️ BBWP window too long, reduced from {old_window} to {bbwp_window}")
+
     def percentile_rank(x):
         return rankdata(x)[-1] / len(x)
 
