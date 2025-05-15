@@ -9,6 +9,7 @@ import {
   DeepPartial,
   LineStyleOptions,
   SeriesOptionsCommon,
+  HistogramSeries,
 } from "lightweight-charts";
 import { useEffect, useRef, useState } from "react";
 import { Ruler, Minus, RotateCcw, ArrowUpDown } from "lucide-react";
@@ -237,14 +238,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     rsiLineRef.current = rsiLine;   
 
 
-    const resizeObserver = new ResizeObserver(entries => {
-      for (let entry of entries) {
-        if (entry.contentRect) {
-          chart.resize(entry.contentRect.width, 400);
-          meanChart.resize(entry.contentRect.width, 200);
-        }
-      }
-    });
+    
 
     // Volatility Chart 
     const volChart = createChart(volChartRef.current, {
@@ -325,7 +319,16 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     });
 
   
-    
+    const resizeObserver = new ResizeObserver(entries => {
+      for (let entry of entries) {
+        if (entry.contentRect) {
+          chart.resize(entry.contentRect.width, 400);
+          meanChart.resize(entry.contentRect.width, 200);
+          rsiChart.resize(entry.contentRect.width, 150);     
+          volChart.resize(entry.contentRect.width, 150);
+        }
+      }
+    });
     resizeObserver.observe(chartContainerRef.current);
 
 
@@ -791,32 +794,50 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
   useEffect(() => {
     const chart = volChartInstance.current;
     if (!chart) return;
-  
+
     if (volLineRef.current) {
       chart.removeSeries(volLineRef.current);
       volLineRef.current = null;
     }
-  
-    const lineOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
-      lineWidth: 2,
+
+    if (!overlayData.volatility) return;
+
+    // Line overlay for BBWP (percentile line)
+    const bbwpLine = chart.addSeries(LineSeries, {
+      color: "#8d6e63", // brown
+      lineWidth: 1,
       priceLineVisible: false,
       lastValueVisible: false,
-      color: "#795548",
-    };
-  
-    if (overlayData.volatility) {
-      const series = chart.addSeries(LineSeries, lineOptions);
-      series.setData(
-        overlayData.volatility.map((d) => ({
-          time: d.time as UTCTimestamp,
-          value: d.value,
-        }))
-      );
-      volLineRef.current = series;
-    }
+    });
+
+    bbwpLine.setData(
+      overlayData.volatility.map((d) => ({
+        time: d.time as UTCTimestamp,
+        value: d.value,
+      }))
+    );
+    volLineRef.current = bbwpLine;
+
+    // Vertical bars
+    const histogramSeries = chart.addSeries(HistogramSeries, {
+      priceLineVisible: false,
+      lastValueVisible: false,
+      color: "#aaa",
+      base: 0,
+    });
+
+    const histogramData = overlayData.volatility.map((point) => {
+      const { time, value } = point;
+      return {
+        time: time as UTCTimestamp,
+        value: 100,
+        color: value >= 90 ? "#f44336" : value <= 10 ? "#2196f3" : "rgba(0,0,0,0)", // red, blue, or invisible
+      };
+    });
+
+    histogramSeries.setData(histogramData);
+
   }, [overlayData.volatility]);
-  
-  
   
 
   return (
@@ -880,32 +901,49 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
 
       <div ref={chartContainerRef} style={{ width: "100%", height: "400px" }} />
-      <button
-        onClick={() => {
-          const chart = meanRevChartInstance.current;
-        
-          if (meanRevLimitLines.length > 0) {
-            // Clear lines if already present
-            meanRevLimitSeries.current.forEach((s) => chart?.removeSeries(s));
-            meanRevLimitSeries.current = [];
-            setMeanRevLimitLines([]);
-            console.log("🧹 Cleared limit lines.");
-          } else {
-            setLimitDrawingMode(true);
-            limitDrawingModeRef.current = true;
-            console.log("🖱️ Activated limit drawing mode.");
-          }
-        }}
-        
-        className={`tool-button ${limitDrawingMode || meanRevLimitLines.length > 0 ? "active" : ""}`}
-        title="Symmetric Bound Lines"
-      >
-        <ArrowUpDown size={16} />
-      </button>
 
-      <div ref={meanRevChartRef} style={{ width: "100%", height: "200px", marginTop: "1rem" }} />
-      <div ref={rsiChartRef} style={{ width: "100%", height: "150px", marginTop: "1rem" }} />
-      <div ref={volChartRef} style={{ width: "100%", height: "150px", marginTop: "1rem" }} />
+      {/* === Mean Reversion Chart === */}
+      <div className="mt-4">
+      <div className="d-flex align-items-center gap-2 mb-1">
+        <div className="fw-bold text-muted">📊 Mean Reversion</div>
+        <button
+          onClick={() => {
+            const chart = meanRevChartInstance.current;
+
+            if (meanRevLimitLines.length > 0) {
+              meanRevLimitSeries.current.forEach((s) => chart?.removeSeries(s));
+              meanRevLimitSeries.current = [];
+              setMeanRevLimitLines([]);
+              console.log("🧹 Cleared limit lines.");
+            } else {
+              setLimitDrawingMode(true);
+              limitDrawingModeRef.current = true;
+              console.log("🖱️ Activated limit drawing mode.");
+            }
+          }}
+          className={`tool-button ${limitDrawingMode || meanRevLimitLines.length > 0 ? "active" : ""}`}
+          title="Symmetric Bound Lines"
+        >
+          <ArrowUpDown size={16} />
+        </button>
+      </div>
+      <div ref={meanRevChartRef} style={{ width: "100%", height: "200px" }} />
+    </div>
+
+
+
+      {/* === RSI Chart === */}
+      <div className="mt-4">
+        <div className="fw-bold text-muted mb-1">📉 RSI Indicator</div>
+        <div ref={rsiChartRef} style={{ width: "100%", height: "150px" }} />
+      </div>
+
+      {/* === Volatility Chart === */}
+      <div className="mt-4">
+        <div className="fw-bold text-muted mb-1">📈 Volatility (BBWP)</div>
+        <div ref={volChartRef} style={{ width: "100%", height: "150px" }} />
+      </div>
+
 
 
     </div>

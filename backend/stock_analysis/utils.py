@@ -4,6 +4,7 @@ from typing import List
 import yfinance as yf
 from typing import Optional
 from functools import lru_cache
+from scipy.stats import rankdata
 
 def safe_value(series: pd.Series, idx: int):
     if idx >= len(series) or idx < -len(series):
@@ -152,6 +153,28 @@ def compute_weekly_natr(df_weekly: pd.DataFrame, period: int = 14) -> pd.Series:
     natr = (atr / close) * 100
 
     return natr.dropna()
+
+def compute_bbwp(close: pd.Series, length: int = 20, bbwp_window: int = 252) -> pd.Series:
+    """
+    Computes Bollinger Band Width Percentile (BBWP).
+    Based on TradingView logic.
+    """
+    sma = close.rolling(window=length).mean()
+    std = close.rolling(window=length).std()
+
+    upper = sma + 2 * std
+    lower = sma - 2 * std
+    mid = sma
+
+    bbw = (upper - lower) / mid  # raw width
+
+    # Calculate rolling percentile (BBWP)
+    def percentile_rank(x):
+        return rankdata(x)[-1] / len(x)
+
+    bbwp = bbw.rolling(window=bbwp_window).apply(percentile_rank).dropna() * 100
+
+    return bbwp
 
 @lru_cache(maxsize=100)
 def get_risk_free_rate() -> float:
