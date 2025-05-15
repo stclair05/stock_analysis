@@ -154,6 +154,13 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
   if (lower === "orange") return "text-warning";                 // Sideways / low ADX
   if (lower === "in progress") return "text-secondary";          // Not enough data
 
+    // 40-Week MA Status
+  if (lower.includes("above rising ma") || lower.includes("++")) return "text-success fw-bold";   // Best performance
+  if (lower.includes("above falling ma") || lower.includes("+-")) return "text-success";          // Still positive
+  if (lower.includes("below rising ma") || lower.includes("-+")) return "text-warning";           // Neutral/choppy
+  if (lower.includes("below falling ma") || lower.includes("--")) return "text-danger fw-bold";   // Worst performance
+
+
 
   // RSI Divergence Daily
   if (lower.includes("bullish divergence")) return "text-success fw-bold";

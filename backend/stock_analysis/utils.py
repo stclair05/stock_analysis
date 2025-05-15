@@ -234,10 +234,10 @@ def classify_40w_status(close: pd.Series, ma_40: pd.Series, slope: pd.Series) ->
     signal = pd.Series(index=close.index, dtype='object')
     mask_valid = (~close.isna()) & (~ma_40.isna()) & (~slope.isna())
 
-    signal[(close > ma_40) & (slope > 0) & mask_valid] = "Above Rising MA"
-    signal[(close > ma_40) & (slope <= 0) & mask_valid] = "Above Falling MA"
-    signal[(close <= ma_40) & (slope > 0) & mask_valid] = "Below Rising MA"
-    signal[(close <= ma_40) & (slope <= 0) & mask_valid] = "Below Falling MA"
+    signal[(close > ma_40) & (slope > 0) & mask_valid] = "Above Rising MA ++"
+    signal[(close > ma_40) & (slope <= 0) & mask_valid] = "Above Falling MA +-"
+    signal[(close <= ma_40) & (slope > 0) & mask_valid] = "Below Rising MA -+"
+    signal[(close <= ma_40) & (slope <= 0) & mask_valid] = "Below Falling MA --"
 
     return signal
 
