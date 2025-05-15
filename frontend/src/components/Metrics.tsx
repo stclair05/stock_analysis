@@ -146,6 +146,15 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
   if (lower.includes("below 150dma only")) return "text-danger";   // Mild downtrend
   if (lower.includes("between averages")) return "text-warning";   // Choppy
 
+    // ADX Classification
+  if (lower === "green") return "text-success fw-bold";          // Strong bullish
+  if (lower === "light green") return "text-success";            // Weak bullish
+  if (lower === "red") return "text-danger fw-bold";             // Strong bearish
+  if (lower === "light red") return "text-danger";               // Weak bearish
+  if (lower === "orange") return "text-warning";                 // Sideways / low ADX
+  if (lower === "in progress") return "text-secondary";          // Not enough data
+
+
   // RSI Divergence Daily
   if (lower.includes("bullish divergence")) return "text-success fw-bold";
   if (lower.includes("bearish divergence")) return "text-danger fw-bold";
