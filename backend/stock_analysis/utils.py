@@ -320,50 +320,55 @@ def compute_ichimoku_lines(df_weekly: pd.DataFrame) -> tuple[pd.Series, pd.Serie
     return tenkan_sen, kijun_sen, span_a, span_b
 
 def compute_supertrend_lines(df_weekly: pd.DataFrame):
+    df_weekly = df_weekly.copy()
+    df_weekly.index = df_weekly.index.tz_localize(None)
+
     high = df_weekly['High']
     low = df_weekly['Low']
     close = df_weekly['Close']
-    prev_close = close.shift(1)
 
-    tr = pd.concat([
-        high - low,
-        (high - prev_close).abs(),
-        (low - prev_close).abs()
-    ], axis=1).max(axis=1)
-
-    atr = tr.rolling(window=10, min_periods=1).mean()
     hl2 = (high + low) / 2
+    atr = (pd.concat([
+        high - low,
+        (high - close.shift(1)).abs(),
+        (low - close.shift(1)).abs()
+    ], axis=1).max(axis=1)).rolling(window=10, min_periods=1).mean()
 
-    upperband = hl2 + 3 * atr
-    lowerband = hl2 - 3 * atr
+    multiplier = 1.5
+    upperband = hl2 + multiplier * atr
+    lowerband = hl2 - multiplier * atr
 
-    df_st = pd.DataFrame(index=df_weekly.index)
-    df_st['Close'] = close
-    df_st['UpperBand'] = upperband
-    df_st['LowerBand'] = lowerband
-    df_st['InUptrend'] = True
+    df = pd.DataFrame(index=df_weekly.index)
+    df['Close'] = close
+    df['UpperBand'] = upperband
+    df['LowerBand'] = lowerband
+    df['InUptrend'] = True
 
-    for i in range(1, len(df_st)):
-        prev = df_st.iloc[i - 1]
-        curr = df_st.iloc[i]
-
-        df_st.iloc[i, df_st.columns.get_loc('InUptrend')] = prev['InUptrend']
+    for i in range(1, len(df)):
+        prev = df.iloc[i - 1]
+        curr = df.iloc[i]
 
         if curr['Close'] > prev['UpperBand']:
-            df_st.iloc[i, df_st.columns.get_loc('InUptrend')] = True
+            df.iat[i, df.columns.get_loc('InUptrend')] = True
         elif curr['Close'] < prev['LowerBand']:
-            df_st.iloc[i, df_st.columns.get_loc('InUptrend')] = False
+            df.iat[i, df.columns.get_loc('InUptrend')] = False
         else:
+            df.iat[i, df.columns.get_loc('InUptrend')] = prev['InUptrend']
             if prev['InUptrend']:
-                df_st.iloc[i, df_st.columns.get_loc('LowerBand')] = min(curr['LowerBand'], prev['LowerBand'])
-                df_st.iloc[i, df_st.columns.get_loc('UpperBand')] = np.nan
+                df.iat[i, df.columns.get_loc('LowerBand')] = max(curr['LowerBand'], prev['LowerBand'])
+                df.iat[i, df.columns.get_loc('UpperBand')] = np.nan
             else:
-                df_st.iloc[i, df_st.columns.get_loc('UpperBand')] = max(curr['UpperBand'], prev['UpperBand'])
-                df_st.iloc[i, df_st.columns.get_loc('LowerBand')] = np.nan
+                df.iat[i, df.columns.get_loc('UpperBand')] = min(curr['UpperBand'], prev['UpperBand'])
+                df.iat[i, df.columns.get_loc('LowerBand')] = np.nan
 
-    df_st['Signal'] = df_st['InUptrend'].map(lambda x: 'Buy' if x else 'Sell')
+    df['Signal'] = df['InUptrend'].map(lambda x: 'Buy' if x else 'Sell')
+    df['ST_Line_Up'] = np.where(df['InUptrend'], df['LowerBand'], np.nan)
+    df['ST_Line_Down'] = np.where(df['InUptrend'], np.nan, df['UpperBand'])  # ← Enforces clean break
 
-    return df_st[['UpperBand', 'LowerBand', 'Signal']]
+
+    return df[['ST_Line_Up', 'ST_Line_Down', 'Signal']]
+
+
 
 
 @lru_cache(maxsize=100)

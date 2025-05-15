@@ -582,12 +582,16 @@ class StockAnalyser:
 
         df_st = compute_supertrend_lines(df_weekly)
 
+        print("🔍 Sample ST Line Up:")
+        print(df_st["ST_Line_Up"].dropna().tail(10))
+        print("🔍 Sample ST Line Down:")
+        print(df_st["ST_Line_Down"].dropna().tail(10))
+
         return {
-            "supertrend_sell": to_series(df_st["UpperBand"]),
-            "supertrend_buy": to_series(df_st["LowerBand"]),
-            # Optional signal export (e.g., 1 = buy, 0 = sell)
-            # "supertrend_signal": to_series(df_st["Signal"].map(lambda x: 1 if x == "Buy" else 0))
+            "supertrend_up": to_series(df_st["ST_Line_Up"]),
+            "supertrend_down": to_series(df_st["ST_Line_Down"])
         }
+
 
 
     
