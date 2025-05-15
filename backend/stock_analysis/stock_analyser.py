@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from functools import lru_cache
 from .models import TimeSeriesMetric
 from aliases import SYMBOL_ALIASES
-from .utils import safe_value, detect_rsi_divergence, find_pivots, compute_wilder_rsi, compute_bbwp, compute_ichimoku_lines, compute_supertrend_lines, to_series, classify_adx_trend, classify_mace_signal, classify_40w_status, classify_dma_trend, classify_bbwp_percentile
+from .utils import safe_value, detect_rsi_divergence, find_pivots, compute_wilder_rsi, compute_bbwp, compute_ichimoku_lines, compute_supertrend_lines, to_series, classify_adx_trend, classify_mace_signal, classify_40w_status, classify_dma_trend, classify_bbwp_percentile, wilder_smooth
 
 
 
@@ -43,14 +43,15 @@ class StockAnalyser:
 
         return df
 
-
-
     def get_current_price(self) -> float | None:
         return safe_value(self.df['Close'], -1)
 
     def calculate_3year_ma(self) -> TimeSeriesMetric:
+        if len(self.df) < 800:
+            return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
         monthly_close = self.df['Close'].resample('ME').last()
         monthly_ma = monthly_close.rolling(window=36).mean()
+
         return TimeSeriesMetric(
             current=safe_value(monthly_ma, -1),
             seven_days_ago=safe_value(monthly_ma, -2),
@@ -59,6 +60,9 @@ class StockAnalyser:
         )
 
     def calculate_200dma(self) -> TimeSeriesMetric:
+        if len(self.df) < 200:
+            return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
+
         daily_ma = self.df['Close'].rolling(window=200).mean()
         return TimeSeriesMetric(
             current=safe_value(daily_ma, -1),
@@ -69,7 +73,7 @@ class StockAnalyser:
 
     def ichimoku_cloud(self) -> TimeSeriesMetric:
         df = self.df.last('600D')
-        if df.empty:
+        if len(df) < 150 or df.empty:  # ~30 weeks
             return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
 
         # Weekly resampling
@@ -110,7 +114,9 @@ class StockAnalyser:
 
     def super_trend(self) -> TimeSeriesMetric:
         df = self.df.last("600D")
-
+        if len(df) < 150 or df.empty:  # ~30 weeks
+            return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
+        
         df_weekly = df.resample("W-FRI").agg({
             "Open": "first",
             "High": "max",
@@ -134,6 +140,8 @@ class StockAnalyser:
 
     def adx(self) -> TimeSeriesMetric:
         df = self.df.last("600D")
+        if len(df) < 150:  # ~30 weeks
+            return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
 
         df_weekly = df.resample("W-FRI").agg({
             "Open": "first",
@@ -142,37 +150,48 @@ class StockAnalyser:
             "Close": "last"
         }).dropna()
 
-        if df_weekly.empty:
+        if df_weekly.empty or len(df_weekly) < 20:
             return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
 
         high = df_weekly['High']
         low = df_weekly['Low']
         close = df_weekly['Close']
 
-        # Directional Movement
-        up_move = high.diff()
-        down_move = low.diff().abs()
-
-        plus_dm = np.where((up_move > down_move) & (up_move > 0), up_move, 0.0)
-        minus_dm = np.where((down_move > up_move) & (down_move > 0), down_move, 0.0)
-
+        prev_high = high.shift(1)
+        prev_low = low.shift(1)
         prev_close = close.shift(1)
+
         tr = pd.concat([
             high - low,
             (high - prev_close).abs(),
             (low - prev_close).abs()
         ], axis=1).max(axis=1)
 
-        atr = pd.Series(tr).ewm(alpha=1/14, adjust=False).mean()
-        plus_dm = pd.Series(plus_dm, index=df_weekly.index).ewm(alpha=1/14, adjust=False).mean()
-        minus_dm = pd.Series(minus_dm, index=df_weekly.index).ewm(alpha=1/14, adjust=False).mean()
+        up_move = high - prev_high
+        down_move = prev_low - low
 
-        plus_di = 100 * (plus_dm / atr)
-        minus_di = 100 * (minus_dm / atr)
-        dx = 100 * ((plus_di - minus_di).abs() / (plus_di + minus_di))
-        adx = dx.ewm(alpha=1/14, adjust=False).mean()
+        plus_dm = np.where((up_move > down_move) & (up_move > 0), up_move, 0.0)
+        minus_dm = np.where((down_move > up_move) & (down_move > 0), down_move, 0.0)
 
-        # Classification using utility function
+        period = 14
+
+        smoothed_tr = wilder_smooth(tr, period)
+        smoothed_plus_dm = wilder_smooth(pd.Series(plus_dm, index=tr.index), period)
+        smoothed_minus_dm = wilder_smooth(pd.Series(minus_dm, index=tr.index), period)
+
+        plus_di = 100 * smoothed_plus_dm / smoothed_tr
+        minus_di = 100 * smoothed_minus_dm / smoothed_tr
+        dx = 100 * (plus_di - minus_di).abs() / (plus_di + minus_di)
+
+        adx = wilder_smooth(dx.dropna(), period)
+
+        # Align all series to match final ADX index
+        common_index = adx.index
+        plus_di = plus_di.reindex(common_index)
+        minus_di = minus_di.reindex(common_index)
+
+
+        # Classification (same as before)
         classification = classify_adx_trend(adx, plus_di, minus_di)
 
         return TimeSeriesMetric(
@@ -182,8 +201,12 @@ class StockAnalyser:
             twentyone_days_ago=safe_value(classification, -4),
         )
 
+
     def mace(self) -> TimeSeriesMetric:
         df = self.df.last('600D')
+        if len(df) < 150:  # ~30 weeks
+            return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
+
         df_weekly = df.resample('W-FRI').agg({
             'Open': 'first',
             'High': 'max',
@@ -272,6 +295,9 @@ class StockAnalyser:
         )
     
     def mean_reversion_50dma(self) -> TimeSeriesMetric:
+        if len(self.df) < 60:
+            return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
+
         price = self.df['Close']
         ma_50 = price.rolling(window=50).mean()
         deviation = (price - ma_50) / ma_50 * 100
@@ -295,6 +321,9 @@ class StockAnalyser:
 
 
     def mean_reversion_200dma(self) -> TimeSeriesMetric:
+        if len(self.df) < 220:
+            return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
+        
         price = self.df['Close']
         ma_200 = price.rolling(window=200).mean()
         deviation = (price - ma_200) / ma_200 * 100
@@ -318,6 +347,9 @@ class StockAnalyser:
 
 
     def mean_reversion_3yma(self) -> TimeSeriesMetric:
+        if len(self.df) < 800:
+            return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
+        
         monthly_close = self.df['Close'].resample('ME').last()
         ma_3y = monthly_close.rolling(window=36).mean()
         deviation = (monthly_close - ma_3y) / ma_3y * 100
@@ -398,6 +430,9 @@ class StockAnalyser:
     
     def rsi_ma_weekly(self) -> TimeSeriesMetric:
         df_weekly = self.df.resample("W-FRI").last().dropna()
+        if df_weekly.empty or len(df_weekly) < 30:
+            return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
+        
         close = df_weekly["Close"]
         rsi = compute_wilder_rsi(close)
 

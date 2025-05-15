@@ -68,6 +68,28 @@ def compute_wilder_rsi(close: pd.Series, period: int) -> pd.Series:
     rsi = 100 - (100 / (1 + rs))
     return rsi
 
+def wilder_smooth(values: pd.Series, period: int) -> pd.Series:
+    """
+    Implements Wilder's smoothing method:
+    - SMA for the first 'period' values
+    - Then (prior * (period - 1) + current) / period
+    """
+    result = [np.nan] * (period - 1)
+    if len(values) < period:
+        return pd.Series(result + [np.nan] * (len(values) - (period - 1)), index=values.index)
+
+    initial = values.iloc[:period].sum()
+    result.append(initial)
+
+    for i in range(period, len(values)):
+        prev = result[-1]
+        curr = values.iloc[i]
+        smoothed = (prev * (period - 1) + curr) / period
+        result.append(smoothed)
+
+    return pd.Series(result, index=values.index)
+
+
 def find_pivots(series: np.ndarray, window: int = 3) -> tuple[List[int], List[int]]:
     highs, lows = [], []
     for i in range(window, len(series) - window):
@@ -138,51 +160,41 @@ def detect_rsi_divergence(
 
     return labels
 
-def classify_adx_trend(
-    adx_series: pd.Series,
-    plus_di_series: pd.Series,
-    minus_di_series: pd.Series,
-    hl_range: int = 20,
-    hl_trend: int = 35
-) -> pd.Series:
-    """
-    Mimics TradingView's ADX classification logic with directional strength.
-    Returns a pandas Series with labels:
-    'Strong Bullish', 'Bullish', 'Strong Bearish', 'Bearish', 'Weak', 'Moderate'
-    """
-    result = []
+def classify_adx_trend(adx: pd.Series, plus_di: pd.Series, minus_di: pd.Series) -> pd.Series:
+    labels = []
+    for i in range(len(adx)):
+        a = adx.iloc[i]
+        p = plus_di.iloc[i]
+        m = minus_di.iloc[i]
+        prev_a = adx.iloc[i - 1] if i > 0 else np.nan
+        prev_p = plus_di.iloc[i - 1] if i > 0 else np.nan
+        prev_m = minus_di.iloc[i - 1] if i > 0 else np.nan
 
-    for i in range(len(adx_series)):
-        adx = adx_series.iloc[i]
-        prev_adx = adx_series.iloc[i - 1] if i > 0 else None
-        plus_di = plus_di_series.iloc[i]
-        minus_di = minus_di_series.iloc[i]
-
-        if pd.isna(adx) or pd.isna(plus_di) or pd.isna(minus_di):
-            result.append(None)
+        if pd.isna(a) or pd.isna(p) or pd.isna(m) or pd.isna(prev_a):
+            labels.append("in progress")
             continue
 
-        is_adx_rising = prev_adx is not None and adx > prev_adx
-        is_trend_weak = adx <= hl_range
-        is_bullish = plus_di >= minus_di
-        is_strong_plus = plus_di >= hl_trend
-        is_strong_minus = minus_di >= hl_trend
+        sigUp = a > prev_a
+        hlRange = a <= 20
+        diUp = p >= m
+        diDn = m > p
 
-        if is_trend_weak:
-            result.append("Weak")
-        elif is_adx_rising:
-            if is_bullish and is_strong_plus:
-                result.append("Strong Bullish")
-            elif is_bullish:
-                result.append("Bullish")
-            elif not is_bullish and is_strong_minus:
-                result.append("Strong Bearish")
-            else:
-                result.append("Bearish")
+        if hlRange:
+            labels.append("Orange")  # same as color.orange
+        elif sigUp and diUp:
+            labels.append("Green")  # strong bullish trend
+        elif not sigUp and diUp:
+            labels.append("Light Green")  # weakening bullish trend
+        elif sigUp and diDn:
+            labels.append("Red")  # strong bearish trend
+        elif not sigUp and diDn:
+            labels.append("Light Red")  # weakening bearish trend
         else:
-            result.append("Moderate")
+            labels.append("Unknown")
 
-    return pd.Series(result, index=adx_series.index)
+    return pd.Series(labels, index=adx.index)
+
+
 
 def classify_mace_signal(s: pd.Series, m: pd.Series, l: pd.Series) -> pd.Series:
     """
