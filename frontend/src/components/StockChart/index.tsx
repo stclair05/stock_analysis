@@ -29,6 +29,9 @@ import { useDrawingRenderer } from "./DrawingRenderer";
 
 import { useClickHandler } from "./ClickHandler";
 
+import OverlayGrid from "./OverlayGrid";
+
+
 
 const StockChart = ({ stockSymbol }: StockChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -944,6 +947,8 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         <div ref={volChartRef} style={{ width: "100%", height: "150px" }} />
       </div>
 
+      {/* === Overlay Grid === */}
+      {overlayData && <OverlayGrid overlayData={overlayData} />}
 
 
     </div>

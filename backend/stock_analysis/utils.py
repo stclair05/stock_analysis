@@ -96,7 +96,14 @@ def compute_wilder_rsi(close: pd.Series, period: int = 14) -> pd.Series:
 
     return pd.Series(rsi, index=close.index)
 
-def detect_rsi_divergence(df: pd.DataFrame, rsi_period=14, pivot_strength=3, rsi_threshold=3.0) -> pd.Series:
+def detect_rsi_divergence(
+    df: pd.DataFrame,
+    rsi_period: int = 14,
+    pivot_strength: int = 3,
+    rsi_threshold: float = 3.0,
+    lookback_range: tuple[int, int] = (5, 30)
+) -> pd.Series:
+
     df = df[['Close']].copy()
     df['RSI'] = compute_wilder_rsi(df['Close'], rsi_period)
     df.dropna(inplace=True)
@@ -110,7 +117,7 @@ def detect_rsi_divergence(df: pd.DataFrame, rsi_period=14, pivot_strength=3, rsi
 
     # Search for non-consecutive divergence candidates
     for i in range(len(index)):
-        for lookback in range(5, 30):  # Check prior pivots in a window
+        for lookback in range(*lookback_range):  # Check prior pivots in a window
             j = i - lookback
             if j < 0:
                 break
@@ -130,6 +137,135 @@ def detect_rsi_divergence(df: pd.DataFrame, rsi_period=14, pivot_strength=3, rsi
     # print(labels[labels != "Normal"].tail(10))  # print last 10 non-Normal labels
 
     return labels
+
+def classify_adx_trend(
+    adx_series: pd.Series,
+    plus_di_series: pd.Series,
+    minus_di_series: pd.Series,
+    hl_range: int = 20,
+    hl_trend: int = 35
+) -> pd.Series:
+    """
+    Mimics TradingView's ADX classification logic with directional strength.
+    Returns a pandas Series with labels:
+    'Strong Bullish', 'Bullish', 'Strong Bearish', 'Bearish', 'Weak', 'Moderate'
+    """
+    result = []
+
+    for i in range(len(adx_series)):
+        adx = adx_series.iloc[i]
+        prev_adx = adx_series.iloc[i - 1] if i > 0 else None
+        plus_di = plus_di_series.iloc[i]
+        minus_di = minus_di_series.iloc[i]
+
+        if pd.isna(adx) or pd.isna(plus_di) or pd.isna(minus_di):
+            result.append(None)
+            continue
+
+        is_adx_rising = prev_adx is not None and adx > prev_adx
+        is_trend_weak = adx <= hl_range
+        is_bullish = plus_di >= minus_di
+        is_strong_plus = plus_di >= hl_trend
+        is_strong_minus = minus_di >= hl_trend
+
+        if is_trend_weak:
+            result.append("Weak")
+        elif is_adx_rising:
+            if is_bullish and is_strong_plus:
+                result.append("Strong Bullish")
+            elif is_bullish:
+                result.append("Bullish")
+            elif not is_bullish and is_strong_minus:
+                result.append("Strong Bearish")
+            else:
+                result.append("Bearish")
+        else:
+            result.append("Moderate")
+
+    return pd.Series(result, index=adx_series.index)
+
+def classify_mace_signal(s: pd.Series, m: pd.Series, l: pd.Series) -> pd.Series:
+    """
+    Classify each point in time according to MACE trend classification:
+    U1, U2, U3, D1, D2, D3, or Unclassified.
+    """
+    result = pd.Series(index=s.index, dtype='object')
+
+    mask_valid = (~s.isna()) & (~m.isna()) & (~l.isna())
+
+    cond_u1 = (l > s) & (s > m)
+    cond_u2 = (s > l) & (l > m)
+    cond_u3 = (s > m) & (m > l)
+    cond_d1 = (m > s) & (s > l)
+    cond_d2 = (m > l) & (l > s)
+    cond_d3 = (l > m) & (m > s)
+
+    result[cond_u1 & mask_valid] = "U1"
+    result[cond_u2 & mask_valid] = "U2"
+    result[cond_u3 & mask_valid] = "U3"
+    result[cond_d1 & mask_valid] = "D1"
+    result[cond_d2 & mask_valid] = "D2"
+    result[cond_d3 & mask_valid] = "D3"
+    result[result.isna() & mask_valid] = "Unclassified"
+
+    return result
+
+def classify_40w_status(close: pd.Series, ma_40: pd.Series, slope: pd.Series) -> pd.Series:
+    """
+    Classify weekly price relative to 40-week MA and its slope.
+    Returns one of:
+    - "Above Rising MA"
+    - "Above Falling MA"
+    - "Below Rising MA"
+    - "Below Falling MA"
+    """
+    signal = pd.Series(index=close.index, dtype='object')
+    mask_valid = (~close.isna()) & (~ma_40.isna()) & (~slope.isna())
+
+    signal[(close > ma_40) & (slope > 0) & mask_valid] = "Above Rising MA"
+    signal[(close > ma_40) & (slope <= 0) & mask_valid] = "Above Falling MA"
+    signal[(close <= ma_40) & (slope > 0) & mask_valid] = "Below Rising MA"
+    signal[(close <= ma_40) & (slope <= 0) & mask_valid] = "Below Falling MA"
+
+    return signal
+
+def classify_dma_trend(close: pd.Series, ma50: pd.Series, ma150: pd.Series) -> pd.Series:
+    """
+    Classify daily price relative to 50DMA and 150DMA into:
+    - "Above Both (Uptrend)"
+    - "Above 150DMA Only"
+    - "Below Both (Downtrend)"
+    - "Below 150DMA Only"
+    - "Between Averages"
+    """
+    result = pd.Series(index=close.index, dtype='object')
+
+    valid = (~close.isna()) & (~ma50.isna()) & (~ma150.isna())
+
+    result[(close > ma50) & (ma50 > ma150) & valid] = "Above Both (Uptrend)"
+    result[(close > ma150) & (ma150 > ma50) & valid] = "Above 150DMA Only"
+    result[(close < ma50) & (ma50 < ma150) & valid] = "Below Both (Downtrend)"
+    result[(close < ma150) & (ma150 < ma50) & valid] = "Below 150DMA Only"
+    result[valid & result.isna()] = "Between Averages"
+
+    return result
+
+def classify_bbwp_percentile(bbwp: pd.Series) -> pd.Series:
+    """
+    Classify BBWP values into bands:
+    - ≥ 90: "Blue Band"
+    - ≤ 10: "Red Band"
+    - Else: "Normal"
+    """
+    return pd.Series(
+        np.select(
+            [bbwp >= 90, bbwp <= 10],
+            ["Blue Band", "Red Band"],
+            default="Normal"
+        ),
+        index=bbwp.index
+    )
+
 
 def compute_weekly_natr(df_weekly: pd.DataFrame, period: int = 14) -> pd.Series:
     """
@@ -175,6 +311,60 @@ def compute_bbwp(close: pd.Series, length: int = 20, bbwp_window: int = 252) -> 
     bbwp = bbw.rolling(window=bbwp_window).apply(percentile_rank).dropna() * 100
 
     return bbwp
+
+def compute_ichimoku_lines(df_weekly: pd.DataFrame) -> tuple[pd.Series, pd.Series, pd.Series, pd.Series]:
+    tenkan_sen = (df_weekly['High'].rolling(9).max() + df_weekly['Low'].rolling(9).min()) / 2
+    kijun_sen = (df_weekly['High'].rolling(26).max() + df_weekly['Low'].rolling(26).min()) / 2
+    span_a = ((tenkan_sen + kijun_sen) / 2).shift(26)
+    span_b = ((df_weekly['High'].rolling(52).max() + df_weekly['Low'].rolling(52).min()) / 2).shift(26)
+    return tenkan_sen, kijun_sen, span_a, span_b
+
+def compute_supertrend_lines(df_weekly: pd.DataFrame):
+    high = df_weekly['High']
+    low = df_weekly['Low']
+    close = df_weekly['Close']
+    prev_close = close.shift(1)
+
+    tr = pd.concat([
+        high - low,
+        (high - prev_close).abs(),
+        (low - prev_close).abs()
+    ], axis=1).max(axis=1)
+
+    atr = tr.rolling(window=10, min_periods=1).mean()
+    hl2 = (high + low) / 2
+
+    upperband = hl2 + 3 * atr
+    lowerband = hl2 - 3 * atr
+
+    df_st = pd.DataFrame(index=df_weekly.index)
+    df_st['Close'] = close
+    df_st['UpperBand'] = upperband
+    df_st['LowerBand'] = lowerband
+    df_st['InUptrend'] = True
+
+    for i in range(1, len(df_st)):
+        prev = df_st.iloc[i - 1]
+        curr = df_st.iloc[i]
+
+        df_st.iloc[i, df_st.columns.get_loc('InUptrend')] = prev['InUptrend']
+
+        if curr['Close'] > prev['UpperBand']:
+            df_st.iloc[i, df_st.columns.get_loc('InUptrend')] = True
+        elif curr['Close'] < prev['LowerBand']:
+            df_st.iloc[i, df_st.columns.get_loc('InUptrend')] = False
+        else:
+            if prev['InUptrend']:
+                df_st.iloc[i, df_st.columns.get_loc('LowerBand')] = min(curr['LowerBand'], prev['LowerBand'])
+                df_st.iloc[i, df_st.columns.get_loc('UpperBand')] = np.nan
+            else:
+                df_st.iloc[i, df_st.columns.get_loc('UpperBand')] = max(curr['UpperBand'], prev['UpperBand'])
+                df_st.iloc[i, df_st.columns.get_loc('LowerBand')] = np.nan
+
+    df_st['Signal'] = df_st['InUptrend'].map(lambda x: 'Buy' if x else 'Sell')
+
+    return df_st[['UpperBand', 'LowerBand', 'Signal']]
+
 
 @lru_cache(maxsize=100)
 def get_risk_free_rate() -> float:
@@ -259,3 +449,13 @@ def convert_numpy_types(obj):
     elif isinstance(obj, (np.int32, np.int64)):
         return int(obj)
     return obj
+
+def to_series(series: pd.Series) -> list[dict]:
+    if not isinstance(series, pd.Series):
+        raise TypeError(f"Expected pd.Series, got {type(series)}")
+    return [
+        {"time": int(ts.timestamp()), "value": round(val, 2)}
+        for ts, val in series.items()
+        if not pd.isna(val)
+    ]
+
