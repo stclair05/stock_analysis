@@ -85,3 +85,7 @@ h1 {
   color: #d97706 !important; /* Amber 800 / strong orange */
   font-weight: 500;
 }
+.text-secondary {
+  color: #64748b !important;     /* Slate/grey */
+  font-weight: 500;
+}
