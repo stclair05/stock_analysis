@@ -520,10 +520,17 @@ class StockAnalyser:
     def chaikin_money_flow(self) -> TimeSeriesMetric:
         df = self.df.dropna()
 
-        if len(df) < 30:
-            raise HTTPException(status_code=400, detail="Not enough data for CMF.")
+        # Resample to weekly OHLCV (Friday close)
+        df = df.resample("W-FRI").agg({
+            "Open": "first",
+            "High": "max",
+            "Low": "min",
+            "Close": "last",
+            "Volume": "sum"
+        }).dropna()
 
-        df = df.tail(100)  # use last 100 days to get enough for 21-day CMF
+        if len(df) < 30:
+            raise HTTPException(status_code=400, detail="Not enough weekly data for CMF.")
 
         high = df["High"]
         low = df["Low"]
@@ -537,7 +544,17 @@ class StockAnalyser:
         mfv = mfm * volume
         cmf = mfv.rolling(window=21).sum() / volume.rolling(window=21).sum().replace(0, np.nan)
 
-        signal = cmf.apply(lambda x: "Positive" if x > 0 else "Negative")
+        def classify_cmf(val: float | None) -> str | None:
+            if val is None or pd.isna(val):
+                return None
+            if val > 0.2:
+                return "Overbought"
+            elif val < -0.2:
+                return "Oversold"
+            else:
+                return "Neutral"
+
+        signal = cmf.apply(classify_cmf)
 
         return TimeSeriesMetric(
             current=safe_value(signal, -1),
@@ -545,6 +562,8 @@ class StockAnalyser:
             fourteen_days_ago=safe_value(signal, -3),
             twentyone_days_ago=safe_value(signal, -4),
         )
+
+
     
     def get_price_line(self):
         return to_series(self.df["Close"].dropna())
@@ -592,8 +611,21 @@ class StockAnalyser:
     
     def get_volatility_bbwp(self):
         df_weekly = self.df.resample("W-FRI").last().dropna()
-        bbwp = compute_bbwp(df_weekly["Close"])
-        return to_series(bbwp)
+        close = df_weekly["Close"]
+
+        # Match TradingView: BB Length = 13, Percentile Lookback = 252
+        bbwp = compute_bbwp(close, length=13, bbwp_window=252)
+
+        # Reindex to full close index to preserve alignment
+        bbwp_full = pd.Series(index=close.index, dtype=float)
+        bbwp_full.loc[bbwp.index] = bbwp.values
+
+        print(f"✅ [TV Match] BBWP length: {len(bbwp_full.dropna())} of {len(bbwp_full)}")
+
+        return to_series(bbwp_full)
+
+
+
     
 
     def get_ichimoku_lines(self):
@@ -640,10 +672,26 @@ class StockAnalyser:
             "mean_rev_50dma": to_series(dev_50)
         }
 
+    def get_bollinger_band(self, window: int = 50, mult: float = 2.0):
+        close = self.df["Close"]
+        sma = close.rolling(window=window).mean()
+        std = close.rolling(window=window).std()
+
+        upper = sma + mult * std
+        lower = sma - mult * std
+
+        return {
+            "bb_upper": to_series(upper),
+            "bb_middle": to_series(sma),
+            "bb_lower": to_series(lower),
+        }
+
+
     
     def get_overlay_lines(self) -> dict:
         return {
             "price_line": self.get_price_line(),
+            **self.get_bollinger_band(),
             
             # First Chart
             "three_year_ma": self.get_3year_ma_series(),
