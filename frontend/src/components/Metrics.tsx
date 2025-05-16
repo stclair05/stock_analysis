@@ -108,35 +108,41 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
     if (typeof value !== "string") return "text-secondary";
     const lower = value.toLowerCase();
 
-    if (lower.includes("below")) return "text-danger";
-    if (lower.includes("above")) return "text-success";
-    if (lower.includes("inside")) return "text-warning";
-    if (lower.includes("between")) return "text-warning";
+    // Positional / Relative Terms
+    if (lower.includes("below")) return "text-down-strong";
+    if (lower.includes("above")) return "text-up-strong";
+    if (lower.includes("inside")) return "text-neutral";
+    if (lower.includes("between")) return "text-neutral";
 
-    if (lower.includes("buy")) return "text-success";
-    if (lower.includes("sell")) return "text-danger";
+    // Sentiment Signals
+    if (lower.includes("buy")) return "text-up-strong";
+    if (lower.includes("sell")) return "text-down-strong";
 
-    if (lower.includes("strong bullish")) return "text-success fw-bold";
-    if (lower.includes("bullish")) return "text-success";
-    if (lower.includes("strong bearish")) return "text-danger fw-bold";
-    if (lower.includes("bearish")) return "text-danger";
-    if (lower.includes("weak")) return "text-warning";
+    // Market Strength / Trend Labels
+    if (lower.includes("strong bullish")) return "text-up-strong";
+    if (lower.includes("bullish")) return "text-up-weak";
+    if (lower.includes("strong bearish")) return "text-down-strong";
+    if (lower.includes("bearish")) return "text-down-weak";
+    if (lower.includes("weak")) return "text-neutral";
 
-    if (lower.includes("u1")) return "text-up-1";
-    if (lower.includes("u2")) return "text-success";
-    if (lower.includes("u3")) return "text-success fw-bold";
-    if (lower.includes("d1")) return "text-warning";
-    if (lower.includes("d2")) return "text-danger";
-    if (lower.includes("d3")) return "text-danger fw-bold";
+    // Custom U/D Levels
+    if (lower.includes("u1")) return "text-up-weak";
+    if (lower.includes("u2")) return "text-up-strong";
+    if (lower.includes("u3")) return "text-up-strong fw-bold";
+    if (lower.includes("d1")) return "text-down-weak";
+    if (lower.includes("d2")) return "text-down-strong";
+    if (lower.includes("d3")) return "text-down-strong fw-bold";
 
-    if (lower.includes("above rising ma")) return "text-success fw-bold";
-    if (lower.includes("above falling ma")) return "text-success";
-    if (lower.includes("below rising ma")) return "text-warning";
-    if (lower.includes("below falling ma")) return "text-danger";
+    // MA Position Logic
+    if (lower.includes("above rising ma")) return "text-up-strong fw-bold";
+    if (lower.includes("above falling ma")) return "text-up-strong";
+    if (lower.includes("below rising ma")) return "text-neutral";
+    if (lower.includes("below falling ma")) return "text-down-strong";
 
-    if (lower.includes("oversold")) return "text-success";
-    if (lower.includes("overbought")) return "text-danger";
-    if (lower.includes("extended")) return "text-warning";
+    // Mean Reversion / Conditions
+    if (lower.includes("oversold")) return "text-up-strong";
+    if (lower.includes("overbought")) return "text-down-strong";
+    if (lower.includes("extended")) return "text-neutral";
     if (lower.includes("normal")) return "text-secondary";
 
       // 50DMA & 150DMA Composite Signal
@@ -155,26 +161,26 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
     if (lower === "in progress") return "text-secondary";     // Not enough data
 
 
-    // 40-Week MA Status
-  if (lower.includes("above rising ma") || lower.includes("++")) return "text-success fw-bold";   // Best performance
-  if (lower.includes("above falling ma") || lower.includes("+-")) return "text-success";          // Still positive
-  if (lower.includes("below rising ma") || lower.includes("-+")) return "text-warning";           // Neutral/choppy
-  if (lower.includes("below falling ma") || lower.includes("--")) return "text-danger fw-bold";   // Worst performance
+      // 40-Week MA Status
+    if (lower.includes("above rising ma") || lower.includes("++")) return "text-up-strong fw-bold"; // Best performance
+    if (lower.includes("above falling ma") || lower.includes("+-")) return "text-up-weak";           // Still positive
+    if (lower.includes("below rising ma") || lower.includes("-+")) return "text-neutral";            // Neutral/choppy
+    if (lower.includes("below falling ma") || lower.includes("--")) return "text-down-strong fw-bold"; // Worst performance  // Worst performance
 
 
 
-  // RSI Divergence Daily
-  if (lower.includes("bullish divergence")) return "text-success fw-bold";
-  if (lower.includes("bearish divergence")) return "text-danger fw-bold";
+    // RSI Divergence
+    if (lower.includes("bullish divergence")) return "text-up-strong fw-bold";
+    if (lower.includes("bearish divergence")) return "text-down-strong fw-bold";
 
-  // Bollinger Band Width Percentile
-  if (lower.includes("blue band")) return "text-warning"; // Tight = breakout possible
-  if (lower.includes("red band")) return "text-danger";   // Volatile
-  if (lower.includes("normal")) return "text-info";
+    // Bollinger Band Width Percentile
+    if (lower.includes("blue band")) return "text-neutral"; // Tight = breakout possible
+    if (lower.includes("red band")) return "text-down-strong"; // Volatile
+    if (lower.includes("normal")) return "text-secondary";
 
-  // Chaikin Money Flow
-  if (lower.includes("positive")) return "text-success";
-  if (lower.includes("negative")) return "text-danger";
+    // Chaikin Money Flow
+    if (lower.includes("positive")) return "text-up-strong";
+    if (lower.includes("negative")) return "text-down-strong";
 
 
     return "text-secondary";
