@@ -78,11 +78,10 @@ function HomePage() {
             <div className="chart-card">
               <StockChart stockSymbol={stockSymbol} />
             </div>
-            {/*
+   
             <div className="fundamental-card">
               <Fundamentals stockSymbol={stockSymbol} />
             </div>
-            */}
         
           </div>   
         </>
