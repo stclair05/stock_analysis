@@ -640,10 +640,26 @@ class StockAnalyser:
             "mean_rev_50dma": to_series(dev_50)
         }
 
+    def get_bollinger_band(self, window: int = 50, mult: float = 2.0):
+        close = self.df["Close"]
+        sma = close.rolling(window=window).mean()
+        std = close.rolling(window=window).std()
+
+        upper = sma + mult * std
+        lower = sma - mult * std
+
+        return {
+            "bb_upper": to_series(upper),
+            "bb_middle": to_series(sma),
+            "bb_lower": to_series(lower),
+        }
+
+
     
     def get_overlay_lines(self) -> dict:
         return {
             "price_line": self.get_price_line(),
+            **self.get_bollinger_band(),
             
             # First Chart
             "three_year_ma": self.get_3year_ma_series(),

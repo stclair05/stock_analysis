@@ -79,16 +79,21 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     mean_rev_3yma?: { time: number; value: number }[];
     rsi?: { time: number; value: number }[];
     volatility?: { time: number; value: number }[];
+    bb_middle?: { time: number; value: number }[];
+    bb_upper?: { time: number; value: number }[];
+    bb_lower?: { time: number; value: number }[];
   }>({});
   
-  
-  const [show3YMA, setShow3YMA] = useState(false);
-  const [show50DMA, setShow50DMA] = useState(false);
-  const [showMACE, setShowMACE] = useState(false);
-  
-  const ma3YRef = useRef<ISeriesApi<"Line"> | null>(null);
-  const dma50Ref = useRef<ISeriesApi<"Line"> | null>(null);
-  const maceRef = useRef<ISeriesApi<"Line"> | null>(null);
+  // Checkboxes
+  // const [show3YMA, setShow3YMA] = useState(false);
+  // const [show50DMA, setShow50DMA] = useState(false);
+  // const [showMACE, setShowMACE] = useState(false);
+  const [showBollingerBand, setShowBollingerBand] = useState(false);
+
+  const bbMiddleRef = useRef<ISeriesApi<"Line"> | null>(null);
+  const bbUpperRef = useRef<ISeriesApi<"Line"> | null>(null);
+  const bbLowerRef = useRef<ISeriesApi<"Line"> | null>(null);
+
   
 
   
@@ -653,73 +658,50 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     fetchOverlayData();
   }, [stockSymbol]);
 
+  /*
+    CHECKBOX AND OVERLAY'S USEEFFECT 
+  */
   useEffect(() => {
     const chart = chartRef.current;
-    if (!chart) return;
+    if (!chart || !showBollingerBand) return;
 
-    const timeScale = chart.timeScale();
-    const currentRange = timeScale.getVisibleRange(); // 👈 capture current range
-  
-    // --- 3Y MA ---
-    if (show3YMA && overlayData.three_year_ma) {
-      if (!ma3YRef.current) {
-        ma3YRef.current = chart.addSeries(LineSeries, {
-          color: "#0066ff",
-          lineWidth: 1,
-          lineStyle: 2, // dotted
-          priceLineVisible: false,
-          lastValueVisible: false,
-        });        
-      }
-      ma3YRef.current.setData(
-        overlayData.three_year_ma?.map(d => ({ time: d.time as UTCTimestamp, value: d.value })) || []
-      );
-      
-    } else if (!show3YMA && ma3YRef.current) {
-      chart.removeSeries(ma3YRef.current);
-      ma3YRef.current = null;
-    }
-  
-    // --- 50DMA ---
-    if (show50DMA && overlayData.dma_50) {
-      if (!dma50Ref.current) {
-        dma50Ref.current = chart.addSeries(LineSeries, {
-          color: "#00bcd4",
-          lineWidth: 2,
-          lineStyle: 0, // solid
-          priceLineVisible: false,
-          lastValueVisible: false,
-        });        
-      }
-      dma50Ref.current.setData(
-        overlayData.dma_50.map(d => ({ time: d.time as UTCTimestamp, value: d.value }))
-      );
-    } else if (!show50DMA && dma50Ref.current) {
-      chart.removeSeries(dma50Ref.current);
-      dma50Ref.current = null;
-    }
-  
-    // --- MACE ---
-    if (showMACE && overlayData.mace) {
-      if (!maceRef.current) {
-        maceRef.current = chart.addSeries(LineSeries, {
-          color: "#9c27b0",
-          lineWidth: 1,
-          lineStyle: 1, // dashed
-          priceLineVisible: false,
-          lastValueVisible: false,
-        });        
-      }
-      maceRef.current.setData(
-        overlayData.mace.map(d => ({ time: d.time as UTCTimestamp, value: d.value }))
-      );
-    } else if (!showMACE && maceRef.current) {
-      chart.removeSeries(maceRef.current);
-      maceRef.current = null;
-    }
+    const colors = {
+      bb_middle: "#2962FF",  // blue
+      bb_upper: "#F23645",   // red
+      bb_lower: "#089981",   // green
+    };
 
-  }, [show3YMA, show50DMA, showMACE, overlayData]);
+    const refs: Record<string, ISeriesApi<"Line">> = {};
 
+    (["bb_middle", "bb_upper", "bb_lower"] as const).forEach((key) => {
+      const data = overlayData[key];
+      if (!data) return;
+
+      const series = chart.addSeries(LineSeries, {
+        color: colors[key],
+        lineWidth: 1,
+        priceLineVisible: false,
+        lastValueVisible: false,
+      });
+
+      series.setData(data.map((d) => ({
+        time: d.time as UTCTimestamp,
+        value: d.value,
+      })));
+
+      refs[key] = series;
+    });
+
+    return () => {
+      Object.values(refs).forEach(series => chart.removeSeries(series));
+    };
+  }, [showBollingerBand, overlayData.bb_middle, overlayData.bb_upper, overlayData.bb_lower]);
+
+
+
+  /*
+    MEAN REV CHART'S USEEFFECT 
+  */
   useEffect(() => {
     const chart = meanRevChartInstance.current;
     if (!chart) return;
@@ -765,6 +747,9 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     overlayData.mean_rev_3yma,
   ]);
   
+  /*
+    RSI CHART'S USEEFFECT 
+  */
   useEffect(() => {
     const chart = rsiChartInstance.current;
     if (!chart) return;
@@ -794,6 +779,9 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     }
   }, [overlayData.rsi]);
 
+  /*
+    VOLATILITY CHART'S USEEFFECT 
+  */
   useEffect(() => {
     const chart = volChartInstance.current;
     if (!chart) return;
@@ -896,9 +884,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       </div>
 
       <div className="indicator-panel d-flex flex-column gap-2 mt-3">
-        <label><input type="checkbox" checked={show3YMA} onChange={() => setShow3YMA(v => !v)} /> 3Y MA</label>
-        <label><input type="checkbox" checked={show50DMA} onChange={() => setShow50DMA(v => !v)} /> 50DMA</label>
-        <label><input type="checkbox" checked={showMACE} onChange={() => setShowMACE(v => !v)} /> MACE</label>
+        <label><input type="checkbox" checked={showBollingerBand} onChange={() => setShowBollingerBand(v => !v)} /> Bollinger Band</label>
       </div>
 
 
