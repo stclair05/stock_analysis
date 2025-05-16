@@ -84,17 +84,8 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     bb_lower?: { time: number; value: number }[];
   }>({});
   
-  // Checkboxes
-  // const [show3YMA, setShow3YMA] = useState(false);
-  // const [show50DMA, setShow50DMA] = useState(false);
-  // const [showMACE, setShowMACE] = useState(false);
+  // Checkboxes to add for overlay 
   const [showBollingerBand, setShowBollingerBand] = useState(false);
-
-  const bbMiddleRef = useRef<ISeriesApi<"Line"> | null>(null);
-  const bbUpperRef = useRef<ISeriesApi<"Line"> | null>(null);
-  const bbLowerRef = useRef<ISeriesApi<"Line"> | null>(null);
-
-  
 
   
   const {
