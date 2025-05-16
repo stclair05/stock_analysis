@@ -140,19 +140,20 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
     if (lower.includes("normal")) return "text-secondary";
 
       // 50DMA & 150DMA Composite Signal
-  if (lower.includes("above both")) return "text-success fw-bold"; // Strong uptrend
-  if (lower.includes("above 150dma only")) return "text-success";  // Mild uptrend
-  if (lower.includes("below both")) return "text-danger fw-bold";  // Strong downtrend
-  if (lower.includes("below 150dma only")) return "text-danger";   // Mild downtrend
-  if (lower.includes("between averages")) return "text-warning";   // Choppy
+    if (lower.includes("above both")) return "text-success fw-bold"; // Strong uptrend
+    if (lower.includes("above 150dma only")) return "text-success";  // Mild uptrend
+    if (lower.includes("below both")) return "text-danger fw-bold";  // Strong downtrend
+    if (lower.includes("below 150dma only")) return "text-danger";   // Mild downtrend
+    if (lower.includes("between averages")) return "text-warning";   // Choppy
 
     // ADX Classification
-  if (lower === "green") return "text-success fw-bold";          // Strong bullish
-  if (lower === "light green") return "text-success";            // Weak bullish
-  if (lower === "red") return "text-danger fw-bold";             // Strong bearish
-  if (lower === "light red") return "text-danger";               // Weak bearish
-  if (lower === "orange") return "text-warning";                 // Sideways / low ADX
-  if (lower === "in progress") return "text-secondary";          // Not enough data
+    if (lower === "green") return "text-up-strong";           // Strong bullish
+    if (lower === "light green") return "text-up-weak";       // Weak bullish
+    if (lower === "red") return "text-down-strong";           // Strong bearish
+    if (lower === "light red") return "text-down-weak";       // Weak bearish
+    if (lower === "orange") return "text-neutral";            // Sideways / low ADX
+    if (lower === "in progress") return "text-secondary";     // Not enough data
+
 
     // 40-Week MA Status
   if (lower.includes("above rising ma") || lower.includes("++")) return "text-success fw-bold";   // Best performance
@@ -215,13 +216,14 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
 
       <div className="table-responsive">
         <div className="d-flex justify-content-between align-items-center mb-3">
-          <h2 className="mb-0">
+          <h2 className="mb-0 fw-semibold text-dark">
             Metrics for <strong>{stockSymbol}</strong>
           </h2>
           {metrics?.current_price && (
             <h4 className="text-primary mb-0">
               Current Price: ${metrics.current_price.toFixed(2)}
             </h4>
+            
           )}
         </div>
 
