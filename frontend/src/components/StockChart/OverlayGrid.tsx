@@ -57,19 +57,19 @@ export default function OverlayGrid({ overlayData }: OverlayGridProps) {
         height: 250,
         width: container.clientWidth,
         layout: {
-        background: { color: "#ffffff" },
-        textColor: "#000000",
+          background: { color: "#ffffff" },
+          textColor: "#000000",
         },
         grid: {
-        vertLines: { color: "#eee" },
-        horzLines: { color: "#eee" },
+          vertLines: { color: "#eee" },
+          horzLines: { color: "#eee" },
         },
         timeScale: {
-        timeVisible: true,
-        secondsVisible: false,
+          timeVisible: true,
+          secondsVisible: false,
         },
         crosshair: {
-        mode: 0,
+          mode: 0,
         },
     });
 

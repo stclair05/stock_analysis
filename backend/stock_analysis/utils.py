@@ -490,3 +490,7 @@ def to_series(series: pd.Series) -> list[dict]:
         if not pd.isna(val)
     ]
 
+def reindex_indicator(base: pd.Series, indicator: pd.Series) -> pd.Series:
+    full = pd.Series(index=base.index, dtype=float)
+    full.loc[indicator.index] = indicator.values
+    return full

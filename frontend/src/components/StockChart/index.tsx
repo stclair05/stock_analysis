@@ -78,6 +78,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     mean_rev_200dma?: { time: number; value: number }[];
     mean_rev_3yma?: { time: number; value: number }[];
     rsi?: { time: number; value: number }[];
+    ma_14?: { time: number; value: number }[];
     volatility?: { time: number; value: number }[];
     bb_middle?: { time: number; value: number }[];
     bb_upper?: { time: number; value: number }[];
@@ -684,7 +685,10 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     });
 
     return () => {
-      Object.values(refs).forEach(series => chart.removeSeries(series));
+      Object.values(refs).forEach(series => {
+        if (series) chart.removeSeries(series);
+      });
+
     };
   }, [showBollingerBand, overlayData.bb_middle, overlayData.bb_upper, overlayData.bb_lower]);
 
@@ -755,9 +759,10 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       lineWidth: 2,
       priceLineVisible: false,
       lastValueVisible: false,
-      color: "#f44336",
+      color: "#7E57C2",
     };
   
+     // --- RSI Line ---
     if (overlayData.rsi) {
       const series = chart.addSeries(LineSeries, lineOptions);
       series.setData(
@@ -768,6 +773,24 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       );
       rsiLineRef.current = series;
     }
+
+    // --- MA14 Overlay ---
+    if (overlayData.ma_14) {
+      const ma14Series = chart.addSeries(LineSeries, {
+        color: "#001f3f", // navy blue
+        lineWidth: 1,
+        priceLineVisible: false,
+        lastValueVisible: false,
+      });
+
+      ma14Series.setData(
+        overlayData.ma_14.map((d) => ({
+          time: d.time as UTCTimestamp,
+          value: d.value,
+        }))
+      );
+    }
+    
   }, [overlayData.rsi]);
 
   /*
@@ -916,6 +939,27 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       <div className="mt-4">
         <div className="fw-bold text-muted mb-1">📉 RSI Indicator</div>
         <div ref={rsiChartRef} style={{ width: "100%", height: "150px" }} />
+        {/* 🏷️ RSI Chart Legend */}
+          <div className="d-flex flex-wrap mt-1">
+            {[
+              { color: "#7E57C2", label: "RSI (14-day)" },
+              { color: "#001f3f", label: "14-Day Moving Average (Price)" },
+            ].map(({ color, label }) => (
+              <div key={label} className="me-3 d-flex align-items-center small">
+                <span
+                  style={{
+                    display: "inline-block",
+                    width: "12px",
+                    height: "12px",
+                    backgroundColor: color,
+                    marginRight: "6px",
+                    borderRadius: "2px",
+                  }}
+                />
+                <span>{label}</span>
+              </div>
+            ))}
+          </div>
       </div>
 
       {/* === Volatility Chart === */}

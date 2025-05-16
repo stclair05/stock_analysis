@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from functools import lru_cache
 from .models import TimeSeriesMetric
 from aliases import SYMBOL_ALIASES
-from .utils import safe_value, detect_rsi_divergence, find_pivots, compute_wilder_rsi, compute_bbwp, compute_ichimoku_lines, compute_supertrend_lines, to_series, classify_adx_trend, classify_mace_signal, classify_40w_status, classify_dma_trend, classify_bbwp_percentile, wilder_smooth
+from .utils import safe_value, detect_rsi_divergence, find_pivots, compute_wilder_rsi, compute_bbwp, compute_ichimoku_lines, compute_supertrend_lines, to_series, classify_adx_trend, classify_mace_signal, classify_40w_status, classify_dma_trend, classify_bbwp_percentile, wilder_smooth, reindex_indicator
 
 
 
@@ -572,42 +572,60 @@ class StockAnalyser:
     def get_3year_ma_series(self):
         monthly_close = self.df["Close"].resample("ME").last()
         ma = monthly_close.rolling(window=36).mean()
-        return to_series(ma)
+        return to_series(reindex_indicator(monthly_close, ma))
 
 
     def get_200dma_series(self):
-        return to_series(self.df["Close"].rolling(200).mean())
+        close = self.df["Close"]
+        ma = close.rolling(200).mean()
+        return to_series(reindex_indicator(close, ma))
+
 
     def get_150dma_series(self):
-        return to_series(self.df["Close"].rolling(150).mean())
-    
+        close = self.df["Close"]
+        ma150 = close.rolling(150).mean()
+        return to_series(reindex_indicator(close, ma150))
+
     def get_50dma_series(self):
-        return to_series(self.df["Close"].rolling(window=50).mean())
+        close = self.df["Close"]
+        ma50 = close.rolling(window=50).mean()
+        return to_series(reindex_indicator(close, ma50))
+
     
     def get_mace_series(self):
         df_weekly = self.df.resample("W-FRI").agg({
             "Open": "first", "High": "max", "Low": "min", "Close": "last"
         }).dropna()
 
-        s = df_weekly["Close"].rolling(4).mean()   # Short-term
-        m = df_weekly["Close"].rolling(13).mean()  # Medium-term
-        l = df_weekly["Close"].rolling(26).mean()  # Long-term
+        close = df_weekly["Close"]
+
+        s = reindex_indicator(close, close.rolling(4).mean())   # Short-term
+        m = reindex_indicator(close, close.rolling(13).mean())  # Medium-term
+        l = reindex_indicator(close, close.rolling(26).mean())  # Long-term
 
         return {
             "mace_4w": to_series(s),
             "mace_13w": to_series(m),
             "mace_26w": to_series(l),
         }
+
     
     def get_40_week_ma_series(self):
         df_weekly = self.df.resample("W-FRI").last().dropna()
-        ma = df_weekly["Close"].rolling(window=40).mean()
-        return to_series(ma)
+        close = df_weekly["Close"]
+        ma = close.rolling(window=40).mean()
+        return to_series(reindex_indicator(close, ma))
     
+    def get_14dma_series(self):
+        close = self.df["Close"]
+        ma_14 = close.rolling(window=14).mean().dropna()
+        return to_series(reindex_indicator(close, ma_14))
+
     def get_rsi_series(self):
         df_weekly = self.df.resample("W-FRI").last().dropna()
-        rsi = compute_wilder_rsi(df_weekly["Close"]).dropna()
-        return to_series(rsi)
+        close = df_weekly["Close"]
+        rsi = compute_wilder_rsi(close)
+        return to_series(reindex_indicator(close, rsi))
     
     def get_volatility_bbwp(self):
         df_weekly = self.df.resample("W-FRI").last().dropna()
@@ -624,10 +642,6 @@ class StockAnalyser:
 
         return to_series(bbwp_full)
 
-
-
-    
-
     def get_ichimoku_lines(self):
         df_weekly = self.df.resample("W-FRI").agg({
             "Open": "first", "High": "max", "Low": "min", "Close": "last"
@@ -635,12 +649,15 @@ class StockAnalyser:
 
         tenkan, kijun, span_a, span_b = compute_ichimoku_lines(df_weekly)
 
+        close_index = df_weekly["Close"]  # Base time index for reindexing
+
         return {
-            "ichimoku_tenkan": to_series(tenkan),
-            "ichimoku_kijun": to_series(kijun),
-            "ichimoku_span_a": to_series(span_a),
-            "ichimoku_span_b": to_series(span_b)
+            "ichimoku_tenkan": to_series(reindex_indicator(close_index, tenkan)),
+            "ichimoku_kijun":  to_series(reindex_indicator(close_index, kijun)),
+            "ichimoku_span_a": to_series(reindex_indicator(close_index, span_a)),
+            "ichimoku_span_b": to_series(reindex_indicator(close_index, span_b)),
         }
+
 
 
     def get_supertrend_lines(self):
@@ -650,27 +667,25 @@ class StockAnalyser:
 
         df_st = compute_supertrend_lines(df_weekly)
 
-        print("🔍 Sample ST Line Up:")
-        print(df_st["ST_Line_Up"].dropna().tail(10))
-        print("🔍 Sample ST Line Down:")
-        print(df_st["ST_Line_Down"].dropna().tail(10))
+        close = df_weekly["Close"]
 
         return {
-            "supertrend_up": to_series(df_st["ST_Line_Up"]),
-            "supertrend_down": to_series(df_st["ST_Line_Down"])
+            "supertrend_up": to_series(reindex_indicator(close, df_st["ST_Line_Up"])),
+            "supertrend_down": to_series(reindex_indicator(close, df_st["ST_Line_Down"])),
         }
-
-
 
     
     def get_mean_reversion_deviation_lines(self) -> dict:
         price = self.df["Close"]
         ma50 = price.rolling(window=50).mean()
-        dev_50 = ((price - ma50) / ma50 * 100).dropna()
+        dev_50 = (price - ma50) / ma50 * 100
+
+        dev_50_full = reindex_indicator(price, dev_50)
 
         return {
-            "mean_rev_50dma": to_series(dev_50)
+            "mean_rev_50dma": to_series(dev_50_full)
         }
+
 
     def get_bollinger_band(self, window: int = 50, mult: float = 2.0):
         close = self.df["Close"]
@@ -681,13 +696,11 @@ class StockAnalyser:
         lower = sma - mult * std
 
         return {
-            "bb_upper": to_series(upper),
-            "bb_middle": to_series(sma),
-            "bb_lower": to_series(lower),
+            "bb_upper": to_series(reindex_indicator(close, upper)),
+            "bb_middle": to_series(reindex_indicator(close, sma)),
+            "bb_lower": to_series(reindex_indicator(close, lower)),
         }
 
-
-    
     def get_overlay_lines(self) -> dict:
         return {
             "price_line": self.get_price_line(),
@@ -711,6 +724,7 @@ class StockAnalyser:
 
             # Others
             "rsi": self.get_rsi_series(),
+            "ma_14": self.get_14dma_series(),
             "volatility": self.get_volatility_bbwp(),
             **self.get_mean_reversion_deviation_lines(),
         }
