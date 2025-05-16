@@ -908,7 +908,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       {/* === Mean Reversion Chart === */}
       <div className="mt-4">
       <div className="d-flex align-items-center gap-2 mb-1">
-        <div className="fw-bold text-muted">📊 Mean Reversion</div>
+        <div className="fw-bold text-muted">📊 50 Day Mean Reversion</div>
         <button
           onClick={() => {
             const chart = meanRevChartInstance.current;
