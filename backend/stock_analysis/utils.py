@@ -302,12 +302,8 @@ def compute_weekly_natr(df_weekly: pd.DataFrame, period: int = 14) -> pd.Series:
 
     return natr.dropna()
 
-def compute_bbwp(close: pd.Series, length: int = 20, bbwp_window: int = 252) -> pd.Series:
-    """
-    Computes Bollinger Band Width Percentile (BBWP), adapted to support shorter histories.
-    """
+def compute_bbwp(close: pd.Series, length: int = 13, bbwp_window: int = 252) -> pd.Series:
     if len(close.dropna()) < length + 10:
-        # Not enough data to even compute BBW
         print(f"⚠️ Not enough data to compute BBWP base (need ~{length + 10}, got {len(close)})")
         return pd.Series(dtype=float)
 
@@ -319,19 +315,21 @@ def compute_bbwp(close: pd.Series, length: int = 20, bbwp_window: int = 252) -> 
     mid = sma
 
     bbw = (upper - lower) / mid
+    bbw = bbw.dropna()
 
-    # Adaptive BBWP window fallback
-    if len(bbw.dropna()) < bbwp_window:
-        old_window = bbwp_window
-        bbwp_window = max(26, len(bbw.dropna()) // 2)  # fallback to half of what we have
-        print(f"⚠️ BBWP window too long, reduced from {old_window} to {bbwp_window}")
+    # 🎯 GROWING WINDOW PERCENTILE RANK
+    bbwp = []
+    bbw_values = bbw.values
+    for i in range(len(bbw_values)):
+        window = bbw_values[max(0, i - bbwp_window + 1):i + 1]
+        rank = rankdata(window)[-1] / len(window) * 100
+        bbwp.append(rank)
 
-    def percentile_rank(x):
-        return rankdata(x)[-1] / len(x)
+    bbwp_series = pd.Series(bbwp, index=bbw.index)
+    return bbwp_series
 
-    bbwp = bbw.rolling(window=bbwp_window).apply(percentile_rank).dropna() * 100
 
-    return bbwp
+
 
 def compute_ichimoku_lines(df_weekly: pd.DataFrame) -> tuple[pd.Series, pd.Series, pd.Series, pd.Series]:
     tenkan_sen = (df_weekly['High'].rolling(9).max() + df_weekly['Low'].rolling(9).min()) / 2
