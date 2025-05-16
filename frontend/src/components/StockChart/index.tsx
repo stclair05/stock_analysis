@@ -836,7 +836,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         </a>
       )}
 
-      <h5 className="fw-bold mb-3">📈 Weekly Candlestick Chart</h5>
+      <h5 className="fw-bold mb-3 text-dark">📈 Weekly Candlestick Chart</h5>
 
       <div className="toolbar mb-2 d-flex gap-2">
         <button

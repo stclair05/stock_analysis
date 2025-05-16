@@ -1,5 +1,7 @@
 body {
-  background-color: #f8f9fa;
+  background-color: #f9fafb;
+  color: #1e293b;
+  font-family: 'Inter', sans-serif;
 }
 
 .card {
@@ -29,4 +31,61 @@ h1 {
   100% {
     background-position: 400px 0;
   }
+}
+
+:root {
+  --primary-color: #2563eb;
+  --secondary-color: #1e293b;
+  --success-color: #15803d;
+  --danger-color: #ef4444;
+  --warning-color: 	#f59e0b;
+  --card-bg: #ffffff;
+  --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --table-font-size: 1.05rem;
+  --text-color: #1e293b;
+  --text-weight: 500;
+  --cell-padding: 14px 18px;
+}
+
+.text-success {
+  color: var(--success-color) !important;
+  font-weight: 600;
+}
+.text-warning {
+  color: var(--warning-color) !important;
+  font-weight: 600;
+}
+.text-danger {
+  color: var(--danger-color) !important;
+  font-weight: 600;
+}
+
+.text-secondary {
+  color: #64748b !important;
+  font-weight: 500;
+}
+
+.text-up-strong {
+  color: #15803d !important; /* Tailwind green-700 */
+  font-weight: 700;
+}
+.text-up-weak {
+  color: #22c55e !important; /* Tailwind green-500 */
+  font-weight: 500;
+}
+.text-down-strong {
+  color: #b91c1c !important; /* Tailwind red-700 */
+  font-weight: 700;
+}
+.text-down-weak {
+  color: #ef4444 !important; /* Tailwind red-500 */
+  font-weight: 500;
+}
+.text-neutral {
+  color: #d97706 !important; /* Amber 800 / strong orange */
+  font-weight: 500;
+}
+.text-secondary {
+  color: #64748b !important;     /* Slate/grey */
+  font-weight: 500;
 }
