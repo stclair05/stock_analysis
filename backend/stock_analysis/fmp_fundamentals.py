@@ -11,7 +11,7 @@ load_dotenv()
 FMP_API_KEY = os.getenv("FMP_API_KEY")
 FMP_BASE_URL = os.getenv("FMP_BASE_URL")
 
-class Fundamentals:
+class FMPFundamentals:
     def __init__(self, symbol: str):
         self.symbol = symbol.upper()
         self.ticker_obj = yf.Ticker(self.symbol)
@@ -35,7 +35,7 @@ class Fundamentals:
                 setattr(self, f"{name}_data", future.result())
 
     def _fetch_statement(self, endpoint: str, limit: int = 5):
-        url = f"{FMP_BASE_URL}/api/v3/{endpoint}/{self.symbol}?limit={limit}&apikey={FMP_API_KEY}"
+        url = f"{FMP_BASE_URL}/{endpoint}/{self.symbol}?apikey={FMP_API_KEY}"
         try:
             response = requests.get(url)
             data = response.json()
