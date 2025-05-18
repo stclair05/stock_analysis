@@ -84,7 +84,7 @@ const Fundamentals = ({ stockSymbol }: Props) => {
         try {
             setError(null);
             setLoading(true); // Start loading
-            const res = await fetch(`http://localhost:8000/financials/${stockSymbol}`);
+            const res = await fetch(`http://localhost:8000/12data_financials/${stockSymbol}`);
             if (!res.ok) throw new Error("Failed to fetch financials.");
             const json = await res.json();
             setData(json);

@@ -1,9 +1,10 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from stock_analysis.stock_analyser import StockAnalyser
 from stock_analysis.models import StockRequest, StockAnalysisResponse, ElliottWaveScenariosResponse, FinancialMetrics
 from stock_analysis.elliott_wave import calculate_elliott_wave
-from stock_analysis.fundamentals import Fundamentals
+from stock_analysis.fmp_fundamentals import FMPFundamentals
+from stock_analysis.twelve_data_fundamentals import TwelveDataFundamentals
 from stock_analysis.utils import compute_sortino_ratio_cached as compute_sortino_ratio, convert_numpy_types
 from fastapi.responses import JSONResponse
 from pathlib import Path
@@ -162,12 +163,12 @@ def get_cached_fundamentals(symbol: str, ttl: int = 900):
         fundamentals, timestamp = _fundamentals_cache[symbol]
         if now - timestamp < ttl:
             return fundamentals
-    fundamentals = Fundamentals(symbol)
+    fundamentals = FMPFundamentals(symbol)
     _fundamentals_cache[symbol] = (fundamentals, now)
     return fundamentals
 
-@app.get("/financials/{symbol}", response_model=FinancialMetrics)
-def get_financials(symbol: str):
+@app.get("/fmp_financials/{symbol}", response_model=FinancialMetrics)
+def get_fmp_financials(symbol: str):
     f = get_cached_fundamentals(symbol)
 
     with ThreadPoolExecutor() as executor:
@@ -212,6 +213,13 @@ def get_financials(symbol: str):
         sortino_ratio=sortino_ratio,
     )
 
+@app.get("/12data_financials/{symbol}", response_model=FinancialMetrics)
+async def get_financials(symbol: str):
+    try:
+        fundamentals = TwelveDataFundamentals(symbol)
+        return fundamentals.get_financial_metrics()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.websocket("/ws/chart_data_weekly/{symbol}")
 async def websocket_chart_data(websocket: WebSocket, symbol: str):
