@@ -690,8 +690,25 @@ class StockAnalyser:
         }
 
 
-    def get_bollinger_band(self, window: int = 50, mult: float = 2.0):
-        close = self.df["Close"]
+    def get_bollinger_band(self, timeframe: str = "weekly", window: int = 20, mult: float = 2.0):
+        df = self.df.copy()
+
+        if timeframe == "weekly":
+            df = df.resample("W-FRI").agg({
+                "Open": "first",
+                "High": "max",
+                "Low": "min",
+                "Close": "last"
+            }).dropna()
+        elif timeframe == "monthly":
+            df = df.resample("M").agg({
+                "Open": "first",
+                "High": "max",
+                "Low": "min",
+                "Close": "last"
+            }).dropna()
+
+        close = df["Close"]
         sma = close.rolling(window=window).mean()
         std = close.rolling(window=window).std()
 
@@ -704,10 +721,11 @@ class StockAnalyser:
             "bb_lower": to_series(reindex_indicator(close, lower)),
         }
 
-    def get_overlay_lines(self) -> dict:
+
+    def get_overlay_lines(self, timeframe: str = "daily") -> dict:
         return {
             "price_line": self.get_price_line(),
-            **self.get_bollinger_band(),
+            **self.get_bollinger_band(timeframe),
             
             # First Chart
             "three_year_ma": self.get_3year_ma_series(),

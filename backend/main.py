@@ -282,10 +282,10 @@ async def websocket_chart_data(websocket: WebSocket, timeframe: str, symbol: str
         await websocket.close()
 
 @app.get("/overlay_data/{symbol}")
-def get_overlay_data(symbol: str):
+def get_overlay_data(symbol: str, timeframe: str = "weekly"):
     try:
         analyser = StockAnalyser(symbol)
-        overlays = analyser.get_overlay_lines()
+        overlays = analyser.get_overlay_lines(timeframe=timeframe)
         return JSONResponse(content=overlays)
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})

@@ -662,7 +662,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
   useEffect(() => {
     const fetchOverlayData = async () => {
       try {
-        const res = await fetch(`http://localhost:8000/overlay_data/${stockSymbol}`);
+        const res = await fetch(`http://localhost:8000/overlay_data/${stockSymbol}?timeframe=${timeframe}`);
         const data = await res.json();
         setOverlayData(data);
       } catch (err) {
@@ -671,7 +671,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     };
   
     fetchOverlayData();
-  }, [stockSymbol]);
+  }, [stockSymbol, timeframe]);
 
   /*
     CHECKBOX AND OVERLAY'S USEEFFECT 
