@@ -150,8 +150,47 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     setMeanRevLimitLines([]);
     limitDrawingModeRef.current = false;
     setLimitDrawingMode(false);
-};
+  };
 
+  function findClosestTime(series: ISeriesApi<any>, time: UTCTimestamp): UTCTimestamp | null {
+        const data = series?.data?.() ?? [];  // If you're storing data elsewhere, replace this
+        if (!data.length) return null;
+      
+        let closest = data[0].time;
+        let minDiff = Math.abs(time - closest);
+      
+        for (let i = 1; i < data.length; i++) {
+          const diff = Math.abs(data[i].time - time);
+          if (diff < minDiff) {
+            closest = data[i].time;
+            minDiff = diff;
+          }
+        }
+      
+        return closest;
+    }
+
+    function syncCrosshair(
+      sourceChart: IChartApi,
+      sourceSeries: ISeriesApi<"Line"> | ISeriesApi<"Candlestick">,
+      time: UTCTimestamp
+    ) {
+      const allCharts: [IChartApi | null, ISeriesApi<any> | null][] = [
+        [chartRef.current, candleSeriesRef.current],
+        [meanRevChartInstance.current, meanRevLineRef.current],
+        [rsiChartInstance.current, rsiLineRef.current],
+        [volChartInstance.current, volLineRef.current],
+        [secondaryChartRef.current, secondarySeriesRef.current],
+      ];
+    
+      for (const [chart, series] of allCharts) {
+        if (!chart || !series || chart === sourceChart) continue;
+        const snapped = findClosestTime(series, time);
+        if (snapped != null) {
+          chart.setCrosshairPosition(0, snapped, series);
+        }
+      }
+    }
   useEffect(() => {
     // 🧹 Reset drawing state to prevent bugs on ticker switch
     drawingModeRef.current = null;
@@ -323,6 +362,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       safeSetVisibleRange(meanRevChartInstance.current, range);
       safeSetVisibleRange(rsiChartInstance.current, range);
       safeSetVisibleRange(volChartInstance.current, range);
+      safeSetVisibleRange(secondaryChartRef.current, range);
 
     });
 
@@ -330,6 +370,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       safeSetVisibleRange(chartRef.current, range);
       safeSetVisibleRange(rsiChartInstance.current, range);
       safeSetVisibleRange(volChartInstance.current, range);
+      safeSetVisibleRange(secondaryChartRef.current, range);
 
     });
 
@@ -337,6 +378,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       safeSetVisibleRange(chartRef.current, range);
       safeSetVisibleRange(meanRevChartInstance.current, range);
       safeSetVisibleRange(volChartInstance.current, range);
+      safeSetVisibleRange(secondaryChartRef.current, range);
 
     });
 
@@ -344,8 +386,17 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       safeSetVisibleRange(chartRef.current, range);
       safeSetVisibleRange(meanRevChartInstance.current, range);
       safeSetVisibleRange(rsiChartInstance.current, range);
+      safeSetVisibleRange(secondaryChartRef.current, range);
 
     });
+
+    secondaryChartRef.current?.timeScale().subscribeVisibleTimeRangeChange((range) => {
+      safeSetVisibleRange(chartRef.current, range);
+      safeSetVisibleRange(meanRevChartInstance.current, range);
+      safeSetVisibleRange(rsiChartInstance.current, range);
+      safeSetVisibleRange(volChartInstance.current, range);
+    });
+
 
   
     const resizeObserver = new ResizeObserver(entries => {
@@ -355,6 +406,9 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           meanChart.resize(entry.contentRect.width, 200);
           rsiChart.resize(entry.contentRect.width, 150);     
           volChart.resize(entry.contentRect.width, 150);
+          if (secondaryChartRef.current) {
+            secondaryChartRef.current.resize(entry.contentRect.width, 400); // 🆕
+          }
         }
       }
     });
@@ -373,23 +427,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
    
 
-    function findClosestTime(series: ISeriesApi<any>, time: UTCTimestamp): UTCTimestamp | null {
-      const data = series?.data?.() ?? [];  // If you're storing data elsewhere, replace this
-      if (!data.length) return null;
     
-      let closest = data[0].time;
-      let minDiff = Math.abs(time - closest);
-    
-      for (let i = 1; i < data.length; i++) {
-        const diff = Math.abs(data[i].time - time);
-        if (diff < minDiff) {
-          closest = data[i].time;
-          minDiff = diff;
-        }
-      }
-    
-      return closest;
-    }
     
     
 
@@ -417,6 +455,9 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       const volChart = volChartInstance.current;
       const volSeries = volLineRef.current;
 
+      const secondaryChart = secondaryChartRef.current;
+      const secondarySeries = secondarySeriesRef.current;
+
       if (meanChart && meanSeries) {
         const snappedTime = findClosestTime(meanSeries, time);
         if (snappedTime) {
@@ -436,32 +477,18 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           volChart.setCrosshairPosition(0, snappedTime, volSeries);
         }
       }
+
+      if (secondaryChart && secondarySeries) {
+        const snappedTime = findClosestTime(secondarySeries, time);
+        if (snappedTime) {
+          secondaryChart.setCrosshairPosition(0, snappedTime, secondarySeries);
+        }
+      }
       
       
     });
     
     // SYNC CROSS HAIRS 
-    function syncCrosshair(
-      sourceChart: IChartApi,
-      sourceSeries: ISeriesApi<"Line"> | ISeriesApi<"Candlestick">,
-      time: UTCTimestamp
-    ) {
-      const allCharts: [IChartApi | null, ISeriesApi<any> | null][] = [
-        [chartRef.current, candleSeriesRef.current],
-        [meanRevChartInstance.current, meanRevLineRef.current],
-        [rsiChartInstance.current, rsiLineRef.current],
-        [volChartInstance.current, volLineRef.current],
-        [secondaryChartRef.current, secondarySeriesRef.current],
-      ];
-    
-      for (const [chart, series] of allCharts) {
-        if (!chart || !series || chart === sourceChart) continue;
-        const snapped = findClosestTime(series, time);
-        if (snapped != null) {
-          chart.setCrosshairPosition(0, snapped, series);
-        }
-      }
-    }
     
 
     chart.subscribeCrosshairMove((param) => {
@@ -1009,7 +1036,29 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
               timeframe={timeframe}
               chartRef={secondaryChartRef}
               seriesRef={secondarySeriesRef}
+              onCrosshairMove={(time) => {
+                // Sync all other charts when crosshair moves on secondary
+                if (secondarySeriesRef.current) {
+                  syncCrosshair(secondaryChartRef.current!, secondarySeriesRef.current, time);
+                }
+                
+              }}
+              onVisibleRangeChange={(range) => {
+                const safeSetVisibleRange = (chart: IChartApi | null, r: typeof range) => {
+                  try {
+                    chart?.timeScale()?.setVisibleRange(r);
+                  } catch (err) {
+                    console.warn("⛔ setVisibleRange failed", err);
+                  }
+                };
+
+                safeSetVisibleRange(chartRef.current, range);
+                safeSetVisibleRange(meanRevChartInstance.current, range);
+                safeSetVisibleRange(rsiChartInstance.current, range);
+                safeSetVisibleRange(volChartInstance.current, range);
+              }}
             />
+
           </div>
         )}    
 

@@ -14,6 +14,8 @@ interface SecondaryChartProps {
   timeframe: "daily" | "weekly" | "monthly";
   chartRef?: React.MutableRefObject<IChartApi | null>;
   seriesRef?: React.MutableRefObject<ISeriesApi<"Candlestick"> | null>;
+  onCrosshairMove?: (time: UTCTimestamp) => void;
+  onVisibleRangeChange?: (range: { from: UTCTimestamp; to: UTCTimestamp }) => void;
 }
 
 const SecondaryChart = ({
@@ -21,6 +23,8 @@ const SecondaryChart = ({
   timeframe,
   chartRef: externalChartRef,
   seriesRef: externalSeriesRef,
+  onCrosshairMove,
+  onVisibleRangeChange,
 }: SecondaryChartProps) => {
 
   const chartRef = useRef<HTMLDivElement>(null);
@@ -64,6 +68,26 @@ const SecondaryChart = ({
     candleSeriesRef.current = series;
     externalChartRef && (externalChartRef.current = chart);
     externalSeriesRef && (externalSeriesRef.current = series);
+
+    chart.subscribeCrosshairMove((param) => {
+    if (!param.time || !param.point) return;
+        const time = param.time as UTCTimestamp;
+        onCrosshairMove?.(time);  // 🔁 Emit time back to parent
+    });
+
+    chart.timeScale().subscribeVisibleTimeRangeChange((range) => {
+        if (
+            range?.from != null &&
+            range?.to != null &&
+            typeof range.from === "number" &&
+            typeof range.to === "number"
+        ) {
+            onVisibleRangeChange?.({
+            from: range.from as UTCTimestamp,
+            to: range.to as UTCTimestamp,
+            });
+        }
+    });
 
 
     return () => {
