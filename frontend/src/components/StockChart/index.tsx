@@ -31,6 +31,8 @@ import { useClickHandler } from "./ClickHandler";
 
 import OverlayGrid from "./OverlayGrid";
 
+import SecondaryChart from "./SecondaryChart";
+
 
 
 const StockChart = ({ stockSymbol }: StockChartProps) => {
@@ -68,7 +70,11 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
   const volChartInstance = useRef<IChartApi | null>(null);
   const volLineRef = useRef<ISeriesApi<"Line"> | null>(null);
 
-
+  // Secondary (Comparison) Chart 
+  const [secondarySymbol, setSecondarySymbol] = useState<string | null>(null);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const secondaryChartRef = useRef<IChartApi | null>(null);
+  const secondarySeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
 
 
 
@@ -144,8 +150,47 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     setMeanRevLimitLines([]);
     limitDrawingModeRef.current = false;
     setLimitDrawingMode(false);
-};
+  };
 
+  function findClosestTime(series: ISeriesApi<any>, time: UTCTimestamp): UTCTimestamp | null {
+        const data = series?.data?.() ?? [];  // If you're storing data elsewhere, replace this
+        if (!data.length) return null;
+      
+        let closest = data[0].time;
+        let minDiff = Math.abs(time - closest);
+      
+        for (let i = 1; i < data.length; i++) {
+          const diff = Math.abs(data[i].time - time);
+          if (diff < minDiff) {
+            closest = data[i].time;
+            minDiff = diff;
+          }
+        }
+      
+        return closest;
+    }
+
+    function syncCrosshair(
+      sourceChart: IChartApi,
+      sourceSeries: ISeriesApi<"Line"> | ISeriesApi<"Candlestick">,
+      time: UTCTimestamp
+    ) {
+      const allCharts: [IChartApi | null, ISeriesApi<any> | null][] = [
+        [chartRef.current, candleSeriesRef.current],
+        [meanRevChartInstance.current, meanRevLineRef.current],
+        [rsiChartInstance.current, rsiLineRef.current],
+        [volChartInstance.current, volLineRef.current],
+        [secondaryChartRef.current, secondarySeriesRef.current],
+      ];
+    
+      for (const [chart, series] of allCharts) {
+        if (!chart || !series || chart === sourceChart) continue;
+        const snapped = findClosestTime(series, time);
+        if (snapped != null) {
+          chart.setCrosshairPosition(0, snapped, series);
+        }
+      }
+    }
   useEffect(() => {
     // 🧹 Reset drawing state to prevent bugs on ticker switch
     drawingModeRef.current = null;
@@ -317,6 +362,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       safeSetVisibleRange(meanRevChartInstance.current, range);
       safeSetVisibleRange(rsiChartInstance.current, range);
       safeSetVisibleRange(volChartInstance.current, range);
+      safeSetVisibleRange(secondaryChartRef.current, range);
 
     });
 
@@ -324,6 +370,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       safeSetVisibleRange(chartRef.current, range);
       safeSetVisibleRange(rsiChartInstance.current, range);
       safeSetVisibleRange(volChartInstance.current, range);
+      safeSetVisibleRange(secondaryChartRef.current, range);
 
     });
 
@@ -331,6 +378,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       safeSetVisibleRange(chartRef.current, range);
       safeSetVisibleRange(meanRevChartInstance.current, range);
       safeSetVisibleRange(volChartInstance.current, range);
+      safeSetVisibleRange(secondaryChartRef.current, range);
 
     });
 
@@ -338,8 +386,17 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       safeSetVisibleRange(chartRef.current, range);
       safeSetVisibleRange(meanRevChartInstance.current, range);
       safeSetVisibleRange(rsiChartInstance.current, range);
+      safeSetVisibleRange(secondaryChartRef.current, range);
 
     });
+
+    secondaryChartRef.current?.timeScale().subscribeVisibleTimeRangeChange((range) => {
+      safeSetVisibleRange(chartRef.current, range);
+      safeSetVisibleRange(meanRevChartInstance.current, range);
+      safeSetVisibleRange(rsiChartInstance.current, range);
+      safeSetVisibleRange(volChartInstance.current, range);
+    });
+
 
   
     const resizeObserver = new ResizeObserver(entries => {
@@ -349,6 +406,9 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           meanChart.resize(entry.contentRect.width, 200);
           rsiChart.resize(entry.contentRect.width, 150);     
           volChart.resize(entry.contentRect.width, 150);
+          if (secondaryChartRef.current) {
+            secondaryChartRef.current.resize(entry.contentRect.width, 400); // 🆕
+          }
         }
       }
     });
@@ -367,23 +427,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
    
 
-    function findClosestTime(series: ISeriesApi<any>, time: UTCTimestamp): UTCTimestamp | null {
-      const data = series?.data?.() ?? [];  // If you're storing data elsewhere, replace this
-      if (!data.length) return null;
     
-      let closest = data[0].time;
-      let minDiff = Math.abs(time - closest);
-    
-      for (let i = 1; i < data.length; i++) {
-        const diff = Math.abs(data[i].time - time);
-        if (diff < minDiff) {
-          closest = data[i].time;
-          minDiff = diff;
-        }
-      }
-    
-      return closest;
-    }
     
     
 
@@ -411,6 +455,9 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       const volChart = volChartInstance.current;
       const volSeries = volLineRef.current;
 
+      const secondaryChart = secondaryChartRef.current;
+      const secondarySeries = secondarySeriesRef.current;
+
       if (meanChart && meanSeries) {
         const snappedTime = findClosestTime(meanSeries, time);
         if (snappedTime) {
@@ -430,31 +477,18 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           volChart.setCrosshairPosition(0, snappedTime, volSeries);
         }
       }
+
+      if (secondaryChart && secondarySeries) {
+        const snappedTime = findClosestTime(secondarySeries, time);
+        if (snappedTime) {
+          secondaryChart.setCrosshairPosition(0, snappedTime, secondarySeries);
+        }
+      }
       
       
     });
     
     // SYNC CROSS HAIRS 
-    function syncCrosshair(
-      sourceChart: IChartApi,
-      sourceSeries: ISeriesApi<"Line"> | ISeriesApi<"Candlestick">,
-      time: UTCTimestamp
-    ) {
-      const allCharts: [IChartApi | null, ISeriesApi<any> | null][] = [
-        [chartRef.current, candleSeriesRef.current],
-        [meanRevChartInstance.current, meanRevLineRef.current],
-        [rsiChartInstance.current, rsiLineRef.current],
-        [volChartInstance.current, volLineRef.current],
-      ];
-    
-      for (const [chart, series] of allCharts) {
-        if (!chart || !series || chart === sourceChart) continue;
-        const snapped = findClosestTime(series, time);
-        if (snapped != null) {
-          chart.setCrosshairPosition(0, snapped, series);
-        }
-      }
-    }
     
 
     chart.subscribeCrosshairMove((param) => {
@@ -884,93 +918,179 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
       <h5 className="fw-bold mb-3 text-dark">📈 {timeframe.toUpperCase()} Candlestick Chart</h5>
 
-      <div className="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
-        {/* Left side: drawing tools */}
-        <div className="toolbar d-flex gap-2">
-          <button
-            onClick={() => toggleMode("trendline")}
-            className={`tool-button ${drawingModeRef.current === "trendline" ? "active" : ""}`}
-            title="Trendline"
-          >
-            <Ruler size={16} />
-          </button>
-
-          <button
-            onClick={() => toggleMode("horizontal")}
-            className={`tool-button ${drawingModeRef.current === "horizontal" ? "active" : ""}`}
-            title="Horizontal Line"
-          >
-            <Minus size={16} />
-          </button>
-
-          <button
-            onClick={() => toggleMode("sixpoint")}
-            className={`tool-button ${drawingModeRef.current === "sixpoint" ? "active" : ""}`}
-            title="6 Point Tool"
-          >
-            1→5
-          </button>
-
-          <button
-            onClick={resetChart}
-            className="tool-button"
-            title="Reload Chart"
-          >
-            <RotateCcw size={16} />
-          </button>
-        </div>
-
-        {/* Right side: timeframe toggle */}
-        <div className="btn-group">
-          {["daily", "weekly", "monthly"].map((tf) => (
+        <div className="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+          {/* Left side: drawing tools */}
+          <div className="toolbar d-flex gap-2">
             <button
-              key={tf}
-              onClick={() => setTimeframe(tf as "daily" | "weekly" | "monthly")}
-              className={`btn btn-sm ${timeframe === tf ? "btn-primary" : "btn-outline-secondary"}`}
+              onClick={() => toggleMode("trendline")}
+              className={`tool-button ${drawingModeRef.current === "trendline" ? "active" : ""}`}
+              title="Trendline"
             >
-              {tf.toUpperCase()}
+              <Ruler size={16} />
             </button>
-          ))}
+
+            <button
+              onClick={() => toggleMode("horizontal")}
+              className={`tool-button ${drawingModeRef.current === "horizontal" ? "active" : ""}`}
+              title="Horizontal Line"
+            >
+              <Minus size={16} />
+            </button>
+
+            <button
+              onClick={() => toggleMode("sixpoint")}
+              className={`tool-button ${drawingModeRef.current === "sixpoint" ? "active" : ""}`}
+              title="6 Point Tool"
+            >
+              1→5
+            </button>
+
+            <button
+              onClick={resetChart}
+              className="tool-button"
+              title="Reload Chart"
+            >
+              <RotateCcw size={16} />
+            </button>
+          </div>
+
+          {/* Right side: timeframe toggle */}
+          <div className="btn-group">
+            {["daily", "weekly", "monthly"].map((tf) => (
+              <button
+                key={tf}
+                onClick={() => setTimeframe(tf as "daily" | "weekly" | "monthly")}
+                className={`btn btn-sm ${timeframe === tf ? "btn-primary" : "btn-outline-secondary"}`}
+              >
+                {tf.toUpperCase()}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
 
       
-      <div className="indicator-panel d-flex flex-column gap-2 mt-3">
-        <label><input type="checkbox" checked={showBollingerBand} onChange={() => setShowBollingerBand(v => !v)} /> Bollinger Band</label>
-      </div>
+        <div className="indicator-panel d-flex flex-column gap-2 mt-3">
+          <label><input type="checkbox" checked={showBollingerBand} onChange={() => setShowBollingerBand(v => !v)} /> Bollinger Band</label>
+        </div>
 
 
 
-      <div ref={chartContainerRef} style={{ width: "100%", height: "400px" }} />
+        <div ref={chartContainerRef} style={{ width: "100%", height: "400px" }} />
+        {/* === Add Secondary Chart Button === */}
+        <div style={{ position: "relative", width: "100%", minHeight: "60px" }}>
+          <div style={{ position: "absolute", bottom: "0", right: "0" }}>
+            <button
+              className="btn btn-sm btn-outline-primary"
+              onClick={() => setShowDropdown((prev) => !prev)}
+            >
+              ➕ Add Comparison Chart
+            </button>
 
-      {/* === Mean Reversion Chart === */}
-      <div className="mt-4">
-      <div className="d-flex align-items-center gap-2 mb-1">
-        <div className="fw-bold text-muted">📊 50 Day Mean Reversion</div>
-        <button
-          onClick={() => {
-            const chart = meanRevChartInstance.current;
+            {showDropdown && (
+              <div className="dropdown-menu show p-2 mt-2" style={{ minWidth: "200px" }}>
+                <div className="mb-2 fw-bold">Popular</div>
+                {["GOLD", "SILVER", "OIL", "BTC"].map((s) => (
+                  <div
+                    key={s}
+                    onClick={() => {
+                      setSecondarySymbol(s);
+                      setShowDropdown(false);
+                    }}
+                    className="dropdown-item cursor-pointer"
+                    style={{ cursor: "pointer" }}
+                  >
+                    {s}
+                  </div>
+                ))}
+                <hr />
+                <input
+                  className="form-control"
+                  placeholder="Search ticker..."
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      const val = (e.target as HTMLInputElement).value.toUpperCase().trim();
+                      if (val) {
+                        setSecondarySymbol(val);
+                        setShowDropdown(false);
+                      }
+                    }
+                  }}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+        {secondarySymbol && (
+          <div className="mt-4">
+            <div className="d-flex justify-content-between align-items-center mb-1">
+              <div className="fw-bold text-muted">📉 {secondarySymbol} Price Chart</div>
+              <button
+                className="btn btn-sm btn-outline-danger"
+                onClick={() => setSecondarySymbol(null)}
+              >
+                ❌ Remove
+              </button>
+            </div>
+            <SecondaryChart
+              symbol={secondarySymbol}
+              timeframe={timeframe}
+              chartRef={secondaryChartRef}
+              seriesRef={secondarySeriesRef}
+              onCrosshairMove={(time) => {
+                // Sync all other charts when crosshair moves on secondary
+                if (secondarySeriesRef.current) {
+                  syncCrosshair(secondaryChartRef.current!, secondarySeriesRef.current, time);
+                }
+                
+              }}
+              onVisibleRangeChange={(range) => {
+                const safeSetVisibleRange = (chart: IChartApi | null, r: typeof range) => {
+                  try {
+                    chart?.timeScale()?.setVisibleRange(r);
+                  } catch (err) {
+                    console.warn("⛔ setVisibleRange failed", err);
+                  }
+                };
 
-            if (meanRevLimitLines.length > 0) {
-              // 🧹 Reset mean reversion bounds
-              resetMeanRevLimits();
-              console.log("🧹 Cleared limit lines.");
-            } else {
-              setLimitDrawingMode(true);
-              limitDrawingModeRef.current = true;
-              console.log("🖱️ Activated limit drawing mode.");
-            }
-          }}
-          className={`tool-button ${limitDrawingMode || meanRevLimitLines.length > 0 ? "active" : ""}`}
-          title="Symmetric Bound Lines"
-        >
-          <ArrowUpDown size={16} />
-        </button>
-      </div>
-      <div ref={meanRevChartRef} style={{ width: "100%", height: "200px" }} />
-    </div>
+                safeSetVisibleRange(chartRef.current, range);
+                safeSetVisibleRange(meanRevChartInstance.current, range);
+                safeSetVisibleRange(rsiChartInstance.current, range);
+                safeSetVisibleRange(volChartInstance.current, range);
+              }}
+            />
+
+          </div>
+        )}    
 
 
+        {/* === Mean Reversion Chart === */}
+        <div className="mt-4">
+          <div className="d-flex align-items-center gap-2 mb-1">
+            <div className="fw-bold text-muted">📊 50 Day Mean Reversion</div>
+            <button
+              onClick={() => {
+                const chart = meanRevChartInstance.current;
+
+                if (meanRevLimitLines.length > 0) {
+                  // 🧹 Reset mean reversion bounds
+                  resetMeanRevLimits();
+                  console.log("🧹 Cleared limit lines.");
+                } else {
+                  setLimitDrawingMode(true);
+                  limitDrawingModeRef.current = true;
+                  console.log("🖱️ Activated limit drawing mode.");
+                }
+              }}
+              className={`tool-button ${limitDrawingMode || meanRevLimitLines.length > 0 ? "active" : ""}`}
+              title="Symmetric Bound Lines"
+            >
+              <ArrowUpDown size={16} />
+            </button>
+          </div>
+        <div ref={meanRevChartRef} style={{ width: "100%", height: "200px" }} />
+        </div>
+
+            
 
       {/* === RSI Chart === */}
       <div className="mt-4">
@@ -1008,6 +1128,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       {/* === Overlay Grid === */}
       {overlayData && <OverlayGrid overlayData={overlayData} />}
 
+      
 
     </div>
   );
