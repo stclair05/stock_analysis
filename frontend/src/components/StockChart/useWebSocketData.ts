@@ -4,14 +4,16 @@ import { Candle } from "./types";
 
 export function useWebSocketData(
   stockSymbol: string,
-  candleSeriesRef: React.MutableRefObject<ISeriesApi<"Candlestick"> | null>
+  candleSeriesRef: React.MutableRefObject<ISeriesApi<"Candlestick"> | null>,
+  timeframe: "daily" | "weekly" | "monthly",
 ) {
   useEffect(() => {
     if (!stockSymbol || !candleSeriesRef.current) return;
 
     const ws = new WebSocket(
-      `ws://localhost:8000/ws/chart_data_weekly/${stockSymbol.toUpperCase()}`
+      `ws://localhost:8000/ws/chart_data_${timeframe}/${stockSymbol.toUpperCase()}`
     );
+
 
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
@@ -45,5 +47,5 @@ export function useWebSocketData(
     return () => {
       ws.close();
     };
-  }, [stockSymbol, candleSeriesRef]);
+  }, [stockSymbol, candleSeriesRef, timeframe]);
 }

@@ -221,22 +221,39 @@ async def get_financials(symbol: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.websocket("/ws/chart_data_weekly/{symbol}")
-async def websocket_chart_data(websocket: WebSocket, symbol: str):
+@app.websocket("/ws/chart_data_{timeframe}/{symbol}")
+async def websocket_chart_data(websocket: WebSocket, timeframe: str, symbol: str):
     await websocket.accept()
     try:
         raw_symbol = symbol.upper()
         symbol = SYMBOL_ALIASES.get(raw_symbol, raw_symbol)
 
         analyser = StockAnalyser(symbol)
-        df_daily = analyser.get_price_data(symbol)
-        hist_df = df_daily.resample("W-FRI").agg({
-            "Open": "first",
-            "High": "max",
-            "Low": "min",
-            "Close": "last",
-            "Volume": "sum"
-        }).dropna()
+        df = analyser.get_price_data(symbol)
+
+        if timeframe == "daily":
+            hist_df = df
+        elif timeframe == "weekly":
+            hist_df = df.resample("W-FRI").agg({
+                "Open": "first",
+                "High": "max",
+                "Low": "min",
+                "Close": "last",
+                "Volume": "sum"
+            }).dropna()
+        elif timeframe == "monthly":
+            hist_df = df.resample("M").agg({
+                "Open": "first",
+                "High": "max",
+                "Low": "min",
+                "Close": "last",
+                "Volume": "sum"
+            }).dropna()
+        else:
+            await websocket.send_json({"error": f"Invalid timeframe: {timeframe}"})
+            await websocket.close()
+            return
+
         if hist_df.empty:
             await websocket.send_json({"error": f"No data found for symbol {symbol}"})
             await websocket.close()
@@ -257,19 +274,6 @@ async def websocket_chart_data(websocket: WebSocket, symbol: str):
         await websocket.send_json({"history": history})
 
         last_ts = hist_df.index[-1]
-
-        while True:
-            new_df = yf.download(tickers=symbol, period='1d', interval='1m', progress=False)
-            new_rows = new_df[new_df.index > last_ts]
-            for ts, row in new_rows.iterrows():
-                await websocket.send_json({
-                    "live": {
-                        "time": int(ts.timestamp()),
-                        "value": round(float(row['Close']), 2)
-                    }
-                })
-                last_ts = ts
-            await asyncio.sleep(5)
 
     except WebSocketDisconnect:
         print(f"Client disconnected for {symbol}")

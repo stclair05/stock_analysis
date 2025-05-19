@@ -41,6 +41,8 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
   const dotLabelSeriesRef = useRef<Map<number, ISeriesApi<"Line">[]>>(new Map());
   const sixPointDotPreviewRef = useRef<ISeriesApi<"Line"> | null>(null);
   const sixPointHoverLineRef = useRef<ISeriesApi<"Line"> | null>(null);
+  const [timeframe, setTimeframe] = useState<"daily" | "weekly" | "monthly">("weekly");
+
 
   const drawnSeriesRef = useRef<Map<number, ISeriesApi<"Line">>>(new Map());
   const previewSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
@@ -574,7 +576,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     };
   }, [stockSymbol]);
 
-  useWebSocketData(stockSymbol, candleSeriesRef);
+  useWebSocketData(stockSymbol, candleSeriesRef, timeframe);
 
   useEffect(() => {
     const chart = chartRef.current;
@@ -880,44 +882,59 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         </a>
       )}
 
-      <h5 className="fw-bold mb-3 text-dark">📈 Weekly Candlestick Chart</h5>
+      <h5 className="fw-bold mb-3 text-dark">📈 {timeframe.toUpperCase()} Candlestick Chart</h5>
 
-      <div className="toolbar mb-2 d-flex gap-2">
-        <button
-          onClick={() => toggleMode("trendline")}
-          className={`tool-button ${drawingModeRef.current === "trendline" ? "active" : ""}`}
-          title="Trendline"
-        >
-          <Ruler size={16} />
-        </button>
+      <div className="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+        {/* Left side: drawing tools */}
+        <div className="toolbar d-flex gap-2">
+          <button
+            onClick={() => toggleMode("trendline")}
+            className={`tool-button ${drawingModeRef.current === "trendline" ? "active" : ""}`}
+            title="Trendline"
+          >
+            <Ruler size={16} />
+          </button>
 
-        <button
-          onClick={() => toggleMode("horizontal")}
-          className={`tool-button ${drawingModeRef.current === "horizontal" ? "active" : ""}`}
-          title="Horizontal Line"
-        >
-          <Minus size={16} />
-        </button>
+          <button
+            onClick={() => toggleMode("horizontal")}
+            className={`tool-button ${drawingModeRef.current === "horizontal" ? "active" : ""}`}
+            title="Horizontal Line"
+          >
+            <Minus size={16} />
+          </button>
 
-        <button
-          onClick={() => toggleMode("sixpoint")}
-          className={`tool-button ${drawingModeRef.current === "sixpoint" ? "active" : ""}`}
-          title="6 Point Tool"
-        >
-          {/* you can use a new icon here, e.g., Plus or custom SVG */}
-          1→5
-        </button>
+          <button
+            onClick={() => toggleMode("sixpoint")}
+            className={`tool-button ${drawingModeRef.current === "sixpoint" ? "active" : ""}`}
+            title="6 Point Tool"
+          >
+            1→5
+          </button>
 
-        <button
-          onClick={resetChart}
-          className="tool-button"
-          title="Reload Chart"
-        >
-          <RotateCcw size={16} />
-        </button>
+          <button
+            onClick={resetChart}
+            className="tool-button"
+            title="Reload Chart"
+          >
+            <RotateCcw size={16} />
+          </button>
+        </div>
 
+        {/* Right side: timeframe toggle */}
+        <div className="btn-group">
+          {["daily", "weekly", "monthly"].map((tf) => (
+            <button
+              key={tf}
+              onClick={() => setTimeframe(tf as "daily" | "weekly" | "monthly")}
+              className={`btn btn-sm ${timeframe === tf ? "btn-primary" : "btn-outline-secondary"}`}
+            >
+              {tf.toUpperCase()}
+            </button>
+          ))}
+        </div>
       </div>
 
+      
       <div className="indicator-panel d-flex flex-column gap-2 mt-3">
         <label><input type="checkbox" checked={showBollingerBand} onChange={() => setShowBollingerBand(v => !v)} /> Bollinger Band</label>
       </div>
