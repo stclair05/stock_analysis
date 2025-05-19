@@ -69,7 +69,6 @@ class Scenario(BaseModel):
 class ElliottWaveScenariosResponse(BaseModel):
     scenarios: list[Scenario]
 
-
 class FinancialMetrics(BaseModel):
     ticker: str
     revenue: Optional[float]

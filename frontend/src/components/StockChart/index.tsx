@@ -80,7 +80,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     mean_rev_200dma?: { time: number; value: number }[];
     mean_rev_3yma?: { time: number; value: number }[];
     rsi?: { time: number; value: number }[];
-    ma_14?: { time: number; value: number }[];
+    rsi_ma_14?: { time: number; value: number }[];
     volatility?: { time: number; value: number }[];
     bb_middle?: { time: number; value: number }[];
     bb_upper?: { time: number; value: number }[];
@@ -798,16 +798,16 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     }
 
     // --- MA14 Overlay ---
-    if (overlayData.ma_14) {
+    if (overlayData.rsi_ma_14) {
       const ma14Series = chart.addSeries(LineSeries, {
-        color: "#001f3f", // navy blue
+        color: "#FFD700", // navy blue
         lineWidth: 1,
         priceLineVisible: false,
         lastValueVisible: false,
       });
 
       ma14Series.setData(
-        overlayData.ma_14.map((d) => ({
+        overlayData.rsi_ma_14.map((d) => ({
           time: d.time as UTCTimestamp,
           value: d.value,
         }))
@@ -980,7 +980,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           <div className="d-flex flex-wrap mt-1">
             {[
               { color: "#7E57C2", label: "RSI (14-day)" },
-              { color: "#001f3f", label: "14-Day Moving Average (Price)" },
+              { color: "#FFD700", label: "14-Day Moving Average (Price)" },
             ].map(({ color, label }) => (
               <div key={label} className="me-3 d-flex align-items-center small">
                 <span

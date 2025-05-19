@@ -616,15 +616,18 @@ class StockAnalyser:
         ma = close.rolling(window=40).mean()
         return to_series(reindex_indicator(close, ma))
     
-    def get_14dma_series(self):
+    def get_rsi_ma_series(self, period: int = 14):
         close = self.df["Close"]
-        ma_14 = close.rolling(window=14).mean().dropna()
-        return to_series(reindex_indicator(close, ma_14))
+        rsi = compute_wilder_rsi(close)
+        rsi_ma = rsi.rolling(window=period).mean()
+        return to_series(reindex_indicator(close, rsi_ma))
+
 
     def get_rsi_series(self):
         df_weekly = self.df.resample("W-FRI").last().dropna()
         close = df_weekly["Close"]
         rsi = compute_wilder_rsi(close)
+        print(f"RSI Min: {rsi.min()}, Max: {rsi.max()}")
         return to_series(reindex_indicator(close, rsi))
     
     def get_volatility_bbwp(self):
@@ -724,7 +727,7 @@ class StockAnalyser:
 
             # Others
             "rsi": self.get_rsi_series(),
-            "ma_14": self.get_14dma_series(),
+            "rsi_ma_14": self.get_rsi_ma_series(),
             "volatility": self.get_volatility_bbwp(),
             **self.get_mean_reversion_deviation_lines(),
         }
