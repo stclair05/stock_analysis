@@ -132,8 +132,29 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     sixPointHoverLineRef
   );
 
-  
+  const resetMeanRevLimits = () => {
+    const chart = meanRevChartInstance.current;
+    if (chart && meanRevLimitSeries.current.length > 0) {
+      meanRevLimitSeries.current.forEach((series) => chart.removeSeries(series));
+    }
+
+    meanRevLimitSeries.current = [];
+    setMeanRevLimitLines([]);
+    limitDrawingModeRef.current = false;
+    setLimitDrawingMode(false);
+};
+
   useEffect(() => {
+    // 🧹 Reset drawing state to prevent bugs on ticker switch
+    drawingModeRef.current = null;
+    lineBufferRef.current = [];
+    setDrawings([]);
+    drawnSeriesRef.current.clear();
+    dotLabelSeriesRef.current.clear();
+
+    // 🧹 Reset mean reversion bounds
+    resetMeanRevLimits();
+
     if (!stockSymbol || !chartContainerRef.current || !meanRevChartRef.current || !rsiChartRef.current || !volChartRef.current) return;
 
     chartContainerRef.current.innerHTML = "";
@@ -914,9 +935,8 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
             const chart = meanRevChartInstance.current;
 
             if (meanRevLimitLines.length > 0) {
-              meanRevLimitSeries.current.forEach((s) => chart?.removeSeries(s));
-              meanRevLimitSeries.current = [];
-              setMeanRevLimitLines([]);
+              // 🧹 Reset mean reversion bounds
+              resetMeanRevLimits();
               console.log("🧹 Cleared limit lines.");
             } else {
               setLimitDrawingMode(true);

@@ -42,13 +42,20 @@ type MetricsProps = {
 function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
   const [metrics, setMetrics] = useState<MetricsType | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
     if (!stockSymbol || stockSymbol.trim() === "") return;
 
+    setMetrics(null);
+    setLoading(true);
+
     const fetchMetrics = async (retry = 0) => {
       try {
-        if (retry === 0) setError(null);
+        if (retry === 0) {
+          setError(null);
+          setLoading(true);
+        }
         if (setParentLoading) setParentLoading(true);
     
         const response = await fetch("http://localhost:8000/analyse", {
@@ -78,6 +85,7 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
     
         if (!keyFieldsIncomplete || retry >= 3) {
           setMetrics(data);
+          setLoading(false);
           if (setParentLoading) setParentLoading(false);
         } else {
           setTimeout(() => fetchMetrics(retry + 1), 1000);
@@ -86,6 +94,7 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
         if (retry >= 3) {
           console.error("Error fetching metrics:", err);
           setError("Failed to connect to backend.");
+          setLoading(false);
           if (setParentLoading) setParentLoading(false);
         } else {
           setTimeout(() => fetchMetrics(retry + 1), 1000);
@@ -225,12 +234,18 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
           <h2 className="mb-0 fw-semibold text-dark">
             Metrics for <strong>{stockSymbol}</strong>
           </h2>
-          {metrics?.current_price && (
-            <h4 className="text-primary mb-0">
+
+          {loading || !metrics?.current_price ? (
+            <div className="d-flex align-items-center gap-2">
+              <div className="spinner-border spinner-border-sm text-primary" role="status" />
+              <span className="text-muted">Fetching price...</span>
+            </div>
+          ) : (
+            <h4 className="mb-0" style={{ color: "var(--primary-color)" }}>
               Current Price: ${metrics.current_price.toFixed(2)}
             </h4>
-            
           )}
+
         </div>
 
         {!isMetricsComplete(metrics) ? (
