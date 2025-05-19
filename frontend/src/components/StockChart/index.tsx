@@ -989,7 +989,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
             {showDropdown && (
               <div className="dropdown-menu show p-2 mt-2" style={{ minWidth: "200px" }}>
                 <div className="mb-2 fw-bold">Popular</div>
-                {["GOLD", "SILVER", "OIL", "BTC"].map((s) => (
+                {["GOLD", "SILVER", "USOIL", "BTC"].map((s) => (
                   <div
                     key={s}
                     onClick={() => {
