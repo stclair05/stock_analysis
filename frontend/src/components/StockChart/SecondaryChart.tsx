@@ -57,11 +57,11 @@ const SecondaryChart = ({
     });
 
     const series = chart.addSeries(CandlestickSeries, {
-      upColor: "#4caf50",
-      downColor: "#f44336",
+      upColor: "#42a5f5",
+      downColor: "#ef5350",
       borderVisible: false,
-      wickUpColor: "#4caf50",
-      wickDownColor: "#f44336",
+      wickUpColor: "#42a5f5",
+      wickDownColor: "#ef5350",
     });
 
     chartInstanceRef.current = chart;

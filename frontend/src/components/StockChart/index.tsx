@@ -12,7 +12,7 @@ import {
   HistogramSeries,
 } from "lightweight-charts";
 import { useEffect, useRef, useState } from "react";
-import { Ruler, Minus, RotateCcw, ArrowUpDown } from "lucide-react";
+import { Ruler, Minus, RotateCcw, ArrowUpDown, PlusCircle, X } from "lucide-react";
 import { getTradingViewUrl } from "../../utils";
 
 import {
@@ -904,6 +904,8 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
   return (
     <div className="position-relative bg-white p-3 shadow-sm rounded border">
+
+      {/* === Main Price Chart === */}
       {stockSymbol && (
         <a
           href={getTradingViewUrl(stockSymbol)}
@@ -978,17 +980,19 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         <div ref={chartContainerRef} style={{ width: "100%", height: "400px" }} />
 
         {/* === Add Secondary Chart Button === */}
-        {/* === Comparison Chart Toggle (Add / Remove) === */}
-        <div style={{ position: "relative", width: "100%", minHeight: "60px" }}>
+        <div style={{ position: "relative", width: "100%", minHeight: "10px" }}>
           <div style={{ position: "absolute", bottom: "0", right: "0" }}>
             {secondarySymbol === null ? (
               <>
                 <button
                   className="btn btn-sm btn-outline-primary"
                   onClick={() => setShowDropdown((prev) => !prev)}
+                  title="Add Comparison Chart"
+                  style={{ padding: "4px 6px", lineHeight: 1 }}
                 >
-                  ➕ Add Comparison Chart
+                  <PlusCircle size={16} />
                 </button>
+
 
                 {showDropdown && (
                   <div className="dropdown-menu show p-2 mt-2" style={{ minWidth: "200px" }}>
@@ -1026,8 +1030,10 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
               <button
                 className="btn btn-sm btn-outline-danger"
                 onClick={() => setSecondarySymbol(null)}
+                title="Remove Comparison Chart"
+                style={{ padding: "4px 6px", lineHeight: 1 }}
               >
-                ❌ Remove Comparison Chart
+                <X size={16} />
               </button>
             )}
           </div>
