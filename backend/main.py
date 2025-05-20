@@ -174,3 +174,12 @@ def get_overlay_data(symbol: str, timeframe: str = "weekly"):
         return JSONResponse(content=overlays)
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
+
+@app.get("/price_targets/{symbol}")
+def get_price_targets(symbol: str):
+    try:
+        analyser = StockAnalyser(symbol)
+        targets = analyser.price_targets()
+        return {"symbol": symbol.upper(), "price_targets": targets}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
