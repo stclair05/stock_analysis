@@ -7,6 +7,7 @@ from functools import cached_property
 from .models import TimeSeriesMetric
 from aliases import SYMBOL_ALIASES
 from .utils import safe_value, detect_rsi_divergence, find_pivots, compute_wilder_rsi, compute_bbwp, compute_ichimoku_lines, compute_supertrend_lines, to_series, classify_adx_trend, classify_mace_signal, classify_40w_status, classify_dma_trend, classify_bbwp_percentile, wilder_smooth, reindex_indicator
+from .pricetarget import get_price_targets
 
 
 
@@ -15,7 +16,7 @@ class StockAnalyser:
         raw_symbol = symbol.upper().strip()
         self.symbol = SYMBOL_ALIASES.get(raw_symbol, raw_symbol)
         self.df = StockAnalyser.get_price_data(self.symbol)
-        
+
     def _download_data(self) -> pd.DataFrame:
         df = yf.download(self.symbol, period='20y', interval='1d', auto_adjust=False)
         if df.empty:
@@ -697,5 +698,10 @@ class StockAnalyser:
         }
 
 
+    def price_targets(self) -> dict:
+        """
+        Combines mean reversion targets and Fibonacci extension targets.
+        """
+        return get_price_targets(self.df)
 
 
