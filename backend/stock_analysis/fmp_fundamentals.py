@@ -17,15 +17,42 @@ class FMPFundamentals:
         self._load_all_data()
 
     def _fetch(self, endpoint: str) -> list[dict]:
-        url = f"{FMP_BASE_URL}/{endpoint}/{self.symbol}?apikey={FMP_API_KEY}"
-        try:
-            response = requests.get(url, timeout=5)
-            response.raise_for_status()
-            data = response.json()
-            return [{k.lower(): v for k, v in d.items()} for d in data] if data else []
-        except Exception as e:
-            print(f"❌ Error fetching {endpoint}: {e}")
-            return []
+        quarterly_endpoints = {
+            "income-statement",
+            "balance-sheet-statement",
+            "cash-flow-statement",
+            "ratios"
+        }
+
+        def try_fetch(url: str) -> list[dict]:
+            try:
+                response = requests.get(url, timeout=5)
+                response.raise_for_status()
+                data = response.json()
+                return [{k.lower(): v for k, v in d.items()} for d in data] if data else []
+            except requests.HTTPError as e:
+                if e.response.status_code == 403:
+                    print(f"⚠️  403 Forbidden for {url} — trying fallback")
+                    return None  # fallback will handle this
+                else:
+                    print(f"❌ Error fetching {url}: {e}")
+                    return []
+            except Exception as e:
+                print(f"❌ General error fetching {url}: {e}")
+                return []
+
+        # Step 1: try quarterly
+        if endpoint in quarterly_endpoints:
+            quarterly_url = f"{FMP_BASE_URL}/{endpoint}/{self.symbol}?period=quarter&apikey={FMP_API_KEY}"
+            data = try_fetch(quarterly_url)
+            if data is not None:
+                return data
+
+        # Step 2: fallback to annual
+        fallback_url = f"{FMP_BASE_URL}/{endpoint}/{self.symbol}?apikey={FMP_API_KEY}"
+        return try_fetch(fallback_url)
+
+
 
     def _load_all_data(self):
         endpoints = {
@@ -36,8 +63,16 @@ class FMPFundamentals:
             "quote_data": "quote",
             "ratios_data": "ratios"
         }
+
+        # Define which ones should use period=quarter
+        quarterly = {"income_data", "balance_data", "cashflow_data", "ratios_data"}
+        
         with ThreadPoolExecutor(max_workers=6) as executor:
-            futures = {executor.submit(self._fetch, ep): key for key, ep in endpoints.items()}
+            futures = {
+                executor.submit(self._fetch, ep): key
+                for key, ep in endpoints.items()
+            }
+
             for future in as_completed(futures):
                 key = futures[future]
                 self.data[key] = future.result()
