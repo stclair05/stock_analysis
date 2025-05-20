@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 from fastapi import HTTPException
 from functools import lru_cache
+from functools import cached_property
 from .models import TimeSeriesMetric
 from aliases import SYMBOL_ALIASES
 from .utils import safe_value, detect_rsi_divergence, find_pivots, compute_wilder_rsi, compute_bbwp, compute_ichimoku_lines, compute_supertrend_lines, to_series, classify_adx_trend, classify_mace_signal, classify_40w_status, classify_dma_trend, classify_bbwp_percentile, wilder_smooth, reindex_indicator
@@ -42,6 +43,20 @@ class StockAnalyser:
             df.columns = df.columns.droplevel(1)
 
         return df
+    
+    @cached_property
+    def weekly_df(self) -> pd.DataFrame:
+        return self.df.resample("W-FRI").agg({
+            "Open": "first",
+            "High": "max",
+            "Low": "min",
+            "Close": "last",
+            "Volume": "sum" if "Volume" in self.df.columns else "first"
+        }).dropna()
+
+    @cached_property
+    def monthly_df(self) -> pd.DataFrame:
+        return self.df.resample("ME").last().dropna()
 
     def get_current_price(self) -> float | None:
         return safe_value(self.df['Close'], -1)
@@ -49,7 +64,7 @@ class StockAnalyser:
     def calculate_3year_ma(self) -> TimeSeriesMetric:
         if len(self.df) < 800:
             return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
-        monthly_close = self.df['Close'].resample('ME').last()
+        monthly_close = self.monthly_df["Close"]
         monthly_ma = monthly_close.rolling(window=36).mean()
 
         return TimeSeriesMetric(
@@ -72,20 +87,11 @@ class StockAnalyser:
         )
 
     def ichimoku_cloud(self) -> TimeSeriesMetric:
-        df = self.df.last('600D')
-        if len(df) < 150 or df.empty:  # ~30 weeks
+        df_weekly = self.weekly_df.last('600D')
+
+        if len(df_weekly) < 30 or df_weekly.empty:  # ~30 weeks
             return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
 
-        # Weekly resampling
-        df_weekly = df.resample('W-FRI').agg({
-            'Open': 'first',
-            'High': 'max',
-            'Low': 'min',
-            'Close': 'last'
-        }).dropna()
-
-        if df_weekly.empty:
-            return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
 
         # Use util function to get Ichimoku lines
         _, _, span_a, span_b = compute_ichimoku_lines(df_weekly)
@@ -113,20 +119,11 @@ class StockAnalyser:
 
 
     def super_trend(self) -> TimeSeriesMetric:
-        df = self.df.last("600D")
-        if len(df) < 150 or df.empty:  # ~30 weeks
-            return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
-        
-        df_weekly = df.resample("W-FRI").agg({
-            "Open": "first",
-            "High": "max",
-            "Low": "min",
-            "Close": "last"
-        }).dropna()
+        df_weekly = self.weekly_df.last('600D')
 
-        if df_weekly.empty:
+        if len(df_weekly) < 30 or df_weekly.empty:  # ~30 weeks
             return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
-
+    
         df_st = compute_supertrend_lines(df_weekly)
 
         return TimeSeriesMetric(
@@ -139,18 +136,9 @@ class StockAnalyser:
 
 
     def adx(self) -> TimeSeriesMetric:
-        df = self.df.last("600D")
-        if len(df) < 150:  # ~30 weeks
-            return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
+        df_weekly = self.weekly_df.last('600D')
 
-        df_weekly = df.resample("W-FRI").agg({
-            "Open": "first",
-            "High": "max",
-            "Low": "min",
-            "Close": "last"
-        }).dropna()
-
-        if df_weekly.empty or len(df_weekly) < 20:
+        if len(df_weekly) < 20 or df_weekly.empty:  # ~20 weeks
             return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
 
         high = df_weekly['High']
@@ -203,18 +191,9 @@ class StockAnalyser:
 
 
     def mace(self) -> TimeSeriesMetric:
-        df = self.df.last('600D')
-        if len(df) < 150:  # ~30 weeks
-            return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
+        df_weekly = self.weekly_df.last('600D')
 
-        df_weekly = df.resample('W-FRI').agg({
-            'Open': 'first',
-            'High': 'max',
-            'Low': 'min',
-            'Close': 'last'
-        }).dropna()
-
-        if df_weekly.empty:
+        if len(df_weekly) < 30 or df_weekly.empty:  # ~30 weeks
             return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
 
         close = df_weekly['Close']
@@ -232,15 +211,9 @@ class StockAnalyser:
         )
 
     def forty_week_status(self) -> TimeSeriesMetric:
-        df = self.df.last('600D')
-        df_weekly = df.resample('W-FRI').agg({
-            'Open': 'first',
-            'High': 'max',
-            'Low': 'min',
-            'Close': 'last'
-        }).dropna()
+        df_weekly = self.weekly_df.last('600D')
 
-        if df_weekly.empty:
+        if len(df_weekly) < 30 or df_weekly.empty:  # ~30 weeks
             return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
 
         close = df_weekly['Close']
@@ -350,7 +323,7 @@ class StockAnalyser:
         if len(self.df) < 800:
             return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
         
-        monthly_close = self.df['Close'].resample('ME').last()
+        monthly_close = self.monthly_df["Close"]
         ma_3y = monthly_close.rolling(window=36).mean()
         deviation = (monthly_close - ma_3y) / ma_3y * 100
 
@@ -429,7 +402,7 @@ class StockAnalyser:
 
     
     def rsi_ma_weekly(self) -> TimeSeriesMetric:
-        df_weekly = self.df.resample("W-FRI").last().dropna()
+        df_weekly = self.weekly_df 
         if df_weekly.empty or len(df_weekly) < 30:
             return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
         
@@ -451,7 +424,7 @@ class StockAnalyser:
     
     def rsi_divergence_weekly(self, pivot_strength: int = 3, rsi_period: int = 14, rsi_threshold: float = 3.0) -> TimeSeriesMetric:
         # Resample to weekly frequency using Friday as week end
-        df_weekly = self.df.resample("W-FRI").last().dropna()
+        df_weekly = self.weekly_df 
 
         if df_weekly.empty or len(df_weekly) < 30:
             return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
@@ -474,7 +447,7 @@ class StockAnalyser:
 
     def rsi_ma_monthly(self) -> TimeSeriesMetric:
         # Resample to month-end (last calendar trading day of each month)
-        df_monthly = self.df.resample("ME").last().dropna()
+        df_monthly = self.monthly_df
         if df_monthly.empty or len(df_monthly) < 30:
             return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
 
@@ -495,7 +468,7 @@ class StockAnalyser:
 
     
     def rsi_divergence_monthly(self, pivot_strength: int = 2, rsi_period: int = 14, rsi_threshold: float = 3.0) -> TimeSeriesMetric:
-        df_monthly = self.df.resample("ME").last().dropna()
+        df_monthly = self.monthly_df
 
         if df_monthly.empty or len(df_monthly) < 12:
             return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
@@ -518,18 +491,9 @@ class StockAnalyser:
 
     
     def chaikin_money_flow(self) -> TimeSeriesMetric:
-        df = self.df.dropna()
+        df = self.weekly_df 
 
-        # Resample to weekly OHLCV (Friday close)
-        df = df.resample("W-FRI").agg({
-            "Open": "first",
-            "High": "max",
-            "Low": "min",
-            "Close": "last",
-            "Volume": "sum"
-        }).dropna()
-
-        if len(df) < 30:
+        if df.empty or len(df) < 30:
             raise HTTPException(status_code=400, detail="Not enough weekly data for CMF.")
 
         high = df["High"]
@@ -570,7 +534,7 @@ class StockAnalyser:
 
 
     def get_3year_ma_series(self):
-        monthly_close = self.df["Close"].resample("ME").last()
+        monthly_close = self.monthly_df["Close"]
         ma = monthly_close.rolling(window=36).mean()
         return to_series(reindex_indicator(monthly_close, ma))
 
@@ -593,9 +557,7 @@ class StockAnalyser:
 
     
     def get_mace_series(self):
-        df_weekly = self.df.resample("W-FRI").agg({
-            "Open": "first", "High": "max", "Low": "min", "Close": "last"
-        }).dropna()
+        df_weekly = self.weekly_df
 
         close = df_weekly["Close"]
 
@@ -611,7 +573,7 @@ class StockAnalyser:
 
     
     def get_40_week_ma_series(self):
-        df_weekly = self.df.resample("W-FRI").last().dropna()
+        df_weekly = self.weekly_df
         close = df_weekly["Close"]
         ma = close.rolling(window=40).mean()
         return to_series(reindex_indicator(close, ma))
@@ -624,14 +586,14 @@ class StockAnalyser:
 
 
     def get_rsi_series(self):
-        df_weekly = self.df.resample("W-FRI").last().dropna()
+        df_weekly = self.weekly_df
         close = df_weekly["Close"]
         rsi = compute_wilder_rsi(close)
         print(f"RSI Min: {rsi.min()}, Max: {rsi.max()}")
         return to_series(reindex_indicator(close, rsi))
     
     def get_volatility_bbwp(self):
-        df_weekly = self.df.resample("W-FRI").last().dropna()
+        df_weekly = self.weekly_df
         close = df_weekly["Close"]
 
         # Match TradingView: BB Length = 13, Percentile Lookback = 252
@@ -646,12 +608,9 @@ class StockAnalyser:
         return to_series(bbwp_full)
 
     def get_ichimoku_lines(self):
-        df_weekly = self.df.resample("W-FRI").agg({
-            "Open": "first", "High": "max", "Low": "min", "Close": "last"
-        }).dropna()
+        df_weekly = self.weekly_df
 
         tenkan, kijun, span_a, span_b = compute_ichimoku_lines(df_weekly)
-
         close_index = df_weekly["Close"]  # Base time index for reindexing
 
         return {
@@ -664,10 +623,7 @@ class StockAnalyser:
 
 
     def get_supertrend_lines(self):
-        df_weekly = self.df.resample("W-FRI").agg({
-            "Open": "first", "High": "max", "Low": "min", "Close": "last"
-        }).dropna()
-
+        df_weekly = self.weekly_df
         df_st = compute_supertrend_lines(df_weekly)
 
         close = df_weekly["Close"]
@@ -694,21 +650,11 @@ class StockAnalyser:
         df = self.df.copy()
 
         if timeframe == "weekly":
-            df = df.resample("W-FRI").agg({
-                "Open": "first",
-                "High": "max",
-                "Low": "min",
-                "Close": "last"
-            }).dropna()
+            df = self.weekly_df
         elif timeframe == "monthly":
-            df = df.resample("M").agg({
-                "Open": "first",
-                "High": "max",
-                "Low": "min",
-                "Close": "last"
-            }).dropna()
-
+            df = self.monthly_df
         close = df["Close"]
+        
         sma = close.rolling(window=window).mean()
         std = close.rolling(window=window).std()
 
