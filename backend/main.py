@@ -90,50 +90,13 @@ def get_cached_fundamentals(symbol: str, ttl: int = 900):
     return fundamentals
 
 @app.get("/fmp_financials/{symbol}", response_model=FinancialMetrics)
-def get_fmp_financials(symbol: str):
-    f = get_cached_fundamentals(symbol)
+async def get_fmp_financials(symbol: str):
+    try:
+        fundamentals = FMPFundamentals(symbol)
+        return fundamentals.get_financial_metrics()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-    with ThreadPoolExecutor() as executor:
-        sortino_future = executor.submit(compute_sortino_ratio, symbol)
-
-        fcf_yield = f.fcf_yield()
-        fcf_growth = f.fcf_growth()
-        yield_plus_growth = (
-            round(fcf_yield + fcf_growth, 2)
-            if fcf_yield is not None and fcf_growth is not None
-            else None
-        )
-        roce = f.roce()
-        wacc = f.wacc()
-        roce_minus_wacc = (
-            round(roce - wacc, 2)
-            if roce is not None and wacc is not None
-            else None
-        )
-        cash_conversion = f.cash_conversion()
-        rule_of_40 = f.rule_of_40()
-        gross_margin = f.gross_margin()
-        sortino_ratio = sortino_future.result()
-
-    return FinancialMetrics(
-        ticker=symbol.upper(),
-        revenue=f.revenue(),
-        net_income=f.net_income(),
-        dividend_yield=f.dividend_yield(),
-        pe_ratio=f.pe_ratio(),
-        ps_ratio=f.ps_ratio(),
-        beta=f.beta(),
-        fcf_yield=fcf_yield,
-        fcf_growth=fcf_growth,
-        yield_plus_growth=yield_plus_growth,
-        roce=roce,
-        wacc=wacc,
-        roce_minus_wacc=roce_minus_wacc,
-        cash_conversion=cash_conversion,
-        rule_of_40=rule_of_40,
-        gross_margin=gross_margin,
-        sortino_ratio=sortino_ratio,
-    )
 
 @app.get("/12data_financials/{symbol}", response_model=FinancialMetrics)
 async def get_financials(symbol: str):
