@@ -1,6 +1,7 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from stock_analysis.stock_analyser import StockAnalyser
+from stock_analysis.portfolio_analyser import PortfolioAnalyser
 from stock_analysis.models import StockRequest, StockAnalysisResponse, ElliottWaveScenariosResponse, FinancialMetrics
 from stock_analysis.elliott_wave import calculate_elliott_wave
 from stock_analysis.fmp_fundamentals import FMPFundamentals
@@ -72,87 +73,8 @@ def elliott(stock_request: StockRequest):
 @app.get("/portfolio_live_data")
 def get_portfolio_live_data():
     try:
-        json_path = Path("portfolio_store.json")
-        if not json_path.exists():
-            return {"error": "Portfolio JSON file not found."}
-
-        with open(json_path, "r") as f:
-            portfolio_data = json.load(f)
-
-        # Fetch GBPUSD once if needed
-        fx_rate = None
-        if any(item["ticker"].endswith(".L") for item in portfolio_data):
-            try:
-                fx_data = yf.Ticker("GBPUSD=X").history(period="1d")
-                fx_rate = fx_data["Close"].iloc[-1]
-            except Exception:
-                fx_rate = 1  # fallback to 1 if error
-
-        def process_item(item):
-            try:
-                ticker = item["ticker"]
-                shares = item["shares"]
-                invested_capital = item["invested_capital"]
-                average_cost = item["average_cost"]
-
-                yf_ticker = yf.Ticker(ticker)
-                price_data = yf_ticker.history(period="1d")
-                current_price = None
-
-                if not price_data.empty:
-                    current_price = price_data["Close"].iloc[-1]
-                else:
-                    try:
-                        info = yf_ticker.info
-                        current_price = info.get("previousClose", None)
-                    except Exception:
-                        current_price = None
-
-                if ticker.endswith(".L") and current_price is not None and fx_rate:
-                    current_price *= fx_rate
-
-                # If still no price, treat as static asset
-                if current_price is None:
-                    return {
-                        "ticker": ticker,
-                        "shares": shares,
-                        "average_cost": round(average_cost, 2),
-                        "current_price": None,
-                        "market_value": round(invested_capital, 2),
-                        "invested_capital": round(invested_capital, 2),
-                        "pnl": 0.0,
-                        "pnl_percent": 0.0,
-                        "static_asset": True
-                    }
-
-                market_value = shares * current_price
-                pnl = market_value - invested_capital
-                pnl_percent = pnl / invested_capital if invested_capital != 0 else 0
-
-                return {
-                    "ticker": ticker,
-                    "shares": shares,
-                    "average_cost": round(average_cost, 2),
-                    "current_price": round(current_price, 2),
-                    "market_value": round(market_value, 2),
-                    "invested_capital": round(invested_capital, 2),
-                    "pnl": round(pnl, 2),
-                    "pnl_percent": round(pnl_percent * 100, 2),
-                    "static_asset": False
-                }
-            except Exception:
-                return None
-
-        results = []
-        with ThreadPoolExecutor(max_workers=20) as executor:
-            futures = [executor.submit(process_item, item) for item in portfolio_data]
-            for future in as_completed(futures):
-                result = future.result()
-                if result:
-                    results.append(result)
-
-        return results
-
+        analyser = PortfolioAnalyser()
+        return analyser.analyse()
     except Exception as e:
         return {"error": str(e)}
 

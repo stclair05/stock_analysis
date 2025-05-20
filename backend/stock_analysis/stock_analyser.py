@@ -15,7 +15,7 @@ class StockAnalyser:
         raw_symbol = symbol.upper().strip()
         self.symbol = SYMBOL_ALIASES.get(raw_symbol, raw_symbol)
         self.df = StockAnalyser.get_price_data(self.symbol)
-
+        
     def _download_data(self) -> pd.DataFrame:
         df = yf.download(self.symbol, period='20y', interval='1d', auto_adjust=False)
         if df.empty:
