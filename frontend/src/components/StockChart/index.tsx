@@ -976,60 +976,67 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
 
         <div ref={chartContainerRef} style={{ width: "100%", height: "400px" }} />
+
         {/* === Add Secondary Chart Button === */}
+        {/* === Comparison Chart Toggle (Add / Remove) === */}
         <div style={{ position: "relative", width: "100%", minHeight: "60px" }}>
           <div style={{ position: "absolute", bottom: "0", right: "0" }}>
-            <button
-              className="btn btn-sm btn-outline-primary"
-              onClick={() => setShowDropdown((prev) => !prev)}
-            >
-              ➕ Add Comparison Chart
-            </button>
+            {secondarySymbol === null ? (
+              <>
+                <button
+                  className="btn btn-sm btn-outline-primary"
+                  onClick={() => setShowDropdown((prev) => !prev)}
+                >
+                  ➕ Add Comparison Chart
+                </button>
 
-            {showDropdown && (
-              <div className="dropdown-menu show p-2 mt-2" style={{ minWidth: "200px" }}>
-                <div className="mb-2 fw-bold">Popular</div>
-                {["GOLD", "SILVER", "USOIL", "BTC"].map((s) => (
-                  <div
-                    key={s}
-                    onClick={() => {
-                      setSecondarySymbol(s);
-                      setShowDropdown(false);
-                    }}
-                    className="dropdown-item cursor-pointer"
-                    style={{ cursor: "pointer" }}
-                  >
-                    {s}
+                {showDropdown && (
+                  <div className="dropdown-menu show p-2 mt-2" style={{ minWidth: "200px" }}>
+                    <div className="mb-2 fw-bold">Popular</div>
+                    {["GOLD", "SILVER", "USOIL", "BTC"].map((s) => (
+                      <div
+                        key={s}
+                        onClick={() => {
+                          setSecondarySymbol(s);
+                          setShowDropdown(false);
+                        }}
+                        className="dropdown-item cursor-pointer"
+                      >
+                        {s}
+                      </div>
+                    ))}
+                    <hr />
+                    <input
+                      className="form-control"
+                      placeholder="Search ticker..."
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          const val = (e.target as HTMLInputElement).value.toUpperCase().trim();
+                          if (val) {
+                            setSecondarySymbol(val);
+                            setShowDropdown(false);
+                          }
+                        }
+                      }}
+                    />
                   </div>
-                ))}
-                <hr />
-                <input
-                  className="form-control"
-                  placeholder="Search ticker..."
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      const val = (e.target as HTMLInputElement).value.toUpperCase().trim();
-                      if (val) {
-                        setSecondarySymbol(val);
-                        setShowDropdown(false);
-                      }
-                    }
-                  }}
-                />
-              </div>
-            )}
-          </div>
-        </div>
-        {secondarySymbol && (
-          <div className="mt-4">
-            <div className="d-flex justify-content-between align-items-center mb-1">
-              <div className="fw-bold text-muted">📉 {secondarySymbol} Price Chart</div>
+                )}
+              </>
+            ) : (
               <button
                 className="btn btn-sm btn-outline-danger"
                 onClick={() => setSecondarySymbol(null)}
               >
-                ❌ Remove
+                ❌ Remove Comparison Chart
               </button>
+            )}
+          </div>
+        </div>
+
+        {secondarySymbol && (
+          <div className="mt-4">
+            <div className="d-flex justify-content-between align-items-center mb-1">
+              <div className="fw-bold text-muted">📉 {secondarySymbol} Price Chart</div>
             </div>
             <SecondaryChart
               symbol={secondarySymbol}
