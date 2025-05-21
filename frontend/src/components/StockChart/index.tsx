@@ -168,9 +168,9 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         }
       
         return closest;
-    }
+  }
 
-    function syncCrosshair(
+  function syncCrosshair(
       sourceChart: IChartApi,
       sourceSeries: ISeriesApi<"Line"> | ISeriesApi<"Candlestick">,
       time: UTCTimestamp
@@ -190,7 +190,32 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           chart.setCrosshairPosition(0, snapped, series);
         }
       }
-    }
+  }
+
+  function drawInitialMeanRevLimits(lower: number, upper: number) {
+    const chart = meanRevChartInstance.current;
+    if (!chart) return;
+
+    const baseTime = Math.floor(Date.now() / 1000) as UTCTimestamp;
+    const earliestTime = (baseTime - 5 * 365 * 86400) as UTCTimestamp;
+    const latestTime = (baseTime + 5 * 365 * 86400) as UTCTimestamp;
+
+    [upper, lower].forEach((val, idx) => {
+      const series = chart.addSeries(LineSeries, {
+        color: idx === 0 ? "#e91e63" : "#009688",
+        lineWidth: 1,
+      });
+      series.setData([
+        { time: earliestTime, value: val },
+        { time: latestTime, value: val },
+      ]);
+      meanRevLimitSeries.current.push(series);
+    });
+
+    setMeanRevLimitLines([upper, lower]);
+  }
+
+
   useEffect(() => {
     // 🧹 Reset drawing state to prevent bugs on ticker switch
     drawingModeRef.current = null;
@@ -201,6 +226,25 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
     // 🧹 Reset mean reversion bounds
     resetMeanRevLimits();
+
+    // --- Preload mean reversion band lines from backend ---
+    const fetchInitialTargets = async () => {
+      try {
+        const res = await fetch(`http://localhost:8000/price_targets/${stockSymbol}`);
+        const json = await res.json();
+        const targets = json.price_targets;
+
+        if (targets.deviation_band_pct_lower && targets.deviation_band_pct_upper) {
+          const lower = targets.deviation_band_pct_lower;
+          const upper = targets.deviation_band_pct_upper;
+          drawInitialMeanRevLimits(lower, upper);
+        }
+      } catch (err) {
+        console.error("❌ Failed to fetch price targets", err);
+      }
+    };
+    fetchInitialTargets();
+
 
     if (!stockSymbol || !chartContainerRef.current || !meanRevChartRef.current || !rsiChartRef.current || !volChartRef.current) return;
 
