@@ -702,6 +702,6 @@ class StockAnalyser:
         """
         Combines mean reversion targets and Fibonacci extension targets.
         """
-        return get_price_targets(self.df)
+        return get_price_targets(self.df, self.symbol)
 
 

@@ -18,32 +18,28 @@ def safe_value(series: pd.Series, idx: int):
 
 # utils.py
 
-def detect_zigzag_pivots(prices: pd.Series, threshold: float = 0.07, window: int = 5):
+def detect_zigzag_pivots(df: pd.DataFrame, threshold: float = 0.07, window: int = 5):
     """
-    Detects zigzag pivots using a rolling window method.
-    
-    Parameters:
-        prices (pd.Series): A Series of prices.
-        threshold (float): Minimum percentage change from last confirmed pivot.
-        window (int): Lookaround window to determine local maxima/minima.
-
-    Returns:
-        List of tuples (index, price) representing pivot points.
+    Detects zigzag pivots using raw High for peaks and Low for troughs.
+    Closest to TradingView's wick-to-wick swing logic.
     """
     pivots = []
     last_pivot_idx = None
     last_pivot_price = None
 
-    for i in range(window, len(prices) - window):
-        local_range = prices.iloc[(i - window):(i + window + 1)]
-        current_price = prices.iloc[i]
+    for i in range(window, len(df) - window):
+        high_range = df['High'].iloc[i - window:i + window + 1]
+        low_range = df['Low'].iloc[i - window:i + window + 1]
 
-        is_local_max = current_price == local_range.max()
-        is_local_min = current_price == local_range.min()
+        current_high = df['High'].iloc[i]
+        current_low = df['Low'].iloc[i]
+
+        is_local_max = current_high == high_range.max()
+        is_local_min = current_low == low_range.min()
 
         if is_local_max or is_local_min:
+            current_price = current_high if is_local_max else current_low
             if last_pivot_price is None:
-                # First pivot
                 pivots.append((i, current_price))
                 last_pivot_price = current_price
                 last_pivot_idx = i
@@ -55,6 +51,7 @@ def detect_zigzag_pivots(prices: pd.Series, threshold: float = 0.07, window: int
                     last_pivot_idx = i
 
     return pivots
+
 
 def compute_wilder_rsi(close: pd.Series, period: int) -> pd.Series:
     delta = close.diff()
