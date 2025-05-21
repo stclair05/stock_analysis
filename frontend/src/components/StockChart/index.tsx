@@ -13,7 +13,6 @@ import {
 } from "lightweight-charts";
 import { useEffect, useRef, useState } from "react";
 import { Ruler, Minus, RotateCcw, ArrowUpDown, PlusCircle, X } from "lucide-react";
-import { getTradingViewUrl } from "../../utils";
 
 import {
   StockChartProps,
@@ -80,7 +79,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
   const [show50dmaTarget, setShow50dmaTarget] = useState(false);
   const [showFibTarget, setShowFibTarget] = useState(false);
   const [priceTargets, setPriceTargets] = useState<{
-    reversion_upper_target?: number;
+    reversion_target?: number;
     deviation_pct?: number;
     fib_1_618?: number;
     fib_direction?: "up" | "down";
@@ -249,7 +248,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         }
         // Store price target info for floating buttons
         setPriceTargets({
-          reversion_upper_target: targets.reversion_upper_target,
+          reversion_target: targets.reversion_projected_target_price,
           deviation_pct: targets.typical_deviation_band_pct,
           fib_1_618: targets["fib_1.618_up"] || targets["fib_1.618_down"],
           fib_direction: targets["fib_1.618_up"] ? "up" : "down",
@@ -287,7 +286,22 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       timeScale: {
         timeVisible: true,
         secondsVisible: false,
+        rightOffset: 2,
+        fixLeftEdge: true,
+        fixRightEdge: true,
       },
+      handleScroll: {
+      pressedMouseMove: true,     // ADDED for drag to scroll anywhere
+      mouseWheel: true,
+      horzTouchDrag: true,
+      vertTouchDrag: false,
+    },
+    handleScale: {
+      axisPressedMouseMove: true,
+      axisDoubleClickReset: true,
+      mouseWheel: true,
+      pinch: true,
+    },
     });
 
     if (!meanRevChartRef.current) return;
@@ -484,11 +498,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
     candleSeriesRef.current = candleSeries;
 
-   
-
-    
-    
-    
+    chart.timeScale().fitContent();
 
     chart.subscribeCrosshairMove((param) => {
       if (!param.time || !param.point) return;
@@ -1003,11 +1013,11 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           </div>
 
           {/* === Middle: Price Target Buttons === */}
-          {(priceTargets.reversion_upper_target || priceTargets.fib_1_618) && (
+          {(priceTargets.reversion_target || priceTargets.fib_1_618) && (
             <div className="d-flex flex-wrap gap-3 mb-3 align-items-center">
               <div className="fw-bold text-muted"> Price Targets:</div>
 
-              {priceTargets.reversion_upper_target && (
+              {priceTargets.reversion_target && (
                 <div className="position-relative">
                   <button
                     className="btn btn-sm btn-outline-dark"
@@ -1017,7 +1027,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
                   </button>
                   {show50dmaTarget && (
                     <div className="position-absolute bg-white border shadow-sm p-2 rounded small mt-1" style={{ zIndex: 10 }}>
-                      <div><strong>${priceTargets.reversion_upper_target}</strong></div>
+                      <div><strong>${priceTargets.reversion_target}</strong></div>
                       <div className="text-muted">({priceTargets.deviation_pct}% above 50DMA)</div>
                     </div>
                   )}
