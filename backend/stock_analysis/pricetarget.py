@@ -2,7 +2,7 @@ from .utils import safe_value, compute_wilder_rsi, detect_zigzag_pivots
 import pandas as pd
 
 
-def calculate_mean_reversion_50dma_target(df: pd.DataFrame, lookback: int = 365) -> dict:
+def calculate_mean_reversion_50dma_target(df: pd.DataFrame, lookback: int = 252) -> dict:
     """
     Calculates the historical mean reversion band for 50DMA and returns a projected
     target price based on symmetrical reversion.
@@ -34,6 +34,8 @@ def calculate_mean_reversion_50dma_target(df: pd.DataFrame, lookback: int = 365)
 
     return {
         "typical_deviation_band_pct": typical_dev,
+        "deviation_band_pct_lower": round(recent_dev.quantile(0.1), 2),
+        "deviation_band_pct_upper": round(recent_dev.quantile(0.9), 2),
         "reversion_lower_target": upper,
         "reversion_upper_target": lower,
         "current_price": current_price
