@@ -1005,7 +1005,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           {/* === Middle: Price Target Buttons === */}
           {(priceTargets.reversion_upper_target || priceTargets.fib_1_618) && (
             <div className="d-flex flex-wrap gap-3 mb-3 align-items-center">
-              <div className="fw-bold text-muted">📌 Price Targets:</div>
+              <div className="fw-bold text-muted"> Price Targets:</div>
 
               {priceTargets.reversion_upper_target && (
                 <div className="position-relative">
