@@ -239,19 +239,20 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       try {
         const res = await fetch(`http://localhost:8000/price_targets/${stockSymbol}`);
         const json = await res.json();
-        const targets = json.price_targets;
+        const mean_rev_targets = json.price_targets.mean_reversion;
+        const fib_targets = json.price_targets.fibonacci;
 
-        if (targets.deviation_band_pct_lower && targets.deviation_band_pct_upper) {
-          const lower = targets.deviation_band_pct_lower;
-          const upper = targets.deviation_band_pct_upper;
+        if (mean_rev_targets.deviation_band_pct_lower && mean_rev_targets.deviation_band_pct_upper) {
+          const lower = mean_rev_targets.deviation_band_pct_lower;
+          const upper = mean_rev_targets.deviation_band_pct_upper;
           drawInitialMeanRevLimits(lower, upper);
         }
         // Store price target info for floating buttons
         setPriceTargets({
-          reversion_target: targets.reversion_projected_target_price,
-          deviation_pct: targets.typical_deviation_band_pct,
-          fib_1_618: targets["fib_1.618_up"] || targets["fib_1.618_down"],
-          fib_direction: targets["fib_1.618_up"] ? "up" : "down",
+          reversion_target: mean_rev_targets.reversion_projected_target_price,
+          deviation_pct: mean_rev_targets.deviation_band_pct_upper,
+          fib_1_618: fib_targets["fib_1.618_up"] || fib_targets["fib_1.618_down"],
+          fib_direction: fib_targets["fib_1.618_up"] ? "up" : "down",
         });
       } catch (err) {
         console.error("❌ Failed to fetch price targets", err);

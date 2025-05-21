@@ -205,7 +205,7 @@ def evaluate_wave_scenario(pivots, df):
 
 def calculate_elliott_wave(df):
     close = df["Close"]
-    pivots = detect_zigzag_pivots(close, threshold=0.07, window=5)
+    pivots = detect_zigzag_pivots(df, threshold=0.07, window=5)
 
     if len(pivots) < 5:
         return {"error": "Not enough pivots detected for Elliott Wave analysis."}
