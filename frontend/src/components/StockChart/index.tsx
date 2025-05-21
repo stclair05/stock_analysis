@@ -13,7 +13,6 @@ import {
 } from "lightweight-charts";
 import { useEffect, useRef, useState } from "react";
 import { Ruler, Minus, RotateCcw, ArrowUpDown, PlusCircle, X } from "lucide-react";
-import { getTradingViewUrl } from "../../utils";
 
 import {
   StockChartProps,
@@ -76,7 +75,15 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
   const secondaryChartRef = useRef<IChartApi | null>(null);
   const secondarySeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
 
-
+  // Price targets displayed above the graph
+  const [show50dmaTarget, setShow50dmaTarget] = useState(false);
+  const [showFibTarget, setShowFibTarget] = useState(false);
+  const [priceTargets, setPriceTargets] = useState<{
+    reversion_target?: number;
+    deviation_pct?: number;
+    fib_1_618?: number;
+    fib_direction?: "up" | "down";
+  }>({});
 
   const [overlayData, setOverlayData] = useState<{
     three_year_ma?: { time: number; value: number }[];
@@ -239,6 +246,13 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           const upper = targets.deviation_band_pct_upper;
           drawInitialMeanRevLimits(lower, upper);
         }
+        // Store price target info for floating buttons
+        setPriceTargets({
+          reversion_target: targets.reversion_projected_target_price,
+          deviation_pct: targets.typical_deviation_band_pct,
+          fib_1_618: targets["fib_1.618_up"] || targets["fib_1.618_down"],
+          fib_direction: targets["fib_1.618_up"] ? "up" : "down",
+        });
       } catch (err) {
         console.error("❌ Failed to fetch price targets", err);
       }
@@ -272,7 +286,22 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       timeScale: {
         timeVisible: true,
         secondsVisible: false,
+        rightOffset: 2,
+        fixLeftEdge: true,
+        fixRightEdge: true,
       },
+      handleScroll: {
+      pressedMouseMove: true,     // ADDED for drag to scroll anywhere
+      mouseWheel: true,
+      horzTouchDrag: true,
+      vertTouchDrag: false,
+    },
+    handleScale: {
+      axisPressedMouseMove: true,
+      axisDoubleClickReset: true,
+      mouseWheel: true,
+      pinch: true,
+    },
     });
 
     if (!meanRevChartRef.current) return;
@@ -469,11 +498,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
     candleSeriesRef.current = candleSeries;
 
-   
-
-    
-    
-    
+    chart.timeScale().fitContent();
 
     chart.subscribeCrosshairMove((param) => {
       if (!param.time || !param.point) return;
@@ -949,19 +974,6 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
   return (
     <div className="position-relative bg-white p-3 shadow-sm rounded border">
 
-      {/* === Main Price Chart === */}
-      {stockSymbol && (
-        <a
-          href={getTradingViewUrl(stockSymbol)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="btn btn-outline-secondary btn-sm position-absolute"
-          style={{ top: "1rem", right: "1rem" }}
-        >
-          View in TradingView ↗
-        </a>
-      )}
-
       <h5 className="fw-bold mb-3 text-dark">📈 {timeframe.toUpperCase()} Candlestick Chart</h5>
 
         <div className="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
@@ -1000,6 +1012,49 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
             </button>
           </div>
 
+          {/* === Middle: Price Target Buttons === */}
+          {(priceTargets.reversion_target || priceTargets.fib_1_618) && (
+            <div className="d-flex flex-wrap gap-3 mb-3 align-items-center">
+              <div className="fw-bold text-muted"> Price Targets:</div>
+
+              {priceTargets.reversion_target && (
+                <div className="position-relative">
+                  <button
+                    className="btn btn-sm btn-outline-dark"
+                    onClick={() => setShow50dmaTarget((v) => !v)}
+                  >
+                    50DMA Target
+                  </button>
+                  {show50dmaTarget && (
+                    <div className="position-absolute bg-white border shadow-sm p-2 rounded small mt-1" style={{ zIndex: 10 }}>
+                      <div><strong>${priceTargets.reversion_target}</strong></div>
+                      <div className="text-muted">({priceTargets.deviation_pct}% above 50DMA)</div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {priceTargets.fib_1_618 && (
+                <div className="position-relative">
+                  <button
+                    className="btn btn-sm btn-outline-secondary"
+                    onClick={() => setShowFibTarget((v) => !v)}
+                  >
+                    Fib 1.618x
+                  </button>
+                  {showFibTarget && (
+                    <div className="position-absolute bg-white border shadow-sm p-2 rounded small mt-1" style={{ zIndex: 10 }}>
+                      <div><strong>${priceTargets.fib_1_618}</strong></div>
+                      <div className="text-muted">
+                        ({priceTargets.fib_direction === "up" ? "↑" : "↓"} 1.618 extension)
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Right side: timeframe toggle */}
           <div className="btn-group">
             {["daily", "weekly", "monthly"].map((tf) => (
@@ -1019,8 +1074,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           <label><input type="checkbox" checked={showBollingerBand} onChange={() => setShowBollingerBand(v => !v)} /> Bollinger Band</label>
         </div>
 
-
-
+        {/* === Main Chart === */}
         <div ref={chartContainerRef} style={{ width: "100%", height: "400px" }} />
 
         {/* === Add Secondary Chart Button === */}

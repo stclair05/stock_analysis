@@ -4,12 +4,13 @@ import pandas as pd
 
 def calculate_mean_reversion_50dma_target(df: pd.DataFrame, lookback: int = 252) -> dict:
     """
-    Calculates the historical mean reversion band for 50DMA and returns a projected
-    target price based on symmetrical reversion.
+    Calculates a mean reversion target price based on deviation from the 50DMA.
 
-    - Computes historical % deviation from 50DMA over a lookback period (of 1 year default, we can change that)
-    - Finds 90th percentile of absolute deviation as typical band
-    - Applies it to current price to compute upper/lower reversion targets
+    - Computes historical % deviation from 50DMA over a lookback period.
+    - Uses the 90th percentile of absolute deviation as the typical deviation band.
+    - Applies this to the latest 50DMA to compute a projected upper bound price.
+
+    Returns a full diagnostic output, including percentiles and current price.
     """
     if len(df) < 60:
         return {"mean_reversion_50dma_target": "in progress"}
@@ -22,24 +23,28 @@ def calculate_mean_reversion_50dma_target(df: pd.DataFrame, lookback: int = 252)
     if len(recent_dev) < 30:
         return {"mean_reversion_50dma_target": "in progress"}
 
-    # Find typical reversion band from historical absolute deviations
+    # Calculate deviation metrics
     typical_dev = round(recent_dev.abs().quantile(0.9), 2)
+    deviation_band_pct_lower = round(recent_dev.quantile(0.1), 2)
+    deviation_band_pct_upper = round(recent_dev.quantile(0.9), 2)
 
-    current_price = safe_value(price, -1)
-    if current_price == "in progress":
+    current_price = price.iloc[-1]
+    latest_ma_50 = ma_50.iloc[-1]
+    if pd.isna(current_price) or pd.isna(latest_ma_50):
         return {"mean_reversion_50dma_target": "in progress"}
 
-    upper = round(current_price * (1 - typical_dev / 100), 2)
-    lower = round(current_price * (1 + typical_dev / 100), 2)
+    # Project target price based on 90th percentile deviation band applied to 50DMA
+    projected_target_price = round(latest_ma_50 * (1 + typical_dev / 100), 2)
 
     return {
         "typical_deviation_band_pct": typical_dev,
-        "deviation_band_pct_lower": round(recent_dev.quantile(0.1), 2),
-        "deviation_band_pct_upper": round(recent_dev.quantile(0.9), 2),
-        "reversion_lower_target": upper,
-        "reversion_upper_target": lower,
-        "current_price": current_price
+        "deviation_band_pct_lower": deviation_band_pct_lower,
+        "deviation_band_pct_upper": deviation_band_pct_upper,
+        "reversion_projected_target_price": projected_target_price,
+        "current_price": round(current_price, 2),
+        "latest_50dma": round(latest_ma_50, 2)
     }
+
 
 
 def calculate_fibonacci_volatility_target(df: pd.DataFrame, fib_ratios: list[float] = [1.618, 2.618]) -> dict:
