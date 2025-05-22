@@ -904,7 +904,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     // --- MA14 Overlay ---
     if (overlayData.rsi_ma_14) {
       const ma14Series = chart.addSeries(LineSeries, {
-        color: "#FFD700", // navy blue
+        color: "#009688",  // teal
         lineWidth: 1,
         priceLineVisible: false,
         lastValueVisible: false,
@@ -1204,41 +1204,41 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
             
 
-      {/* === RSI Chart === */}
-      <div className="mt-4">
-        <div className="fw-bold text-muted mb-1">📉 RSI Indicator</div>
-        <div ref={rsiChartRef} style={{ width: "100%", height: "150px" }} />
-        {/* 🏷️ RSI Chart Legend */}
-          <div className="d-flex flex-wrap mt-1">
-            {[
-              { color: "#7E57C2", label: "RSI (14-day)" },
-              { color: "#FFD700", label: "14-Day Moving Average (Price)" },
-            ].map(({ color, label }) => (
-              <div key={label} className="me-3 d-flex align-items-center small">
-                <span
-                  style={{
-                    display: "inline-block",
-                    width: "12px",
-                    height: "12px",
-                    backgroundColor: color,
-                    marginRight: "6px",
-                    borderRadius: "2px",
-                  }}
-                />
-                <span>{label}</span>
-              </div>
-            ))}
-          </div>
-      </div>
+        {/* === RSI Chart === */}
+        <div className="mt-4">
+          <div className="fw-bold text-muted mb-1">📉 RSI Indicator</div>
+          <div ref={rsiChartRef} style={{ width: "100%", height: "150px" }} />
+          {/* 🏷️ RSI Chart Legend */}
+            <div className="d-flex flex-wrap mt-1">
+              {[
+                { color: "#7E57C2", label: "RSI (14-day)" },
+                { color: "#009688", label: "14-Day Moving Average (Price)" },
+              ].map(({ color, label }) => (
+                <div key={label} className="me-3 d-flex align-items-center small">
+                  <span
+                    style={{
+                      display: "inline-block",
+                      width: "12px",
+                      height: "12px",
+                      backgroundColor: color,
+                      marginRight: "6px",
+                      borderRadius: "2px",
+                    }}
+                  />
+                  <span>{label}</span>
+                </div>
+              ))}
+            </div>
+        </div>
 
-      {/* === Volatility Chart === */}
-      <div className="mt-4">
-        <div className="fw-bold text-muted mb-1">📈 Volatility (BBWP)</div>
-        <div ref={volChartRef} style={{ width: "100%", height: "150px" }} />
-      </div>
+        {/* === Volatility Chart === */}
+        <div className="mt-4">
+          <div className="fw-bold text-muted mb-1">📈 Volatility (BBWP)</div>
+          <div ref={volChartRef} style={{ width: "100%", height: "150px" }} />
+        </div>
 
-      {/* === Overlay Grid === */}
-      {overlayData && <OverlayGrid overlayData={overlayData} />}
+        {/* === Overlay Grid === */}
+        {overlayData && <OverlayGrid overlayData={overlayData} />}
 
       
 
