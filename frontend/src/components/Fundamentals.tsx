@@ -109,7 +109,7 @@ const Fundamentals = ({ stockSymbol }: Props) => {
     );
   };
 
-  if (error) return <div className="alert alert-danger">{error}</div>;
+  if (error) return <div className="no-fundamentals">No fundamental data available</div>;
   if (loading) return <div className="placeholder">Loading fundamentals...</div>;
   if (!data) return <div className="placeholder">Loading fundamentals...</div>;
 

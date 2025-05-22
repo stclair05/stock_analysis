@@ -90,6 +90,17 @@ h1, h2 {
   flex-direction: column;
 }
 
+.no-fundamentals {
+  min-height: 120px;          /* Or adjust for your taste */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  color: #64748b;             /* Soft secondary gray */
+  font-weight: 500;
+  letter-spacing: 0.2px;
+}
+
 
 
 
