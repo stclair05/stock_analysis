@@ -10,7 +10,7 @@ function HomePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isValidSymbol = (symbol: string) => /^[A-Za-z0-9.]{1,10}$/.test(symbol);
+  const isValidSymbol = (symbol: string) => /^[A-Za-z0-9.=]{1,10}$/.test(symbol);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value.toUpperCase());
