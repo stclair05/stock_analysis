@@ -26,7 +26,7 @@ function PortfolioPage() {
 
   return (
     <div className="container mt-4">
-      <h1 className="fw-bold text-dark mb-4">Main Dashboard</h1>
+      <h1 className="fw-bold text-dark mb-4">Portfolio</h1>
 
       {/* Tab bar */}
       <div className="position-relative border-bottom mb-4 custom-tabs">
