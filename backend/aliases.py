@@ -34,4 +34,5 @@ SYMBOL_ALIASES = {
     "HANGSENG": "^HSI",
     "HSI": "^HSI",
     "STI": "^STI",  # Singapore Index
+    "TYX": "^TYX",  # US Treasury Yield 30 years
 }
