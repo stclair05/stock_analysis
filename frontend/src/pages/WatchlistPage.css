@@ -37,6 +37,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: #111 !important;
 }
 
 .table tbody tr {
@@ -120,4 +121,16 @@
     padding-left: 3.5rem;
     padding-right: 3.5rem;
   }
+}
+
+.btn-outline-primary {
+  border-radius: 0.6rem;
+  border-width: 2px;
+  font-weight: 500;
+}
+.dropdown-menu.show {
+  border-radius: 1rem;
+  border: 1.5px solid #f0f3f8;
+  box-shadow: 0 6px 32px 0 rgba(60, 72, 88, 0.09);
+  min-width: 240px;
 }

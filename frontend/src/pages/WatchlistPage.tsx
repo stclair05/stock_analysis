@@ -1,6 +1,6 @@
 import './WatchlistPage.css';
 import { useState, useEffect, useRef } from "react";
-import { X, Plus, Trash2 } from "lucide-react";
+import { X, Plus, Trash2, SlidersHorizontal } from "lucide-react";
 
 interface WatchlistRow {
   symbol: string;
@@ -14,6 +14,129 @@ function renderCellValue(value: any) {
     return JSON.stringify(value);
   }
   return String(value);
+}
+
+function getCellBgColor(
+  value: any,
+  colKey?: string,
+  rowData?: Record<string, any>
+) {
+  // Handle metrics that are numbers (e.g. 20DMA, 50DMA, 200DMA)
+  const numericColumns = [
+    "twenty_dma",
+    "fifty_dma",
+    "two_hundred_dma",
+    "three_year_ma"
+    // add any others that are moving averages
+  ];
+
+  // If this is a numeric metric and has a current price for reference
+  if (
+    colKey &&
+    numericColumns.includes(colKey) &&
+    rowData &&
+    rowData["current_price"] !== undefined
+  ) {
+    // If value is an object, use .current
+    let compareVal = value;
+    if (value && typeof value === "object" && value.current !== undefined) {
+      compareVal = value.current;
+    }
+    const currentPrice = rowData["current_price"];
+    if (typeof compareVal === "number" && typeof currentPrice === "number") {
+      if (compareVal < currentPrice) return "#e5fbe5";   // Green (below price, "bullish")
+      if (compareVal > currentPrice) return "#ffe5e5";   // Red (above price, "bearish")
+      return "#f5f7fa"; // Neutral if exactly equal
+    }
+  }
+
+  // Now continue with your standard string-based logic...
+  if (value && typeof value === "object" && value.current !== undefined) {
+    if (typeof value.current === "number") {
+      return "transparent"; // Numbers not colored unless in above logic
+    }
+    value = value.current;
+  }
+
+  if (!value) return "transparent";
+  const v = String(value).toLowerCase();
+
+   // === Positional / Relative Terms ===
+  if (v.includes("below")) return "#ffe9e6";    // Light orange
+  if (v.includes("above")) return "#e6f4ff";    // Light blue
+  if (v.includes("inside")) return "#edeef2";   // Neutral gray
+  if (v.includes("between")) return "#fdf6e3";  // Soft yellow-beige
+
+  // === Sentiment Signals ===
+  if (v.includes("buy")) return "#e5fbe5";      // Soft green
+  if (v.includes("sell")) return "#ffe5e5";     // Soft red
+
+  // === Market Strength / Trend Labels ===
+  if (v.includes("strong bullish")) return "#c3f7e0"; // Strong green
+  if (v.includes("bullish")) return "#e5fbe5";        // Soft green
+  if (v.includes("strong bearish")) return "#fbcaca"; // Strong red
+  if (v.includes("bearish")) return "#ffe5e5";        // Soft red
+  if (v.includes("weak")) return "#f5f7fa";           // Neutral light gray
+
+  // === Custom U/D Levels ===
+  if (v.includes("u1")) return "#e1f4ff";        // Light blue
+  if (v.includes("u2")) return "#b3e5fc";        // Medium blue
+  if (v.includes("u3")) return "#a7ffeb";        // Aqua
+  if (v.includes("d1")) return "#ffe5e5";        // Soft red
+  if (v.includes("d2")) return "#ffc1c1";        // Deeper red
+  if (v.includes("d3")) return "#fbcaca";        // Strong red
+
+  // === MA Position Logic ===
+  if (v.includes("above rising ma")) return "#b9fbc0";      // Strong green
+  if (v.includes("above falling ma")) return "#d9f99d";     // Soft green-yellow
+  if (v.includes("below rising ma")) return "#edeef2";      // Neutral gray
+  if (v.includes("below falling ma")) return "#ffe9e6";     // Soft red-orange
+
+  // === Mean Reversion / Conditions ===
+  if (v.includes("oversold")) return "#e5fbe5";        // Soft green
+  if (v.includes("overbought")) return "#ffe5e5";      // Soft red
+  if (v.includes("extended")) return "#fffbe7";        // Light yellow
+  if (v.includes("normal")) return "#f5f7fa";          // Light neutral
+
+  // === 50DMA & 150DMA Composite Signal ===
+  if (v.includes("above both")) return "#c3f7e0";      // Strong uptrend - green
+  if (v.includes("above 150dma only")) return "#e5fbe5";   // Mild uptrend - green
+  if (v.includes("below both")) return "#ffe5e5";      // Strong downtrend - red
+  if (v.includes("below 150dma only")) return "#ffc1c1";   // Mild downtrend - pink
+  if (v.includes("between averages")) return "#fffbe7";    // Choppy - yellow
+
+  // === ADX Classification ===
+  if (v === "green") return "#e5fbe5";
+  if (v === "light green") return "#d9f99d";
+  if (v === "red") return "#ffe5e5";
+  if (v === "light red") return "#fff1f0";
+  if (v === "orange") return "#fff3e0";
+  if (v === "in progress") return "#f5f7fa";
+
+  // === 40-Week MA Status ===
+  if (v.includes("++")) return "#b9fbc0";      // Best performance - green
+  if (v.includes("+-")) return "#d9f99d";      // Still positive - yellow
+  if (v.includes("-+")) return "#edeef2";      // Neutral/choppy
+  if (v.includes("--")) return "#ffe5e5";      // Worst performance - red
+
+  // === RSI Divergence ===
+  if (v.includes("bullish divergence")) return "#c3f7e0";   // Bullish - green
+  if (v.includes("bearish divergence")) return "#fbcaca";   // Bearish - red
+
+  // === Bollinger Band Width Percentile ===
+  if (v.includes("blue band")) return "#e6f4ff";       // Tight
+  if (v.includes("red band")) return "#ffe5e5";        // Volatile
+  if (v.includes("normal")) return "#f5f7fa";          // Neutral
+
+  // === Chaikin Money Flow ===
+  if (v.includes("positive")) return "#e5fbe5";
+  if (v.includes("negative")) return "#ffe5e5";
+
+  // === Special fallback cases ===
+  if (v === "neutral") return "#f5f7fa";        // Neutral/gray
+  if (v === "average") return "#f5f7fa";        // Average/gray
+
+  return "transparent";
 }
 
 
@@ -211,34 +334,40 @@ export default function WatchlistPage() {
               maxWidth: "100vw",          // Prevent overflow
             }}
           >
-            <div className="card-body p-0">
+            <div className="card-body px-4 py-3">
               {/* Column Selector */}
-              <div className="mb-3">
-                <div className="dropdown d-inline-block" ref={columnsDropdownRef} style={{ position: "relative" }}>
+              <div className="d-flex align-items-center mb-3" style={{ gap: "1.25rem" }}>
+                <div className="dropdown" ref={columnsDropdownRef} style={{ position: "relative" }}>
                   <button
-                    className="btn btn-outline-secondary dropdown-toggle"
+                    className="btn btn-outline-primary d-flex align-items-center gap-2 px-3 py-2 rounded-3 shadow-sm"
                     type="button"
                     onClick={() => setShowColumnsDropdown(v => !v)}
+                    style={{ fontWeight: 500 }}
                   >
+                    <SlidersHorizontal size={18} className="me-2" />
                     Select Columns
                   </button>
                   {showColumnsDropdown && (
                     <div
-                      className="dropdown-menu show p-2"
+                      className="dropdown-menu show p-2 mt-2 shadow rounded-3"
                       style={{
                         display: "block",
                         position: "absolute",
                         left: 0,
-                        top: "100%",
-                        minWidth: 220,
+                        top: "110%",
+                        minWidth: 240,
                         maxHeight: 320,
                         overflowY: "auto",
-                        zIndex: 20,
+                        zIndex: 30,
                       }}
                       onClick={e => e.stopPropagation()} // so checking a box doesn't close the dropdown
                     >
                       {ALL_METRICS.map(metric => (
-                        <label key={metric.key} className="dropdown-item d-flex align-items-center" style={{ userSelect: "none" }}>
+                        <label
+                          key={metric.key}
+                          className="dropdown-item d-flex align-items-center"
+                          style={{ userSelect: "none", fontSize: "1.01rem" }}
+                        >
                           <input
                             type="checkbox"
                             checked={selectedColumns.includes(metric.key)}
@@ -257,8 +386,9 @@ export default function WatchlistPage() {
                     </div>
                   )}
                 </div>
-
               </div>
+
+
               {/* ACTUAL TABLE */}
               <table
                 className="table align-middle mb-0"
@@ -308,7 +438,17 @@ export default function WatchlistPage() {
                       <tr key={row.symbol} className="watchlist-row">
                         <td className="fw-bold text-dark">{row.symbol}</td>
                         {selectedColumns.map(colKey => (
-                          <td key={colKey} className="text-secondary">
+                          <td
+                            key={colKey}
+                            style={{
+                              backgroundColor: getCellBgColor(
+                                analysisData[row.symbol]?.[colKey],
+                                colKey,
+                                analysisData[row.symbol]
+                              ),
+                              color: "#111"
+                            }}
+                          >
                             {analysisData[row.symbol]
                               ? renderCellValue(analysisData[row.symbol][colKey])
                               : <span className="text-muted">Loading…</span>
