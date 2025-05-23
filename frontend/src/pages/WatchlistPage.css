@@ -1,12 +1,88 @@
-/* Fade in X button on hover */
-.delete-btn-wrap {
-  opacity: 0; 
-  transition: opacity 0.18s;
+.container {
+  background: #f7fafd;
+  
 }
 
-.delete-btn-wrap:hover,
-.delete-btn-wrap:focus-within {
-  opacity: 1;
-  background: #fff4f4; /* pale red or your theme */
-  border-radius: 50%;
+.card {
+  border-radius: 1.25rem !important;
+  box-shadow: 0 2px 24px rgba(60, 72, 88, 0.07), 0 1.5px 3px rgba(31, 31, 31, 0.03);
+  margin-bottom: 32px;
+  overflow: hidden;
+}
+
+.table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table thead th {
+  background: #f4f7fb;
+  color: #334155;
+  font-weight: 700;
+  font-size: 1.06rem;
+  border-bottom: 2px solid #e6eaf0;
+  padding-top: 18px;
+  padding-bottom: 14px;
+}
+
+.table td,
+.table th {
+  vertical-align: middle !important;
+  border: none;
+  padding: 18px 18px;
+}
+
+.table tbody tr {
+  border-radius: 18px;
+  transition: background 0.14s;
+}
+
+.table tbody tr:hover {
+  background: #f6f8fa !important;
+}
+
+.watchlist-row td:first-child {
+  font-size: 1.11rem;
+  letter-spacing: 0.01em;
+}
+
+.table-responsive {
+  margin-bottom: 0;
+  border-radius: 0 0 1.2rem 1.2rem;
+}
+
+.btn.btn-primary {
+  background: linear-gradient(90deg, #1658c0 0%, #3976ea 100%);
+  border: none;
+  font-weight: 600;
+  padding: 10px 28px;
+  font-size: 1.04rem;
+  border-radius: 9999px;
+  box-shadow: 0 2px 12px 0 rgba(80,128,255,0.08);
+  transition: background 0.14s, box-shadow 0.16s;
+}
+
+.btn.btn-primary:hover {
+  background: linear-gradient(90deg, #11468a 0%, #2554a6 100%);
+  box-shadow: 0 6px 32px 0 rgba(60, 72, 88, 0.16);
+}
+
+.dropdown-menu.show {
+  border-radius: 1rem;
+  border: 1.5px solid #f0f3f8;
+  box-shadow: 0 6px 32px 0 rgba(60, 72, 88, 0.09);
+}
+
+.dropdown-item .form-check-input {
+  width: 1.08rem;
+  height: 1.08rem;
+  margin-right: 10px;
+}
+
+.mx-auto {
+  padding: 0 18px;
+}
+
+.card-body {
+  padding: 32px 0 0 0 !important;
 }

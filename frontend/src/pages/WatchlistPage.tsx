@@ -199,7 +199,7 @@ export default function WatchlistPage() {
           )}
         </div>
 
-        <div className="card shadow-sm border-0 rounded-0">
+        <div className="card shadow-sm border-0 rounded-0" style={{ overflowX: "auto" }}>
           <div className="card-body p-0">
             {/* Column Selector */}
             <div className="mb-3">
@@ -249,80 +249,78 @@ export default function WatchlistPage() {
 
             </div>
             {/* ACTUAL TABLE */}
-            <div className="table-responsive">
-              <table className="table align-middle mb-0">
-                <thead className="table-light">
+            <table className="table align-middle mb-0" style={{ minWidth: "100%", width: "auto" }}>
+              <thead className="table-light">
+                <tr>
+                  <th style={{ minWidth: 100 }}>Ticker</th>
+                  {selectedColumns.map(colKey => {
+                    const metric = ALL_METRICS.find(m => m.key === colKey);
+                    return (
+                      <th key={colKey} style={{ minWidth: 100 }}>
+                        {metric ? metric.label : colKey}
+                      </th>
+                    );
+                  })}
+                  <th style={{ width: 60 }} className="text-center">
+                    <Trash2 size={16} className="ms-1" />
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.length === 0 ? (
                   <tr>
-                    <th style={{ minWidth: 100 }}>Ticker</th>
-                    {selectedColumns.map(colKey => {
-                      const metric = ALL_METRICS.find(m => m.key === colKey);
-                      return (
-                        <th key={colKey} style={{ minWidth: 100 }}>
-                          {metric ? metric.label : colKey}
-                        </th>
-                      );
-                    })}
-                    <th style={{ width: 60 }} className="text-center">
-                      <Trash2 size={16} className="ms-1" />
-                    </th>
+                    <td colSpan={selectedColumns.length + 2} className="text-center py-5">
+                      <div className="mb-3">
+                        <svg width="60" height="60" fill="none" viewBox="0 0 60 60">
+                          <circle cx="30" cy="30" r="30" fill="#F4F7FB" />
+                          <rect x="15" y="24" width="30" height="13" rx="3" fill="#E1E7EF" />
+                          <rect x="22" y="30" width="8" height="4" rx="2" fill="#C3CBD9" />
+                          <rect x="35" y="30" width="8" height="4" rx="2" fill="#C3CBD9" />
+                        </svg>
+                      </div>
+                      <div className="fw-semibold text-muted mb-1" style={{ fontSize: "1.1rem" }}>
+                        No tickers yet
+                      </div>
+                      <div className="text-muted">
+                        Click <span className="text-primary fw-semibold">Add Ticker</span> to get started!
+                      </div>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {rows.length === 0 ? (
-                    <tr>
-                      <td colSpan={selectedColumns.length + 2} className="text-center py-5">
-                        <div className="mb-3">
-                          <svg width="60" height="60" fill="none" viewBox="0 0 60 60">
-                            <circle cx="30" cy="30" r="30" fill="#F4F7FB" />
-                            <rect x="15" y="24" width="30" height="13" rx="3" fill="#E1E7EF" />
-                            <rect x="22" y="30" width="8" height="4" rx="2" fill="#C3CBD9" />
-                            <rect x="35" y="30" width="8" height="4" rx="2" fill="#C3CBD9" />
-                          </svg>
-                        </div>
-                        <div className="fw-semibold text-muted mb-1" style={{ fontSize: "1.1rem" }}>
-                          No tickers yet
-                        </div>
-                        <div className="text-muted">
-                          Click <span className="text-primary fw-semibold">Add Ticker</span> to get started!
+                ) : (
+                  rows.map(row => (
+                    <tr key={row.symbol} className="watchlist-row">
+                      <td className="fw-bold text-dark">{row.symbol}</td>
+                      {selectedColumns.map(colKey => (
+                        <td key={colKey} className="text-secondary">
+                          {analysisData[row.symbol]
+                            ? renderCellValue(analysisData[row.symbol][colKey])
+                            : <span className="text-muted">Loading…</span>
+                          }
+                        </td>
+                      ))}
+                      <td className="text-center">
+                        <div className="delete-btn-wrap d-inline-block">
+                          <button
+                            className="btn btn-light btn-sm rounded-circle border-0 text-danger"
+                            style={{
+                              background: "#fff",
+                              boxShadow: "0 1px 4px 0 rgba(50,50,93,.04)",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center"
+                            }}
+                            title="Remove"
+                            onClick={() => deleteTicker(row.symbol)}
+                          >
+                            <X size={18} strokeWidth={2.3} />
+                          </button>
                         </div>
                       </td>
                     </tr>
-                  ) : (
-                    rows.map(row => (
-                      <tr key={row.symbol} className="watchlist-row">
-                        <td className="fw-bold text-dark">{row.symbol}</td>
-                        {selectedColumns.map(colKey => (
-                          <td key={colKey} className="text-secondary">
-                            {analysisData[row.symbol]
-                              ? renderCellValue(analysisData[row.symbol][colKey])
-                              : <span className="text-muted">Loading…</span>
-                            }
-                          </td>
-                        ))}
-                        <td className="text-center">
-                          <div className="delete-btn-wrap d-inline-block">
-                            <button
-                              className="btn btn-light btn-sm rounded-circle border-0 text-danger"
-                              style={{
-                                background: "#fff",
-                                boxShadow: "0 1px 4px 0 rgba(50,50,93,.04)",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center"
-                              }}
-                              title="Remove"
-                              onClick={() => deleteTicker(row.symbol)}
-                            >
-                              <X size={18} strokeWidth={2.3} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
 
