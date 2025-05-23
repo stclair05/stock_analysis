@@ -223,6 +223,15 @@ export default function WatchlistPage() {
     });
   }, [rows]);
 
+  // On Load up 
+  useEffect(() => {
+    // Only set if rows is empty to avoid overwriting user edits
+    if (watchlistTickers.length > 0 && rows.length === 0) {
+      setRows(watchlistTickers.map(symbol => ({ symbol })));
+    }
+  }, [watchlistTickers]);
+
+
   // Column's drop down
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -408,7 +417,12 @@ export default function WatchlistPage() {
                         </th>
                       );
                     })}
-                    <th style={{ width: 60 }} className="text-center">
+                    <th
+                      style={{ width: 60, cursor: "pointer" }}
+                      className="text-center"
+                      title="Clear all"
+                      onClick={() => setRows([])}
+                    >
                       <Trash2 size={16} className="ms-1" />
                     </th>
                   </tr>
