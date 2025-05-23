@@ -183,3 +183,49 @@ def get_price_targets(symbol: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+'''
+TEMP WATCHLIST DATABASE 
+'''
+WATCHLIST_FILE = "watchlist.json"
+
+def load_data():
+    try:
+        with open(WATCHLIST_FILE, "r") as f:
+            data = json.load(f)
+            # Always ensure both keys exist, for safety
+            if "watchlist" not in data:
+                data["watchlist"] = []
+            if "portfolio" not in data:
+                data["portfolio"] = []
+            return data
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {"watchlist": [], "portfolio": []}
+
+def save_data(data):
+    with open(WATCHLIST_FILE, "w") as f:
+        json.dump(data, f, indent=2)
+
+@app.get("/watchlist")
+def get_watchlist():
+    data = load_data()
+    return data["watchlist"]
+
+@app.post("/watchlist/{symbol}")
+def add_to_watchlist(symbol: str):
+    data = load_data()
+    symbol = symbol.upper()
+    if symbol in data["watchlist"]:
+        raise HTTPException(status_code=409, detail="Already in watchlist")
+    data["watchlist"].append(symbol)
+    save_data(data)
+    return {"watchlist": data["watchlist"]}
+
+@app.delete("/watchlist/{symbol}")
+def remove_from_watchlist(symbol: str):
+    data = load_data()
+    symbol = symbol.upper()
+    if symbol not in data["watchlist"]:
+        raise HTTPException(status_code=404, detail="Not in watchlist")
+    data["watchlist"].remove(symbol)
+    save_data(data)
+    return {"watchlist": data["watchlist"]}

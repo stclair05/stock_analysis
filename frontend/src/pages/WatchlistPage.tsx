@@ -1,0 +1,487 @@
+import './WatchlistPage.css';
+import { useState, useEffect, useRef } from "react";
+import { X, Plus, Trash2, SlidersHorizontal } from "lucide-react";
+
+interface WatchlistRow {
+  symbol: string;
+}
+
+function renderCellValue(value: any) {
+  if (value == null) return '—';
+  if (typeof value === "number" || typeof value === "string") return value;
+  if (typeof value === "object" && value !== null) {
+    if ("current" in value) return value.current;
+    return JSON.stringify(value);
+  }
+  return String(value);
+}
+
+function getCellBgColor(
+  value: any,
+  colKey?: string,
+  rowData?: Record<string, any>
+) {
+  // Handle metrics that are numbers (e.g. 20DMA, 50DMA, 200DMA)
+  const numericColumns = [
+    "twenty_dma",
+    "fifty_dma",
+    "two_hundred_dma",
+    "three_year_ma"
+    // add any others that are moving averages
+  ];
+
+  // If this is a numeric metric and has a current price for reference
+  if (
+    colKey &&
+    numericColumns.includes(colKey) &&
+    rowData &&
+    rowData["current_price"] !== undefined
+  ) {
+    // If value is an object, use .current
+    let compareVal = value;
+    if (value && typeof value === "object" && value.current !== undefined) {
+      compareVal = value.current;
+    }
+    const currentPrice = rowData["current_price"];
+    if (typeof compareVal === "number" && typeof currentPrice === "number") {
+      if (compareVal < currentPrice) return "#e5fbe5";   // Green (below price, "bullish")
+      if (compareVal > currentPrice) return "#ffe5e5";   // Red (above price, "bearish")
+      return "#f5f7fa"; // Neutral if exactly equal
+    }
+  }
+
+  // Now continue with your standard string-based logic...
+  if (value && typeof value === "object" && value.current !== undefined) {
+    if (typeof value.current === "number") {
+      return "transparent"; // Numbers not colored unless in above logic
+    }
+    value = value.current;
+  }
+
+  if (!value) return "transparent";
+  const v = String(value).toLowerCase();
+
+   // === Positional / Relative Terms ===
+  if (v.includes("below")) return "#ffe9e6";    // Light orange
+  if (v.includes("above")) return "#e6f4ff";    // Light blue
+  if (v.includes("inside")) return "#edeef2";   // Neutral gray
+  if (v.includes("between")) return "#fdf6e3";  // Soft yellow-beige
+
+  // === Sentiment Signals ===
+  if (v.includes("buy")) return "#e5fbe5";      // Soft green
+  if (v.includes("sell")) return "#ffe5e5";     // Soft red
+
+  // === Market Strength / Trend Labels ===
+  if (v.includes("strong bullish")) return "#c3f7e0"; // Strong green
+  if (v.includes("bullish")) return "#e5fbe5";        // Soft green
+  if (v.includes("strong bearish")) return "#fbcaca"; // Strong red
+  if (v.includes("bearish")) return "#ffe5e5";        // Soft red
+  if (v.includes("weak")) return "#f5f7fa";           // Neutral light gray
+
+  // === Custom U/D Levels ===
+  if (v.includes("u1")) return "#e1f4ff";        // Light blue
+  if (v.includes("u2")) return "#b3e5fc";        // Medium blue
+  if (v.includes("u3")) return "#a7ffeb";        // Aqua
+  if (v.includes("d1")) return "#ffe5e5";        // Soft red
+  if (v.includes("d2")) return "#ffc1c1";        // Deeper red
+  if (v.includes("d3")) return "#fbcaca";        // Strong red
+
+  // === MA Position Logic ===
+  if (v.includes("above rising ma")) return "#b9fbc0";      // Strong green
+  if (v.includes("above falling ma")) return "#d9f99d";     // Soft green-yellow
+  if (v.includes("below rising ma")) return "#edeef2";      // Neutral gray
+  if (v.includes("below falling ma")) return "#ffe9e6";     // Soft red-orange
+
+  // === Mean Reversion / Conditions ===
+  if (v.includes("oversold")) return "#e5fbe5";        // Soft green
+  if (v.includes("overbought")) return "#ffe5e5";      // Soft red
+  if (v.includes("extended")) return "#fffbe7";        // Light yellow
+  if (v.includes("normal")) return "#f5f7fa";          // Light neutral
+
+  // === 50DMA & 150DMA Composite Signal ===
+  if (v.includes("above both")) return "#c3f7e0";      // Strong uptrend - green
+  if (v.includes("above 150dma only")) return "#e5fbe5";   // Mild uptrend - green
+  if (v.includes("below both")) return "#ffe5e5";      // Strong downtrend - red
+  if (v.includes("below 150dma only")) return "#ffc1c1";   // Mild downtrend - pink
+  if (v.includes("between averages")) return "#fffbe7";    // Choppy - yellow
+
+  // === ADX Classification ===
+  if (v === "green") return "#e5fbe5";
+  if (v === "light green") return "#d9f99d";
+  if (v === "red") return "#ffe5e5";
+  if (v === "light red") return "#fff1f0";
+  if (v === "orange") return "#fff3e0";
+  if (v === "in progress") return "#f5f7fa";
+
+  // === 40-Week MA Status ===
+  if (v.includes("++")) return "#b9fbc0";      // Best performance - green
+  if (v.includes("+-")) return "#d9f99d";      // Still positive - yellow
+  if (v.includes("-+")) return "#edeef2";      // Neutral/choppy
+  if (v.includes("--")) return "#ffe5e5";      // Worst performance - red
+
+  // === RSI Divergence ===
+  if (v.includes("bullish divergence")) return "#c3f7e0";   // Bullish - green
+  if (v.includes("bearish divergence")) return "#fbcaca";   // Bearish - red
+
+  // === Bollinger Band Width Percentile ===
+  if (v.includes("blue band")) return "#e6f4ff";       // Tight
+  if (v.includes("red band")) return "#ffe5e5";        // Volatile
+  if (v.includes("normal")) return "#f5f7fa";          // Neutral
+
+  // === Chaikin Money Flow ===
+  if (v.includes("positive")) return "#e5fbe5";
+  if (v.includes("negative")) return "#ffe5e5";
+
+  // === Special fallback cases ===
+  if (v === "neutral") return "#f5f7fa";        // Neutral/gray
+  if (v === "average") return "#f5f7fa";        // Average/gray
+
+  return "transparent";
+}
+
+
+export default function WatchlistPage() {
+  const [watchlistTickers, setWatchlistTickers] = useState<string[]>([]);
+  const [rows, setRows] = useState<WatchlistRow[]>([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+
+  const [showColumnsDropdown, setShowColumnsDropdown] = useState(false);
+  const columnsDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Define the list of available columns (metric keys and user-friendly labels)
+  const ALL_METRICS = [
+    { key: 'current_price', label: 'Current Price' },
+    { key: 'three_year_ma', label: '3-Year MA' },
+    { key: 'two_hundred_dma', label: '200 DMA' },
+    { key: 'weekly_ichimoku', label: 'Weekly Ichimoku' },
+    { key: 'super_trend', label: 'Super Trend' },
+    { key: 'adx', label: 'ADX' },
+    { key: 'mace', label: 'MACE' },
+    { key: 'forty_week_status', label: '40-Week Status' },
+    { key: 'fifty_dma_and_150_dma', label: '50/150 DMA' },
+    { key: 'twenty_dma', label: '20 DMA' },
+    { key: 'fifty_dma', label: '50 DMA' },
+    { key: 'mean_rev_50dma', label: 'Mean Rev. 50DMA' },
+    { key: 'mean_rev_200dma', label: 'Mean Rev. 200DMA' },
+    { key: 'mean_rev_3yma', label: 'Mean Rev. 3YMA' },
+    { key: 'rsi_and_ma_daily', label: 'RSI & MA (Daily)' },
+    { key: 'rsi_divergence_daily', label: 'RSI Divergence (Daily)' },
+    { key: 'bollinger_band_width_percentile_daily', label: 'BBWP (Daily)' },
+    { key: 'rsi_ma_weekly', label: 'RSI & MA (Weekly)' },
+    { key: 'rsi_divergence_weekly', label: 'RSI Divergence (Weekly)' },
+    { key: 'rsi_ma_monthly', label: 'RSI & MA (Monthly)' },
+    { key: 'rsi_divergence_monthly', label: 'RSI Divergence (Monthly)' },
+    { key: 'chaikin_money_flow', label: 'Chaikin Money Flow' }
+  ];
+
+  const [selectedColumns, setSelectedColumns] = useState<string[]>(['current_price', 'twenty_dma', 'fifty_dma', 'two_hundred_dma', 'three_year_ma']);
+
+  type AnalysisData = { [metric: string]: any };
+  const [analysisData, setAnalysisData] = useState<{ [symbol: string]: AnalysisData }>({});
+
+
+
+  // Handle outside click to close dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowDropdown(false);
+      }
+    }
+    if (showDropdown) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () =>
+      document.removeEventListener("mousedown", handleClickOutside);
+  }, [showDropdown]);
+
+  // Get watchlist
+  useEffect(() => {
+    fetch("http://localhost:8000/watchlist")
+      .then((res) => res.json())
+      .then((data) => setWatchlistTickers(data))
+      .catch(() => setWatchlistTickers([]));
+  }, []);
+
+  // Fetch analysis data 
+  useEffect(() => {
+    rows.forEach(row => {
+      if (!analysisData[row.symbol]) {
+        fetch("http://localhost:8000/analyse", {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ symbol: row.symbol }),
+        })
+          .then(res => res.json())
+          .then(data => setAnalysisData(prev => ({ ...prev, [row.symbol]: data })))
+          .catch(() => setAnalysisData(prev => ({ ...prev, [row.symbol]: {} })));
+      }
+    });
+  }, [rows]);
+
+  // Column's drop down
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        columnsDropdownRef.current &&
+        !columnsDropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowColumnsDropdown(false);
+      }
+    }
+    if (showColumnsDropdown) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showColumnsDropdown]);
+
+
+  const addTicker = (symbol: string) => {
+    symbol = symbol.toUpperCase();
+    if (symbol && !rows.some((r) => r.symbol === symbol)) {
+      setRows([...rows, { symbol }]);
+    }
+  };
+
+  const deleteTicker = (symbol: string) => {
+    setRows(rows.filter((row) => row.symbol !== symbol));
+  };
+
+  return (
+    <div className="container-fluid py-5" style={{ minHeight: "100vh" }}>
+      <div className="watchlist-page-content px-4 px-md-5">
+        {/* Header row */}
+        <h1 className="fw-bold mb-4" style={{ fontSize: "2.4rem" }}>
+          Watchlist Comparison
+        </h1>
+        {/* Add Ticker Button + Dropdown */}
+        <div className="position-relative mb-4">
+          <button
+            className="btn add-ticker-btn d-flex align-items-center gap-2 px-4 py-2 shadow-sm"
+            onClick={() => setShowDropdown((v) => !v)}
+          >
+            <Plus size={18} /> Add Ticker
+          </button>
+          {showDropdown && (
+            <div
+              ref={dropdownRef}
+              className="dropdown-menu show p-3 mt-2 shadow rounded-3"
+              style={{
+                minWidth: 270,
+                left: 0,
+                top: "110%",
+                display: "block",
+              }}
+            >
+              <div className="mb-2 fw-bold text-dark">Your Watchlist</div>
+              <div className="mb-2" style={{ maxHeight: 140, overflowY: "auto" }}>
+                {watchlistTickers.length === 0 ? (
+                  <div className="text-muted small">No saved tickers</div>
+                ) : (
+                  watchlistTickers.map((s) => (
+                    <div
+                      key={s}
+                      onClick={() => {
+                        addTicker(s);
+                        setShowDropdown(false);
+                      }}
+                      className="px-2 py-1 rounded hover-bg text-dark"
+                      style={{
+                        cursor: "pointer",
+                        transition: "background 0.12s",
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.background = "#e9ecef")}
+                      onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                    >
+                      {s}
+                    </div>
+                  ))
+                )}
+              </div>
+              <hr />
+              <input
+                className="form-control"
+                placeholder="Enter any ticker..."
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    const val = (e.target as HTMLInputElement).value
+                      .toUpperCase()
+                      .trim();
+                    if (val) {
+                      addTicker(val);
+                      setShowDropdown(false);
+                      (e.target as HTMLInputElement).value = "";
+                    }
+                  }
+                }}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Table / Card */}
+        <div style={{ display: "flex", justifyContent: "center", width: "100%" }}>
+          <div
+            className="card shadow-sm border-0 rounded-0"
+            style={{
+              display: "inline-block",    // Hug the table width
+              width: "auto",
+              minWidth: 0,
+              maxWidth: "100vw",          // Prevent overflow
+            }}
+          >
+            <div className="card-body px-4 py-3">
+              {/* Column Selector */}
+              <div className="d-flex align-items-center mb-3" style={{ gap: "1.25rem" }}>
+                <div className="dropdown" ref={columnsDropdownRef} style={{ position: "relative" }}>
+                  <button
+                    className="btn btn-outline-primary d-flex align-items-center gap-2 px-3 py-2 rounded-3 shadow-sm"
+                    type="button"
+                    onClick={() => setShowColumnsDropdown(v => !v)}
+                    style={{ fontWeight: 500 }}
+                  >
+                    <SlidersHorizontal size={18} className="me-2" />
+                    Select Columns
+                  </button>
+                  {showColumnsDropdown && (
+                    <div
+                      className="dropdown-menu show p-2 mt-2 shadow rounded-3"
+                      style={{
+                        display: "block",
+                        position: "absolute",
+                        left: 0,
+                        top: "110%",
+                        minWidth: 240,
+                        maxHeight: 320,
+                        overflowY: "auto",
+                        zIndex: 30,
+                      }}
+                      onClick={e => e.stopPropagation()} // so checking a box doesn't close the dropdown
+                    >
+                      {ALL_METRICS.map(metric => (
+                        <label
+                          key={metric.key}
+                          className="dropdown-item d-flex align-items-center"
+                          style={{ userSelect: "none", fontSize: "1.01rem" }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedColumns.includes(metric.key)}
+                            onChange={() => {
+                              setSelectedColumns(selectedColumns =>
+                                selectedColumns.includes(metric.key)
+                                  ? selectedColumns.filter(col => col !== metric.key)
+                                  : [...selectedColumns, metric.key]
+                              );
+                            }}
+                            className="form-check-input me-2"
+                          />
+                          {metric.label}
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+
+              {/* ACTUAL TABLE */}
+              <table
+                className="table align-middle mb-0"
+                style={{
+                  width: "auto",           // Hug content
+                  minWidth: 0
+                }}
+              >
+                <thead className="table-light">
+                  <tr>
+                    <th style={{ minWidth: 100 }}>Ticker</th>
+                    {selectedColumns.map(colKey => {
+                      const metric = ALL_METRICS.find(m => m.key === colKey);
+                      return (
+                        <th key={colKey} style={{ minWidth: 100 }}>
+                          {metric ? metric.label : colKey}
+                        </th>
+                      );
+                    })}
+                    <th style={{ width: 60 }} className="text-center">
+                      <Trash2 size={16} className="ms-1" />
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.length === 0 ? (
+                    <tr>
+                      <td colSpan={selectedColumns.length + 2} className="text-center py-5">
+                        <div className="mb-3">
+                          <svg width="60" height="60" fill="none" viewBox="0 0 60 60">
+                            <circle cx="30" cy="30" r="30" fill="#F4F7FB" />
+                            <rect x="15" y="24" width="30" height="13" rx="3" fill="#E1E7EF" />
+                            <rect x="22" y="30" width="8" height="4" rx="2" fill="#C3CBD9" />
+                            <rect x="35" y="30" width="8" height="4" rx="2" fill="#C3CBD9" />
+                          </svg>
+                        </div>
+                        <div className="fw-semibold text-muted mb-1" style={{ fontSize: "1.1rem" }}>
+                          No tickers yet
+                        </div>
+                        <div className="text-muted">
+                          Click <span className="text-primary fw-semibold">Add Ticker</span> to get started!
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    rows.map(row => (
+                      <tr key={row.symbol} className="watchlist-row">
+                        <td className="fw-bold text-dark">{row.symbol}</td>
+                        {selectedColumns.map(colKey => (
+                          <td
+                            key={colKey}
+                            style={{
+                              backgroundColor: getCellBgColor(
+                                analysisData[row.symbol]?.[colKey],
+                                colKey,
+                                analysisData[row.symbol]
+                              ),
+                              color: "#111"
+                            }}
+                          >
+                            {analysisData[row.symbol]
+                              ? renderCellValue(analysisData[row.symbol][colKey])
+                              : <span className="text-muted">Loading…</span>
+                            }
+                          </td>
+                        ))}
+                        <td className="text-center">
+                          <div className="delete-btn-wrap d-inline-block">
+                            <button
+                              className="btn btn-light btn-sm rounded-circle border-0 text-danger"
+                              style={{
+                                background: "#fff",
+                                boxShadow: "0 1px 4px 0 rgba(50,50,93,.04)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center"
+                              }}
+                              title="Remove"
+                              onClick={() => deleteTicker(row.symbol)}
+                            >
+                              <X size={18} strokeWidth={2.3} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
