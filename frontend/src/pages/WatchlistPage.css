@@ -140,3 +140,14 @@ th.text-center[title="Clear all"]:hover {
   color: #e74c3c;
   transition: background 0.13s, color 0.13s;
 }
+
+.watchlist-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(36,48,70,0.16);
+  z-index: 999;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow-y: auto;
+}

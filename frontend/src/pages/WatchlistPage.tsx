@@ -1,6 +1,6 @@
 import './WatchlistPage.css';
 import { useState, useEffect, useRef } from "react";
-import { X, Plus, Trash2, SlidersHorizontal } from "lucide-react";
+import { X, Plus, Trash2, SlidersHorizontal, ClipboardList } from "lucide-react";
 
 interface WatchlistRow {
   symbol: string;
@@ -149,6 +149,11 @@ export default function WatchlistPage() {
   const [showColumnsDropdown, setShowColumnsDropdown] = useState(false);
   const columnsDropdownRef = useRef<HTMLDivElement>(null);
 
+  const [showManageModal, setShowManageModal] = useState(false);
+  const [manageInput, setManageInput] = useState(""); // For adding new ticker
+  const [isUpdating, setIsUpdating] = useState(false); // To block spam clicks
+
+
   // Define the list of available columns (metric keys and user-friendly labels)
   const ALL_METRICS = [
     { key: 'current_price', label: 'Current Price' },
@@ -180,6 +185,50 @@ export default function WatchlistPage() {
   type AnalysisData = { [metric: string]: any };
   const [analysisData, setAnalysisData] = useState<{ [symbol: string]: AnalysisData }>({});
 
+
+  // Calls to backend
+  async function addTickerToWatchlist(symbol: string) {
+    const sanitized = symbol.trim().toUpperCase().replace(/[^A-Z0-9.]/g, "");
+    if (!sanitized) return false;
+    try {
+      const res = await fetch(`http://localhost:8000/watchlist/${sanitized}`, {
+        method: "POST"
+      });
+      if (!res.ok) {
+        // Handle already in watchlist
+        const errorData = await res.json();
+        alert(errorData.detail || "Failed to add ticker.");
+        return false;
+      }
+      const data = await res.json();
+      setWatchlistTickers(data.watchlist); // Update with latest
+      setManageInput("");
+      return true;
+    } catch (err) {
+      alert("Network error. Try again.");
+      return false;
+    }
+  }
+
+  async function removeTickerFromWatchlist(symbol: string) {
+  const sanitized = symbol.trim().toUpperCase();
+  try {
+    const res = await fetch(`http://localhost:8000/watchlist/${sanitized}`, {
+      method: "DELETE"
+    });
+    if (!res.ok) {
+      const errorData = await res.json();
+      alert(errorData.detail || "Failed to remove ticker.");
+      return false;
+    }
+    const data = await res.json();
+    setWatchlistTickers(data.watchlist); // Update with latest
+    return true;
+  } catch (err) {
+    alert("Network error. Try again.");
+    return false;
+  }
+}
 
 
   // Handle outside click to close dropdown
@@ -268,68 +317,150 @@ export default function WatchlistPage() {
           Watchlist Comparison
         </h1>
         {/* Add Ticker Button + Dropdown */}
-        <div className="position-relative mb-4">
-          <button
-            className="btn add-ticker-btn d-flex align-items-center gap-2 px-4 py-2 shadow-sm"
-            onClick={() => setShowDropdown((v) => !v)}
-          >
-            <Plus size={18} /> Add Ticker
-          </button>
-          {showDropdown && (
-            <div
-              ref={dropdownRef}
-              className="dropdown-menu show p-3 mt-2 shadow rounded-3"
-              style={{
-                minWidth: 270,
-                left: 0,
-                top: "110%",
-                display: "block",
-              }}
+        <div className="d-flex align-items-center gap-3 mb-4">
+          <div className="position-relative">
+            <button
+              className="btn add-ticker-btn d-flex align-items-center gap-2 px-4 py-2 shadow-sm"
+              onClick={() => setShowDropdown((v) => !v)}
             >
-              <div className="mb-2 fw-bold text-dark">Your Watchlist</div>
-              <div className="mb-2" style={{ maxHeight: 140, overflowY: "auto" }}>
-                {watchlistTickers.length === 0 ? (
-                  <div className="text-muted small">No saved tickers</div>
-                ) : (
-                  watchlistTickers.map((s) => (
-                    <div
-                      key={s}
-                      onClick={() => {
-                        addTicker(s);
-                        setShowDropdown(false);
-                      }}
-                      className="px-2 py-1 rounded hover-bg text-dark"
-                      style={{
-                        cursor: "pointer",
-                        transition: "background 0.12s",
-                      }}
-                      onMouseEnter={e => (e.currentTarget.style.background = "#e9ecef")}
-                      onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-                    >
-                      {s}
-                    </div>
-                  ))
-                )}
-              </div>
-              <hr />
-              <input
-                className="form-control"
-                placeholder="Enter any ticker..."
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    const val = (e.target as HTMLInputElement).value
-                      .toUpperCase()
-                      .trim();
-                    if (val) {
-                      addTicker(val);
-                      setShowDropdown(false);
-                      (e.target as HTMLInputElement).value = "";
-                    }
-                  }
+              <Plus size={18} /> Add Ticker
+            </button>
+          
+            {showDropdown && (
+              <div
+                ref={dropdownRef}
+                className="dropdown-menu show p-3 mt-2 shadow rounded-3"
+                style={{
+                  minWidth: 270,
+                  left: 0,
+                  top: "110%",
+                  display: "block",
                 }}
-              />
+              >
+                <div className="mb-2 fw-bold text-dark">Your Watchlist</div>
+                <div className="mb-2" style={{ maxHeight: 140, overflowY: "auto" }}>
+                  {watchlistTickers.length === 0 ? (
+                    <div className="text-muted small">No saved tickers</div>
+                  ) : (
+                    watchlistTickers.map((s) => (
+                      <div
+                        key={s}
+                        onClick={() => {
+                          addTicker(s);
+                          setShowDropdown(false);
+                        }}
+                        className="px-2 py-1 rounded hover-bg text-dark"
+                        style={{
+                          cursor: "pointer",
+                          transition: "background 0.12s",
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.background = "#e9ecef")}
+                        onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                      >
+                        {s}
+                      </div>
+                    ))
+                  )}
+                </div>
+                <hr />
+                <input
+                  className="form-control"
+                  placeholder="Enter any ticker..."
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      const val = (e.target as HTMLInputElement).value
+                        .toUpperCase()
+                        .trim();
+                      if (val) {
+                        addTicker(val);
+                        setShowDropdown(false);
+                        (e.target as HTMLInputElement).value = "";
+                      }
+                    }
+                  }}
+                />
+              </div>
+            )}
+          </div>
+          {/* Manage Watchlist Button */}
+          <button
+            className="btn btn-outline-primary d-flex align-items-center gap-2 px-4 py-2 shadow-sm"
+            onClick={() => setShowManageModal(true)}
+          >
+            <ClipboardList size={20} /> Manage Watchlist
+          </button>
+          {showManageModal && (
+            <div className="watchlist-modal-overlay" onClick={() => setShowManageModal(false)}>
+              <div
+                className="watchlist-modal"
+                onClick={e => e.stopPropagation()}
+                style={{
+                  maxWidth: 400,
+                  margin: "8vh auto",
+                  background: "#fff",
+                  borderRadius: 18,
+                  boxShadow: "0 12px 40px 0 rgba(40,40,80,0.13)",
+                  padding: "2.5rem 2.1rem 2rem 2.1rem",
+                  minHeight: 160,
+                  zIndex: 1000,
+                  position: "relative"
+                }}
+              >
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                  <h5 className="fw-bold mb-0">Manage Watchlist</h5>
+                  <button
+                    className="btn btn-light btn-sm rounded-circle border-0"
+                    onClick={() => setShowManageModal(false)}
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+                {/* Add ticker form */}
+                <form
+                  className="d-flex mb-3 gap-2"
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    setIsUpdating(true);
+                    await addTickerToWatchlist(manageInput);
+                    setIsUpdating(false);
+                  }}
+                >
+                  <input
+                    className="form-control"
+                    placeholder="Add ticker (e.g. AAPL)"
+                    value={manageInput}
+                    onChange={e => setManageInput(e.target.value)}
+                    disabled={isUpdating}
+                  />
+                  <button className="btn btn-primary" type="submit" disabled={isUpdating}>Add</button>
+                </form>
+                {/* Watchlist tickers */}
+                <ul className="list-unstyled mb-3" style={{ maxHeight: 340, overflowY: "auto" }}>
+                  {watchlistTickers.length === 0 ? (
+                    <li className="text-muted">Your watchlist is empty.</li>
+                  ) : (
+                    watchlistTickers.map(symbol => (
+                      <li key={symbol} className="d-flex align-items-center justify-content-between py-2 px-1 border-bottom">
+                        <span className="fw-semibold">{symbol}</span>
+                        <button
+                          className="btn btn-sm btn-outline-danger"
+                          onClick={async () => {
+                            setIsUpdating(true);
+                            await removeTickerFromWatchlist(symbol);
+                            setIsUpdating(false);
+                          }}
+                          disabled={isUpdating}
+                        >
+                          Remove
+                        </button>
+                      </li>
+                    ))
+                  )}
+                </ul>
+              </div>
             </div>
           )}
+
         </div>
 
         {/* Table / Card */}
