@@ -129,77 +129,84 @@ export default function WatchlistPage() {
   };
 
   return (
-    <div className="container py-5" style={{ minHeight: "100vh" }}>
-      <div className="mx-auto" style={{ maxWidth: "100%" }}>
-        <h1 className="fw-bold mb-4" style={{ fontSize: "2.4rem" }}>
-          Watchlist Comparison
-        </h1>
-        {/* Add Ticker Button + Dropdown */}
-        <div className="position-relative mb-4" style={{ display: "inline-block" }}>
-          <button
-            className="btn btn-primary d-flex align-items-center gap-2 px-4 py-2 rounded-pill shadow-sm"
-            onClick={() => setShowDropdown((v) => !v)}
+    <div className="container-fluid py-5" style={{ minHeight: "100vh" }}>
+      <h1 className="fw-bold mb-4" style={{ fontSize: "2.4rem" }}>
+        Watchlist Comparison
+      </h1>
+      {/* Add Ticker Button + Dropdown */}
+      <div className="position-relative mb-4">
+        <button
+          className="btn add-ticker-btn d-flex align-items-center gap-2 px-4 py-2 shadow-sm"
+          onClick={() => setShowDropdown((v) => !v)}
+        >
+          <Plus size={18} /> Add Ticker
+        </button>
+        {showDropdown && (
+          <div
+            ref={dropdownRef}
+            className="dropdown-menu show p-3 mt-2 shadow rounded-3"
+            style={{
+              minWidth: 270,
+              left: 0,
+              top: "110%",
+              display: "block",
+            }}
           >
-            <Plus size={18} /> Add Ticker
-          </button>
-          {showDropdown && (
-            <div
-              ref={dropdownRef}
-              className="dropdown-menu show p-3 mt-2 shadow rounded-3"
-              style={{
-                minWidth: 270,
-                left: 0,
-                top: "110%",
-                display: "block",
-              }}
-            >
-              <div className="mb-2 fw-bold text-dark">Your Watchlist</div>
-              <div className="mb-2" style={{ maxHeight: 140, overflowY: "auto" }}>
-                {watchlistTickers.length === 0 ? (
-                  <div className="text-muted small">No saved tickers</div>
-                ) : (
-                  watchlistTickers.map((s) => (
-                    <div
-                      key={s}
-                      onClick={() => {
-                        addTicker(s);
-                        setShowDropdown(false);
-                      }}
-                      className="px-2 py-1 rounded hover-bg text-dark"
-                      style={{
-                        cursor: "pointer",
-                        transition: "background 0.12s",
-                      }}
-                      onMouseEnter={e => (e.currentTarget.style.background = "#e9ecef")}
-                      onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-                    >
-                      {s}
-                    </div>
-                  ))
-                )}
-              </div>
-              <hr />
-              <input
-                className="form-control"
-                placeholder="Enter any ticker..."
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    const val = (e.target as HTMLInputElement).value
-                      .toUpperCase()
-                      .trim();
-                    if (val) {
-                      addTicker(val);
+            <div className="mb-2 fw-bold text-dark">Your Watchlist</div>
+            <div className="mb-2" style={{ maxHeight: 140, overflowY: "auto" }}>
+              {watchlistTickers.length === 0 ? (
+                <div className="text-muted small">No saved tickers</div>
+              ) : (
+                watchlistTickers.map((s) => (
+                  <div
+                    key={s}
+                    onClick={() => {
+                      addTicker(s);
                       setShowDropdown(false);
-                      (e.target as HTMLInputElement).value = "";
-                    }
-                  }
-                }}
-              />
+                    }}
+                    className="px-2 py-1 rounded hover-bg text-dark"
+                    style={{
+                      cursor: "pointer",
+                      transition: "background 0.12s",
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = "#e9ecef")}
+                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                  >
+                    {s}
+                  </div>
+                ))
+              )}
             </div>
-          )}
-        </div>
-
-        <div className="card shadow-sm border-0 rounded-0" style={{ overflowX: "auto" }}>
+            <hr />
+            <input
+              className="form-control"
+              placeholder="Enter any ticker..."
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  const val = (e.target as HTMLInputElement).value
+                    .toUpperCase()
+                    .trim();
+                  if (val) {
+                    addTicker(val);
+                    setShowDropdown(false);
+                    (e.target as HTMLInputElement).value = "";
+                  }
+                }
+              }}
+            />
+          </div>
+        )}
+      </div>
+      <div style={{ display: "flex", justifyContent: "center", width: "100%" }}>
+        <div
+          className="card shadow-sm border-0 rounded-0"
+          style={{
+            display: "inline-block",    // Hug the table width
+            width: "auto",
+            minWidth: 0,
+            maxWidth: "100vw",          // Prevent overflow
+          }}
+        >
           <div className="card-body p-0">
             {/* Column Selector */}
             <div className="mb-3">
@@ -249,7 +256,13 @@ export default function WatchlistPage() {
 
             </div>
             {/* ACTUAL TABLE */}
-            <table className="table align-middle mb-0" style={{ minWidth: "100%", width: "auto" }}>
+            <table
+              className="table align-middle mb-0"
+              style={{
+                width: "auto",           // Hug content
+                minWidth: 0
+              }}
+            >
               <thead className="table-light">
                 <tr>
                   <th style={{ minWidth: 100 }}>Ticker</th>
@@ -323,7 +336,6 @@ export default function WatchlistPage() {
             </table>
           </div>
         </div>
-
       </div>
     </div>
   );
