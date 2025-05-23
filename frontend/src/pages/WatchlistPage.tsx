@@ -130,210 +130,215 @@ export default function WatchlistPage() {
 
   return (
     <div className="container-fluid py-5" style={{ minHeight: "100vh" }}>
-      <h1 className="fw-bold mb-4" style={{ fontSize: "2.4rem" }}>
-        Watchlist Comparison
-      </h1>
-      {/* Add Ticker Button + Dropdown */}
-      <div className="position-relative mb-4">
-        <button
-          className="btn add-ticker-btn d-flex align-items-center gap-2 px-4 py-2 shadow-sm"
-          onClick={() => setShowDropdown((v) => !v)}
-        >
-          <Plus size={18} /> Add Ticker
-        </button>
-        {showDropdown && (
-          <div
-            ref={dropdownRef}
-            className="dropdown-menu show p-3 mt-2 shadow rounded-3"
-            style={{
-              minWidth: 270,
-              left: 0,
-              top: "110%",
-              display: "block",
-            }}
+      <div className="watchlist-page-content px-4 px-md-5">
+        {/* Header row */}
+        <h1 className="fw-bold mb-4" style={{ fontSize: "2.4rem" }}>
+          Watchlist Comparison
+        </h1>
+        {/* Add Ticker Button + Dropdown */}
+        <div className="position-relative mb-4">
+          <button
+            className="btn add-ticker-btn d-flex align-items-center gap-2 px-4 py-2 shadow-sm"
+            onClick={() => setShowDropdown((v) => !v)}
           >
-            <div className="mb-2 fw-bold text-dark">Your Watchlist</div>
-            <div className="mb-2" style={{ maxHeight: 140, overflowY: "auto" }}>
-              {watchlistTickers.length === 0 ? (
-                <div className="text-muted small">No saved tickers</div>
-              ) : (
-                watchlistTickers.map((s) => (
-                  <div
-                    key={s}
-                    onClick={() => {
-                      addTicker(s);
-                      setShowDropdown(false);
-                    }}
-                    className="px-2 py-1 rounded hover-bg text-dark"
-                    style={{
-                      cursor: "pointer",
-                      transition: "background 0.12s",
-                    }}
-                    onMouseEnter={e => (e.currentTarget.style.background = "#e9ecef")}
-                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-                  >
-                    {s}
-                  </div>
-                ))
-              )}
-            </div>
-            <hr />
-            <input
-              className="form-control"
-              placeholder="Enter any ticker..."
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  const val = (e.target as HTMLInputElement).value
-                    .toUpperCase()
-                    .trim();
-                  if (val) {
-                    addTicker(val);
-                    setShowDropdown(false);
-                    (e.target as HTMLInputElement).value = "";
-                  }
-                }
-              }}
-            />
-          </div>
-        )}
-      </div>
-      <div style={{ display: "flex", justifyContent: "center", width: "100%" }}>
-        <div
-          className="card shadow-sm border-0 rounded-0"
-          style={{
-            display: "inline-block",    // Hug the table width
-            width: "auto",
-            minWidth: 0,
-            maxWidth: "100vw",          // Prevent overflow
-          }}
-        >
-          <div className="card-body p-0">
-            {/* Column Selector */}
-            <div className="mb-3">
-              <div className="dropdown d-inline-block" ref={columnsDropdownRef} style={{ position: "relative" }}>
-                <button
-                  className="btn btn-outline-secondary dropdown-toggle"
-                  type="button"
-                  onClick={() => setShowColumnsDropdown(v => !v)}
-                >
-                  Select Columns
-                </button>
-                {showColumnsDropdown && (
-                  <div
-                    className="dropdown-menu show p-2"
-                    style={{
-                      display: "block",
-                      position: "absolute",
-                      left: 0,
-                      top: "100%",
-                      minWidth: 220,
-                      maxHeight: 320,
-                      overflowY: "auto",
-                      zIndex: 20,
-                    }}
-                    onClick={e => e.stopPropagation()} // so checking a box doesn't close the dropdown
-                  >
-                    {ALL_METRICS.map(metric => (
-                      <label key={metric.key} className="dropdown-item d-flex align-items-center" style={{ userSelect: "none" }}>
-                        <input
-                          type="checkbox"
-                          checked={selectedColumns.includes(metric.key)}
-                          onChange={() => {
-                            setSelectedColumns(selectedColumns =>
-                              selectedColumns.includes(metric.key)
-                                ? selectedColumns.filter(col => col !== metric.key)
-                                : [...selectedColumns, metric.key]
-                            );
-                          }}
-                          className="form-check-input me-2"
-                        />
-                        {metric.label}
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-            </div>
-            {/* ACTUAL TABLE */}
-            <table
-              className="table align-middle mb-0"
+            <Plus size={18} /> Add Ticker
+          </button>
+          {showDropdown && (
+            <div
+              ref={dropdownRef}
+              className="dropdown-menu show p-3 mt-2 shadow rounded-3"
               style={{
-                width: "auto",           // Hug content
-                minWidth: 0
+                minWidth: 270,
+                left: 0,
+                top: "110%",
+                display: "block",
               }}
             >
-              <thead className="table-light">
-                <tr>
-                  <th style={{ minWidth: 100 }}>Ticker</th>
-                  {selectedColumns.map(colKey => {
-                    const metric = ALL_METRICS.find(m => m.key === colKey);
-                    return (
-                      <th key={colKey} style={{ minWidth: 100 }}>
-                        {metric ? metric.label : colKey}
-                      </th>
-                    );
-                  })}
-                  <th style={{ width: 60 }} className="text-center">
-                    <Trash2 size={16} className="ms-1" />
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.length === 0 ? (
-                  <tr>
-                    <td colSpan={selectedColumns.length + 2} className="text-center py-5">
-                      <div className="mb-3">
-                        <svg width="60" height="60" fill="none" viewBox="0 0 60 60">
-                          <circle cx="30" cy="30" r="30" fill="#F4F7FB" />
-                          <rect x="15" y="24" width="30" height="13" rx="3" fill="#E1E7EF" />
-                          <rect x="22" y="30" width="8" height="4" rx="2" fill="#C3CBD9" />
-                          <rect x="35" y="30" width="8" height="4" rx="2" fill="#C3CBD9" />
-                        </svg>
-                      </div>
-                      <div className="fw-semibold text-muted mb-1" style={{ fontSize: "1.1rem" }}>
-                        No tickers yet
-                      </div>
-                      <div className="text-muted">
-                        Click <span className="text-primary fw-semibold">Add Ticker</span> to get started!
-                      </div>
-                    </td>
-                  </tr>
+              <div className="mb-2 fw-bold text-dark">Your Watchlist</div>
+              <div className="mb-2" style={{ maxHeight: 140, overflowY: "auto" }}>
+                {watchlistTickers.length === 0 ? (
+                  <div className="text-muted small">No saved tickers</div>
                 ) : (
-                  rows.map(row => (
-                    <tr key={row.symbol} className="watchlist-row">
-                      <td className="fw-bold text-dark">{row.symbol}</td>
-                      {selectedColumns.map(colKey => (
-                        <td key={colKey} className="text-secondary">
-                          {analysisData[row.symbol]
-                            ? renderCellValue(analysisData[row.symbol][colKey])
-                            : <span className="text-muted">Loading…</span>
-                          }
-                        </td>
-                      ))}
-                      <td className="text-center">
-                        <div className="delete-btn-wrap d-inline-block">
-                          <button
-                            className="btn btn-light btn-sm rounded-circle border-0 text-danger"
-                            style={{
-                              background: "#fff",
-                              boxShadow: "0 1px 4px 0 rgba(50,50,93,.04)",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center"
+                  watchlistTickers.map((s) => (
+                    <div
+                      key={s}
+                      onClick={() => {
+                        addTicker(s);
+                        setShowDropdown(false);
+                      }}
+                      className="px-2 py-1 rounded hover-bg text-dark"
+                      style={{
+                        cursor: "pointer",
+                        transition: "background 0.12s",
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.background = "#e9ecef")}
+                      onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                    >
+                      {s}
+                    </div>
+                  ))
+                )}
+              </div>
+              <hr />
+              <input
+                className="form-control"
+                placeholder="Enter any ticker..."
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    const val = (e.target as HTMLInputElement).value
+                      .toUpperCase()
+                      .trim();
+                    if (val) {
+                      addTicker(val);
+                      setShowDropdown(false);
+                      (e.target as HTMLInputElement).value = "";
+                    }
+                  }
+                }}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Table / Card */}
+        <div style={{ display: "flex", justifyContent: "center", width: "100%" }}>
+          <div
+            className="card shadow-sm border-0 rounded-0"
+            style={{
+              display: "inline-block",    // Hug the table width
+              width: "auto",
+              minWidth: 0,
+              maxWidth: "100vw",          // Prevent overflow
+            }}
+          >
+            <div className="card-body p-0">
+              {/* Column Selector */}
+              <div className="mb-3">
+                <div className="dropdown d-inline-block" ref={columnsDropdownRef} style={{ position: "relative" }}>
+                  <button
+                    className="btn btn-outline-secondary dropdown-toggle"
+                    type="button"
+                    onClick={() => setShowColumnsDropdown(v => !v)}
+                  >
+                    Select Columns
+                  </button>
+                  {showColumnsDropdown && (
+                    <div
+                      className="dropdown-menu show p-2"
+                      style={{
+                        display: "block",
+                        position: "absolute",
+                        left: 0,
+                        top: "100%",
+                        minWidth: 220,
+                        maxHeight: 320,
+                        overflowY: "auto",
+                        zIndex: 20,
+                      }}
+                      onClick={e => e.stopPropagation()} // so checking a box doesn't close the dropdown
+                    >
+                      {ALL_METRICS.map(metric => (
+                        <label key={metric.key} className="dropdown-item d-flex align-items-center" style={{ userSelect: "none" }}>
+                          <input
+                            type="checkbox"
+                            checked={selectedColumns.includes(metric.key)}
+                            onChange={() => {
+                              setSelectedColumns(selectedColumns =>
+                                selectedColumns.includes(metric.key)
+                                  ? selectedColumns.filter(col => col !== metric.key)
+                                  : [...selectedColumns, metric.key]
+                              );
                             }}
-                            title="Remove"
-                            onClick={() => deleteTicker(row.symbol)}
-                          >
-                            <X size={18} strokeWidth={2.3} />
-                          </button>
+                            className="form-check-input me-2"
+                          />
+                          {metric.label}
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+              </div>
+              {/* ACTUAL TABLE */}
+              <table
+                className="table align-middle mb-0"
+                style={{
+                  width: "auto",           // Hug content
+                  minWidth: 0
+                }}
+              >
+                <thead className="table-light">
+                  <tr>
+                    <th style={{ minWidth: 100 }}>Ticker</th>
+                    {selectedColumns.map(colKey => {
+                      const metric = ALL_METRICS.find(m => m.key === colKey);
+                      return (
+                        <th key={colKey} style={{ minWidth: 100 }}>
+                          {metric ? metric.label : colKey}
+                        </th>
+                      );
+                    })}
+                    <th style={{ width: 60 }} className="text-center">
+                      <Trash2 size={16} className="ms-1" />
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.length === 0 ? (
+                    <tr>
+                      <td colSpan={selectedColumns.length + 2} className="text-center py-5">
+                        <div className="mb-3">
+                          <svg width="60" height="60" fill="none" viewBox="0 0 60 60">
+                            <circle cx="30" cy="30" r="30" fill="#F4F7FB" />
+                            <rect x="15" y="24" width="30" height="13" rx="3" fill="#E1E7EF" />
+                            <rect x="22" y="30" width="8" height="4" rx="2" fill="#C3CBD9" />
+                            <rect x="35" y="30" width="8" height="4" rx="2" fill="#C3CBD9" />
+                          </svg>
+                        </div>
+                        <div className="fw-semibold text-muted mb-1" style={{ fontSize: "1.1rem" }}>
+                          No tickers yet
+                        </div>
+                        <div className="text-muted">
+                          Click <span className="text-primary fw-semibold">Add Ticker</span> to get started!
                         </div>
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    rows.map(row => (
+                      <tr key={row.symbol} className="watchlist-row">
+                        <td className="fw-bold text-dark">{row.symbol}</td>
+                        {selectedColumns.map(colKey => (
+                          <td key={colKey} className="text-secondary">
+                            {analysisData[row.symbol]
+                              ? renderCellValue(analysisData[row.symbol][colKey])
+                              : <span className="text-muted">Loading…</span>
+                            }
+                          </td>
+                        ))}
+                        <td className="text-center">
+                          <div className="delete-btn-wrap d-inline-block">
+                            <button
+                              className="btn btn-light btn-sm rounded-circle border-0 text-danger"
+                              style={{
+                                background: "#fff",
+                                boxShadow: "0 1px 4px 0 rgba(50,50,93,.04)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center"
+                              }}
+                              title="Remove"
+                              onClick={() => deleteTicker(row.symbol)}
+                            >
+                              <X size={18} strokeWidth={2.3} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>

@@ -110,11 +110,14 @@
   box-shadow: 0 4px 22px rgba(36,99,235,0.18);
 }
 
-/* Responsive for mobile: shrink columns a bit */
-@media (max-width: 768px) {
-  .table th, .table td {
-    width: 100px;
-    min-width: 80px;
-    font-size: 0.96rem;
+.watchlist-page-content {
+  padding-left: 2rem;
+  padding-right: 2rem;
+  /* Responsive for mobile */
+}
+@media (min-width: 768px) {
+  .watchlist-page-content {
+    padding-left: 3.5rem;
+    padding-right: 3.5rem;
   }
 }
