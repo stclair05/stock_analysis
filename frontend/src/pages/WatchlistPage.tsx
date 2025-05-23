@@ -154,7 +154,7 @@ export default function WatchlistPage() {
     { key: 'current_price', label: 'Current Price' },
     { key: 'three_year_ma', label: '3-Year MA' },
     { key: 'two_hundred_dma', label: '200 DMA' },
-    { key: 'weekly_ichimoku', label: 'Weekly Ichimoku' },
+    { key: 'weekly_ichimoku', label: 'Weekly Ichimoku Cloud' },
     { key: 'super_trend', label: 'Super Trend' },
     { key: 'adx', label: 'ADX' },
     { key: 'mace', label: 'MACE' },
@@ -175,7 +175,7 @@ export default function WatchlistPage() {
     { key: 'chaikin_money_flow', label: 'Chaikin Money Flow' }
   ];
 
-  const [selectedColumns, setSelectedColumns] = useState<string[]>(['current_price', 'twenty_dma', 'fifty_dma', 'two_hundred_dma', 'three_year_ma']);
+  const [selectedColumns, setSelectedColumns] = useState<string[]>(['current_price', 'twenty_dma', 'fifty_dma', 'two_hundred_dma', 'three_year_ma', 'weekly_ichimoku', 'mace', 'forty_week_status']);
 
   type AnalysisData = { [metric: string]: any };
   const [analysisData, setAnalysisData] = useState<{ [symbol: string]: AnalysisData }>({});
@@ -222,6 +222,15 @@ export default function WatchlistPage() {
       }
     });
   }, [rows]);
+
+  // On Load up 
+  useEffect(() => {
+    // Only set if rows is empty to avoid overwriting user edits
+    if (watchlistTickers.length > 0 && rows.length === 0) {
+      setRows(watchlistTickers.map(symbol => ({ symbol })));
+    }
+  }, [watchlistTickers]);
+
 
   // Column's drop down
   useEffect(() => {
@@ -408,7 +417,12 @@ export default function WatchlistPage() {
                         </th>
                       );
                     })}
-                    <th style={{ width: 60 }} className="text-center">
+                    <th
+                      style={{ width: 60, cursor: "pointer" }}
+                      className="text-center"
+                      title="Clear all"
+                      onClick={() => setRows([])}
+                    >
                       <Trash2 size={16} className="ms-1" />
                     </th>
                   </tr>

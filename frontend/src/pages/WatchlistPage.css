@@ -134,3 +134,9 @@
   box-shadow: 0 6px 32px 0 rgba(60, 72, 88, 0.09);
   min-width: 240px;
 }
+
+th.text-center[title="Clear all"]:hover {
+  background: #ffe5e5;
+  color: #e74c3c;
+  transition: background 0.13s, color 0.13s;
+}
