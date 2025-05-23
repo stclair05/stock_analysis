@@ -1,0 +1,12 @@
+/* Fade in X button on hover */
+.delete-btn-wrap {
+  opacity: 0; 
+  transition: opacity 0.18s;
+}
+
+.delete-btn-wrap:hover,
+.delete-btn-wrap:focus-within {
+  opacity: 1;
+  background: #fff4f4; /* pale red or your theme */
+  border-radius: 50%;
+}
