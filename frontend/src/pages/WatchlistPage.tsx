@@ -318,68 +318,70 @@ export default function WatchlistPage() {
         </h1>
         {/* Add Ticker Button + Dropdown */}
         <div className="d-flex align-items-center gap-3 mb-4">
-          <button
-            className="btn add-ticker-btn d-flex align-items-center gap-2 px-4 py-2 shadow-sm"
-            onClick={() => setShowDropdown((v) => !v)}
-          >
-            <Plus size={18} /> Add Ticker
-          </button>
-          {showDropdown && (
-            <div
-              ref={dropdownRef}
-              className="dropdown-menu show p-3 mt-2 shadow rounded-3"
-              style={{
-                minWidth: 270,
-                left: 0,
-                top: "110%",
-                display: "block",
-              }}
+          <div className="position-relative">
+            <button
+              className="btn add-ticker-btn d-flex align-items-center gap-2 px-4 py-2 shadow-sm"
+              onClick={() => setShowDropdown((v) => !v)}
             >
-              <div className="mb-2 fw-bold text-dark">Your Watchlist</div>
-              <div className="mb-2" style={{ maxHeight: 140, overflowY: "auto" }}>
-                {watchlistTickers.length === 0 ? (
-                  <div className="text-muted small">No saved tickers</div>
-                ) : (
-                  watchlistTickers.map((s) => (
-                    <div
-                      key={s}
-                      onClick={() => {
-                        addTicker(s);
-                        setShowDropdown(false);
-                      }}
-                      className="px-2 py-1 rounded hover-bg text-dark"
-                      style={{
-                        cursor: "pointer",
-                        transition: "background 0.12s",
-                      }}
-                      onMouseEnter={e => (e.currentTarget.style.background = "#e9ecef")}
-                      onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-                    >
-                      {s}
-                    </div>
-                  ))
-                )}
-              </div>
-              <hr />
-              <input
-                className="form-control"
-                placeholder="Enter any ticker..."
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    const val = (e.target as HTMLInputElement).value
-                      .toUpperCase()
-                      .trim();
-                    if (val) {
-                      addTicker(val);
-                      setShowDropdown(false);
-                      (e.target as HTMLInputElement).value = "";
-                    }
-                  }
-                }}
-              />
-            </div>
-          )}
+              <Plus size={18} /> Add Ticker
+            </button>
           
+            {showDropdown && (
+              <div
+                ref={dropdownRef}
+                className="dropdown-menu show p-3 mt-2 shadow rounded-3"
+                style={{
+                  minWidth: 270,
+                  left: 0,
+                  top: "110%",
+                  display: "block",
+                }}
+              >
+                <div className="mb-2 fw-bold text-dark">Your Watchlist</div>
+                <div className="mb-2" style={{ maxHeight: 140, overflowY: "auto" }}>
+                  {watchlistTickers.length === 0 ? (
+                    <div className="text-muted small">No saved tickers</div>
+                  ) : (
+                    watchlistTickers.map((s) => (
+                      <div
+                        key={s}
+                        onClick={() => {
+                          addTicker(s);
+                          setShowDropdown(false);
+                        }}
+                        className="px-2 py-1 rounded hover-bg text-dark"
+                        style={{
+                          cursor: "pointer",
+                          transition: "background 0.12s",
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.background = "#e9ecef")}
+                        onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                      >
+                        {s}
+                      </div>
+                    ))
+                  )}
+                </div>
+                <hr />
+                <input
+                  className="form-control"
+                  placeholder="Enter any ticker..."
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      const val = (e.target as HTMLInputElement).value
+                        .toUpperCase()
+                        .trim();
+                      if (val) {
+                        addTicker(val);
+                        setShowDropdown(false);
+                        (e.target as HTMLInputElement).value = "";
+                      }
+                    }
+                  }}
+                />
+              </div>
+            )}
+          </div>
           {/* Manage Watchlist Button */}
           <button
             className="btn btn-outline-primary d-flex align-items-center gap-2 px-4 py-2 shadow-sm"
