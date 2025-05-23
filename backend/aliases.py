@@ -17,6 +17,34 @@ SYMBOL_ALIASES = {
     "BTC": "BTC-USD",
     "ETH": "ETH-USD",
 
+    # Grains
+    "WHEAT": "ZW=F",
+    "ZW": "ZW=F",
+    "ZW=F": "ZW=F",
+    "SOYBEAN": "ZS=F",
+    "ZS": "ZS=F",
+    "ZS=F": "ZS=F",
+    "CORN": "ZC=F",
+    "ZC": "ZC=F",
+    "ZC=F": "ZC=F",
+
+    # Precious Metals
+    "PLATINUM": "PL=F",
+    "PL": "PL=F",
+    "PL=F": "PL=F",
+    "ALUMINIUM": "ALI=F",
+    "ALUMINUM": "ALI=F",
+    "ALI": "ALI=F",
+    "ALI=F": "ALI=F",
+
+    # Energy
+    "NATGAS": "NG=F",
+    "NATURALGAS": "NG=F",
+    "NG": "NG=F",
+    "NG=F": "NG=F",
+    "URANIUM": "URA",
+    "UX": "URA",
+
     # Indexes (Yahoo symbols all start with ^)
     "S&P500": "^GSPC",
     "SPX": "^GSPC",

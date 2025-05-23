@@ -230,6 +230,38 @@ export default function WatchlistPage() {
   }
 }
 
+const fetchAnalysisData = async (symbol: string, retry = 0) => {
+  try {
+    const response = await fetch("http://localhost:8000/analyse", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ symbol }),
+    });
+
+    if (!response.ok) {
+      if (retry >= 3) {
+        const errorData = await response.json();
+        // Optionally: set some error state for this symbol
+        setAnalysisData(prev => ({ ...prev, [symbol]: { error: errorData.detail || "Error" } }));
+      } else {
+        setTimeout(() => fetchAnalysisData(symbol, retry + 1), 1000);
+      }
+      return;
+    }
+
+    const data = await response.json();
+    setAnalysisData(prev => ({ ...prev, [symbol]: data }));
+
+  } catch (err) {
+    if (retry >= 3) {
+      setAnalysisData(prev => ({ ...prev, [symbol]: { error: "Network error" } }));
+    } else {
+      setTimeout(() => fetchAnalysisData(symbol, retry + 1), 1000);
+    }
+  }
+};
+
+
 
   // Handle outside click to close dropdown
   useEffect(() => {
@@ -260,17 +292,13 @@ export default function WatchlistPage() {
   useEffect(() => {
     rows.forEach(row => {
       if (!analysisData[row.symbol]) {
-        fetch("http://localhost:8000/analyse", {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ symbol: row.symbol }),
-        })
-          .then(res => res.json())
-          .then(data => setAnalysisData(prev => ({ ...prev, [row.symbol]: data })))
-          .catch(() => setAnalysisData(prev => ({ ...prev, [row.symbol]: {} })));
+        fetchAnalysisData(row.symbol);
       }
     });
+    // Don't forget to include analysisData in dependencies if needed,
+    // but be careful with infinite loops!
   }, [rows]);
+
 
   // On Load up 
   useEffect(() => {
