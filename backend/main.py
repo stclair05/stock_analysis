@@ -15,6 +15,7 @@ from aliases import SYMBOL_ALIASES
 import yfinance as yf
 import asyncio
 import json
+from typing import List 
 
 app = FastAPI()
 
@@ -229,3 +230,18 @@ def remove_from_watchlist(symbol: str):
     data["watchlist"].remove(symbol)
     save_data(data)
     return {"watchlist": data["watchlist"]}
+
+@app.post("/analyse_batch")
+def analyse_batch(stock_requests: List[StockRequest]):
+    results = {}
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        future_to_symbol = {
+            executor.submit(analyse, req): req.symbol for req in stock_requests
+        }
+        for future in as_completed(future_to_symbol):
+            symbol = future_to_symbol[future]
+            try:
+                results[symbol] = future.result()
+            except Exception as exc:
+                results[symbol] = {"error": str(exc)}
+    return results
