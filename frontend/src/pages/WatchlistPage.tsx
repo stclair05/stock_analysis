@@ -185,6 +185,11 @@ export default function WatchlistPage() {
   type AnalysisData = { [metric: string]: any };
   const [analysisData, setAnalysisData] = useState<{ [symbol: string]: AnalysisData }>({});
 
+  // sorting feature 
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
+  const NUMERIC_SORT_COLUMNS = ["twenty_dma", "fifty_dma", "two_hundred_dma", "three_year_ma"];
+
+
 
   // Calls to backend
   async function addTickerToWatchlist(symbol: string) {
@@ -288,6 +293,71 @@ export default function WatchlistPage() {
     }
   }
 
+  // Sorting columns function 
+  function getSortValue(row: WatchlistRow, colKey: string) {
+    const data = analysisData[row.symbol];
+    if (!data) return null;
+
+    if (NUMERIC_SORT_COLUMNS.includes(colKey)) {
+      const maVal = data[colKey]?.current ?? data[colKey];
+      const price = data.current_price;
+      if (typeof maVal === "number" && typeof price === "number" && maVal !== 0) {
+        // Sorting by percentage difference
+        return ((price - maVal) / maVal) * 100;
+      }
+      return null;
+    }
+
+    // Fallback for other columns: try to sort by value directly
+    const val = data[colKey]?.current ?? data[colKey];
+    return typeof val === "string" ? val.toLowerCase() : val;
+  }
+
+  const sortedRows = (() => {
+    if (!sortConfig) return rows;
+    const { key, direction } = sortConfig;
+    const sorted = [...rows].sort((a, b) => {
+      const valA = getSortValue(a, key);
+      const valB = getSortValue(b, key);
+
+      // Numbers
+      if (typeof valA === "number" && typeof valB === "number") {
+        return direction === "asc" ? valA - valB : valB - valA;
+      }
+      // Strings
+      if (typeof valA === "string" && typeof valB === "string") {
+        return direction === "asc"
+          ? valA.localeCompare(valB)
+          : valB.localeCompare(valA);
+      }
+      // Fallback: empty values last
+      if (valA == null) return 1;
+      if (valB == null) return -1;
+      return 0;
+    });
+    return sorted;
+  })();
+
+  // percentage diff between numerical metric and curr price 
+  function renderValueWithPercentDiff(
+    metricValue: any,
+    currentPrice: any
+  ): string {
+    // Defensive extraction for objects with .current property
+    const value = typeof metricValue === "object" && metricValue !== null
+      ? metricValue.current
+      : metricValue;
+
+    if (typeof value !== "number" || typeof currentPrice !== "number" || !isFinite(value) || !isFinite(currentPrice)) {
+      return value == null ? "—" : String(value);
+    }
+    const diff = ((currentPrice - value) / value) * 100;
+    const diffStr =
+      diff > 0
+        ? `(+${diff.toFixed(2)}%)`
+        : `(${diff.toFixed(2)}%)`;
+    return `${value.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${diffStr}`;
+  }
 
 
 
@@ -601,9 +671,25 @@ export default function WatchlistPage() {
                     <th style={{ minWidth: 100 }}>Ticker</th>
                     {selectedColumns.map(colKey => {
                       const metric = ALL_METRICS.find(m => m.key === colKey);
+                      const isSorted = sortConfig && sortConfig.key === colKey;
                       return (
-                        <th key={colKey} style={{ minWidth: 100 }}>
+                        <th
+                          key={colKey}
+                          style={{ minWidth: 100, cursor: "pointer", userSelect: "none" }}
+                          onClick={() => {
+                            setSortConfig(prev =>
+                              prev && prev.key === colKey
+                                ? { key: colKey, direction: prev.direction === "asc" ? "desc" : "asc" }
+                                : { key: colKey, direction: "desc" }
+                            );
+                          }}
+                        >
                           {metric ? metric.label : colKey}
+                          {isSorted && (
+                            <span style={{ marginLeft: 6, fontSize: 12 }}>
+                              {sortConfig!.direction === "asc" ? "▲" : "▼"}
+                            </span>
+                          )}
                         </th>
                       );
                     })}
@@ -617,8 +703,9 @@ export default function WatchlistPage() {
                     </th>
                   </tr>
                 </thead>
+
                 <tbody>
-                  {rows.length === 0 ? (
+                  {sortedRows.length === 0 ? (
                     <tr>
                       <td colSpan={selectedColumns.length + 2} className="text-center py-5">
                         <div className="mb-3">
@@ -638,27 +725,37 @@ export default function WatchlistPage() {
                       </td>
                     </tr>
                   ) : (
-                    rows.map(row => (
+                    sortedRows.map(row => (
                       <tr key={row.symbol} className="watchlist-row">
                         <td className="fw-bold text-dark">{row.symbol}</td>
-                        {selectedColumns.map(colKey => (
-                          <td
-                            key={colKey}
-                            style={{
-                              backgroundColor: getCellBgColor(
-                                analysisData[row.symbol]?.[colKey],
-                                colKey,
-                                analysisData[row.symbol]
-                              ),
-                              color: "#111"
-                            }}
-                          >
-                            {analysisData[row.symbol]
-                              ? renderCellValue(analysisData[row.symbol][colKey])
-                              : <span className="text-muted">Loading…</span>
-                            }
-                          </td>
-                        ))}
+                        {selectedColumns.map(colKey => {
+                          const isNumeric = NUMERIC_SORT_COLUMNS.includes(colKey);
+                          const rowData = analysisData[row.symbol];
+                          const value = rowData?.[colKey];
+                          const price = rowData?.current_price;
+
+                          return (
+                            <td
+                              key={colKey}
+                              style={{
+                                backgroundColor: getCellBgColor(
+                                  value,
+                                  colKey,
+                                  rowData
+                                ),
+                                color: "#111"
+                              }}
+                            >
+                              {rowData
+                                ? isNumeric
+                                  ? renderValueWithPercentDiff(value, price)
+                                  : renderCellValue(value)
+                                : <span className="text-muted">Loading…</span>
+                              }
+                            </td>
+                          );
+                        })}
+
                         <td className="text-center">
                           <div className="delete-btn-wrap d-inline-block">
                             <button
