@@ -228,38 +228,67 @@ export default function WatchlistPage() {
     alert("Network error. Try again.");
     return false;
   }
-}
+  }
+  // this is stock by stock
+  const fetchAnalysisData = async (symbol: string, retry = 0) => {
+    try {
+      const response = await fetch("http://localhost:8000/analyse", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ symbol }),
+      });
 
-const fetchAnalysisData = async (symbol: string, retry = 0) => {
-  try {
-    const response = await fetch("http://localhost:8000/analyse", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ symbol }),
-    });
+      if (!response.ok) {
+        if (retry >= 3) {
+          const errorData = await response.json();
+          // Optionally: set some error state for this symbol
+          setAnalysisData(prev => ({ ...prev, [symbol]: { error: errorData.detail || "Error" } }));
+        } else {
+          setTimeout(() => fetchAnalysisData(symbol, retry + 1), 1000);
+        }
+        return;
+      }
 
-    if (!response.ok) {
+      const data = await response.json();
+      setAnalysisData(prev => ({ ...prev, [symbol]: data }));
+
+    } catch (err) {
       if (retry >= 3) {
-        const errorData = await response.json();
-        // Optionally: set some error state for this symbol
-        setAnalysisData(prev => ({ ...prev, [symbol]: { error: errorData.detail || "Error" } }));
+        setAnalysisData(prev => ({ ...prev, [symbol]: { error: "Network error" } }));
       } else {
         setTimeout(() => fetchAnalysisData(symbol, retry + 1), 1000);
       }
-      return;
     }
+  };
+  // lets try batching 
+  async function fetchBatchAnalysisData(symbols: string[]) {
+    // Send the list of stock requests to the backend
+    const requests = symbols.map(symbol => ({ symbol }));
+    try {
+      const response = await fetch("http://localhost:8000/analyse_batch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requests),
+      });
 
-    const data = await response.json();
-    setAnalysisData(prev => ({ ...prev, [symbol]: data }));
-
-  } catch (err) {
-    if (retry >= 3) {
-      setAnalysisData(prev => ({ ...prev, [symbol]: { error: "Network error" } }));
-    } else {
-      setTimeout(() => fetchAnalysisData(symbol, retry + 1), 1000);
+      if (!response.ok) {
+        // Batch error (very rare), handle globally
+        throw new Error("Batch analysis failed");
+      }
+      const data = await response.json(); // Should be {AAPL: {...}, GOOG: {...}, ...}
+      setAnalysisData(prev => ({
+        ...prev,
+        ...data,
+      }));
+    } catch (err) {
+      // Mark all as failed
+      setAnalysisData(prev =>
+        symbols.reduce((acc, s) => ({ ...acc, [s]: { error: "Batch network error" } }), prev)
+      );
     }
   }
-};
+
+
 
 
 
@@ -290,14 +319,16 @@ const fetchAnalysisData = async (symbol: string, retry = 0) => {
 
   // Fetch analysis data 
   useEffect(() => {
-    rows.forEach(row => {
-      if (!analysisData[row.symbol]) {
-        fetchAnalysisData(row.symbol);
-      }
-    });
-    // Don't forget to include analysisData in dependencies if needed,
-    // but be careful with infinite loops!
+    // Only fetch for symbols that don't have data yet (avoid redundant calls)
+    const symbolsToFetch = rows
+      .map(r => r.symbol)
+      .filter(symbol => !analysisData[symbol]);
+    if (symbolsToFetch.length > 0) {
+      fetchBatchAnalysisData(symbolsToFetch);
+    }
+    // eslint-disable-next-line
   }, [rows]);
+
 
 
   // On Load up 

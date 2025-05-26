@@ -4,7 +4,13 @@
     "QQQ",
     "BTC",
     "XLE",
-    "XLU"
+    "XLU",
+    "XLV",
+    "XLB",
+    "GOLD",
+    "SILVER",
+    "FCX",
+    "SLV"
   ],
   "portfolio": []
 }
