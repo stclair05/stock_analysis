@@ -7,24 +7,22 @@ import {
   UTCTimestamp,
 } from "lightweight-charts";
 import { useEffect, useRef } from "react";
-import { useWebSocketData } from "./useWebSocketData";
+
 
 interface SecondaryChartProps {
-  symbol: string;
+  primarySymbol: string;
+  comparisonSymbol: string;
   timeframe: "daily" | "weekly" | "monthly";
   chartRef?: React.MutableRefObject<IChartApi | null>;
   seriesRef?: React.MutableRefObject<ISeriesApi<"Candlestick"> | null>;
-  onCrosshairMove?: (time: UTCTimestamp) => void;
-  onVisibleRangeChange?: (range: { from: UTCTimestamp; to: UTCTimestamp }) => void;
 }
 
 const SecondaryChart = ({
-  symbol,
+  primarySymbol,
+  comparisonSymbol,
   timeframe,
   chartRef: externalChartRef,
   seriesRef: externalSeriesRef,
-  onCrosshairMove,
-  onVisibleRangeChange,
 }: SecondaryChartProps) => {
 
   const chartRef = useRef<HTMLDivElement>(null);
@@ -32,7 +30,7 @@ const SecondaryChart = ({
   const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
 
   useEffect(() => {
-    if (!chartRef.current) return;
+    if (!chartRef.current || chartRef.current.clientWidth === 0) return;
 
     // Clear previous chart if any
     chartRef.current.innerHTML = "";
@@ -69,36 +67,40 @@ const SecondaryChart = ({
     externalChartRef && (externalChartRef.current = chart);
     externalSeriesRef && (externalSeriesRef.current = series);
 
-    chart.subscribeCrosshairMove((param) => {
-    if (!param.time || !param.point) return;
-        const time = param.time as UTCTimestamp;
-        onCrosshairMove?.(time);  // 🔁 Emit time back to parent
-    });
-
-    chart.timeScale().subscribeVisibleTimeRangeChange((range) => {
-        if (
-            range?.from != null &&
-            range?.to != null &&
-            typeof range.from === "number" &&
-            typeof range.to === "number"
-        ) {
-            onVisibleRangeChange?.({
-            from: range.from as UTCTimestamp,
-            to: range.to as UTCTimestamp,
-            });
-        }
-    });
-
 
     return () => {
       chart.remove();
       chartInstanceRef.current = null;
       candleSeriesRef.current = null;
     };
-  }, [symbol]);
+  }, [primarySymbol, comparisonSymbol, timeframe]);
 
-  // Connect to live WebSocket data
-  useWebSocketData(symbol, candleSeriesRef, timeframe);
+    // Fetch ratio chart data and update chart
+    useEffect(() => {
+        if (!primarySymbol || !comparisonSymbol) return;
+        if (!candleSeriesRef.current) return;
+
+        // Use 1d for daily, 1wk for weekly, 1mo for monthly
+        let tf = "1d";
+        if (timeframe === "weekly") tf = "1wk";
+        else if (timeframe === "monthly") tf = "1mo";
+
+        fetch(`http://localhost:8000/compare_ratio?symbol1=${primarySymbol}&symbol2=${comparisonSymbol}&timeframe=${tf}`)
+        .then((res) => res.json())
+        .then((data) => {
+            if (data.history) {
+            candleSeriesRef.current?.setData(data.history.map((bar: any) => ({
+                time: bar.time,
+                open: bar.open,
+                high: bar.high,
+                low: bar.low,
+                close: bar.close,
+                // volume: bar.volume, // (optional, only if your chart uses it)
+            })));
+            chartInstanceRef.current?.timeScale().fitContent();
+            }
+        });
+    }, [primarySymbol, comparisonSymbol, timeframe]);
 
   return (
     <div

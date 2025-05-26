@@ -32,6 +32,8 @@ import OverlayGrid from "./OverlayGrid";
 
 import SecondaryChart from "./SecondaryChart";
 
+import S3Gallery from "../S3Gallery";
+
 
 
 const StockChart = ({ stockSymbol }: StockChartProps) => {
@@ -104,6 +106,9 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
   const [showBollingerBand, setShowBollingerBand] = useState(false);
 
   
+  // Natural_Gas_stocks
+  const NATURAL_GAS_STOCKS = ["AR", "RRC", "BIR.TO", "YGR.TO", "VET", "PR", "ROKRF", "STO.AX"];
+
   const {
     drawingModeRef,
     lineBufferRef,
@@ -187,7 +192,6 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         [meanRevChartInstance.current, meanRevLineRef.current],
         [rsiChartInstance.current, rsiLineRef.current],
         [volChartInstance.current, volLineRef.current],
-        [secondaryChartRef.current, secondarySeriesRef.current],
       ];
     
       for (const [chart, series] of allCharts) {
@@ -445,40 +449,26 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       safeSetVisibleRange(meanRevChartInstance.current, range);
       safeSetVisibleRange(rsiChartInstance.current, range);
       safeSetVisibleRange(volChartInstance.current, range);
-      safeSetVisibleRange(secondaryChartRef.current, range);
-
     });
 
     meanRevChartInstance.current?.timeScale().subscribeVisibleTimeRangeChange((range) => {
       safeSetVisibleRange(chartRef.current, range);
       safeSetVisibleRange(rsiChartInstance.current, range);
       safeSetVisibleRange(volChartInstance.current, range);
-      safeSetVisibleRange(secondaryChartRef.current, range);
-
     });
 
     rsiChartInstance.current?.timeScale().subscribeVisibleTimeRangeChange((range) => {
       safeSetVisibleRange(chartRef.current, range);
       safeSetVisibleRange(meanRevChartInstance.current, range);
       safeSetVisibleRange(volChartInstance.current, range);
-      safeSetVisibleRange(secondaryChartRef.current, range);
-
     });
 
     volChartInstance.current?.timeScale().subscribeVisibleTimeRangeChange((range) => {
       safeSetVisibleRange(chartRef.current, range);
       safeSetVisibleRange(meanRevChartInstance.current, range);
       safeSetVisibleRange(rsiChartInstance.current, range);
-      safeSetVisibleRange(secondaryChartRef.current, range);
-
     });
 
-    secondaryChartRef.current?.timeScale().subscribeVisibleTimeRangeChange((range) => {
-      safeSetVisibleRange(chartRef.current, range);
-      safeSetVisibleRange(meanRevChartInstance.current, range);
-      safeSetVisibleRange(rsiChartInstance.current, range);
-      safeSetVisibleRange(volChartInstance.current, range);
-    });
 
 
   
@@ -489,9 +479,6 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           meanChart.resize(entry.contentRect.width, 200);
           rsiChart.resize(entry.contentRect.width, 150);     
           volChart.resize(entry.contentRect.width, 150);
-          if (secondaryChartRef.current) {
-            secondaryChartRef.current.resize(entry.contentRect.width, 400); // 🆕
-          }
         }
       }
     });
@@ -1150,34 +1137,14 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         {secondarySymbol && (
           <div className="mt-4">
             <div className="d-flex justify-content-between align-items-center mb-1">
-              <div className="fw-bold text-muted">📉 {secondarySymbol} Price Chart</div>
+              <div className="fw-bold text-muted">{stockSymbol} / {secondarySymbol} Ratio</div>
             </div>
             <SecondaryChart
-              symbol={secondarySymbol}
+              primarySymbol={stockSymbol}
+              comparisonSymbol={secondarySymbol}
               timeframe={timeframe}
               chartRef={secondaryChartRef}
               seriesRef={secondarySeriesRef}
-              onCrosshairMove={(time) => {
-                // Sync all other charts when crosshair moves on secondary
-                if (secondarySeriesRef.current) {
-                  syncCrosshair(secondaryChartRef.current!, secondarySeriesRef.current, time);
-                }
-                
-              }}
-              onVisibleRangeChange={(range) => {
-                const safeSetVisibleRange = (chart: IChartApi | null, r: typeof range) => {
-                  try {
-                    chart?.timeScale()?.setVisibleRange(r);
-                  } catch (err) {
-                    console.warn("⛔ setVisibleRange failed", err);
-                  }
-                };
-
-                safeSetVisibleRange(chartRef.current, range);
-                safeSetVisibleRange(meanRevChartInstance.current, range);
-                safeSetVisibleRange(rsiChartInstance.current, range);
-                safeSetVisibleRange(volChartInstance.current, range);
-              }}
             />
 
           </div>
@@ -1249,7 +1216,16 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         {/* === Overlay Grid === */}
         {overlayData && <OverlayGrid overlayData={overlayData} />}
 
-      
+        {NATURAL_GAS_STOCKS.includes(stockSymbol?.toUpperCase() ?? "") && (
+          <>
+            {/* === Natural Gas Model Header === */}
+            <h2 className="fw-bold my-4 text-center" style={{ fontSize: "2rem", letterSpacing: "1px" }}>
+              Natural Gas Model
+            </h2>
+            {/* === Pictures === */}
+            <S3Gallery />
+          </>
+        )}
 
     </div>
   );

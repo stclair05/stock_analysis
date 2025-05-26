@@ -36,7 +36,7 @@ function HomePage() {
 
   return (
     <div className="app-container">
-      <h1 className="mb-5 text-center fw-bold">📈 Analysis</h1>
+      <h1 className="mb-5 text-center fw-bold">Analysis</h1>
 
       {/* Search Bar */}
       <div className="search-bar-container d-flex justify-content-center mb-5">

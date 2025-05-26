@@ -16,6 +16,10 @@ import yfinance as yf
 import asyncio
 import json
 from typing import List 
+import boto3
+import os
+import pandas as pd
+import re
 
 app = FastAPI()
 
@@ -245,3 +249,82 @@ def analyse_batch(stock_requests: List[StockRequest]):
             except Exception as exc:
                 results[symbol] = {"error": str(exc)}
     return results
+
+@app.get("/s3-images")
+def list_s3_images():
+    s3 = boto3.client(
+        's3',
+        region_name='ap-southeast-2',
+        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+    )
+    bucket_name = "stclair-ndr-bucket"
+    prefix = "natgas/"
+    response = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
+    images = []
+    for obj in response.get("Contents", []):
+        key = obj["Key"]
+        if key.lower().endswith((".png", ".jpg", ".jpeg", ".gif")):
+            images.append(f"https://{bucket_name}.s3.ap-southeast-2.amazonaws.com/{key}")
+     # ---- Natural Sort by number in filename ----
+    def sort_key(url):
+        match = re.search(r'nat_gas_(\d+)\.png', url)
+        return int(match.group(1)) if match else 0
+
+    images.sort(key=sort_key)
+    return {"images": images}
+
+
+@app.get("/compare_ratio")
+def compare_ratio(
+    symbol1: str,
+    symbol2: str,
+    timeframe: str = "1d",
+    period: str = "10y"
+):
+    try:
+        # 🟢 Apply alias mapping here
+        raw_symbol1 = symbol1.upper().strip()
+        raw_symbol2 = symbol2.upper().strip()
+        symbol1 = SYMBOL_ALIASES.get(raw_symbol1, raw_symbol1)
+        symbol2 = SYMBOL_ALIASES.get(raw_symbol2, raw_symbol2)
+
+        df1 = yf.download(symbol1, period=period, interval=timeframe)
+        df2 = yf.download(symbol2, period=period, interval=timeframe)
+        df1, df2 = df1.align(df2, join='inner', axis=0)
+        if df1.empty or df2.empty:
+            return {"error": f"No data found for one or both symbols: {symbol1}, {symbol2}"}
+
+        # Helper for extracting Series even if it's a DataFrame column
+        def get_col(df, col):
+            s = df[col]
+            return s.iloc[:, 0] if isinstance(s, pd.DataFrame) else s
+
+        open1 = get_col(df1, "Open")
+        high1 = get_col(df1, "High")
+        low1 = get_col(df1, "Low")
+        close1 = get_col(df1, "Close")
+        # Use volume from symbol1 by default (or just set to None/0 if you don't want)
+        volume = get_col(df1, "Volume")
+
+        open2 = get_col(df2, "Open")
+        high2 = get_col(df2, "High")
+        low2 = get_col(df2, "Low")
+        close2 = get_col(df2, "Close")
+
+        ratio_history = [
+            {
+                "time": int(pd.Timestamp(idx).timestamp()),
+                "open": round(float(o1) / float(o2), 4) if o2 else None,
+                "high": round(float(h1) / float(h2), 4) if h2 else None,
+                "low": round(float(l1) / float(l2), 4) if l2 else None,
+                "close": round(float(c1) / float(c2), 4) if c2 else None,
+                "volume": round(float(v), 2) if v else 0.0,
+            }
+            for idx, o1, h1, l1, c1, v, o2, h2, l2, c2 in zip(
+                df1.index, open1, high1, low1, close1, volume, open2, high2, low2, close2
+            )
+        ]
+        return {"history": ratio_history}
+    except Exception as e:
+        return {"error": str(e)}
