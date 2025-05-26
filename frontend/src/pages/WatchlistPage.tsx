@@ -1,6 +1,6 @@
 import './WatchlistPage.css';
 import { useState, useEffect, useRef } from "react";
-import { X, Plus, Trash2, SlidersHorizontal, ClipboardList } from "lucide-react";
+import { X, Plus, Trash2, SlidersHorizontal, ClipboardList, ChevronsUpDown } from "lucide-react";
 
 interface WatchlistRow {
   symbol: string;
@@ -672,27 +672,40 @@ export default function WatchlistPage() {
                     {selectedColumns.map(colKey => {
                       const metric = ALL_METRICS.find(m => m.key === colKey);
                       const isSorted = sortConfig && sortConfig.key === colKey;
+                      const isNumeric = NUMERIC_SORT_COLUMNS.includes(colKey);
+
                       return (
                         <th
                           key={colKey}
-                          style={{ minWidth: 100, cursor: "pointer", userSelect: "none" }}
+                          style={{ minWidth: 100, cursor: isNumeric ? "pointer" : "default", userSelect: "none" }}
                           onClick={() => {
-                            setSortConfig(prev =>
-                              prev && prev.key === colKey
-                                ? { key: colKey, direction: prev.direction === "asc" ? "desc" : "asc" }
-                                : { key: colKey, direction: "desc" }
-                            );
+                            // Only sortable if numeric
+                            if (isNumeric) {
+                              setSortConfig(prev =>
+                                prev && prev.key === colKey
+                                  ? { key: colKey, direction: prev.direction === "asc" ? "desc" : "asc" }
+                                  : { key: colKey, direction: "desc" }
+                              );
+                            }
                           }}
+                          title={isNumeric ? "Sort by this column" : undefined}
                         >
-                          {metric ? metric.label : colKey}
-                          {isSorted && (
-                            <span style={{ marginLeft: 6, fontSize: 12 }}>
-                              {sortConfig!.direction === "asc" ? "▲" : "▼"}
-                            </span>
-                          )}
+                          <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                            {metric ? metric.label : colKey}
+                            {isSorted && (
+                              <span style={{ marginLeft: 4, fontSize: 12 }}>
+                                {sortConfig!.direction === "asc" ? "▲" : "▼"}
+                              </span>
+                            )}
+                            {/* Show unsorted icon if numeric and not currently sorted */}
+                            {!isSorted && isNumeric && (
+                              <ChevronsUpDown size={16} style={{ opacity: 0.5, marginLeft: 4 }} />
+                            )}
+                          </span>
                         </th>
                       );
                     })}
+
                     <th
                       style={{ width: 60, cursor: "pointer" }}
                       className="text-center"
