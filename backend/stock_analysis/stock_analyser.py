@@ -8,8 +8,9 @@ from .models import TimeSeriesMetric
 from aliases import SYMBOL_ALIASES
 from .utils import safe_value, detect_rsi_divergence, find_pivots, compute_wilder_rsi, compute_bbwp, compute_ichimoku_lines, compute_supertrend_lines, to_series, classify_adx_trend, classify_mace_signal, classify_40w_status, classify_dma_trend, classify_bbwp_percentile, wilder_smooth, reindex_indicator
 from .pricetarget import get_price_targets
+from threading import Lock
 
-
+_price_data_lock = Lock()
 
 class StockAnalyser:
     def __init__(self, symbol: str):
@@ -25,25 +26,26 @@ class StockAnalyser:
             df.columns = df.columns.droplevel(1)
         return df
     
+    
+
     @staticmethod
     @lru_cache(maxsize=100)
     def get_price_data(symbol: str) -> pd.DataFrame:
-        df = yf.download(symbol, period="12y", interval="1d", auto_adjust=False)
-        if df.empty:
+        with _price_data_lock: 
+            df = yf.download(symbol, period="12y", interval="1d", auto_adjust=False)
+            if df.empty:
+                raise HTTPException(status_code=400, detail="Stock symbol not found or data unavailable.")  # <--- raise here
+            # Patch with today’s close (1D)
+            try:
+                live_df = yf.download(symbol, period="1d", interval="1d")
+                if not live_df.empty:
+                    df.loc[live_df.index[-1]] = live_df.iloc[-1]
+            except Exception:
+                pass
+            if isinstance(df.columns, pd.MultiIndex):
+                df.columns = df.columns.droplevel(1)
             return df
 
-        # Patch with today’s close (1D)
-        try:
-            live_df = yf.download(symbol, period="1d", interval="1d")
-            if not live_df.empty:
-                df.loc[live_df.index[-1]] = live_df.iloc[-1]
-        except Exception:
-            pass
-
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = df.columns.droplevel(1)
-
-        return df
     
     @cached_property
     def weekly_df(self) -> pd.DataFrame:
@@ -279,6 +281,8 @@ class StockAnalyser:
         def classify(dev: float | None) -> str | None:
             if dev is None or pd.isna(dev):
                 return None
+            if isinstance(dev, str):  # <-- Defensive!
+                return dev
             if dev > 5:
                 return "Extended"
             elif dev < -5:
@@ -305,6 +309,8 @@ class StockAnalyser:
         def classify(dev: float | None) -> str | None:
             if dev is None or pd.isna(dev):
                 return None
+            if isinstance(dev, str):  # <-- Defensive!
+                return dev
             if dev > 5:
                 return "Extended"
             elif dev < -5:
@@ -331,6 +337,8 @@ class StockAnalyser:
         def classify(dev: float | str | None) -> str | None:
             if dev is None or pd.isna(dev) or dev == "in progress":
                 return "in progress"
+            if isinstance(dev, str):  # <-- Defensive!
+                return dev
             if dev > 5:
                 return "Extended"
             elif dev < -5:
