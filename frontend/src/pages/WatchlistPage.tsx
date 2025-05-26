@@ -750,7 +750,15 @@ export default function WatchlistPage() {
                                 ? isNumeric
                                   ? renderValueWithPercentDiff(value, price)
                                   : renderCellValue(value)
-                                : <span className="text-muted">Loading…</span>
+                                : <span
+                                    className="placeholder"
+                                    style={{
+                                      width: `${60 + Math.random() * 30}%`,
+                                      height: '1.3em',
+                                      display: 'inline-block'
+                                    }}
+                                  >&nbsp;</span>
+
                               }
                             </td>
                           );
