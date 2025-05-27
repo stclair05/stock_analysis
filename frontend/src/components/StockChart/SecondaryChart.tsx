@@ -6,13 +6,12 @@ import {
   ISeriesApi,
   UTCTimestamp,
 } from "lightweight-charts";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 
 interface SecondaryChartProps {
   primarySymbol: string;
   comparisonSymbol: string;
-  timeframe: "daily" | "weekly" | "monthly";
   chartRef?: React.MutableRefObject<IChartApi | null>;
   seriesRef?: React.MutableRefObject<ISeriesApi<"Candlestick"> | null>;
 }
@@ -20,7 +19,6 @@ interface SecondaryChartProps {
 const SecondaryChart = ({
   primarySymbol,
   comparisonSymbol,
-  timeframe,
   chartRef: externalChartRef,
   seriesRef: externalSeriesRef,
 }: SecondaryChartProps) => {
@@ -28,6 +26,9 @@ const SecondaryChart = ({
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstanceRef = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+
+  const [timeframe, setTimeframe] = useState<"daily" | "weekly" | "monthly">("weekly");
+  
 
   useEffect(() => {
     if (!chartRef.current || chartRef.current.clientWidth === 0) return;
@@ -80,12 +81,7 @@ const SecondaryChart = ({
         if (!primarySymbol || !comparisonSymbol) return;
         if (!candleSeriesRef.current) return;
 
-        // Use 1d for daily, 1wk for weekly, 1mo for monthly
-        let tf = "1d";
-        if (timeframe === "weekly") tf = "1wk";
-        else if (timeframe === "monthly") tf = "1mo";
-
-        fetch(`http://localhost:8000/compare_ratio?symbol1=${primarySymbol}&symbol2=${comparisonSymbol}&timeframe=${tf}`)
+        fetch(`http://localhost:8000/compare_ratio?symbol1=${primarySymbol}&symbol2=${comparisonSymbol}&timeframe=${timeframe}`)
         .then((res) => res.json())
         .then((data) => {
             if (data.history) {
@@ -102,12 +98,33 @@ const SecondaryChart = ({
         });
     }, [primarySymbol, comparisonSymbol, timeframe]);
 
-  return (
-    <div
-      ref={chartRef}
-      style={{ width: "100%", height: "400px", border: "1px solid #ddd", borderRadius: "6px" }}
-    />
-  );
+    return (
+        <div>
+            {/* Timeframe Toggle Buttons */}
+            <div className="btn-group mb-2">
+            {["daily", "weekly", "monthly"].map((tf) => (
+                <button
+                key={tf}
+                onClick={() => setTimeframe(tf as "daily" | "weekly" | "monthly")}
+                className={`btn btn-sm ${timeframe === tf ? "btn-primary" : "btn-outline-secondary"}`}
+                >
+                {tf.toUpperCase()}
+                </button>
+            ))}
+            </div>
+
+            <div
+            ref={chartRef}
+            style={{
+                width: "100%",
+                height: "400px",
+                border: "1px solid #ddd",
+                borderRadius: "6px",
+            }}
+            />
+        </div>
+    );
+
 };
 
 export default SecondaryChart;

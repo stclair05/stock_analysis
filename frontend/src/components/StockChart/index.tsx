@@ -1142,7 +1142,6 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
             <SecondaryChart
               primarySymbol={stockSymbol}
               comparisonSymbol={secondarySymbol}
-              timeframe={timeframe}
               chartRef={secondaryChartRef}
               seriesRef={secondarySeriesRef}
             />
