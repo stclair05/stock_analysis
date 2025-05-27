@@ -2,7 +2,7 @@ from .utils import safe_value, compute_wilder_rsi, detect_zigzag_pivots
 import pandas as pd
 
 
-def calculate_mean_reversion_50dma_target(df: pd.DataFrame, lookback: int = 252) -> dict:
+def calculate_mean_reversion_50dma_target(df: pd.DataFrame, lookback: int = 756) -> dict:
     """
     Calculates a mean reversion target price based on deviation from the 50DMA.
 

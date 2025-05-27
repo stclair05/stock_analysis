@@ -712,4 +712,79 @@ class StockAnalyser:
         """
         return get_price_targets(self.df, self.symbol)
 
+    def compare_ratio_with(
+        self,
+        other_symbol: str,
+        timeframe: str = "weekly",  # default to weekly!
+        period: str = None
+    ) -> dict:
+        """
+        timeframe: "daily" | "weekly" | "monthly"
+        period: not used here because we are using cached price data (modify if needed)
+        """
+        # Get correct DataFrames based on requested timeframe
+        symbol1 = self.symbol
+        raw_symbol2 = other_symbol.upper().strip()
+        symbol2 = SYMBOL_ALIASES.get(raw_symbol2, raw_symbol2)
+        other = StockAnalyser(symbol2)
 
+        if timeframe == "daily":
+            df1 = self.df
+            df2 = other.df
+        elif timeframe == "weekly":
+            df1 = self.weekly_df
+            df2 = other.weekly_df
+        elif timeframe == "monthly":
+            # Locally resample to proper monthly candle
+            df1 = self.df.resample("M").agg({
+                "Open": "first",
+                "High": "max",
+                "Low": "min",
+                "Close": "last",
+                "Volume": "sum" if "Volume" in self.df.columns else "first"
+            }).dropna()
+            df2 = other.df.resample("M").agg({
+                "Open": "first",
+                "High": "max",
+                "Low": "min",
+                "Close": "last",
+                "Volume": "sum" if "Volume" in other.df.columns else "first"
+            }).dropna()
+
+        else:
+            raise ValueError(f"Unsupported timeframe: {timeframe}")
+
+        # Align by index (date)
+        df1, df2 = df1.align(df2, join='inner', axis=0)
+        if df1.empty or df2.empty:
+            return {"error": f"No data found for one or both symbols: {symbol1}, {symbol2}"}
+
+        def get_col(df, col):
+            s = df[col]
+            return s.iloc[:, 0] if isinstance(s, pd.DataFrame) else s
+
+        open1 = get_col(df1, "Open")
+        high1 = get_col(df1, "High")
+        low1 = get_col(df1, "Low")
+        close1 = get_col(df1, "Close")
+        volume = get_col(df1, "Volume")
+
+        open2 = get_col(df2, "Open")
+        high2 = get_col(df2, "High")
+        low2 = get_col(df2, "Low")
+        close2 = get_col(df2, "Close")
+
+        ratio_history = [
+            {
+                "time": int(pd.Timestamp(idx).timestamp()),
+                "open": round(float(o1) / float(o2), 4) if o2 else None,
+                "high": round(float(h1) / float(h2), 4) if h2 else None,
+                "low": round(float(l1) / float(l2), 4) if l2 else None,
+                "close": round(float(c1) / float(c2), 4) if c2 else None,
+                "volume": round(float(v), 2) if v else 0.0,
+            }
+            for idx, o1, h1, l1, c1, v, o2, h2, l2, c2 in zip(
+                df1.index, open1, high1, low1, close1, volume, open2, high2, low2, close2
+            )
+        ]
+        return {"history": ratio_history}

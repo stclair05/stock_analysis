@@ -16,6 +16,10 @@ import yfinance as yf
 import asyncio
 import json
 from typing import List 
+import boto3
+import os
+import pandas as pd
+import re
 
 app = FastAPI()
 
@@ -245,3 +249,42 @@ def analyse_batch(stock_requests: List[StockRequest]):
             except Exception as exc:
                 results[symbol] = {"error": str(exc)}
     return results
+
+@app.get("/s3-images")
+def list_s3_images(prefix: str = "natgas/"):
+    s3 = boto3.client(
+        's3',
+        region_name='ap-southeast-2',
+        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+    )
+    bucket_name = "stclair-ndr-bucket"
+    response = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
+    images = []
+    for obj in response.get("Contents", []):
+        key = obj["Key"]
+        if key.lower().endswith((".png", ".jpg", ".jpeg", ".gif")):
+            images.append(f"https://{bucket_name}.s3.ap-southeast-2.amazonaws.com/{key}")
+    # ---- Natural Sort by number in filename ----
+    def sort_key(url):
+        match = re.search(r'(nat_gas|oil)_(\d+)\.png', url)
+        return int(match.group(2)) if match else 0
+    images.sort(key=sort_key)
+    return {"images": images}
+
+
+
+@app.get("/compare_ratio")
+def compare_ratio(
+    symbol1: str,
+    symbol2: str,
+    timeframe: str = "weekly",
+):
+    try:
+        analyser1 = StockAnalyser(symbol1)
+        return analyser1.compare_ratio_with(
+            other_symbol=symbol2, 
+            timeframe=timeframe, 
+        )
+    except Exception as e:
+        return {"error": str(e)}

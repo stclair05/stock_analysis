@@ -6,33 +6,32 @@ import {
   ISeriesApi,
   UTCTimestamp,
 } from "lightweight-charts";
-import { useEffect, useRef } from "react";
-import { useWebSocketData } from "./useWebSocketData";
+import { useEffect, useRef, useState } from "react";
+
 
 interface SecondaryChartProps {
-  symbol: string;
-  timeframe: "daily" | "weekly" | "monthly";
+  primarySymbol: string;
+  comparisonSymbol: string;
   chartRef?: React.MutableRefObject<IChartApi | null>;
   seriesRef?: React.MutableRefObject<ISeriesApi<"Candlestick"> | null>;
-  onCrosshairMove?: (time: UTCTimestamp) => void;
-  onVisibleRangeChange?: (range: { from: UTCTimestamp; to: UTCTimestamp }) => void;
 }
 
 const SecondaryChart = ({
-  symbol,
-  timeframe,
+  primarySymbol,
+  comparisonSymbol,
   chartRef: externalChartRef,
   seriesRef: externalSeriesRef,
-  onCrosshairMove,
-  onVisibleRangeChange,
 }: SecondaryChartProps) => {
 
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstanceRef = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
 
+  const [timeframe, setTimeframe] = useState<"daily" | "weekly" | "monthly">("weekly");
+  
+
   useEffect(() => {
-    if (!chartRef.current) return;
+    if (!chartRef.current || chartRef.current.clientWidth === 0) return;
 
     // Clear previous chart if any
     chartRef.current.innerHTML = "";
@@ -69,43 +68,63 @@ const SecondaryChart = ({
     externalChartRef && (externalChartRef.current = chart);
     externalSeriesRef && (externalSeriesRef.current = series);
 
-    chart.subscribeCrosshairMove((param) => {
-    if (!param.time || !param.point) return;
-        const time = param.time as UTCTimestamp;
-        onCrosshairMove?.(time);  // 🔁 Emit time back to parent
-    });
-
-    chart.timeScale().subscribeVisibleTimeRangeChange((range) => {
-        if (
-            range?.from != null &&
-            range?.to != null &&
-            typeof range.from === "number" &&
-            typeof range.to === "number"
-        ) {
-            onVisibleRangeChange?.({
-            from: range.from as UTCTimestamp,
-            to: range.to as UTCTimestamp,
-            });
-        }
-    });
-
 
     return () => {
       chart.remove();
       chartInstanceRef.current = null;
       candleSeriesRef.current = null;
     };
-  }, [symbol]);
+  }, [primarySymbol, comparisonSymbol, timeframe]);
 
-  // Connect to live WebSocket data
-  useWebSocketData(symbol, candleSeriesRef, timeframe);
+    // Fetch ratio chart data and update chart
+    useEffect(() => {
+        if (!primarySymbol || !comparisonSymbol) return;
+        if (!candleSeriesRef.current) return;
 
-  return (
-    <div
-      ref={chartRef}
-      style={{ width: "100%", height: "400px", border: "1px solid #ddd", borderRadius: "6px" }}
-    />
-  );
+        fetch(`http://localhost:8000/compare_ratio?symbol1=${primarySymbol}&symbol2=${comparisonSymbol}&timeframe=${timeframe}`)
+        .then((res) => res.json())
+        .then((data) => {
+            if (data.history) {
+            candleSeriesRef.current?.setData(data.history.map((bar: any) => ({
+                time: bar.time,
+                open: bar.open,
+                high: bar.high,
+                low: bar.low,
+                close: bar.close,
+                // volume: bar.volume, // (optional, only if your chart uses it)
+            })));
+            chartInstanceRef.current?.timeScale().fitContent();
+            }
+        });
+    }, [primarySymbol, comparisonSymbol, timeframe]);
+
+    return (
+        <div>
+            {/* Timeframe Toggle Buttons */}
+            <div className="btn-group mb-2">
+            {["daily", "weekly", "monthly"].map((tf) => (
+                <button
+                key={tf}
+                onClick={() => setTimeframe(tf as "daily" | "weekly" | "monthly")}
+                className={`btn btn-sm ${timeframe === tf ? "btn-primary" : "btn-outline-secondary"}`}
+                >
+                {tf.toUpperCase()}
+                </button>
+            ))}
+            </div>
+
+            <div
+            ref={chartRef}
+            style={{
+                width: "100%",
+                height: "400px",
+                border: "1px solid #ddd",
+                borderRadius: "6px",
+            }}
+            />
+        </div>
+    );
+
 };
 
 export default SecondaryChart;
