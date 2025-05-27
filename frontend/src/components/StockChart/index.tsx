@@ -107,7 +107,13 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
   
   // Natural_Gas_stocks
-  const NATURAL_GAS_STOCKS = ["AR", "RRC", "BIR.TO", "YGR.TO", "VET", "PR", "ROKRF", "STO.AX"];
+  const NATURAL_GAS_STOCKS = ["AR", "RRC", "BIR.TO", "YGR.TO", "VET", "PR", "ROKRF", "STO.AX",];
+
+  // Oil stocks 
+  const OIL_STOCKS = ["COP", "CRGY", "OVV", "IPOOF", "SM", "SGY", "APA", "CIVI", "PBR", "MTDR", 
+    "TALO", "DVN", "OXY", "VTLE", "BTE", "FANG", "XOM", "MPC", "VLO", "DK", "DINO", "CVI",
+    "EQNR", "TXP", "BNE", 
+  ]
 
   const {
     drawingModeRef,
@@ -1222,7 +1228,17 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
               Natural Gas Model
             </h2>
             {/* === Pictures === */}
-            <S3Gallery />
+            <S3Gallery folder="natgas"/>
+          </>
+        )}
+        {OIL_STOCKS.includes(stockSymbol?.toUpperCase() ?? "") && (
+          <>
+            {/* === Oil Model Header === */}
+            <h2 className="fw-bold my-4 text-center" style={{ fontSize: "2rem", letterSpacing: "1px" }}>
+              Oil Model
+            </h2>
+            {/* === Pictures === */}
+            <S3Gallery folder="oil"/>
           </>
         )}
 

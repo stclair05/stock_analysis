@@ -251,7 +251,7 @@ def analyse_batch(stock_requests: List[StockRequest]):
     return results
 
 @app.get("/s3-images")
-def list_s3_images():
+def list_s3_images(prefix: str = "natgas/"):
     s3 = boto3.client(
         's3',
         region_name='ap-southeast-2',
@@ -259,20 +259,19 @@ def list_s3_images():
         aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
     )
     bucket_name = "stclair-ndr-bucket"
-    prefix = "natgas/"
     response = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
     images = []
     for obj in response.get("Contents", []):
         key = obj["Key"]
         if key.lower().endswith((".png", ".jpg", ".jpeg", ".gif")):
             images.append(f"https://{bucket_name}.s3.ap-southeast-2.amazonaws.com/{key}")
-     # ---- Natural Sort by number in filename ----
+    # ---- Natural Sort by number in filename ----
     def sort_key(url):
-        match = re.search(r'nat_gas_(\d+)\.png', url)
-        return int(match.group(1)) if match else 0
-
+        match = re.search(r'(nat_gas|oil)_(\d+)\.png', url)
+        return int(match.group(2)) if match else 0
     images.sort(key=sort_key)
     return {"images": images}
+
 
 
 @app.get("/compare_ratio")

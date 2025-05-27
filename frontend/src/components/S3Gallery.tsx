@@ -1,18 +1,22 @@
 import React, { useEffect, useState } from "react";
 
-const S3Gallery: React.FC = () => {
+interface S3GalleryProps {
+  folder?: string; // e.g., "natgas" or "oil"
+}
+
+const S3Gallery: React.FC<S3GalleryProps> = ({ folder = "natgas" }) => {
   const [images, setImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost:8000/s3-images") // Adjust if your backend runs on a different port or domain
+    fetch(`http://localhost:8000/s3-images?prefix=${folder}/`)
       .then((res) => res.json())
       .then((data) => {
         setImages(data.images || []);
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, []);
+  }, [folder]);
 
   if (loading) return <div>Loading images…</div>;
   if (!images.length) return <div>No images found.</div>;
@@ -23,14 +27,14 @@ const S3Gallery: React.FC = () => {
         <img
           key={url}
           src={url}
-          alt="Natural Gas"
+          alt={folder.charAt(0).toUpperCase() + folder.slice(1)}
           style={{
-             maxWidth: "100%",      // ← Try 600px or 100%
-            width: "100%",          // ← Ensures it fills the container
-            height: "auto",         // ← Maintains aspect ratio
+            maxWidth: "100%",
+            width: "100%",
+            height: "auto",
             borderRadius: "12px",
             boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-            objectFit: "contain"    // ← "cover" will crop, "contain" will fit whole image
+            objectFit: "contain",
           }}
         />
       ))}
