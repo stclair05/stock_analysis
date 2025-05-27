@@ -242,6 +242,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     dotLabelSeriesRef.current.clear();
     setShow50dmaTarget(false);
     setShowFibTarget(false);
+    setSecondarySymbol(null);
 
     // 🧹 Reset mean reversion bounds
     resetMeanRevLimits();
@@ -1217,10 +1218,11 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           <div className="fw-bold text-muted mb-1">📈 Volatility (BBWP)</div>
           <div ref={volChartRef} style={{ width: "100%", height: "150px" }} />
         </div>
-
+              
         {/* === Overlay Grid === */}
         {overlayData && <OverlayGrid overlayData={overlayData} />}
 
+        {/* === Models (Pictures) === */}
         {NATURAL_GAS_STOCKS.includes(stockSymbol?.toUpperCase() ?? "") && (
           <>
             {/* === Natural Gas Model Header === */}
