@@ -1,8 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, Dispatch, SetStateAction } from "react";
 import { UTCTimestamp, LineSeries } from "lightweight-charts";
 import { DrawingLine, DrawingHorizontal, DrawingSixPoint } from "./types";
 
 type Point = { time: UTCTimestamp; value: number };
+export type Drawing = DrawingLine | DrawingHorizontal | DrawingSixPoint;
 
 export function useClickHandler(
   chartRef: React.MutableRefObject<any>,
@@ -14,7 +15,14 @@ export function useClickHandler(
   previewSeriesRef: React.MutableRefObject<any>,
   sixPointDotPreviewRef: React.MutableRefObject<any>,
   sixPointPreviewRef: React.MutableRefObject<any>,
-  sixPointHoverLineRef: React.MutableRefObject<any>
+  sixPointHoverLineRef: React.MutableRefObject<any>,
+  drawings: Drawing[],
+  selectedDrawingIndex: number | null,
+  setSelectedDrawingIndex: Dispatch<SetStateAction<number | null>>,
+  draggedEndpoint: "start" | "end" | null,              // <--- NEW
+  setDraggedEndpoint: Dispatch<SetStateAction<"start" | "end" | null>>,
+  isDragging: boolean,                                  // <--- NEW
+  setIsDragging: Dispatch<SetStateAction<boolean>>
 ) {
   useEffect(() => {
     if (!chartRef.current || !candleSeriesRef.current) return;
@@ -117,9 +125,94 @@ export function useClickHandler(
           }
         }
       }
+
+      // Only run if not currently drawing
+      if (!drawingModeRef.current) {
+        // Loop through all lines
+        for (let i = 0; i < drawings.length; i++) {
+          const drawing = drawings[i];
+          if (drawing.type !== "line") continue;
+          const [start, end] = drawing.points; 
+          // Get mouse click's time/price
+          const price = candleSeries.coordinateToPrice(param.point.y);
+          const time = param.time as UTCTimestamp;
+
+          // Check if near endpoints (tweak threshold as needed)
+          const dist = (a: { time: any; value: any; }, b: { time: number; value: number; }) => Math.sqrt((a.time - b.time) ** 2 + (a.value - b.value) ** 2);
+          const mousePoint = { time, value: price };
+          const THRESHOLD = 5; // try ~0.5 units, may need to adjust
+
+          if (dist(mousePoint, start) < THRESHOLD) {
+            setSelectedDrawingIndex(i);
+            setDraggedEndpoint("start");
+            setIsDragging(true);
+            return;
+          } else if (dist(mousePoint, end) < THRESHOLD) {
+            setSelectedDrawingIndex(i);
+            setDraggedEndpoint("end");
+            setIsDragging(true);
+            return;
+          }
+        }
+      }
+
     };
 
     chart.subscribeClick(handleClick);
     return () => chart.unsubscribeClick(handleClick);
   }, [chartRef.current, candleSeriesRef.current, drawingModeRef.current]);
+
+  // === DRAG ENDPOINT LOGIC START ===
+  useEffect(() => {
+    if (!isDragging || selectedDrawingIndex == null || !draggedEndpoint) return;
+    console.log("Dragging mode active: line", selectedDrawingIndex, draggedEndpoint);
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      const chart = chartRef.current;
+      const candleSeries = candleSeriesRef.current;
+      if (!chart || !candleSeries) return;
+
+      const rect = chart._container.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      // Convert pixel to time/price
+      const time = chart.timeScale().coordinateToTime(x);
+      const price = candleSeries.coordinateToPrice(y);
+
+      if (time == null || price == null) return;
+
+      setDrawings((prevDrawings: any[]) => {
+        const updated = [...prevDrawings];
+        if (updated[selectedDrawingIndex]?.type !== "line") return updated;
+
+        // Shallow copy of line
+        const line = { ...updated[selectedDrawingIndex] };
+        const points = [...line.points];
+
+        if (draggedEndpoint === "start") {
+          points[0] = { time, value: price };
+        } else if (draggedEndpoint === "end") {
+          points[1] = { time, value: price };
+        }
+        line.points = points;
+        updated[selectedDrawingIndex] = line;
+        return updated;
+      });
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      setDraggedEndpoint(null);
+      // Optionally clear selection here: setSelectedDrawingIndex(null);
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isDragging, selectedDrawingIndex, draggedEndpoint]);
 }

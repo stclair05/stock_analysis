@@ -46,6 +46,9 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
   const sixPointHoverLineRef = useRef<ISeriesApi<"Line"> | null>(null);
   const [timeframe, setTimeframe] = useState<"daily" | "weekly" | "monthly">("weekly");
 
+  const [selectedDrawingIndex, setSelectedDrawingIndex] = useState<number | null>(null);
+  const [draggedEndpoint, setDraggedEndpoint] = useState<'start' | 'end' | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const drawnSeriesRef = useRef<Map<number, ISeriesApi<"Line">>>(new Map());
   const previewSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
@@ -155,7 +158,14 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     previewSeriesRef,
     sixPointDotPreviewRef,
     sixPointPreviewRef,
-    sixPointHoverLineRef
+    sixPointHoverLineRef,
+    drawings,
+    selectedDrawingIndex,
+    setSelectedDrawingIndex,
+    draggedEndpoint,       // <-- ADD THIS
+    setDraggedEndpoint,    // <-- AND THIS
+    isDragging,            // <-- AND THIS
+    setIsDragging          // <-- AND THIS
   );
 
   const resetMeanRevLimits = () => {
