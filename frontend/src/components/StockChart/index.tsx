@@ -180,16 +180,24 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
   );
 
   const resetMeanRevLimits = () => {
-    const chart = meanRevChartInstance.current;
-    if (chart && meanRevLimitSeries.current.length > 0) {
-      meanRevLimitSeries.current.forEach((series) => chart.removeSeries(series));
-    }
+  const chart = meanRevChartInstance.current;
+  if (chart) {
+    meanRevLimitSeries.current.forEach(series => {
+      if (series) {
+        try {
+          chart.removeSeries(series);
+        } catch (err) {
+          // Optional: log if you want to catch rare Lightweight Charts errors
+        }
+      }
+    });
+  }
+  meanRevLimitSeries.current = [];
+  setMeanRevLimitLines([]);
+  limitDrawingModeRef.current = false;
+  setLimitDrawingMode(false);
+};
 
-    meanRevLimitSeries.current = [];
-    setMeanRevLimitLines([]);
-    limitDrawingModeRef.current = false;
-    setLimitDrawingMode(false);
-  };
 
   function findClosestTime(series: ISeriesApi<any>, time: UTCTimestamp): UTCTimestamp | null {
         const data = series?.data?.() ?? [];  // If you're storing data elsewhere, replace this
@@ -526,21 +534,18 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     // === 🔁 Full 3-Way Safe Sync ===
 
     function safeSetVisibleRange(chart: IChartApi | null, range: any) {
-      if (
-        !chart ||
-        !chart.timeScale ||
-        typeof chart.timeScale !== "function" ||
-        !range ||
-        range.from == null ||
-        range.to == null
-      ) return;
-    
+      // Block null or undefined range
+      if (!chart || !range || range.from == null || range.to == null) return;
       try {
         chart.timeScale().setVisibleRange(range);
       } catch (err) {
-        console.warn("⛔ safeSetVisibleRange failed", err);
+        // Optional: only log if not "Value is null"
+        if (!(err instanceof Error && err.message === "Value is null")) {
+          console.warn("⛔ safeSetVisibleRange failed", err);
+        }
       }
     }
+
 
     chart.timeScale().subscribeVisibleTimeRangeChange((range) => {
       safeSetVisibleRange(meanRevChartInstance.current, range);
@@ -883,10 +888,17 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
     return () => {
       Object.values(refs).forEach(series => {
-        if (series) chart.removeSeries(series);
+        // Defensive: only remove if series is still a valid series object
+        if (series && typeof series.applyOptions === "function") {
+          try {
+            chart.removeSeries(series);
+          } catch (err) {
+            // You may want to log, but can safely ignore
+          }
+        }
       });
-
     };
+
   }, [showBollingerBand, overlayData.bb_middle, overlayData.bb_upper, overlayData.bb_lower]);
 
 
