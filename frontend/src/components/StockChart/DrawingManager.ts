@@ -10,7 +10,7 @@ export function useDrawingManager(
   dotLabelSeriesRef: React.MutableRefObject<Map<number, ISeriesApi<"Line">[]>>,
   drawnSeriesRef: React.MutableRefObject<Map<number, ISeriesApi<"Line">>>,
 ) {
-  const drawingModeRef = useRef<"trendline" | "horizontal" | "sixpoint" | null>(null);
+  const drawingModeRef = useRef<"trendline" | "horizontal" | "sixpoint" | "copy-trendline" | null>(null);
   const lineBufferRef = useRef<{ time: UTCTimestamp; value: number }[]>([]);
 
   const [drawings, setDrawings] = useState<Drawing[]>([]);

@@ -16,7 +16,8 @@ import { Ruler, Minus, RotateCcw, ArrowUpDown, PlusCircle, X } from "lucide-reac
 
 import {
   StockChartProps,
-  Point
+  Point,
+  CopyTrendlineBuffer
 } from "./types";
 
 import { useWebSocketData } from "./useWebSocketData";
@@ -141,6 +142,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
   );
 
   const drawingsRef = useRef(drawings);
+  const copyBufferRef = useRef<CopyTrendlineBuffer | null>(null);
 
   usePreviewManager(
     chartRef,
@@ -149,7 +151,8 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     hoverPoint,
     previewSeriesRef,
     sixPointHoverLineRef,
-    moveEndpointFixedRef 
+    moveEndpointFixedRef,
+    copyBufferRef 
   );
 
   useDrawingRenderer(chartRef, drawings, drawnSeriesRef, dotLabelSeriesRef);
@@ -172,7 +175,8 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     setSelectedDrawingIndex,
     draggedEndpoint,      
     setDraggedEndpoint,      
-    moveEndpointFixedRef 
+    moveEndpointFixedRef,
+    copyBufferRef 
   );
 
   const resetMeanRevLimits = () => {
@@ -299,7 +303,17 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     setSelectedDrawingIndex(null);
   }
 
-
+  function handleCopyDrawing() {
+    if (selectedDrawingIndex == null) return;
+    const drawing = drawings[selectedDrawingIndex];
+    if (!drawing || drawing.type !== "line") return;
+    const [p1, p2] = drawing.points;
+    copyBufferRef.current = {
+      dx: p2.time - p1.time,
+      dy: p2.value - p1.value,
+    };
+    drawingModeRef.current = "copy-trendline";
+  }
   /*
     CREATE CHARTS
   */
@@ -1059,6 +1073,18 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
                 🗑️ Delete
               </button>
             )}
+
+            {selectedDrawingIndex !== null &&
+             drawings[selectedDrawingIndex]?.type === "line" && (
+              <button
+                className="btn btn-sm btn-info"
+                onClick={handleCopyDrawing}
+                title="Copy Selected Trendline"
+              >
+                📋 Copy
+              </button>
+            )}
+
 
             <button
               onClick={resetChart}

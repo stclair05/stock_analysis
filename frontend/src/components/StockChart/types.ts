@@ -31,3 +31,9 @@ export interface StockChartProps {
 }
 
 export type Point = { time: UTCTimestamp; value: number };
+
+export type CopyTrendlineBuffer = {
+  dx: number;
+  dy: number;
+  original?: [Point, Point];
+};
