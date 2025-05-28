@@ -35,6 +35,7 @@ import OverlayGrid from "./OverlayGrid";
 import SecondaryChart from "./SecondaryChart";
 
 import S3Gallery from "../S3Gallery";
+import { useMainChartData } from "./useMainChartData";
 
 
 
@@ -597,7 +598,20 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
     candleSeriesRef.current = candleSeries;
 
-    chart.timeScale().fitContent();
+    // --- Enable scrolling 6 months (26 weeks) into the future ---
+    const mainSeriesData = candleSeries.data();
+    if (mainSeriesData.length > 0) {
+      const FUTURE_WEEKS = 26; // 6 months
+      const SECONDS_IN_WEEK = 7 * 24 * 60 * 60;
+      const lastTime = mainSeriesData[mainSeriesData.length - 1].time as UTCTimestamp;
+      const futureLimit = (lastTime + FUTURE_WEEKS * SECONDS_IN_WEEK) as UTCTimestamp;
+
+      chart.timeScale().setVisibleRange({
+        from: mainSeriesData[0].time,
+        to: futureLimit,
+      });
+    }
+
     
     // deletion of trendline
     chart.subscribeClick((param) => {
@@ -825,7 +839,9 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     };
   }, [stockSymbol]);
 
-  useWebSocketData(stockSymbol, candleSeriesRef, timeframe);
+  // useWebSocketData(stockSymbol, candleSeriesRef, timeframe);
+  useMainChartData(stockSymbol, candleSeriesRef, timeframe, chartRef);
+
   /*
     DRAWINGS
   */
