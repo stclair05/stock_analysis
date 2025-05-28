@@ -151,6 +151,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
   useClickHandler(
     chartRef,
     candleSeriesRef,
+    chartContainerRef,
     drawingModeRef,
     lineBufferRef,
     setDrawings,
@@ -772,7 +773,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
   
       }
-      
+      console.log("[main chart] Drawings updated:", drawings);
     });
   }, [drawings]);
 
