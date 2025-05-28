@@ -10,7 +10,7 @@ export function usePreviewManager(
   hoverPoint: Point | null,
   previewSeriesRef: React.MutableRefObject<ISeriesApi<"Line"> | null>,
   sixPointHoverLineRef: React.MutableRefObject<ISeriesApi<"Line"> | null>,
-  moveEndpointFixedRef: React.MutableRefObject<Point[]>,
+  moveEndpointFixedRef: React.MutableRefObject<Point | null>
 ) {
   useEffect(() => {
     const chart = chartRef.current;
