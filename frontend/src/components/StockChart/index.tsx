@@ -180,16 +180,24 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
   );
 
   const resetMeanRevLimits = () => {
-    const chart = meanRevChartInstance.current;
-    if (chart && meanRevLimitSeries.current.length > 0) {
-      meanRevLimitSeries.current.forEach((series) => chart.removeSeries(series));
-    }
+  const chart = meanRevChartInstance.current;
+  if (chart) {
+    meanRevLimitSeries.current.forEach(series => {
+      if (series) {
+        try {
+          chart.removeSeries(series);
+        } catch (err) {
+          // Optional: log if you want to catch rare Lightweight Charts errors
+        }
+      }
+    });
+  }
+  meanRevLimitSeries.current = [];
+  setMeanRevLimitLines([]);
+  limitDrawingModeRef.current = false;
+  setLimitDrawingMode(false);
+};
 
-    meanRevLimitSeries.current = [];
-    setMeanRevLimitLines([]);
-    limitDrawingModeRef.current = false;
-    setLimitDrawingMode(false);
-  };
 
   function findClosestTime(series: ISeriesApi<any>, time: UTCTimestamp): UTCTimestamp | null {
         const data = series?.data?.() ?? [];  // If you're storing data elsewhere, replace this
@@ -880,10 +888,17 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
     return () => {
       Object.values(refs).forEach(series => {
-        if (series) chart.removeSeries(series);
+        // Defensive: only remove if series is still a valid series object
+        if (series && typeof series.applyOptions === "function") {
+          try {
+            chart.removeSeries(series);
+          } catch (err) {
+            // You may want to log, but can safely ignore
+          }
+        }
       });
-
     };
+
   }, [showBollingerBand, overlayData.bb_middle, overlayData.bb_upper, overlayData.bb_lower]);
 
 
