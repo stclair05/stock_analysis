@@ -54,8 +54,6 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
   const drawnSeriesRef = useRef<Map<number, ISeriesApi<"Line">>>(new Map());
   const previewSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
-  const [draggedWholeLine, setDraggedWholeLine] = useState<boolean>(false);
-  const dragStartOffsetRef = useRef<{timeOffset: number, valueOffset: number} | null>(null);
 
 
   // Mean Rev Chart
@@ -808,7 +806,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     const chart = chartRef.current;
     if (!chart) return;
     drawingsRef.current = drawings;
-  }, [drawings, selectedDrawingIndex, draggedWholeLine]);
+  }, [drawings, selectedDrawingIndex]);
 
   /*
     CALLING BACKEND FOR OVERLAY DATA 
@@ -1020,103 +1018,6 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     histogramSeries.setData(histogramData);
 
   }, [overlayData.volatility]);
-  
-  /*
-    MOUSE DOWN USEEFFECT 
-  */
-  useEffect(() => {
-    const chartDiv = chartContainerRef.current;
-    if (!chartDiv) return;
-
-    function handleMouseDown(e: MouseEvent) {
-      if (selectedDrawingIndex === null || !chartDiv) return;
-      // Only start dragging if not clicking on endpoint!
-      if (draggedEndpoint) return;
-
-      // Calculate the click's time/price on chart
-      const boundingRect = chartDiv.getBoundingClientRect();
-      const x = e.clientX - boundingRect.left;
-      const y = e.clientY - boundingRect.top;
-      if (!chartRef.current || !candleSeriesRef.current) return;
-      const time = chartRef.current.timeScale().coordinateToTime(x);
-      const price = candleSeriesRef.current.coordinateToPrice(y);
-      if (typeof time !== "number" || typeof price !== "number") return;
-
-      // Get selected drawing
-      const drawing = drawingsRef.current[selectedDrawingIndex];
-      if (!drawing || drawing.type !== "line" || drawing.points.length !== 2) return;
-
-      // Compute offset between mouse and first point
-      dragStartOffsetRef.current = {
-        timeOffset: time - drawing.points[0].time,
-        valueOffset: price - drawing.points[0].value,
-      };
-
-      setDraggedWholeLine(true);
-      e.preventDefault();
-    }
-
-    chartDiv.addEventListener("mousedown", handleMouseDown);
-
-    return () => chartDiv.removeEventListener("mousedown", handleMouseDown);
-  }, [selectedDrawingIndex, draggedEndpoint]);
-  /*
-    MOUSE UP USEEFFECT 
-  */
-  useEffect(() => {
-    function handleMouseMove(e: MouseEvent) {
-      if (!draggedWholeLine || selectedDrawingIndex === null) return;
-      if (!chartRef.current || !candleSeriesRef.current) return;
-
-      const chartDiv = chartContainerRef.current;
-      if (!chartDiv) return;
-
-      const boundingRect = chartDiv.getBoundingClientRect();
-      const x = e.clientX - boundingRect.left;
-      const y = e.clientY - boundingRect.top;
-      const time = chartRef.current.timeScale().coordinateToTime(x);
-      const price = candleSeriesRef.current.coordinateToPrice(y);
-      if (typeof time !== "number" || typeof price !== "number") return;
-
-      const drawing = drawingsRef.current[selectedDrawingIndex];
-      if (!drawing || drawing.type !== "line" || drawing.points.length !== 2) return;
-
-      // Compute delta from original offset
-      const offset = dragStartOffsetRef.current;
-      if (!offset) return;
-      const timeDelta = time - drawing.points[0].time - offset.timeOffset;
-      const valueDelta = price - drawing.points[0].value - offset.valueOffset;
-
-      // Move both points by the delta
-      const newPoints = drawing.points.map(pt => ({
-        time: pt.time + timeDelta as UTCTimestamp,
-        value: pt.value + valueDelta,
-      }));
-
-      // Update drawing
-      setDrawings(prev =>
-        prev.map((d, idx) =>
-          idx === selectedDrawingIndex ? { ...d, points: newPoints } : d
-        )
-      );
-    }
-
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, [draggedWholeLine, selectedDrawingIndex]);
-  /*
-    On Mouse Up, End the Move USEEFFECT
-  */
-  useEffect(() => {
-    function handleMouseUp() {
-      if (draggedWholeLine) {
-        setDraggedWholeLine(false);
-        dragStartOffsetRef.current = null;
-      }
-    }
-    window.addEventListener("mouseup", handleMouseUp);
-    return () => window.removeEventListener("mouseup", handleMouseUp);
-  }, [draggedWholeLine]);
 
   return (
     <div className="position-relative bg-white p-3 shadow-sm rounded border">
