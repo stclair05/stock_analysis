@@ -54,6 +54,7 @@ export function useClickHandler(
             chart.removeSeries(previewSeriesRef.current);
             previewSeriesRef.current = null;
           }
+          drawingModeRef.current = null;
         }
       }
 
@@ -64,6 +65,7 @@ export function useClickHandler(
           time,
         };
         setDrawings((prev) => [...prev, horizontalLine]);
+        drawingModeRef.current = null;
       }
 
       else if (drawingModeRef.current === "sixpoint") {
@@ -124,6 +126,7 @@ export function useClickHandler(
             sixPointHoverLineRef.current = null;
           }
         }
+        drawingModeRef.current = null;
       }
 
       // Only run if not currently drawing
@@ -160,13 +163,13 @@ export function useClickHandler(
 
     chart.subscribeClick(handleClick);
     return () => chart.unsubscribeClick(handleClick);
-  }, [chartRef.current, candleSeriesRef.current, drawingModeRef.current]);
+  }, [chartRef.current, candleSeriesRef.current, drawingModeRef.current, drawings]);
 
   // === DRAG ENDPOINT LOGIC START ===
   useEffect(() => {
     if (!isDragging || selectedDrawingIndex == null || !draggedEndpoint) return;
     console.log("Dragging mode active: line", selectedDrawingIndex, draggedEndpoint);
-    
+
     const handleMouseMove = (e: MouseEvent) => {
       const chart = chartRef.current;
       const candleSeries = candleSeriesRef.current;
