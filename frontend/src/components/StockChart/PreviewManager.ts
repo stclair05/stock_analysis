@@ -17,7 +17,7 @@ export function usePreviewManager(
   useEffect(() => {
     const chart = chartRef.current;
     if (!chart) return;
-
+    console.log("[PreviewManager] drawingMode:", drawingModeRef.current, "hoverPoint:", hoverPoint, "copyBuffer:", copyBufferRef.current);
     if (
       drawingModeRef.current === "trendline" &&
       lineBufferRef.current.length === 1 &&
@@ -42,7 +42,9 @@ export function usePreviewManager(
       const { dx, dy } = copyBufferRef.current;
       const start = { time: hoverPoint.time as UTCTimestamp, value: hoverPoint.value };
       const end = { time: (hoverPoint.time + dx) as UTCTimestamp, value: hoverPoint.value + dy };
+      console.log("[PreviewManager] Rendering copy-trendline preview from", start, "to", end);
       if (!previewSeriesRef.current) {
+        console.log("[PreviewManager] Creating new previewSeries for copy-trendline");
         previewSeriesRef.current = chart.addSeries(LineSeries, {
           color: "#708090",
           lineWidth: 1,
@@ -103,5 +105,5 @@ export function usePreviewManager(
         previewSeriesRef.current = null;
       }
     }
-  }, [hoverPoint]);
+  }, [hoverPoint, drawingModeRef.current]);
 }

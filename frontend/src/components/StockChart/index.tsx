@@ -313,6 +313,12 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       dy: p2.value - p1.value,
     };
     drawingModeRef.current = "copy-trendline";
+
+    setHoverPoint((prev) => {
+      console.log("[Copy] Previous hoverPoint:", prev);
+      return prev ?? p1;
+    });
+    console.log("[Copy] Set drawingMode to copy-trendline, buffer:", copyBufferRef.current);
   }
   /*
     CREATE CHARTS
@@ -643,14 +649,16 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     
       const time = param.time as UTCTimestamp;
     
-      if (!(lineBufferRef.current.length === 0 || lineBufferRef.current.length >= 6)) {
+      if (drawingModeRef.current) {
         setHoverPoint((prev) => {
           if (!prev || prev.time !== time || prev.value !== price) {
+            console.log("[CrosshairMove] Setting hoverPoint for mode:", drawingModeRef.current, { time, value: price });
             return { time, value: price };
           }
           return prev;
         });
       }
+
     
       const meanChart = meanRevChartInstance.current;
       const meanSeries = meanRevLineRef.current;
