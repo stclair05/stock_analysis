@@ -333,7 +333,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     CREATE CHARTS
   */
   useEffect(() => {
-    // ===== Reset all drawing/UI/chart states on ticker switch =====
+    // --- 1. Reset all drawing/UI/chart states ---
     drawingModeRef.current = null;
     lineBufferRef.current = [];
     setDrawings([]);
@@ -344,7 +344,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     setSecondarySymbol(null);
     resetMeanRevLimits();
 
-    // --- Preload mean reversion band lines from backend ---
+    // --- 2. Fetch price targets from backend ---
     const fetchInitialTargets = async () => {
       try {
         const res = await fetch(`http://localhost:8000/price_targets/${stockSymbol}`);
@@ -373,7 +373,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     };
     fetchInitialTargets();
 
-    // ===== Guard: abort if containers/refs missing =====
+    // --- 3. Guard: abort if containers/refs missing ---
     if (
       !stockSymbol ||
       !chartContainerRef.current ||
@@ -383,14 +383,15 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     )
       return;
 
-    // ===== Clear chart containers (for full remount) =====
+    // --- 4. Clear all chart containers ---
     [chartContainerRef, meanRevChartRef, rsiChartRef, volChartRef].forEach((ref) => {
       if (ref.current) ref.current.innerHTML = "";
     });
 
-    // ====== Helper: Initialize a chart with common options ======
+    // --- 5. Helper: Create chart with shared options ---
     function initChart(ref: React.RefObject<HTMLDivElement | null>, width: number, height: number) {
-      return createChart(ref.current!, {
+      if (!ref.current) throw new Error("Chart container not mounted");
+      return createChart(ref.current, {
         width,
         height,
         layout: { background: { color: "#fff" }, textColor: "#000" },
@@ -406,11 +407,10 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       });
     }
 
-    // ===== Create Main Chart =====
+    // --- 6. Create all charts ---
     const chart = initChart(chartContainerRef, 0, 400);
     chartRef.current = chart;
 
-    // ===== Create Mean Reversion Chart =====
     const meanChart = initChart(meanRevChartRef, meanRevChartRef.current!.clientWidth, 200);
     meanRevChartInstance.current = meanChart;
     const meanRevLineSeries = meanChart.addSeries(LineSeries, { color: "#000", lineWidth: 2 });
@@ -419,21 +419,19 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     ]);
     meanRevLineRef.current = meanRevLineSeries;
 
-    // ===== Create RSI Chart =====
     const rsiChart = initChart(rsiChartRef, rsiChartRef.current!.clientWidth, 150);
     rsiChartInstance.current = rsiChart;
     const rsiLine = rsiChart.addSeries(LineSeries, { color: "#f44336", lineWidth: 1 });
     rsiLine.setData([{ time: Date.now() / 1000 as UTCTimestamp, value: 50 }]);
     rsiLineRef.current = rsiLine;
 
-    // ===== Create Volatility Chart =====
     const volChart = initChart(volChartRef, volChartRef.current!.clientWidth, 150);
     volChartInstance.current = volChart;
     const volLine = volChart.addSeries(LineSeries, { color: "#795548", lineWidth: 1 });
     volLine.setData([{ time: Date.now() / 1000 as UTCTimestamp, value: 0 }]);
     volLineRef.current = volLine;
 
-    // ===== Resize Observer: keep all charts in sync =====
+    // --- 7. Resize Observer: keep all charts width-synced ---
     const resizeObserver = new ResizeObserver(entries => {
       for (let entry of entries) {
         if (entry.contentRect) {
@@ -447,14 +445,14 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     });
     resizeObserver.observe(chartContainerRef.current);
 
-    // ===== Main Candle Series =====
+    // --- 8. Add main candle series ---
     const candleSeries = chart.addSeries(CandlestickSeries, {
       upColor: "#26a69a", downColor: "#ef5350", borderVisible: false,
       wickUpColor: "#26a69a", wickDownColor: "#ef5350",
     });
     candleSeriesRef.current = candleSeries;
 
-    // ===== Safe Visible Range Sync (across all charts) =====
+    // --- 9. Visible range sync helper ---
     function safeSetVisibleRange(chart: IChartApi | null, range: any) {
       if (!chart || !range || range.from == null || range.to == null) return;
       try { chart.timeScale().setVisibleRange(range); }
@@ -463,7 +461,6 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           console.warn("⛔ safeSetVisibleRange failed", err);
       }
     }
-    // Helper: subscribe one chart's visible range to update all others
     function syncVisibleRangeToAll(sourceChart: IChartApi) {
       sourceChart.timeScale().subscribeVisibleTimeRangeChange((range) => {
         [chartRef.current, meanRevChartInstance.current, rsiChartInstance.current, volChartInstance.current].forEach(c =>
@@ -473,19 +470,63 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     }
     [chart, meanChart, rsiChart, volChart].forEach(syncVisibleRangeToAll);
 
-    // ===== Crosshair Sync Across Charts =====
+    // --- 10. Main chart crosshair handler: drawing/preview logic + sync ---
+    chart.subscribeCrosshairMove((param) => {
+      if (!param.time || !param.point) return;
+      const price = candleSeries.coordinateToPrice(param.point.y);
+      if (price == null) return;
+      const time = param.time as UTCTimestamp;
+
+      // ----- Drawing/preview mode logic -----
+      if (drawingModeRef.current) {
+        setHoverPoint((prev) => {
+          if (!prev || prev.time !== time || prev.value !== price) {
+            return { time, value: price };
+          }
+          return prev;
+        });
+      }
+
+      // ----- Synchronize crosshairs to all other charts -----
+      const meanChart = meanRevChartInstance.current;
+      const meanSeries = meanRevLineRef.current;
+      const rsiChart = rsiChartInstance.current;
+      const rsiSeries = rsiLineRef.current;
+      const volChart = volChartInstance.current;
+      const volSeries = volLineRef.current;
+      const secondaryChart = secondaryChartRef.current;
+      const secondarySeries = secondarySeriesRef.current;
+
+      if (meanChart && meanSeries) {
+        const snappedTime = findClosestTime(meanSeries, time);
+        if (snappedTime) meanChart.setCrosshairPosition(0, snappedTime, meanSeries);
+      }
+      if (rsiChart && rsiSeries) {
+        const snappedTime = findClosestTime(rsiSeries, time);
+        if (snappedTime) rsiChart.setCrosshairPosition(0, snappedTime, rsiSeries);
+      }
+      if (volChart && volSeries) {
+        const snappedTime = findClosestTime(volSeries, time);
+        if (snappedTime) volChart.setCrosshairPosition(0, snappedTime, volSeries);
+      }
+      if (secondaryChart && secondarySeries) {
+        const snappedTime = findClosestTime(secondarySeries, time);
+        if (snappedTime) secondaryChart.setCrosshairPosition(0, snappedTime, secondarySeries);
+      }
+    });
+
+    // --- 11. DRY crosshairMove handler for other charts (just sync main chart) ---
     function handleCrosshairMove(param: any, chartRef: any, seriesRef: any) {
       if (!param.time || !param.point) return;
       const time = param.time as UTCTimestamp;
       if (seriesRef.current) syncCrosshair(chartRef, seriesRef.current, time);
     }
-    chart.subscribeCrosshairMove((p) => handleCrosshairMove(p, chart, candleSeriesRef));
     meanChart.subscribeCrosshairMove((p) => handleCrosshairMove(p, meanChart, meanRevLineRef));
     rsiChart.subscribeCrosshairMove((p) => handleCrosshairMove(p, rsiChart, rsiLineRef));
     volChart.subscribeCrosshairMove((p) => handleCrosshairMove(p, volChart, volLineRef));
 
-    // ===== Chart Click Handlers (main & mean reversion chart only shown here, customize as needed) =====
-     // deletion of trendline
+    // --- 12. Chart click handlers ---
+    // deletion of trendline
     chart.subscribeClick((param) => {
       console.log("✅ Chart click event triggered:", param);
 
@@ -594,9 +635,8 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       limitDrawingModeRef.current = false;
 
     });
-  
 
-    // ===== Cleanup: remove all charts, observers, and refs =====
+    // --- 13. Cleanup ---
     return () => {
       [chart, meanChart, rsiChart, volChart].forEach(c => c.remove());
       resizeObserver.disconnect();
@@ -610,6 +650,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       candleSeriesRef.current = null;
     };
   }, [stockSymbol]);
+
 
 
   // useWebSocketData(stockSymbol, candleSeriesRef, timeframe);
