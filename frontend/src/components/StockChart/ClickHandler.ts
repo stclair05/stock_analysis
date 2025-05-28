@@ -22,7 +22,8 @@ export function useClickHandler(
   selectedDrawingIndex: number | null,
   setSelectedDrawingIndex: Dispatch<SetStateAction<number | null>>,
   draggedEndpoint: "start" | "end" | null,
-  setDraggedEndpoint: Dispatch<SetStateAction<"start" | "end" | null>>
+  setDraggedEndpoint: Dispatch<SetStateAction<"start" | "end" | null>>,
+  moveEndpointFixedRef: React.MutableRefObject<Point | null>
 ) {
   // --- MAIN CHART CLICK HANDLER ---
   useEffect(() => {
@@ -76,13 +77,16 @@ export function useClickHandler(
             setSelectedDrawingIndex(i);
             setDraggedEndpoint("start");
             setHoverPoint(start);
+            lineBufferRef.current = [end];
             drawingModeRef.current = "move-endpoint";
+            moveEndpointFixedRef.current = end; // <-- moving start, so end is fixed
             return;
           } else if (dist(mousePoint, end) < THRESHOLD) {
             setSelectedDrawingIndex(i);
             setDraggedEndpoint("end");
             setHoverPoint(end);
             drawingModeRef.current = "move-endpoint";
+            moveEndpointFixedRef.current = start; // <-- moving end, so start is fixed
             return;
           }
         }

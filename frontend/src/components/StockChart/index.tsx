@@ -16,6 +16,7 @@ import { Ruler, Minus, RotateCcw, ArrowUpDown, PlusCircle, X } from "lucide-reac
 
 import {
   StockChartProps,
+  Point
 } from "./types";
 
 import { useWebSocketData } from "./useWebSocketData";
@@ -48,7 +49,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
   const [selectedDrawingIndex, setSelectedDrawingIndex] = useState<number | null>(null);
   const [draggedEndpoint, setDraggedEndpoint] = useState<'start' | 'end' | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
+  const moveEndpointFixedRef = useRef<Point | null>(null);
 
   const drawnSeriesRef = useRef<Map<number, ISeriesApi<"Line">>>(new Map());
   const previewSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
@@ -143,7 +144,8 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     lineBufferRef,
     hoverPoint,
     previewSeriesRef,
-    sixPointHoverLineRef
+    sixPointHoverLineRef,
+    moveEndpointFixedRef 
   );
 
   useDrawingRenderer(chartRef, drawings, drawnSeriesRef, dotLabelSeriesRef);
@@ -164,8 +166,9 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     drawings,
     selectedDrawingIndex,
     setSelectedDrawingIndex,
-    draggedEndpoint,       // <-- ADD THIS
-    setDraggedEndpoint,    // <-- AND THIS    
+    draggedEndpoint,      
+    setDraggedEndpoint,      
+    moveEndpointFixedRef 
   );
 
   const resetMeanRevLimits = () => {
@@ -696,45 +699,6 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
   }, [stockSymbol]);
 
   useWebSocketData(stockSymbol, candleSeriesRef, timeframe);
-  /*
-    FOR HOVERING FOR TRENDLINE
- 
-  useEffect(() => {
-    const container = chartContainerRef.current;
-    if (!container) return;
-
-    const handleMove = (e: MouseEvent) => {
-      if (!chartRef.current || !candleSeriesRef.current) return;
-      if (
-        (drawingModeRef.current === "trendline" && lineBufferRef.current.length === 1) ||
-        (drawingModeRef.current === "sixpoint" && lineBufferRef.current.length >= 1 && lineBufferRef.current.length < 6)
-      ) {
-        const rect = container.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        const time = chartRef.current.timeScale().coordinateToTime(x);
-        const price = candleSeriesRef.current.coordinateToPrice(y);
-        // Only accept numeric UTC times
-        if (typeof time === "number" && typeof price === "number") {
-          setHoverPoint({ time, value: price });
-        } else {
-          setHoverPoint(null);
-        }
-      }
-    };
-
-
-    container.addEventListener("mousemove", handleMove);
-    return () => container.removeEventListener("mousemove", handleMove);
-  }, [
-    chartContainerRef,
-    chartRef,
-    candleSeriesRef,
-    drawingModeRef,
-    lineBufferRef,
-    setHoverPoint,
-  ]);
- */
   /*
     DRAWINGS
   */
