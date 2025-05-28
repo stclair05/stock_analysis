@@ -47,12 +47,16 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
   const sixPointHoverLineRef = useRef<ISeriesApi<"Line"> | null>(null);
   const [timeframe, setTimeframe] = useState<"daily" | "weekly" | "monthly">("weekly");
 
+  // Drawings 
   const [selectedDrawingIndex, setSelectedDrawingIndex] = useState<number | null>(null);
   const [draggedEndpoint, setDraggedEndpoint] = useState<'start' | 'end' | null>(null);
   const moveEndpointFixedRef = useRef<Point | null>(null);
 
   const drawnSeriesRef = useRef<Map<number, ISeriesApi<"Line">>>(new Map());
   const previewSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
+  const [draggedWholeLine, setDraggedWholeLine] = useState<boolean>(false);
+  const dragStartOffsetRef = useRef<{timeOffset: number, valueOffset: number} | null>(null);
+
 
   // Mean Rev Chart
   const meanRevChartRef = useRef<HTMLDivElement>(null);
@@ -247,60 +251,55 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     setMeanRevLimitLines([upper, lower]);
   }
 
-  // Utility: Distance between two points
-function distance(p1: Point, p2: Point) {
-  return Math.sqrt((p1.time - p2.time) ** 2 + (p1.value - p2.value) ** 2);
-}
+  // Utility: Min distance from point to line segment (p1, p2)
+  function pointToSegmentDistance(point: Point, p1: Point, p2: Point) {
+    const x = point.time, y = point.value;
+    const x1 = p1.time, y1 = p1.value;
+    const x2 = p2.time, y2 = p2.value;
 
-// Utility: Min distance from point to line segment (p1, p2)
-function pointToSegmentDistance(point: Point, p1: Point, p2: Point) {
-  const x = point.time, y = point.value;
-  const x1 = p1.time, y1 = p1.value;
-  const x2 = p2.time, y2 = p2.value;
+    const A = x - x1;
+    const B = y - y1;
+    const C = x2 - x1;
+    const D = y2 - y1;
 
-  const A = x - x1;
-  const B = y - y1;
-  const C = x2 - x1;
-  const D = y2 - y1;
+    const dot = A * C + B * D;
+    const lenSq = C * C + D * D;
+    let param = -1;
+    if (lenSq !== 0) param = dot / lenSq;
 
-  const dot = A * C + B * D;
-  const lenSq = C * C + D * D;
-  let param = -1;
-  if (lenSq !== 0) param = dot / lenSq;
+    let xx, yy;
+    if (param < 0) { xx = x1; yy = y1; }
+    else if (param > 1) { xx = x2; yy = y2; }
+    else {
+      xx = x1 + param * C;
+      yy = y1 + param * D;
+    }
 
-  let xx, yy;
-  if (param < 0) { xx = x1; yy = y1; }
-  else if (param > 1) { xx = x2; yy = y2; }
-  else {
-    xx = x1 + param * C;
-    yy = y1 + param * D;
+    const dx = x - xx;
+    const dy = y - yy;
+    return Math.sqrt(dx * dx + dy * dy);
   }
 
-  const dx = x - xx;
-  const dy = y - yy;
-  return Math.sqrt(dx * dx + dy * dy);
-}
 
+  function handleDeleteDrawing() {
+    if (selectedDrawingIndex === null) return;
 
-function handleDeleteDrawing() {
-  if (selectedDrawingIndex === null) return;
+    // Remove from drawings array (immutable update)
+    setDrawings((prev) => prev.filter((_, idx) => idx !== selectedDrawingIndex));
 
-  // Remove from drawings array (immutable update)
-  setDrawings((prev) => prev.filter((_, idx) => idx !== selectedDrawingIndex));
+    // Remove the rendered series from the chart
+    const series = drawnSeriesRef.current.get(selectedDrawingIndex);
+    if (series) {
+      chartRef.current?.removeSeries(series);
+      drawnSeriesRef.current.delete(selectedDrawingIndex);
+    }
 
-  // Remove the rendered series from the chart
-  const series = drawnSeriesRef.current.get(selectedDrawingIndex);
-  if (series) {
-    chartRef.current?.removeSeries(series);
-    drawnSeriesRef.current.delete(selectedDrawingIndex);
+    // Also remove any dot labels, if used (6-point, etc)
+    dotLabelSeriesRef.current.delete(selectedDrawingIndex);
+
+    // Deselect
+    setSelectedDrawingIndex(null);
   }
-
-  // Also remove any dot labels, if used (6-point, etc)
-  dotLabelSeriesRef.current.delete(selectedDrawingIndex);
-
-  // Deselect
-  setSelectedDrawingIndex(null);
-}
 
 
   /*
@@ -682,8 +681,6 @@ function handleDeleteDrawing() {
     });
     
     // SYNC CROSS HAIRS 
-    
-
     chart.subscribeCrosshairMove((param) => {
       if (!param.time || !param.point) return;
       const time = param.time as UTCTimestamp;
@@ -810,84 +807,8 @@ function handleDeleteDrawing() {
   useEffect(() => {
     const chart = chartRef.current;
     if (!chart) return;
-
-    drawings.forEach((drawing, i) => {
-      if (drawnSeriesRef.current.has(i)) return;
-
-      if (drawing.type === "line") {
-        const series = chart.addSeries(LineSeries, {
-          color: "#FF9800",
-          lineWidth: 2,
-        });
-        series.setData(drawing.points);
-        drawnSeriesRef.current.set(i, series);
-      } else if (drawing.type === "horizontal") {
-        const t = drawing.time;
-        const YEARS = 10;
-        const secondsPerDay = 86400;
-        const lineStart = (t - secondsPerDay * 365 * YEARS) as UTCTimestamp;
-        const lineEnd = (t + secondsPerDay * 365 * YEARS) as UTCTimestamp;
-
-        const series = chart.addSeries(LineSeries, {
-          color: "#03A9F4",
-          lineWidth: 1,
-        });
-        series.setData([
-          { time: lineStart, value: drawing.price },
-          { time: lineEnd, value: drawing.price },
-        ]);
-        drawnSeriesRef.current.set(i, series);
-      } else if (drawing.type === "sixpoint") {
-
-        if (drawing.points.length !== 6) {
-          console.warn("Invalid sixpoint drawing skipped", drawing.points);
-          return;
-        }
-        const series = chart.addSeries(LineSeries, {
-          color: "#2a2a2a",
-          lineWidth: 2,
-        });
-        
-        const sortedPoints = [...drawing.points].sort((a, b) => a.time - b.time);
-
-        series.setData(sortedPoints);
-        series.applyOptions({
-          priceLineVisible: false,
-          lastValueVisible: false, 
-        });
-        drawnSeriesRef.current.set(i, series);
-        
-        const dotLabels: ISeriesApi<"Line">[] = [];
-        const pointLabels = ['A', 'B', 'C', 'D', 'E', 'X'];
-        const dotColor = '#1f77b4';
-
-        sortedPoints.forEach((pt, idx) => {
-          const dotSeries = chart.addSeries(LineSeries, {
-            color: dotColor,
-            lineWidth: 1,
-            pointMarkersVisible: true,
-            pointMarkersRadius: 4,
-          });
-
-          dotSeries.setData([{ time: pt.time, value: pt.value }]);
-
-          dotSeries.applyOptions({
-            priceLineVisible: false,
-            lastValueVisible: true,
-            title: pointLabels[idx],
-          });
-
-          dotLabels.push(dotSeries);
-        });
-
-        dotLabelSeriesRef.current.set(i, dotLabels);
-
-  
-      }
-      console.log("[main chart] Drawings updated:", drawings);
-    });
     drawingsRef.current = drawings;
-  }, [drawings]);
+  }, [drawings, selectedDrawingIndex, draggedWholeLine]);
 
   /*
     CALLING BACKEND FOR OVERLAY DATA 
@@ -1100,6 +1021,102 @@ function handleDeleteDrawing() {
 
   }, [overlayData.volatility]);
   
+  /*
+    MOUSE DOWN USEEFFECT 
+  */
+  useEffect(() => {
+    const chartDiv = chartContainerRef.current;
+    if (!chartDiv) return;
+
+    function handleMouseDown(e: MouseEvent) {
+      if (selectedDrawingIndex === null || !chartDiv) return;
+      // Only start dragging if not clicking on endpoint!
+      if (draggedEndpoint) return;
+
+      // Calculate the click's time/price on chart
+      const boundingRect = chartDiv.getBoundingClientRect();
+      const x = e.clientX - boundingRect.left;
+      const y = e.clientY - boundingRect.top;
+      if (!chartRef.current || !candleSeriesRef.current) return;
+      const time = chartRef.current.timeScale().coordinateToTime(x);
+      const price = candleSeriesRef.current.coordinateToPrice(y);
+      if (typeof time !== "number" || typeof price !== "number") return;
+
+      // Get selected drawing
+      const drawing = drawingsRef.current[selectedDrawingIndex];
+      if (!drawing || drawing.type !== "line" || drawing.points.length !== 2) return;
+
+      // Compute offset between mouse and first point
+      dragStartOffsetRef.current = {
+        timeOffset: time - drawing.points[0].time,
+        valueOffset: price - drawing.points[0].value,
+      };
+
+      setDraggedWholeLine(true);
+      e.preventDefault();
+    }
+
+    chartDiv.addEventListener("mousedown", handleMouseDown);
+
+    return () => chartDiv.removeEventListener("mousedown", handleMouseDown);
+  }, [selectedDrawingIndex, draggedEndpoint]);
+  /*
+    MOUSE UP USEEFFECT 
+  */
+  useEffect(() => {
+    function handleMouseMove(e: MouseEvent) {
+      if (!draggedWholeLine || selectedDrawingIndex === null) return;
+      if (!chartRef.current || !candleSeriesRef.current) return;
+
+      const chartDiv = chartContainerRef.current;
+      if (!chartDiv) return;
+
+      const boundingRect = chartDiv.getBoundingClientRect();
+      const x = e.clientX - boundingRect.left;
+      const y = e.clientY - boundingRect.top;
+      const time = chartRef.current.timeScale().coordinateToTime(x);
+      const price = candleSeriesRef.current.coordinateToPrice(y);
+      if (typeof time !== "number" || typeof price !== "number") return;
+
+      const drawing = drawingsRef.current[selectedDrawingIndex];
+      if (!drawing || drawing.type !== "line" || drawing.points.length !== 2) return;
+
+      // Compute delta from original offset
+      const offset = dragStartOffsetRef.current;
+      if (!offset) return;
+      const timeDelta = time - drawing.points[0].time - offset.timeOffset;
+      const valueDelta = price - drawing.points[0].value - offset.valueOffset;
+
+      // Move both points by the delta
+      const newPoints = drawing.points.map(pt => ({
+        time: pt.time + timeDelta as UTCTimestamp,
+        value: pt.value + valueDelta,
+      }));
+
+      // Update drawing
+      setDrawings(prev =>
+        prev.map((d, idx) =>
+          idx === selectedDrawingIndex ? { ...d, points: newPoints } : d
+        )
+      );
+    }
+
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, [draggedWholeLine, selectedDrawingIndex]);
+  /*
+    On Mouse Up, End the Move USEEFFECT
+  */
+  useEffect(() => {
+    function handleMouseUp() {
+      if (draggedWholeLine) {
+        setDraggedWholeLine(false);
+        dragStartOffsetRef.current = null;
+      }
+    }
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => window.removeEventListener("mouseup", handleMouseUp);
+  }, [draggedWholeLine]);
 
   return (
     <div className="position-relative bg-white p-3 shadow-sm rounded border">
