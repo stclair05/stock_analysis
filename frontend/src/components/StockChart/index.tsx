@@ -526,21 +526,18 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     // === 🔁 Full 3-Way Safe Sync ===
 
     function safeSetVisibleRange(chart: IChartApi | null, range: any) {
-      if (
-        !chart ||
-        !chart.timeScale ||
-        typeof chart.timeScale !== "function" ||
-        !range ||
-        range.from == null ||
-        range.to == null
-      ) return;
-    
+      // Block null or undefined range
+      if (!chart || !range || range.from == null || range.to == null) return;
       try {
         chart.timeScale().setVisibleRange(range);
       } catch (err) {
-        console.warn("⛔ safeSetVisibleRange failed", err);
+        // Optional: only log if not "Value is null"
+        if (!(err instanceof Error && err.message === "Value is null")) {
+          console.warn("⛔ safeSetVisibleRange failed", err);
+        }
       }
     }
+
 
     chart.timeScale().subscribeVisibleTimeRangeChange((range) => {
       safeSetVisibleRange(meanRevChartInstance.current, range);
