@@ -1,6 +1,6 @@
 import { useEffect, Dispatch, SetStateAction } from "react";
 import { UTCTimestamp, LineSeries } from "lightweight-charts";
-import { DrawingLine, DrawingHorizontal, DrawingSixPoint } from "./types";
+import { DrawingLine, DrawingHorizontal, DrawingSixPoint, CopyTrendlineBuffer } from "./types";
 
 type Point = { time: UTCTimestamp; value: number };
 export type Drawing = DrawingLine | DrawingHorizontal | DrawingSixPoint;
@@ -9,7 +9,7 @@ export function useClickHandler(
   chartRef: React.MutableRefObject<any>,
   candleSeriesRef: React.MutableRefObject<any>,
   chartContainerRef: React.MutableRefObject<HTMLDivElement | null>,
-  drawingModeRef: React.MutableRefObject<"trendline" | "horizontal" | "sixpoint" | "move-endpoint" | null>,
+  drawingModeRef: React.MutableRefObject<"trendline" | "horizontal" | "sixpoint" | "move-endpoint" | "copy-trendline" | null>,
   lineBufferRef: React.MutableRefObject<Point[]>,
   setDrawings: React.Dispatch<React.SetStateAction<any[]>>,
   setHoverPoint: React.Dispatch<React.SetStateAction<Point | null>>,
@@ -23,7 +23,9 @@ export function useClickHandler(
   setSelectedDrawingIndex: Dispatch<SetStateAction<number | null>>,
   draggedEndpoint: "start" | "end" | null,
   setDraggedEndpoint: Dispatch<SetStateAction<"start" | "end" | null>>,
-  moveEndpointFixedRef: React.MutableRefObject<Point | null>
+  moveEndpointFixedRef: React.MutableRefObject<Point | null>,
+  copyBufferRef: React.MutableRefObject<CopyTrendlineBuffer | null>
+
 ) {
   // --- MAIN CHART CLICK HANDLER ---
   useEffect(() => {
@@ -57,11 +59,28 @@ export function useClickHandler(
         return;
       }
 
+
       if (!param.time || !param.point) return;
       const price = candleSeries.coordinateToPrice(param.point.y);
       if (price == null) return;
       const time = param.time as UTCTimestamp;
       const point = { time, value: price };
+
+      if (drawingModeRef.current === "copy-trendline" && copyBufferRef.current && point) {
+        const { dx, dy } = copyBufferRef.current;
+        const start = point;
+        const end = { time: start.time + dx, value: start.value + dy };
+        setDrawings((prev) => [
+          ...prev,
+          { type: "line", points: [start, end] }
+        ]);
+        drawingModeRef.current = null;
+        copyBufferRef.current = null;
+        if (previewSeriesRef.current) {
+          previewSeriesRef.current.setData([]); // Clear preview
+        }
+        return;
+      }
 
       // (2) If NOT in drawing mode, check if user is clicking near an endpoint to start move
       if (!drawingModeRef.current) {
@@ -72,7 +91,7 @@ export function useClickHandler(
           const dist = (a: Point, b: Point) =>
             Math.sqrt((a.time - b.time) ** 2 + (a.value - b.value) ** 2);
           const mousePoint = { time, value: price };
-          const THRESHOLD = 5;
+          const THRESHOLD = 0.5;
           if (dist(mousePoint, start) < THRESHOLD) {
             setSelectedDrawingIndex(i);
             setDraggedEndpoint("start");
@@ -90,6 +109,7 @@ export function useClickHandler(
             return;
           }
         }
+        return;
       }
 
       // === Trendline, Horizontal, Sixpoint logic unchanged ===

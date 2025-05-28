@@ -1,21 +1,23 @@
 import { useEffect } from "react";
 import { ISeriesApi, LineSeries, UTCTimestamp } from "lightweight-charts";
+import { CopyTrendlineBuffer } from "./types";
 
 type Point = { time: UTCTimestamp; value: number };
 
 export function usePreviewManager(
   chartRef: React.MutableRefObject<any>,
-  drawingModeRef: React.MutableRefObject<"trendline" | "horizontal" | "sixpoint" | null>,
+  drawingModeRef: React.MutableRefObject<"trendline" | "horizontal" | "sixpoint" | "move-endpoint" | "copy-trendline" |null>,
   lineBufferRef: React.MutableRefObject<Point[]>,
   hoverPoint: Point | null,
   previewSeriesRef: React.MutableRefObject<ISeriesApi<"Line"> | null>,
   sixPointHoverLineRef: React.MutableRefObject<ISeriesApi<"Line"> | null>,
-  moveEndpointFixedRef: React.MutableRefObject<Point[]>,
+  moveEndpointFixedRef: React.MutableRefObject<Point | null>,
+  copyBufferRef: React.MutableRefObject<CopyTrendlineBuffer | null>
 ) {
   useEffect(() => {
     const chart = chartRef.current;
     if (!chart) return;
-
+    console.log("[PreviewManager] drawingMode:", drawingModeRef.current, "hoverPoint:", hoverPoint, "copyBuffer:", copyBufferRef.current);
     if (
       drawingModeRef.current === "trendline" &&
       lineBufferRef.current.length === 1 &&
@@ -35,6 +37,24 @@ export function usePreviewManager(
       }
       previewSeriesRef.current.setData(previewData);
     } 
+
+    else if (drawingModeRef.current === "copy-trendline" && copyBufferRef.current && hoverPoint) {
+      const { dx, dy } = copyBufferRef.current;
+      const start = { time: hoverPoint.time as UTCTimestamp, value: hoverPoint.value };
+      const end = { time: (hoverPoint.time + dx) as UTCTimestamp, value: hoverPoint.value + dy };
+      console.log("[PreviewManager] Rendering copy-trendline preview from", start, "to", end);
+      if (!previewSeriesRef.current) {
+        console.log("[PreviewManager] Creating new previewSeries for copy-trendline");
+        previewSeriesRef.current = chart.addSeries(LineSeries, {
+          color: "#708090",
+          lineWidth: 1,
+          lineStyle: 1,
+        });
+      }
+      previewSeriesRef.current.setData([start, end]);
+    }
+
+
 
     // ---- Move endpoint preview (NEW LOGIC)
     else if (
@@ -85,5 +105,5 @@ export function usePreviewManager(
         previewSeriesRef.current = null;
       }
     }
-  }, [hoverPoint]);
+  }, [hoverPoint, drawingModeRef.current]);
 }
