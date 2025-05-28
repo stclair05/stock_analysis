@@ -16,6 +16,7 @@ import { Ruler, Minus, RotateCcw, ArrowUpDown, PlusCircle, X } from "lucide-reac
 
 import {
   StockChartProps,
+  Point
 } from "./types";
 
 import { useWebSocketData } from "./useWebSocketData";
@@ -46,6 +47,9 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
   const sixPointHoverLineRef = useRef<ISeriesApi<"Line"> | null>(null);
   const [timeframe, setTimeframe] = useState<"daily" | "weekly" | "monthly">("weekly");
 
+  const [selectedDrawingIndex, setSelectedDrawingIndex] = useState<number | null>(null);
+  const [draggedEndpoint, setDraggedEndpoint] = useState<'start' | 'end' | null>(null);
+  const moveEndpointFixedRef = useRef<Point | null>(null);
 
   const drawnSeriesRef = useRef<Map<number, ISeriesApi<"Line">>>(new Map());
   const previewSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
@@ -140,7 +144,8 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     lineBufferRef,
     hoverPoint,
     previewSeriesRef,
-    sixPointHoverLineRef
+    sixPointHoverLineRef,
+    moveEndpointFixedRef 
   );
 
   useDrawingRenderer(chartRef, drawings, drawnSeriesRef, dotLabelSeriesRef);
@@ -148,14 +153,22 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
   useClickHandler(
     chartRef,
     candleSeriesRef,
+    chartContainerRef,
     drawingModeRef,
     lineBufferRef,
     setDrawings,
     setHoverPoint,
+    hoverPoint,
     previewSeriesRef,
     sixPointDotPreviewRef,
     sixPointPreviewRef,
-    sixPointHoverLineRef
+    sixPointHoverLineRef,
+    drawings,
+    selectedDrawingIndex,
+    setSelectedDrawingIndex,
+    draggedEndpoint,      
+    setDraggedEndpoint,      
+    moveEndpointFixedRef 
   );
 
   const resetMeanRevLimits = () => {
@@ -232,7 +245,9 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     setMeanRevLimitLines([upper, lower]);
   }
 
-
+  /*
+    CREATE CHARTS
+  */
   useEffect(() => {
     // 🧹 Reset drawing state to prevent bugs on ticker switch
     drawingModeRef.current = null;
@@ -684,7 +699,9 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
   }, [stockSymbol]);
 
   useWebSocketData(stockSymbol, candleSeriesRef, timeframe);
-
+  /*
+    DRAWINGS
+  */
   useEffect(() => {
     const chart = chartRef.current;
     if (!chart) return;
@@ -762,10 +779,13 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
   
       }
-      
+      console.log("[main chart] Drawings updated:", drawings);
     });
   }, [drawings]);
 
+  /*
+    CALLING BACKEND FOR OVERLAY DATA 
+  */
   useEffect(() => {
     const fetchOverlayData = async () => {
       try {

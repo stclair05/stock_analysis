@@ -18,15 +18,19 @@ export function useDrawingRenderer(
     if (!chart) return;
 
     drawings.forEach((drawing, i) => {
-      if (drawnSeriesRef.current.has(i)) return;
-
       if (drawing.type === "line") {
-        const series = chart.addSeries(LineSeries, {
-          color: "#FF9800",
-          lineWidth: 2,
-        });
+        let series = drawnSeriesRef.current.get(i);
+
+        // Create if doesn't exist
+        if (!series) {
+          series = chart.addSeries(LineSeries, {
+            color: "#FF9800",
+            lineWidth: 2,
+          });
+          drawnSeriesRef.current.set(i, series);
+        }
+        // Always update data!
         series.setData(drawing.points);
-        drawnSeriesRef.current.set(i, series);
       }
 
       else if (drawing.type === "horizontal") {

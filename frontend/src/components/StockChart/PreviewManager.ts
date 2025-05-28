@@ -9,7 +9,8 @@ export function usePreviewManager(
   lineBufferRef: React.MutableRefObject<Point[]>,
   hoverPoint: Point | null,
   previewSeriesRef: React.MutableRefObject<ISeriesApi<"Line"> | null>,
-  sixPointHoverLineRef: React.MutableRefObject<ISeriesApi<"Line"> | null>
+  sixPointHoverLineRef: React.MutableRefObject<ISeriesApi<"Line"> | null>,
+  moveEndpointFixedRef: React.MutableRefObject<Point[]>,
 ) {
   useEffect(() => {
     const chart = chartRef.current;
@@ -33,7 +34,28 @@ export function usePreviewManager(
         });
       }
       previewSeriesRef.current.setData(previewData);
-    } else if (
+    } 
+
+    // ---- Move endpoint preview (NEW LOGIC)
+    else if (
+      drawingModeRef.current === "move-endpoint" &&
+      moveEndpointFixedRef?.current &&
+      hoverPoint
+    ) {
+      const [p1, p2] = [moveEndpointFixedRef.current, hoverPoint];
+      if (p1.time === p2.time) return;
+      const previewData = [p1, p2].sort((a, b) => a.time - b.time);
+      if (!previewSeriesRef.current) {
+        previewSeriesRef.current = chart.addSeries(LineSeries, {
+          color: "#708090",
+          lineWidth: 1,
+          lineStyle: 1,
+        });
+      }
+      previewSeriesRef.current.setData(previewData);
+      return;
+    }
+    else if (
       drawingModeRef.current === "sixpoint" &&
       lineBufferRef.current.length >= 1 &&
       hoverPoint
