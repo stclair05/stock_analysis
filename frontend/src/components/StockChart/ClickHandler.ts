@@ -72,7 +72,7 @@ export function useClickHandler(
           const dist = (a: Point, b: Point) =>
             Math.sqrt((a.time - b.time) ** 2 + (a.value - b.value) ** 2);
           const mousePoint = { time, value: price };
-          const THRESHOLD = 5;
+          const THRESHOLD = 0.5;
           if (dist(mousePoint, start) < THRESHOLD) {
             setSelectedDrawingIndex(i);
             setDraggedEndpoint("start");

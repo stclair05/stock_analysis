@@ -138,6 +138,8 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     drawnSeriesRef
   );
 
+  const drawingsRef = useRef(drawings);
+
   usePreviewManager(
     chartRef,
     drawingModeRef,
@@ -244,6 +246,62 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
     setMeanRevLimitLines([upper, lower]);
   }
+
+  // Utility: Distance between two points
+function distance(p1: Point, p2: Point) {
+  return Math.sqrt((p1.time - p2.time) ** 2 + (p1.value - p2.value) ** 2);
+}
+
+// Utility: Min distance from point to line segment (p1, p2)
+function pointToSegmentDistance(point: Point, p1: Point, p2: Point) {
+  const x = point.time, y = point.value;
+  const x1 = p1.time, y1 = p1.value;
+  const x2 = p2.time, y2 = p2.value;
+
+  const A = x - x1;
+  const B = y - y1;
+  const C = x2 - x1;
+  const D = y2 - y1;
+
+  const dot = A * C + B * D;
+  const lenSq = C * C + D * D;
+  let param = -1;
+  if (lenSq !== 0) param = dot / lenSq;
+
+  let xx, yy;
+  if (param < 0) { xx = x1; yy = y1; }
+  else if (param > 1) { xx = x2; yy = y2; }
+  else {
+    xx = x1 + param * C;
+    yy = y1 + param * D;
+  }
+
+  const dx = x - xx;
+  const dy = y - yy;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+
+function handleDeleteDrawing() {
+  if (selectedDrawingIndex === null) return;
+
+  // Remove from drawings array (immutable update)
+  setDrawings((prev) => prev.filter((_, idx) => idx !== selectedDrawingIndex));
+
+  // Remove the rendered series from the chart
+  const series = drawnSeriesRef.current.get(selectedDrawingIndex);
+  if (series) {
+    chartRef.current?.removeSeries(series);
+    drawnSeriesRef.current.delete(selectedDrawingIndex);
+  }
+
+  // Also remove any dot labels, if used (6-point, etc)
+  dotLabelSeriesRef.current.delete(selectedDrawingIndex);
+
+  // Deselect
+  setSelectedDrawingIndex(null);
+}
+
 
   /*
     CREATE CHARTS
@@ -518,6 +576,53 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     candleSeriesRef.current = candleSeries;
 
     chart.timeScale().fitContent();
+    
+    // deletion of trendline
+    chart.subscribeClick((param) => {
+      console.log("✅ Chart click event triggered:", param);
+
+      if (!param.point || !param.time) {
+        console.log("❌ No point or time on click event");
+        return;
+      }
+
+      const time = param.time as UTCTimestamp;
+      const price = candleSeries.coordinateToPrice(param.point.y);
+
+      if (price == null) {
+        console.log("❌ Could not convert point.y to price", param.point.y);
+        return;
+      }
+
+      console.log("🕰️ Click at time:", time, "price:", price);
+
+      // Debug: Show all drawings
+      const currentDrawings = drawingsRef.current;
+      console.log("Current drawings:", currentDrawings);
+
+      let foundIndex: number | null = null;
+      currentDrawings.forEach((drawing, idx) => {
+        if (drawing.type === "line" && drawing.points.length === 2) {
+          const clickPoint = { time, value: price };
+          const dist = pointToSegmentDistance(clickPoint, drawing.points[0], drawing.points[1]);
+          console.log(`[${idx}] Line drawing, dist to click:`, dist);
+          // Try with a larger threshold temporarily for debug!
+          if (dist < 1) {
+            console.log(`🎯 Found close line at index ${idx}, selecting`);
+            foundIndex = idx;
+          }
+        }
+      });
+
+      if (foundIndex !== null) {
+        setSelectedDrawingIndex(foundIndex);
+        console.log("✅ setSelectedDrawingIndex:", foundIndex);
+      } else {
+        setSelectedDrawingIndex(null);
+        console.log("No drawing selected.");
+      }
+    });
+
 
     chart.subscribeCrosshairMove((param) => {
       if (!param.time || !param.point) return;
@@ -781,6 +886,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       }
       console.log("[main chart] Drawings updated:", drawings);
     });
+    drawingsRef.current = drawings;
   }, [drawings]);
 
   /*
@@ -1026,6 +1132,15 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
             >
               1→5
             </button>
+            {selectedDrawingIndex !== null && (
+              <button
+                className="btn btn-sm btn-danger"
+                onClick={handleDeleteDrawing}
+                title="Delete Selected Drawing"
+              >
+                🗑️ Delete
+              </button>
+            )}
 
             <button
               onClick={resetChart}
