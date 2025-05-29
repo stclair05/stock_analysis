@@ -20,6 +20,7 @@ import boto3
 import os
 import pandas as pd
 import re
+from fastapi import Query
 
 app = FastAPI()
 
@@ -335,3 +336,12 @@ def compare_ratio(
         )
     except Exception as e:
         return {"error": str(e)}
+
+
+@app.get("/api/signals_{timeframe}/{symbol}")
+def get_signals(timeframe: str, symbol: str, strategy: str = Query("trendinvestorpro")):
+    analyser = StockAnalyser(symbol)
+    if strategy == "trendinvestorpro":
+        return {"markers": analyser.get_trendinvestorpro_signals(timeframe)}
+    else:
+        return {"error": f"Unknown strategy: {strategy}"}

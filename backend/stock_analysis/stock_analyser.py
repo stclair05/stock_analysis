@@ -788,3 +788,121 @@ class StockAnalyser:
             )
         ]
         return {"history": ratio_history}
+    
+
+    '''
+    Buy / Sell Indicators 
+    '''
+    def get_trendinvestorpro_signals(self, timeframe: str = "weekly") -> list[dict]:
+        """
+        Implements the TrendInvestorPro strategy logic.
+        Returns a list of marker dicts: {time, price, side, label}
+        """
+        # 1. Choose correct OHLC dataframe
+        if timeframe == "daily":
+            df = self.df
+        elif timeframe == "weekly":
+            df = self.weekly_df
+        elif timeframe == "monthly":
+            df = self.monthly_df
+        else:
+            raise ValueError(f"Invalid timeframe: {timeframe}")
+
+        df = df.copy().dropna()
+        if len(df) < 210:
+            return []
+
+        # 2. Calculate all indicators
+        close = df["Close"]
+        high = df["High"]
+        low = df["Low"]
+
+        # 5-day and 200-day SMAs
+        ma_short = close.rolling(window=5).mean()
+        ma_long = close.rolling(window=200).mean()
+        spread_pct = (ma_short - ma_long) / ma_long * 100
+
+        # Keltner Channel
+        ebasis = close.ewm(span=65, adjust=False).mean()
+        atr_kc = (high.combine(close.shift(), max) - low.combine(close.shift(), min)).rolling(window=65).mean()
+        lower_kc = ebasis - 2 * atr_kc
+
+        exitCondMA = spread_pct <= -1.0
+
+        # Track consecutive closes below lowerKC
+        consec_below = (close < lower_kc).astype(int)
+        consec_below = consec_below.groupby((consec_below != consec_below.shift()).cumsum()).cumsum()
+        exitCondKC = consec_below >= 5
+
+        # State flags
+        enableMAReentry = False
+        enableKCReentry = False
+        sawDownCross = False
+
+        in_position = False  # Strategy position flag
+        markers = []
+
+        for i in range(200, len(df)):
+            # Use iloc for safety
+            t = df.index[i]
+            price = close.iloc[i]
+            s_pct = spread_pct.iloc[i]
+            below_kc = consec_below.iloc[i] >= 5
+            ex_ma = s_pct <= -1.0
+            ex_kc = below_kc
+
+            # Entry Logic
+            entry_signal = False
+            reentry_signal = False
+
+            # Initial entry
+            if (s_pct >= 1.0) and not (enableMAReentry or enableKCReentry) and not in_position:
+                entry_signal = True
+
+            # Re-entry
+            if (s_pct >= 1.0) and sawDownCross and (enableMAReentry or enableKCReentry) and not in_position:
+                reentry_signal = True
+
+            # Place entry marker
+            if entry_signal or reentry_signal:
+                markers.append({
+                    "time": int(pd.Timestamp(t).timestamp()),
+                    "price": price,
+                    "side": "buy",
+                    "label": "ENTRY" if entry_signal else "RE-ENTRY",
+                })
+                in_position = True
+                enableMAReentry = False
+                enableKCReentry = False
+                sawDownCross = False
+
+            # Exits
+            if in_position and ex_ma:
+                markers.append({
+                    "time": int(pd.Timestamp(t).timestamp()),
+                    "price": price,
+                    "side": "sell",
+                    "label": "EXIT MA"
+                })
+                in_position = False
+                enableMAReentry = True
+                enableKCReentry = False
+                sawDownCross = False
+
+            if in_position and ex_kc:
+                markers.append({
+                    "time": int(pd.Timestamp(t).timestamp()),
+                    "price": price,
+                    "side": "sell",
+                    "label": "EXIT KC"
+                })
+                in_position = False
+                enableMAReentry = False
+                enableKCReentry = True
+                sawDownCross = False
+
+            # Track a down-cross
+            if (enableMAReentry or enableKCReentry) and s_pct <= -1.0:
+                sawDownCross = True
+
+        return markers
