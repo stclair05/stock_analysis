@@ -906,3 +906,91 @@ class StockAnalyser:
                 sawDownCross = True
 
         return markers
+    
+    def get_stclair_signals(self, timeframe: str = "weekly") -> list[dict]:
+        """
+        Implements the multi-timeframe trend-following strategy described in PineScript.
+        Returns list of {time, price, side, label}.
+        - timeframe: "weekly", "monthly", or "daily"
+        """
+        # Choose base OHLC dataframe for the given timeframe
+        if timeframe == "daily":
+            df = self.df
+        elif timeframe == "weekly":
+            df = self.weekly_df
+        elif timeframe == "monthly":
+            df = self.monthly_df
+        else:
+            raise ValueError(f"Invalid timeframe: {timeframe}")
+
+        # Must use daily data for moving averages, and resampled for RSI signals
+        daily_df = self.df
+        # For price comparison, always use daily close aligned with higher timeframe
+        # We'll use the last close *before or at* each bar for SMA check
+
+        # Prepare the signals DataFrame
+        markers = []
+
+        # Precompute moving averages (on daily data)
+        sma20 = daily_df['Close'].rolling(window=20).mean()
+        sma200 = daily_df['Close'].rolling(window=200).mean()
+
+        # Get the close price for each bar (on timeframe)
+        close = df['Close']
+
+        # Compute RSI and its 14-period SMA on the chosen timeframe
+        rsi = compute_wilder_rsi(close, 14)
+        rsi_ma = rsi.rolling(window=14).mean()
+
+        # Align daily MA to higher timeframe index (take most recent available)
+        daily_close = daily_df['Close']
+
+        in_position = False
+        entry_price = None
+
+        # For each bar in the selected timeframe, determine signals
+        for idx in range(len(df)):
+            t = df.index[idx]
+            bar_close = close.iloc[idx]
+            # Get most recent SMA values up to this bar
+            recent_daily = daily_df.loc[:t]
+            if len(recent_daily) < 200:
+                continue  # skip if not enough data
+
+            latest_sma20 = sma20.loc[:t].iloc[-1]
+            latest_sma200 = sma200.loc[:t].iloc[-1]
+
+            # Entry/exit conditions
+            weekly_rsi = rsi.iloc[idx]
+            weekly_rsi_ma = rsi_ma.iloc[idx]
+
+            enter_cond = (
+                (bar_close > latest_sma200)
+                and (bar_close > latest_sma20)
+                and (weekly_rsi > weekly_rsi_ma)
+            )
+            exit_cond = (weekly_rsi < weekly_rsi_ma)
+
+            if enter_cond and not in_position:
+                # Enter long
+                markers.append({
+                    "time": int(pd.Timestamp(t).timestamp()),
+                    "price": bar_close,
+                    "side": "buy",
+                    "label": "ENTRY",
+                })
+                in_position = True
+                entry_price = bar_close
+
+            elif exit_cond and in_position:
+                # Exit long
+                markers.append({
+                    "time": int(pd.Timestamp(t).timestamp()),
+                    "price": bar_close,
+                    "side": "sell",
+                    "label": "EXIT",
+                })
+                in_position = False
+                entry_price = None
+
+        return markers

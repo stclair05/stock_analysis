@@ -48,6 +48,8 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     // Track markers for strategy signals (TrendInvestorPro etc)
     const [strategyMarkers, setStrategyMarkers] = useState<SeriesMarker<number>[]>([]);
     const [showTrendInvestorPro, setShowTrendInvestorPro] = useState(false); // for checkbox/toggle
+    const [showStClair, setShowStClair] = useState(false);
+
 
 
     
@@ -282,13 +284,14 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
      * Strategy Markers 
      */
     useEffect(() => {
-        console.log("Effect triggered", { showTrendInvestorPro, stockSymbol, timeframe });
-        if (!showTrendInvestorPro) {
-            // Remove markers when toggled off
-            console.log("TrendInvestorPro toggled off, clearing markers.");
+        // Determine which strategy (if any) is selected
+        let strategy: string | null = null;
+        if (showTrendInvestorPro) strategy = "trendinvestorpro";
+        if (showStClair) strategy = "stclair";
+        if (!strategy) {
             setStrategyMarkers([]);
             if (candleSeriesRef.current) {
-                createSeriesMarkers(candleSeriesRef.current, []); // Clear strategy markers
+                createSeriesMarkers(candleSeriesRef.current, []);
             }
             return;
         }
@@ -296,15 +299,10 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
         const fetchSignals = async () => {
             try {
                 const res = await fetch(
-                    `http://localhost:8000/api/signals_${timeframe}/${stockSymbol}?strategy=trendinvestorpro`
+                    `http://localhost:8000/api/signals_${timeframe}/${stockSymbol}?strategy=${strategy}`
                 );
                 const data = await res.json();
-                console.log("Fetched signal response:", data);
-                if (!Array.isArray(data.markers)) {
-                    console.warn("No markers in backend response!");
-                    return;
-                }
-                // Map backend markers to SeriesMarker shape
+                if (!Array.isArray(data.markers)) return;
                 const markers: SeriesMarker<number>[] = data.markers.map((m: any) => ({
                     time: m.time,
                     price: m.price,
@@ -313,23 +311,17 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
                     shape: m.side === "buy" ? "arrowUp" : "arrowDown",
                     text: m.label || (m.side === "buy" ? "BUY" : "SELL"),
                 }));
-                console.log("Converted markers:", markers);
                 setStrategyMarkers(markers);
                 if (candleSeriesRef.current) {
-                    console.log("Setting series markers on series", candleSeriesRef.current, markers);
                     createSeriesMarkers(candleSeriesRef.current, markers);
-                } else {
-                    console.warn("candleSeriesRef.current is null!");
                 }
             } catch (e) {
-                // Optionally handle error
-                console.error("Error fetching signals:", e);
                 setStrategyMarkers([]);
             }
         };
-
         fetchSignals();
-    }, [stockSymbol, timeframe, showTrendInvestorPro]);
+    }, [stockSymbol, timeframe, showTrendInvestorPro, showStClair]);
+
 
 
 
@@ -382,7 +374,7 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     return (
         <div className="graphing-chart-popup">
         <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-            {/* Toolbar will go here later */}
+            {/* Toolbar */}
             <div className="toolbar d-flex gap-2">
                 <button
                     onClick={() => toggleMode("trendline")}
@@ -435,7 +427,7 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
                 )}
 
             </div>
-
+            {/* Period Toggle */}
             <div className="btn-group">
             {["daily", "weekly", "monthly"].map((tf) => (
                 <button
@@ -448,15 +440,39 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
                 </button>
             ))}
             </div>
-            <label className="d-flex align-items-center gap-1" style={{ fontWeight: 500 }}>
-                <input
-                    type="checkbox"
-                    checked={showTrendInvestorPro}
-                    onChange={() => setShowTrendInvestorPro((v) => !v)}
-                    style={{ marginRight: 4 }}
-                />
-                TrendInvestorPro
-            </label>
+
+            {/* Checkboxes for signals */}
+            <div className="d-flex align-items-center gap-3">
+                <label className="d-flex align-items-center gap-1" style={{ fontWeight: 500 }}>
+                    <input
+                        type="checkbox"
+                        checked={showTrendInvestorPro}
+                        onChange={() => {
+                            setShowTrendInvestorPro(v => {
+                                if (!v) setShowStClair(false);
+                                return !v;
+                            });
+                        }}
+                        style={{ marginRight: 4 }}
+                    />
+                    TrendInvestorPro
+                </label>
+                <label className="d-flex align-items-center gap-1" style={{ fontWeight: 500 }}>
+                    <input
+                        type="checkbox"
+                        checked={showStClair}
+                        onChange={() => {
+                            setShowStClair(v => {
+                                if (!v) setShowTrendInvestorPro(false);
+                                return !v;
+                            });
+                        }}
+                        style={{ marginRight: 4 }}
+                    />
+                    StClair
+                </label>
+            </div>
+
 
             <button className="btn btn-sm btn-danger ms-3" style={{ fontSize: "1.2rem" }} onClick={onClose}>
             Close
