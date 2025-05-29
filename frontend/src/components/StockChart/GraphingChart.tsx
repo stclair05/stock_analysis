@@ -6,7 +6,8 @@ import {
   UTCTimestamp,
   CrosshairMode,
   createSeriesMarkers,
-  SeriesMarker
+  SeriesMarker,
+  ISeriesMarkersPluginApi
 } from "lightweight-charts";
 import { useEffect, useRef, useState } from "react";
 import { useMainChartData } from "./useMainChartData";
@@ -46,6 +47,7 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
 
     // Strategy signals 
     // Track markers for strategy signals (TrendInvestorPro etc)
+    const strategyMarkersPluginRef = useRef<ISeriesMarkersPluginApi<number> | null>(null);
     const [strategyMarkers, setStrategyMarkers] = useState<SeriesMarker<number>[]>([]);
     const [showTrendInvestorPro, setShowTrendInvestorPro] = useState(false); // for checkbox/toggle
     const [showStClair, setShowStClair] = useState(false);
@@ -206,6 +208,9 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
 
         chartInstanceRef.current = chart;
         candleSeriesRef.current = series;
+
+        // Initialize the strategy markers plugin
+        strategyMarkersPluginRef.current = createSeriesMarkers(series, []);
         
         // Resize observer for responsive width
         const resizeObserver = new ResizeObserver(entries => {
@@ -290,11 +295,16 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
         if (showTrendInvestorPro) strategy = "trendinvestorpro";
         if (showStClair) strategy = "stclair";
         if (showNorthStar) strategy = "northstar";
+
+
+         // Clear existing markers
+        if (strategyMarkersPluginRef.current) {
+            strategyMarkersPluginRef.current.setMarkers([]);
+        }
+
+        // If no strategy is selected, also clear state markers and exit
         if (!strategy) {
             setStrategyMarkers([]);
-            if (candleSeriesRef.current) {
-                createSeriesMarkers(candleSeriesRef.current, []);
-            }
             return;
         }
 
@@ -315,7 +325,7 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
                 }));
                 setStrategyMarkers(markers);
                 if (candleSeriesRef.current) {
-                    createSeriesMarkers(candleSeriesRef.current, markers);
+                    strategyMarkersPluginRef.current.setMarkers(markers);
                 }
             } catch (e) {
                 setStrategyMarkers([]);
