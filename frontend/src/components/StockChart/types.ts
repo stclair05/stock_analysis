@@ -37,3 +37,13 @@ export type CopyTrendlineBuffer = {
   dy: number;
   original?: [Point, Point];
 };
+
+
+export type Timeframe = "daily" | "weekly" | "monthly";
+export type SignalSide = "BUY" | "SELL" | ""; // "" for no signal
+
+export type SignalSummary = {
+  [strategy in "trendinvestorpro" | "stclair" | "northstar"]: {
+    [T in Timeframe]: SignalSide;
+  }
+};

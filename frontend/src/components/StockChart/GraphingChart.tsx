@@ -6,7 +6,8 @@ import {
   UTCTimestamp,
   CrosshairMode,
   createSeriesMarkers,
-  SeriesMarker
+  SeriesMarker,
+  ISeriesMarkersPluginApi
 } from "lightweight-charts";
 import { useEffect, useRef, useState } from "react";
 import { useMainChartData } from "./useMainChartData";
@@ -15,7 +16,7 @@ import { useDrawingManager } from "./DrawingManager";
 import { usePreviewManager } from "./PreviewManager";
 import { useDrawingRenderer } from "./DrawingRenderer";
 import { useClickHandler } from "./ClickHandler";
-import { Point, CopyTrendlineBuffer, Candle } from "./types";
+import { Point, CopyTrendlineBuffer, SignalSummary, Timeframe, SignalSide } from "./types";
 
 
 interface GraphingChartProps {
@@ -46,8 +47,15 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
 
     // Strategy signals 
     // Track markers for strategy signals (TrendInvestorPro etc)
+    const strategyMarkersPluginRef = useRef<ISeriesMarkersPluginApi<number> | null>(null);
     const [strategyMarkers, setStrategyMarkers] = useState<SeriesMarker<number>[]>([]);
-    const [showTrendInvestorPro, setShowTrendInvestorPro] = useState(false); // for checkbox/toggle
+    const [selectedStrategy, setSelectedStrategy] = useState<null | "trendinvestorpro" | "stclair" | "northstar">(null);
+
+    const [signalSummary, setSignalSummary] = useState<SignalSummary>({
+        trendinvestorpro: { daily: "", weekly: "", monthly: "" },
+        stclair: { daily: "", weekly: "", monthly: "" },
+        northstar: { daily: "", weekly: "", monthly: "" },
+    });
 
 
     
@@ -170,6 +178,30 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
         const dy = y - yy;
         return Math.sqrt(dx * dx + dy * dy);
     }
+    // Fetch the latest signals 
+    async function fetchLatestSignal(stockSymbol: string, strategy: string, timeframe: Timeframe) {
+        const res = await fetch(
+            `http://localhost:8000/api/signals_${timeframe}/${stockSymbol}?strategy=${strategy}`
+        );
+        const data = await res.json();
+        if (!Array.isArray(data.markers) || data.markers.length === 0) return "";
+        // Use the last marker as the latest signal (adjust if your backend sorts differently)
+        const last = data.markers[data.markers.length - 1];
+        if (!last || !last.side) return "";
+        return last.side.toUpperCase() === "BUY" ? "BUY" : "SELL";
+    }
+    // Render latest signal
+    function renderSignal(signal: SignalSide) {
+        if (signal === "BUY") {
+            return <span style={{ color: "#009944", fontWeight: "bold" }}>BUY</span>;
+        }
+        if (signal === "SELL") {
+            return <span style={{ color: "#e91e63", fontWeight: "bold" }}>SELL</span>;
+        }
+        return <span style={{ color: "#aaa" }}>-</span>;
+    }
+   
+
 
     /**
      * Main useEffect
@@ -203,6 +235,9 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
 
         chartInstanceRef.current = chart;
         candleSeriesRef.current = series;
+
+        // Initialize the strategy markers plugin
+        strategyMarkersPluginRef.current = createSeriesMarkers(series, []);
         
         // Resize observer for responsive width
         const resizeObserver = new ResizeObserver(entries => {
@@ -282,54 +317,70 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
      * Strategy Markers 
      */
     useEffect(() => {
-        console.log("Effect triggered", { showTrendInvestorPro, stockSymbol, timeframe });
-        if (!showTrendInvestorPro) {
-            // Remove markers when toggled off
-            console.log("TrendInvestorPro toggled off, clearing markers.");
+        // Clear existing markers
+        if (strategyMarkersPluginRef.current) {
+            strategyMarkersPluginRef.current.setMarkers([]);
+        }
+
+        if (!selectedStrategy) {
             setStrategyMarkers([]);
-            if (candleSeriesRef.current) {
-                createSeriesMarkers(candleSeriesRef.current, []); // Clear strategy markers
-            }
             return;
         }
 
         const fetchSignals = async () => {
             try {
-                const res = await fetch(
-                    `http://localhost:8000/api/signals_${timeframe}/${stockSymbol}?strategy=trendinvestorpro`
-                );
-                const data = await res.json();
-                console.log("Fetched signal response:", data);
-                if (!Array.isArray(data.markers)) {
-                    console.warn("No markers in backend response!");
-                    return;
-                }
-                // Map backend markers to SeriesMarker shape
-                const markers: SeriesMarker<number>[] = data.markers.map((m: any) => ({
-                    time: m.time,
-                    price: m.price,
-                    position: m.side === "buy" ? "belowBar" : "aboveBar",
-                    color: m.side === "buy" ? "#009944" : "#e91e63",
-                    shape: m.side === "buy" ? "arrowUp" : "arrowDown",
-                    text: m.label || (m.side === "buy" ? "BUY" : "SELL"),
-                }));
-                console.log("Converted markers:", markers);
-                setStrategyMarkers(markers);
-                if (candleSeriesRef.current) {
-                    console.log("Setting series markers on series", candleSeriesRef.current, markers);
-                    createSeriesMarkers(candleSeriesRef.current, markers);
-                } else {
-                    console.warn("candleSeriesRef.current is null!");
-                }
+            const res = await fetch(
+                `http://localhost:8000/api/signals_${timeframe}/${stockSymbol}?strategy=${selectedStrategy}`
+            );
+            const data = await res.json();
+            if (!Array.isArray(data.markers)) return;
+            const markers: SeriesMarker<number>[] = data.markers.map((m: any) => ({
+                time: m.time,
+                price: m.price,
+                position: m.side === "buy" ? "belowBar" : "aboveBar",
+                color: m.side === "buy" ? "#009944" : "#e91e63",
+                shape: m.side === "buy" ? "arrowUp" : "arrowDown",
+                text: m.label || (m.side === "buy" ? "BUY" : "SELL"),
+            }));
+            setStrategyMarkers(markers);
+            if (candleSeriesRef.current) {
+                strategyMarkersPluginRef.current.setMarkers(markers);
+            }
             } catch (e) {
-                // Optionally handle error
-                console.error("Error fetching signals:", e);
-                setStrategyMarkers([]);
+            setStrategyMarkers([]);
             }
         };
-
         fetchSignals();
-    }, [stockSymbol, timeframe, showTrendInvestorPro]);
+        }, [stockSymbol, timeframe, selectedStrategy]);
+
+    /**
+     * Fetching latest signals
+     */
+    useEffect(() => {
+        let cancelled = false;
+        async function fetchAllSignals() {
+            const strategies = ["trendinvestorpro", "stclair", "northstar"] as const;
+            const timeframes = ["daily", "weekly", "monthly"] as const;
+            const summary: SignalSummary = {
+            trendinvestorpro: { daily: "", weekly: "", monthly: "" },
+            stclair: { daily: "", weekly: "", monthly: "" },
+            northstar: { daily: "", weekly: "", monthly: "" },
+            };
+
+            await Promise.all(
+            strategies.flatMap(strategy =>
+                timeframes.map(async timeframe => {
+                const signal = await fetchLatestSignal(stockSymbol, strategy, timeframe);
+                summary[strategy][timeframe] = signal;
+                })
+            )
+            );
+            if (!cancelled) setSignalSummary(summary);
+        }
+        fetchAllSignals();
+        return () => { cancelled = true; };
+    }, [stockSymbol]);
+
 
 
 
@@ -382,7 +433,7 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     return (
         <div className="graphing-chart-popup">
         <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-            {/* Toolbar will go here later */}
+            {/* Toolbar */}
             <div className="toolbar d-flex gap-2">
                 <button
                     onClick={() => toggleMode("trendline")}
@@ -435,7 +486,7 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
                 )}
 
             </div>
-
+            {/* Period Toggle */}
             <div className="btn-group">
             {["daily", "weekly", "monthly"].map((tf) => (
                 <button
@@ -448,15 +499,62 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
                 </button>
             ))}
             </div>
-            <label className="d-flex align-items-center gap-1" style={{ fontWeight: 500 }}>
-                <input
-                    type="checkbox"
-                    checked={showTrendInvestorPro}
-                    onChange={() => setShowTrendInvestorPro((v) => !v)}
-                    style={{ marginRight: 4 }}
-                />
-                TrendInvestorPro
-            </label>
+
+            {/* Checkboxes for signals */}
+            {/* Checkboxes for signals with labels */}
+            <div className="d-flex align-items-end gap-3">
+                {/* TrendInvestorPro: D: BUY/SELL */}
+                <div className="d-flex flex-column align-items-center">
+                    <span style={{ fontSize: "1.1rem", marginBottom: 2 }}>
+                    <strong>D:</strong> {renderSignal(signalSummary.trendinvestorpro.daily)}
+                    </span>
+                    <label className="d-flex align-items-center gap-1" style={{ fontWeight: 500 }}>
+                    <input
+                        type="checkbox"
+                        checked={selectedStrategy === "trendinvestorpro"}
+                        onChange={() => setSelectedStrategy(selectedStrategy === "trendinvestorpro" ? null : "trendinvestorpro")}
+                        style={{ marginRight: 4 }}
+                    />
+                    TrendInvestorPro
+                    </label>
+                </div>
+                {/* StClair: W: BUY/SELL */}
+                <div className="d-flex flex-column align-items-center">
+                    <span style={{ fontSize: "1.1rem", marginBottom: 2 }}>
+                    <strong>W:</strong> {renderSignal(signalSummary.stclair.weekly)}
+                    </span>
+                    <label className="d-flex align-items-center gap-1" style={{ fontWeight: 500 }}>
+                    <input
+                        type="checkbox"
+                        checked={selectedStrategy === "stclair"}
+                        onChange={() => setSelectedStrategy(selectedStrategy === "stclair" ? null : "stclair")}
+                        style={{ marginRight: 4 }}
+                    />
+                    StClair
+                    </label>
+                </div>
+                {/* Northstar: D: | W: | M: */}
+                <div className="d-flex flex-column align-items-center" style={{ marginLeft: "2.2rem" }}>
+                    <span style={{ fontSize: "1.1rem", marginBottom: 2 }}>
+                    <strong>D:</strong> {renderSignal(signalSummary.northstar.daily)}{" "}
+                    <span style={{ color: "#ccc" }}>|</span> <strong>W:</strong> {renderSignal(signalSummary.northstar.weekly)}{" "}
+                    <span style={{ color: "#ccc" }}>|</span> <strong>M:</strong> {renderSignal(signalSummary.northstar.monthly)}
+                    </span>
+                    <label className="d-flex align-items-center gap-1" style={{ fontWeight: 500 }}>
+                    <input
+                        type="checkbox"
+                        checked={selectedStrategy === "northstar"}
+                        onChange={() => setSelectedStrategy(selectedStrategy === "northstar" ? null : "northstar")}
+                        style={{ marginRight: 4 }}
+                    />
+                    NorthStar
+                    </label>
+                </div>
+            </div>
+
+
+
+
 
             <button className="btn btn-sm btn-danger ms-3" style={{ fontSize: "1.2rem" }} onClick={onClose}>
             Close
