@@ -905,7 +905,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         >
           {/* You can use an icon here for extra style */}
           {/* <BarChart2 size={18} className="me-2" /> */}
-          Open Graphing Chart
+          Signals
         </button>
       </div>
 
