@@ -345,5 +345,8 @@ def get_signals(timeframe: str, symbol: str, strategy: str = Query("trendinvesto
         return {"markers": analyser.get_trendinvestorpro_signals(timeframe)}
     elif strategy == "stclair":
         return {"markers": analyser.get_stclair_signals(timeframe)}
+    elif strategy == "northstar":
+        return {"markers": analyser.get_northstar_signals(timeframe)}
     else:
         return {"error": f"Unknown strategy: {strategy}"}
+

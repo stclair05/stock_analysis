@@ -49,6 +49,7 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     const [strategyMarkers, setStrategyMarkers] = useState<SeriesMarker<number>[]>([]);
     const [showTrendInvestorPro, setShowTrendInvestorPro] = useState(false); // for checkbox/toggle
     const [showStClair, setShowStClair] = useState(false);
+    const [showNorthStar, setShowNorthStar] = useState(false);
 
 
 
@@ -288,6 +289,7 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
         let strategy: string | null = null;
         if (showTrendInvestorPro) strategy = "trendinvestorpro";
         if (showStClair) strategy = "stclair";
+        if (showNorthStar) strategy = "northstar";
         if (!strategy) {
             setStrategyMarkers([]);
             if (candleSeriesRef.current) {
@@ -320,7 +322,7 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
             }
         };
         fetchSignals();
-    }, [stockSymbol, timeframe, showTrendInvestorPro, showStClair]);
+    }, [stockSymbol, timeframe, showTrendInvestorPro, showStClair, showNorthStar]);
 
 
 
@@ -470,6 +472,20 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
                         style={{ marginRight: 4 }}
                     />
                     StClair
+                </label>
+                <label className="d-flex align-items-center gap-1" style={{ fontWeight: 500 }}>
+                    <input
+                        type="checkbox"
+                        checked={showNorthStar}
+                        onChange={() => {
+                            setShowNorthStar(v => {
+                            if (!v) { setShowTrendInvestorPro(false); setShowStClair(false); }
+                            return !v;
+                            });
+                        }}
+                        style={{ marginRight: 4 }}
+                    />
+                    NorthStar
                 </label>
             </div>
 

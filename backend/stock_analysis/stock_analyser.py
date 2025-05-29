@@ -994,3 +994,73 @@ class StockAnalyser:
                 entry_price = None
 
         return markers
+
+    def get_northstar_signals(self, timeframe: str = "weekly") -> list[dict]:
+        """
+        Implements the NorthStar trend-following strategy:
+        Entry: Price > 12MA and Price > 36MA
+        Exit: Price < 12MA
+        No entry if Price < 36MA.
+        Returns markers: {time, price, side, label}
+        """
+        # Select OHLC dataframe for requested timeframe
+        if timeframe == "daily":
+            df = self.df
+        elif timeframe == "weekly":
+            df = self.weekly_df
+        elif timeframe == "monthly":
+            df = self.monthly_df
+        else:
+            raise ValueError(f"Invalid timeframe: {timeframe}")
+
+        df = df.copy().dropna()
+        if len(df) < 40:
+            return []  # not enough data
+
+        close = df['Close']
+        ma12 = close.rolling(window=12).mean()
+        ma36 = close.rolling(window=36).mean()
+
+        in_position = False
+        markers = []
+
+        for idx in range(len(df)):
+            t = df.index[idx]
+            price = close.iloc[idx]
+            curr_ma12 = ma12.iloc[idx]
+            curr_ma36 = ma36.iloc[idx]
+
+            # --- Entry Condition ---
+            enter_cond = (
+                price > curr_ma12
+                and price > curr_ma36
+                and not in_position
+            )
+            # --- Do not enter if price is below 36MA ---
+            do_not_enter = price < curr_ma36
+
+            # --- Exit Condition ---
+            exit_cond = (
+                price < curr_ma12
+                and in_position
+            )
+
+            if enter_cond and not do_not_enter:
+                markers.append({
+                    "time": int(pd.Timestamp(t).timestamp()),
+                    "price": price,
+                    "side": "buy",
+                    "label": "ENTRY",
+                })
+                in_position = True
+
+            elif exit_cond:
+                markers.append({
+                    "time": int(pd.Timestamp(t).timestamp()),
+                    "price": price,
+                    "side": "sell",
+                    "label": "EXIT",
+                })
+                in_position = False
+
+        return markers
