@@ -49,9 +49,8 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     // Track markers for strategy signals (TrendInvestorPro etc)
     const strategyMarkersPluginRef = useRef<ISeriesMarkersPluginApi<number> | null>(null);
     const [strategyMarkers, setStrategyMarkers] = useState<SeriesMarker<number>[]>([]);
-    const [showTrendInvestorPro, setShowTrendInvestorPro] = useState(false); // for checkbox/toggle
-    const [showStClair, setShowStClair] = useState(false);
-    const [showNorthStar, setShowNorthStar] = useState(false);
+    const [selectedStrategy, setSelectedStrategy] = useState<null | "trendinvestorpro" | "stclair" | "northstar">(null);
+
 
 
 
@@ -290,49 +289,42 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
      * Strategy Markers 
      */
     useEffect(() => {
-        // Determine which strategy (if any) is selected
-        let strategy: string | null = null;
-        if (showTrendInvestorPro) strategy = "trendinvestorpro";
-        if (showStClair) strategy = "stclair";
-        if (showNorthStar) strategy = "northstar";
-
-
-         // Clear existing markers
+        // Clear existing markers
         if (strategyMarkersPluginRef.current) {
             strategyMarkersPluginRef.current.setMarkers([]);
         }
 
-        // If no strategy is selected, also clear state markers and exit
-        if (!strategy) {
+        if (!selectedStrategy) {
             setStrategyMarkers([]);
             return;
         }
 
         const fetchSignals = async () => {
             try {
-                const res = await fetch(
-                    `http://localhost:8000/api/signals_${timeframe}/${stockSymbol}?strategy=${strategy}`
-                );
-                const data = await res.json();
-                if (!Array.isArray(data.markers)) return;
-                const markers: SeriesMarker<number>[] = data.markers.map((m: any) => ({
-                    time: m.time,
-                    price: m.price,
-                    position: m.side === "buy" ? "belowBar" : "aboveBar",
-                    color: m.side === "buy" ? "#009944" : "#e91e63",
-                    shape: m.side === "buy" ? "arrowUp" : "arrowDown",
-                    text: m.label || (m.side === "buy" ? "BUY" : "SELL"),
-                }));
-                setStrategyMarkers(markers);
-                if (candleSeriesRef.current) {
-                    strategyMarkersPluginRef.current.setMarkers(markers);
-                }
+            const res = await fetch(
+                `http://localhost:8000/api/signals_${timeframe}/${stockSymbol}?strategy=${selectedStrategy}`
+            );
+            const data = await res.json();
+            if (!Array.isArray(data.markers)) return;
+            const markers: SeriesMarker<number>[] = data.markers.map((m: any) => ({
+                time: m.time,
+                price: m.price,
+                position: m.side === "buy" ? "belowBar" : "aboveBar",
+                color: m.side === "buy" ? "#009944" : "#e91e63",
+                shape: m.side === "buy" ? "arrowUp" : "arrowDown",
+                text: m.label || (m.side === "buy" ? "BUY" : "SELL"),
+            }));
+            setStrategyMarkers(markers);
+            if (candleSeriesRef.current) {
+                strategyMarkersPluginRef.current.setMarkers(markers);
+            }
             } catch (e) {
-                setStrategyMarkers([]);
+            setStrategyMarkers([]);
             }
         };
         fetchSignals();
-    }, [stockSymbol, timeframe, showTrendInvestorPro, showStClair, showNorthStar]);
+        }, [stockSymbol, timeframe, selectedStrategy]);
+
 
 
 
@@ -458,13 +450,8 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
                 <label className="d-flex align-items-center gap-1" style={{ fontWeight: 500 }}>
                     <input
                         type="checkbox"
-                        checked={showTrendInvestorPro}
-                        onChange={() => {
-                            setShowTrendInvestorPro(v => {
-                                if (!v) setShowStClair(false);
-                                return !v;
-                            });
-                        }}
+                        checked={selectedStrategy === "trendinvestorpro"}
+                        onChange={() => setSelectedStrategy(selectedStrategy === "trendinvestorpro" ? null : "trendinvestorpro")}
                         style={{ marginRight: 4 }}
                     />
                     TrendInvestorPro
@@ -472,27 +459,17 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
                 <label className="d-flex align-items-center gap-1" style={{ fontWeight: 500 }}>
                     <input
                         type="checkbox"
-                        checked={showStClair}
-                        onChange={() => {
-                            setShowStClair(v => {
-                                if (!v) setShowTrendInvestorPro(false);
-                                return !v;
-                            });
-                        }}
+                        checked={selectedStrategy === "stclair"}
+                        onChange={() => setSelectedStrategy(selectedStrategy === "stclair" ? null : "stclair")}
                         style={{ marginRight: 4 }}
                     />
-                    StClair
+                    StClair 
                 </label>
                 <label className="d-flex align-items-center gap-1" style={{ fontWeight: 500 }}>
                     <input
                         type="checkbox"
-                        checked={showNorthStar}
-                        onChange={() => {
-                            setShowNorthStar(v => {
-                            if (!v) { setShowTrendInvestorPro(false); setShowStClair(false); }
-                            return !v;
-                            });
-                        }}
+                        checked={selectedStrategy === "northstar"}
+                        onChange={() => setSelectedStrategy(selectedStrategy === "northstar" ? null : "northstar")}
                         style={{ marginRight: 4 }}
                     />
                     NorthStar
