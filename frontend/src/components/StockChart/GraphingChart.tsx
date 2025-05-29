@@ -5,6 +5,7 @@ import {
   ISeriesApi,
   UTCTimestamp,
   CrosshairMode,
+  createSeriesMarkers
 } from "lightweight-charts";
 import { useEffect, useRef, useState } from "react";
 import { useMainChartData } from "./useMainChartData";
@@ -13,7 +14,7 @@ import { useDrawingManager } from "./DrawingManager";
 import { usePreviewManager } from "./PreviewManager";
 import { useDrawingRenderer } from "./DrawingRenderer";
 import { useClickHandler } from "./ClickHandler";
-import { Point, CopyTrendlineBuffer } from "./types";
+import { Point, CopyTrendlineBuffer, Candle } from "./types";
 
 
 interface GraphingChartProps {
@@ -44,6 +45,21 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
 
     
     const copyBufferRef = useRef<CopyTrendlineBuffer | null>(null);
+
+    const [latestCandle, setLatestCandle] = useState<Candle | null>(null);
+
+    // This marker will appear below the latest candle
+    const markers = [
+        {
+            time: 1716854400, // Example UTCTimestamp
+            position: 'belowBar',
+            color: '#009944',
+            shape: 'arrowUp',
+            text: 'BUY',
+        },
+        // ... add more markers as needed
+    ];
+
 
     const {
         drawingModeRef,
@@ -172,28 +188,28 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
 
         // Create chart
         const chart = createChart(chartContainerRef.current, {
-        width: chartContainerRef.current.clientWidth || 900,
-        height: 600,
-        layout: { background: { color: "#fff" }, textColor: "#222" },
-        grid: { vertLines: { color: "#eee" }, horzLines: { color: "#eee" } },
-        crosshair: { mode: CrosshairMode.Normal },
-        timeScale: { timeVisible: true, secondsVisible: false },
-        handleScroll: { pressedMouseMove: true, mouseWheel: true, horzTouchDrag: true, vertTouchDrag: false },
-        handleScale: { axisPressedMouseMove: true, axisDoubleClickReset: true, mouseWheel: true, pinch: true },
+            width: chartContainerRef.current.clientWidth || 900,
+            height: 600,
+            layout: { background: { color: "#fff" }, textColor: "#222" },
+            grid: { vertLines: { color: "#eee" }, horzLines: { color: "#eee" } },
+            crosshair: { mode: CrosshairMode.Normal },
+            timeScale: { timeVisible: true, secondsVisible: false },
+            handleScroll: { pressedMouseMove: true, mouseWheel: true, horzTouchDrag: true, vertTouchDrag: false },
+            handleScale: { axisPressedMouseMove: true, axisDoubleClickReset: true, mouseWheel: true, pinch: true },
         });
 
         // Add candlestick series
         const series = chart.addSeries(CandlestickSeries, {
-        upColor: "#26a69a",
-        downColor: "#ef5350",
-        borderVisible: false,
-        wickUpColor: "#26a69a",
-        wickDownColor: "#ef5350",
+            upColor: "#26a69a",
+            downColor: "#ef5350",
+            borderVisible: false,
+            wickUpColor: "#26a69a",
+            wickDownColor: "#ef5350",
         });
 
         chartInstanceRef.current = chart;
         candleSeriesRef.current = series;
-
+        
         // Resize observer for responsive width
         const resizeObserver = new ResizeObserver(entries => {
         for (let entry of entries) {
@@ -254,10 +270,10 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
 
         // Cleanup
         return () => {
-        chart.remove();
-        chartInstanceRef.current = null;
-        candleSeriesRef.current = null;
-        resizeObserver.disconnect();
+            chart.remove();
+            chartInstanceRef.current = null;
+            candleSeriesRef.current = null;
+            resizeObserver.disconnect();
         };
     }, [stockSymbol, timeframe]);
 
@@ -267,8 +283,45 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     }, [drawings, selectedDrawingIndex]);
 
 
-    // Attach price data (hook handles fetching and updating the chart)
-    useMainChartData(stockSymbol, candleSeriesRef, timeframe, chartInstanceRef);
+    useMainChartData(
+        stockSymbol,
+        candleSeriesRef,
+        timeframe,
+        chartInstanceRef,
+        (loadedCandles) => {
+            if (!candleSeriesRef.current || !loadedCandles.length) return;
+
+            const firstCandle = loadedCandles[0];
+            const lastCandle = loadedCandles[loadedCandles.length - 1];
+
+            console.log("Placing marker at first candle:", firstCandle);
+            console.log("Placing marker at last candle:", lastCandle);
+
+            const markers = [
+            {
+                time: firstCandle.time,
+                position: "belowBar",
+                color: "#009944",
+                shape: "arrowUp",
+                text: "BUY",
+            },
+            {
+                time: lastCandle.time,
+                position: "aboveBar",
+                color: "#e91e63",
+                shape: "arrowDown",
+                text: "SELL",
+            },
+            ];
+
+            console.log("Final marker array:", markers);
+
+            createSeriesMarkers(candleSeriesRef.current, markers);
+        }
+    );
+
+
+
 
     return (
         <div className="graphing-chart-popup">
