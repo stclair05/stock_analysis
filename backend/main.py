@@ -171,6 +171,53 @@ async def websocket_chart_data(websocket: WebSocket, timeframe: str, symbol: str
         print(f"WebSocket error for {symbol}: {e}")
         await websocket.close()
 
+@app.get("/api/chart_data_{timeframe}/{symbol}")
+async def get_chart_data(timeframe: str, symbol: str):
+    raw_symbol = symbol.upper()
+    symbol = SYMBOL_ALIASES.get(raw_symbol, raw_symbol)
+
+    analyser = StockAnalyser(symbol)
+    df = analyser.get_price_data(symbol)
+
+    if timeframe == "daily":
+        hist_df = df
+    elif timeframe == "weekly":
+        hist_df = df.resample("W-FRI").agg({
+            "Open": "first",
+            "High": "max",
+            "Low": "min",
+            "Close": "last",
+            "Volume": "sum"
+        }).dropna()
+    elif timeframe == "monthly":
+        hist_df = df.resample("M").agg({
+            "Open": "first",
+            "High": "max",
+            "Low": "min",
+            "Close": "last",
+            "Volume": "sum"
+        }).dropna()
+    else:
+        return {"error": f"Invalid timeframe: {timeframe}"}
+
+    if hist_df.empty:
+        return {"error": f"No data found for symbol {symbol}"}
+
+    history = [
+        {
+            "time": int(ts.timestamp()),
+            "open": round(float(row["Open"]), 2),
+            "high": round(float(row["High"]), 2),
+            "low": round(float(row["Low"]), 2),
+            "close": round(float(row["Close"]), 2),
+            "volume": round(float(row["Volume"]), 2)
+        }
+        for ts, row in hist_df.iterrows()
+    ]
+
+    return {"history": history}
+
+
 @app.get("/overlay_data/{symbol}")
 def get_overlay_data(symbol: str, timeframe: str = "weekly"):
     try:

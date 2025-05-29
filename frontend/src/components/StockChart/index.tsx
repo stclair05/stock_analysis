@@ -35,6 +35,8 @@ import OverlayGrid from "./OverlayGrid";
 import SecondaryChart from "./SecondaryChart";
 
 import S3Gallery from "../S3Gallery";
+import { useMainChartData } from "./useMainChartData";
+import GraphingChart from "./GraphingChart";
 
 
 
@@ -55,6 +57,9 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
   const drawnSeriesRef = useRef<Map<number, ISeriesApi<"Line">>>(new Map());
   const previewSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
+
+  // New Graphing Chart 
+  const [showGraphing, setShowGraphing] = useState(false);
 
 
   // Mean Rev Chart
@@ -332,7 +337,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     CREATE CHARTS
   */
   useEffect(() => {
-    // 🧹 Reset drawing state to prevent bugs on ticker switch
+    // --- 1. Reset all drawing/UI/chart states ---
     drawingModeRef.current = null;
     lineBufferRef.current = [];
     setDrawings([]);
@@ -341,29 +346,24 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     setShow50dmaTarget(false);
     setShowFibTarget(false);
     setSecondarySymbol(null);
-
-    // 🧹 Reset mean reversion bounds
     resetMeanRevLimits();
 
-    // --- Preload mean reversion band lines from backend ---
+    // --- 2. Fetch price targets from backend ---
     const fetchInitialTargets = async () => {
       try {
         const res = await fetch(`http://localhost:8000/price_targets/${stockSymbol}`);
         const json = await res.json();
-
-        // Defensive checks
         const mean_rev_targets = json.price_targets?.mean_reversion ?? {};
         const fib_targets = json.price_targets?.fibonacci ?? {};
-
         if (
           typeof mean_rev_targets.deviation_band_pct_lower === "number" &&
           typeof mean_rev_targets.deviation_band_pct_upper === "number"
         ) {
-          const lower = mean_rev_targets.deviation_band_pct_lower;
-          const upper = mean_rev_targets.deviation_band_pct_upper;
-          drawInitialMeanRevLimits(lower, upper);
+          drawInitialMeanRevLimits(
+            mean_rev_targets.deviation_band_pct_lower,
+            mean_rev_targets.deviation_band_pct_upper
+          );
         }
-
         setPriceTargets({
           reversion_target: mean_rev_targets.reversion_projected_target_price,
           deviation_pct: mean_rev_targets.deviation_band_pct_upper,
@@ -371,234 +371,165 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           fib_direction: fib_targets["fib_1.618_up"] ? "up" : fib_targets["fib_1.618_down"] ? "down" : undefined,
         });
       } catch (err) {
-        setPriceTargets({}); // Always reset on failure
+        setPriceTargets({});
         console.error("❌ Failed to fetch price targets", err);
       }
     };
-
     fetchInitialTargets();
 
+    // --- 3. Guard: abort if containers/refs missing ---
+    if (
+      !stockSymbol ||
+      !chartContainerRef.current ||
+      !meanRevChartRef.current ||
+      !rsiChartRef.current ||
+      !volChartRef.current
+    )
+      return;
 
-    if (!stockSymbol || !chartContainerRef.current || !meanRevChartRef.current || !rsiChartRef.current || !volChartRef.current) return;
-
-    chartContainerRef.current.innerHTML = "";
-    meanRevChartRef.current.innerHTML = "";
-    rsiChartRef.current.innerHTML = "";
-    volChartRef.current.innerHTML = "";
-
-
-
-    const chart = createChart(chartContainerRef.current, {
-      height: 400,
-      width: 0,
-      layout: {
-        background: { color: "#ffffff" },
-        textColor: "#000000",
-      },
-      crosshair: {
-        mode: CrosshairMode.Normal,
-      },
-      grid: {
-        vertLines: { color: "#eee" },
-        horzLines: { color: "#eee" },
-      },
-      timeScale: {
-        timeVisible: true,
-        secondsVisible: false,
-        rightOffset: 2,
-        fixLeftEdge: true,
-        fixRightEdge: true,
-      },
-      handleScroll: {
-      pressedMouseMove: true,     // ADDED for drag to scroll anywhere
-      mouseWheel: true,
-      horzTouchDrag: true,
-      vertTouchDrag: false,
-    },
-    handleScale: {
-      axisPressedMouseMove: true,
-      axisDoubleClickReset: true,
-      mouseWheel: true,
-      pinch: true,
-    },
+    // --- 4. Clear all chart containers ---
+    [chartContainerRef, meanRevChartRef, rsiChartRef, volChartRef].forEach((ref) => {
+      if (ref.current) ref.current.innerHTML = "";
     });
 
-    if (!meanRevChartRef.current) return;
-
-    const meanChart = createChart(meanRevChartRef.current, {
-      width: meanRevChartRef.current.clientWidth,
-      height: 200,
-      layout: {
-        background: { color: "#ffffff" },
-        textColor: "#000000",
-      },
-      crosshair: {
-        mode: CrosshairMode.Normal,
-      },
-      grid: {
-        vertLines: { color: "#eee" },
-        horzLines: { color: "#eee" },
-      },
-      timeScale: {
-        timeVisible: true,
-        secondsVisible: false,
-      },
-    });
-
-    chartRef.current = chart;
-    meanRevChartInstance.current = meanChart;
-    // Create and assign the line series for the bottom chart
-    const meanRevLineSeries = meanChart.addSeries(LineSeries, {
-      color: "#000000",
-      lineWidth: 2,
-    });
-
-    
-
-    meanRevLineSeries.setData([
-      {
-        time: Date.now() / 1000 as UTCTimestamp, // dummy time
-        value: 0,                                // dummy value
-      },
-    ]);
-    
-    meanRevLineRef.current = meanRevLineSeries;
-
-    // RSI Chart
-    if (!rsiChartRef.current) return;
-
-    const rsiChart = createChart(rsiChartRef.current, {
-      width: rsiChartRef.current.clientWidth,
-      height: 150,
-      layout: {
-        background: { color: "#ffffff" },
-        textColor: "#000000",
-      },
-      grid: {
-        vertLines: { color: "#eee" },
-        horzLines: { color: "#eee" },
-      },
-      crosshair: {
-        mode: CrosshairMode.Normal,
-      },
-      timeScale: {
-        timeVisible: true,
-        secondsVisible: false,
-      },
-    });
-    rsiChartInstance.current = rsiChart;
-
-    const rsiLine = rsiChart.addSeries(LineSeries, {
-      color: "#f44336",
-      lineWidth: 1,
-    });
-    rsiLine.setData([
-      { time: Date.now() / 1000 as UTCTimestamp, value: 50 }, // Mid-band dummy
-    ]);
-    rsiLineRef.current = rsiLine;   
-
-
-    
-
-    // Volatility Chart 
-    const volChart = createChart(volChartRef.current, {
-      width: volChartRef.current.clientWidth,
-      height: 150,
-      layout: {
-        background: { color: "#ffffff" },
-        textColor: "#000000",
-      },
-      grid: {
-        vertLines: { color: "#eee" },
-        horzLines: { color: "#eee" },
-      },
-      crosshair: {
-        mode: CrosshairMode.Normal,
-      },
-      timeScale: {
-        timeVisible: true,
-        secondsVisible: false,
-      },
-    });
-
-    volChartInstance.current = volChart;
-    
-    const volLine = volChart.addSeries(LineSeries, {
-      color: "#795548", // brown-ish for volatility
-      lineWidth: 1,
-    });
-    volLine.setData([{ time: Date.now() / 1000 as UTCTimestamp, value: 0 }]);
-    volLineRef.current = volLine;
-    
-
-    // === 🔁 Full 3-Way Safe Sync ===
-
-    function safeSetVisibleRange(chart: IChartApi | null, range: any) {
-      // Block null or undefined range
-      if (!chart || !range || range.from == null || range.to == null) return;
-      try {
-        chart.timeScale().setVisibleRange(range);
-      } catch (err) {
-        // Optional: only log if not "Value is null"
-        if (!(err instanceof Error && err.message === "Value is null")) {
-          console.warn("⛔ safeSetVisibleRange failed", err);
-        }
-      }
+    // --- 5. Helper: Create chart with shared options ---
+    function initChart(ref: React.RefObject<HTMLDivElement | null>, width: number, height: number) {
+      if (!ref.current) throw new Error("Chart container not mounted");
+      return createChart(ref.current, {
+        width,
+        height,
+        layout: { background: { color: "#fff" }, textColor: "#000" },
+        grid: { vertLines: { color: "#eee" }, horzLines: { color: "#eee" } },
+        crosshair: { mode: CrosshairMode.Normal },
+        timeScale: { timeVisible: true, secondsVisible: false },
+        handleScroll: {
+          pressedMouseMove: true, mouseWheel: true, horzTouchDrag: true, vertTouchDrag: false,
+        },
+        handleScale: {
+          axisPressedMouseMove: true, axisDoubleClickReset: true, mouseWheel: true, pinch: true,
+        },
+      });
     }
 
+    // --- 6. Create all charts ---
+    const chart = initChart(chartContainerRef, 0, 400);
+    chartRef.current = chart;
 
-    chart.timeScale().subscribeVisibleTimeRangeChange((range) => {
-      safeSetVisibleRange(meanRevChartInstance.current, range);
-      safeSetVisibleRange(rsiChartInstance.current, range);
-      safeSetVisibleRange(volChartInstance.current, range);
-    });
+    const meanChart = initChart(meanRevChartRef, meanRevChartRef.current!.clientWidth, 200);
+    meanRevChartInstance.current = meanChart;
+    const meanRevLineSeries = meanChart.addSeries(LineSeries, { color: "#000", lineWidth: 2 });
+    meanRevLineSeries.setData([
+      { time: Date.now() / 1000 as UTCTimestamp, value: 0 },
+    ]);
+    meanRevLineRef.current = meanRevLineSeries;
 
-    meanRevChartInstance.current?.timeScale().subscribeVisibleTimeRangeChange((range) => {
-      safeSetVisibleRange(chartRef.current, range);
-      safeSetVisibleRange(rsiChartInstance.current, range);
-      safeSetVisibleRange(volChartInstance.current, range);
-    });
+    const rsiChart = initChart(rsiChartRef, rsiChartRef.current!.clientWidth, 150);
+    rsiChartInstance.current = rsiChart;
+    const rsiLine = rsiChart.addSeries(LineSeries, { color: "#f44336", lineWidth: 1 });
+    rsiLine.setData([{ time: Date.now() / 1000 as UTCTimestamp, value: 50 }]);
+    rsiLineRef.current = rsiLine;
 
-    rsiChartInstance.current?.timeScale().subscribeVisibleTimeRangeChange((range) => {
-      safeSetVisibleRange(chartRef.current, range);
-      safeSetVisibleRange(meanRevChartInstance.current, range);
-      safeSetVisibleRange(volChartInstance.current, range);
-    });
+    const volChart = initChart(volChartRef, volChartRef.current!.clientWidth, 150);
+    volChartInstance.current = volChart;
+    const volLine = volChart.addSeries(LineSeries, { color: "#795548", lineWidth: 1 });
+    volLine.setData([{ time: Date.now() / 1000 as UTCTimestamp, value: 0 }]);
+    volLineRef.current = volLine;
 
-    volChartInstance.current?.timeScale().subscribeVisibleTimeRangeChange((range) => {
-      safeSetVisibleRange(chartRef.current, range);
-      safeSetVisibleRange(meanRevChartInstance.current, range);
-      safeSetVisibleRange(rsiChartInstance.current, range);
-    });
-
-
-
-  
+    // --- 7. Resize Observer: keep all charts width-synced ---
     const resizeObserver = new ResizeObserver(entries => {
       for (let entry of entries) {
         if (entry.contentRect) {
-          chart.resize(entry.contentRect.width, 400);
-          meanChart.resize(entry.contentRect.width, 200);
-          rsiChart.resize(entry.contentRect.width, 150);     
-          volChart.resize(entry.contentRect.width, 150);
+          const w = entry.contentRect.width;
+          chart.resize(w, 400);
+          meanChart.resize(w, 200);
+          rsiChart.resize(w, 150);
+          volChart.resize(w, 150);
         }
       }
     });
     resizeObserver.observe(chartContainerRef.current);
 
-
+    // --- 8. Add main candle series ---
     const candleSeries = chart.addSeries(CandlestickSeries, {
-      upColor: "#26a69a",
-      downColor: "#ef5350",
-      borderVisible: false,
-      wickUpColor: "#26a69a",
-      wickDownColor: "#ef5350",
+      upColor: "#26a69a", downColor: "#ef5350", borderVisible: false,
+      wickUpColor: "#26a69a", wickDownColor: "#ef5350",
     });
-
     candleSeriesRef.current = candleSeries;
 
-    chart.timeScale().fitContent();
-    
+    // --- 9. Visible range sync helper ---
+    function safeSetVisibleRange(chart: IChartApi | null, range: any) {
+      if (!chart || !range || range.from == null || range.to == null) return;
+      try { chart.timeScale().setVisibleRange(range); }
+      catch (err) {
+        if (!(err instanceof Error && err.message === "Value is null"))
+          console.warn("⛔ safeSetVisibleRange failed", err);
+      }
+    }
+    function syncVisibleRangeToAll(sourceChart: IChartApi) {
+      sourceChart.timeScale().subscribeVisibleTimeRangeChange((range) => {
+        [chartRef.current, meanRevChartInstance.current, rsiChartInstance.current, volChartInstance.current].forEach(c =>
+          c !== sourceChart && safeSetVisibleRange(c, range)
+        );
+      });
+    }
+    [chart, meanChart, rsiChart, volChart].forEach(syncVisibleRangeToAll);
+
+    // --- 10. Main chart crosshair handler: drawing/preview logic + sync ---
+    chart.subscribeCrosshairMove((param) => {
+      if (!param.time || !param.point) return;
+      const price = candleSeries.coordinateToPrice(param.point.y);
+      if (price == null) return;
+      const time = param.time as UTCTimestamp;
+
+      // ----- Drawing/preview mode logic -----
+      if (drawingModeRef.current) {
+        setHoverPoint((prev) => {
+          if (!prev || prev.time !== time || prev.value !== price) {
+            return { time, value: price };
+          }
+          return prev;
+        });
+      }
+
+      // ----- Synchronize crosshairs to all other charts -----
+      const meanChart = meanRevChartInstance.current;
+      const meanSeries = meanRevLineRef.current;
+      const rsiChart = rsiChartInstance.current;
+      const rsiSeries = rsiLineRef.current;
+      const volChart = volChartInstance.current;
+      const volSeries = volLineRef.current;
+      const secondaryChart = secondaryChartRef.current;
+      const secondarySeries = secondarySeriesRef.current;
+
+      if (meanChart && meanSeries) {
+        const snappedTime = findClosestTime(meanSeries, time);
+        if (snappedTime) meanChart.setCrosshairPosition(0, snappedTime, meanSeries);
+      }
+      if (rsiChart && rsiSeries) {
+        const snappedTime = findClosestTime(rsiSeries, time);
+        if (snappedTime) rsiChart.setCrosshairPosition(0, snappedTime, rsiSeries);
+      }
+      if (volChart && volSeries) {
+        const snappedTime = findClosestTime(volSeries, time);
+        if (snappedTime) volChart.setCrosshairPosition(0, snappedTime, volSeries);
+      }
+      if (secondaryChart && secondarySeries) {
+        const snappedTime = findClosestTime(secondarySeries, time);
+        if (snappedTime) secondaryChart.setCrosshairPosition(0, snappedTime, secondarySeries);
+      }
+    });
+
+    // --- 11. DRY crosshairMove handler for other charts (just sync main chart) ---
+    function handleCrosshairMove(param: any, chartRef: any, seriesRef: any) {
+      if (!param.time || !param.point) return;
+      const time = param.time as UTCTimestamp;
+      if (seriesRef.current) syncCrosshair(chartRef, seriesRef.current, time);
+    }
+    meanChart.subscribeCrosshairMove((p) => handleCrosshairMove(p, meanChart, meanRevLineRef));
+    rsiChart.subscribeCrosshairMove((p) => handleCrosshairMove(p, rsiChart, rsiLineRef));
+    volChart.subscribeCrosshairMove((p) => handleCrosshairMove(p, volChart, volLineRef));
+
+    // --- 12. Chart click handlers ---
     // deletion of trendline
     chart.subscribeClick((param) => {
       console.log("✅ Chart click event triggered:", param);
@@ -644,102 +575,6 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         console.log("No drawing selected.");
       }
     });
-
-
-    chart.subscribeCrosshairMove((param) => {
-      if (!param.time || !param.point) return;
-    
-      const price = candleSeries.coordinateToPrice(param.point.y);
-      if (price == null) return;
-    
-      const time = param.time as UTCTimestamp;
-    
-      if (drawingModeRef.current) {
-        setHoverPoint((prev) => {
-          if (!prev || prev.time !== time || prev.value !== price) {
-            console.log("[CrosshairMove] Setting hoverPoint for mode:", drawingModeRef.current, { time, value: price });
-            return { time, value: price };
-          }
-          return prev;
-        });
-      }
-
-    
-      const meanChart = meanRevChartInstance.current;
-      const meanSeries = meanRevLineRef.current;
-      const rsiChart = rsiChartInstance.current;
-      const rsiSeries = rsiLineRef.current;
-      const volChart = volChartInstance.current;
-      const volSeries = volLineRef.current;
-
-      const secondaryChart = secondaryChartRef.current;
-      const secondarySeries = secondarySeriesRef.current;
-
-      if (meanChart && meanSeries) {
-        const snappedTime = findClosestTime(meanSeries, time);
-        if (snappedTime) {
-          meanChart.setCrosshairPosition(0, snappedTime, meanSeries);
-        }
-      }
-      if (rsiChart && rsiSeries) {
-        const snappedTime = findClosestTime(rsiSeries, time);
-        if (snappedTime) {
-          rsiChart.setCrosshairPosition(0, snappedTime, rsiSeries);
-        }
-      }
-
-      if (volChart && volSeries) {
-        const snappedTime = findClosestTime(volSeries, time);
-        if (snappedTime) {
-          volChart.setCrosshairPosition(0, snappedTime, volSeries);
-        }
-      }
-
-      if (secondaryChart && secondarySeries) {
-        const snappedTime = findClosestTime(secondarySeries, time);
-        if (snappedTime) {
-          secondaryChart.setCrosshairPosition(0, snappedTime, secondarySeries);
-        }
-      }
-      
-      
-    });
-    
-    // SYNC CROSS HAIRS 
-    chart.subscribeCrosshairMove((param) => {
-      if (!param.time || !param.point) return;
-      const time = param.time as UTCTimestamp;
-      if (candleSeriesRef.current) {
-        syncCrosshair(chart, candleSeriesRef.current, time);
-      }
-    });
-    
-    meanChart.subscribeCrosshairMove((param) => {
-      if (!param.time || !param.point) return;
-      const time = param.time as UTCTimestamp;
-      if (meanRevLineRef.current) {
-        syncCrosshair(meanChart, meanRevLineRef.current, time);
-      }
-    });
-    
-    rsiChart.subscribeCrosshairMove((param) => {
-      if (!param.time || !param.point) return;
-      const time = param.time as UTCTimestamp;
-      if (rsiLineRef.current) {
-        syncCrosshair(rsiChart, rsiLineRef.current, time);
-      }
-    });
-    
-    volChart.subscribeCrosshairMove((param) => {
-      if (!param.time || !param.point) return;
-      const time = param.time as UTCTimestamp;
-      if (volLineRef.current) {
-        syncCrosshair(volChart, volLineRef.current, time);
-      }
-    });
-    
-    
-    
 
     meanChart.subscribeClick((param) => {
       console.log("📌 Click detected on meanRev chart:", param);
@@ -804,16 +639,11 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       limitDrawingModeRef.current = false;
 
     });
-    
 
+    // --- 13. Cleanup ---
     return () => {
-      chart.remove();
-      meanChart.remove();
-      rsiChart.remove(); 
-      volChart.remove();
+      [chart, meanChart, rsiChart, volChart].forEach(c => c.remove());
       resizeObserver.disconnect();
-
-      // Reset the refs
       chartRef.current = null;
       meanRevChartInstance.current = null;
       rsiChartInstance.current = null;
@@ -825,7 +655,11 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     };
   }, [stockSymbol]);
 
-  useWebSocketData(stockSymbol, candleSeriesRef, timeframe);
+
+
+  // useWebSocketData(stockSymbol, candleSeriesRef, timeframe);
+  useMainChartData(stockSymbol, candleSeriesRef, timeframe, chartRef);
+
   /*
     DRAWINGS
   */
@@ -1056,7 +890,33 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
   return (
     <div className="position-relative bg-white p-3 shadow-sm rounded border">
 
-      <h5 className="fw-bold mb-3 text-dark">📈 {timeframe.toUpperCase()} Candlestick Chart</h5>
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <h5 className="fw-bold text-dark mb-0">
+          📈 {timeframe.toUpperCase()} Candlestick Chart
+        </h5>
+        <button
+          className="btn btn-sm btn-outline-primary d-flex align-items-center gap-2 fw-semibold px-3 py-2"
+          style={{
+            borderRadius: "6px",
+            boxShadow: "0 2px 6px rgba(60,132,246,0.06)",
+            letterSpacing: "0.03em"
+          }}
+          onClick={() => setShowGraphing(true)}
+        >
+          {/* You can use an icon here for extra style */}
+          {/* <BarChart2 size={18} className="me-2" /> */}
+          Open Graphing Chart
+        </button>
+      </div>
+
+        {/* Popup rendering */}
+        {showGraphing && (
+          <div className="modal-backdrop">
+            <div className="modal-content">
+              <GraphingChart stockSymbol={stockSymbol} onClose={() => setShowGraphing(false)} />
+            </div>
+          </div>
+        )}
 
         <div className="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
           {/* Left side: drawing tools */}
@@ -1177,6 +1037,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           <label><input type="checkbox" checked={showBollingerBand} onChange={() => setShowBollingerBand(v => !v)} /> Bollinger Band</label>
         </div>
 
+        
         {/* === Main Chart === */}
         <div ref={chartContainerRef} style={{ width: "100%", height: "400px" }} />
 
