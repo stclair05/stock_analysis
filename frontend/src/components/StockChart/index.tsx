@@ -36,6 +36,7 @@ import SecondaryChart from "./SecondaryChart";
 
 import S3Gallery from "../S3Gallery";
 import { useMainChartData } from "./useMainChartData";
+import GraphingChart from "./GraphingChart";
 
 
 
@@ -56,6 +57,9 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
   const drawnSeriesRef = useRef<Map<number, ISeriesApi<"Line">>>(new Map());
   const previewSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
+
+  // New Graphing Chart 
+  const [showGraphing, setShowGraphing] = useState(false);
 
 
   // Mean Rev Chart
@@ -886,7 +890,33 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
   return (
     <div className="position-relative bg-white p-3 shadow-sm rounded border">
 
-      <h5 className="fw-bold mb-3 text-dark">📈 {timeframe.toUpperCase()} Candlestick Chart</h5>
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <h5 className="fw-bold text-dark mb-0">
+          📈 {timeframe.toUpperCase()} Candlestick Chart
+        </h5>
+        <button
+          className="btn btn-sm btn-outline-primary d-flex align-items-center gap-2 fw-semibold px-3 py-2"
+          style={{
+            borderRadius: "6px",
+            boxShadow: "0 2px 6px rgba(60,132,246,0.06)",
+            letterSpacing: "0.03em"
+          }}
+          onClick={() => setShowGraphing(true)}
+        >
+          {/* You can use an icon here for extra style */}
+          {/* <BarChart2 size={18} className="me-2" /> */}
+          Open Graphing Chart
+        </button>
+      </div>
+
+        {/* Popup rendering */}
+        {showGraphing && (
+          <div className="modal-backdrop">
+            <div className="modal-content">
+              <GraphingChart stockSymbol={stockSymbol} onClose={() => setShowGraphing(false)} />
+            </div>
+          </div>
+        )}
 
         <div className="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
           {/* Left side: drawing tools */}
@@ -1007,6 +1037,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           <label><input type="checkbox" checked={showBollingerBand} onChange={() => setShowBollingerBand(v => !v)} /> Bollinger Band</label>
         </div>
 
+        
         {/* === Main Chart === */}
         <div ref={chartContainerRef} style={{ width: "100%", height: "400px" }} />
 

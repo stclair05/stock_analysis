@@ -27,11 +27,6 @@ export function useMainChartData(
             close: c.close,
           }));
           candleSeries.setData(formattedData);
-
-          // Optionally, set visible range to future here:
-          if (chartRef?.current) {
-            setFutureVisibleRange(candleSeries, chartRef.current);
-          }
         }
       } catch (err) {
         // handle error if needed
@@ -40,24 +35,4 @@ export function useMainChartData(
 
     fetchData();
   }, [stockSymbol, candleSeriesRef, timeframe, chartRef]);
-}
-
-// Utility function (can be imported/shared)
-function setFutureVisibleRange <T extends "Candlestick" | "Line" | "Histogram">(
-  series: ISeriesApi<T>,
-  chart: IChartApi
-) {
-  if (!series || !chart) return;
-  const mainSeriesData = series.data();
-  if (!mainSeriesData || mainSeriesData.length === 0) return;
-
-  const FUTURE_WEEKS = 26; // 6 months
-  const SECONDS_IN_WEEK = 7 * 24 * 60 * 60;
-  const lastTime = mainSeriesData[mainSeriesData.length - 1].time as UTCTimestamp;
-  const futureLimit = (lastTime + FUTURE_WEEKS * SECONDS_IN_WEEK) as UTCTimestamp;
-
-  chart.timeScale().setVisibleRange({
-    from: mainSeriesData[0].time,
-    to: futureLimit,
-  });
 }
