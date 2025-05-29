@@ -7,6 +7,7 @@ export function useMainChartData(
   candleSeriesRef: React.MutableRefObject<ISeriesApi<"Candlestick"> | null>,
   timeframe: "daily" | "weekly" | "monthly",
   chartRef?: React.MutableRefObject<IChartApi | null>,
+  onData?: (candles: Candle[]) => void // <-- Add this!
 ) {
   useEffect(() => {
     if (!stockSymbol || !candleSeriesRef.current) return;
@@ -27,9 +28,12 @@ export function useMainChartData(
             close: c.close,
           }));
           candleSeries.setData(formattedData);
+
+          if (onData) onData(formattedData); 
         }
       } catch (err) {
         // handle error if needed
+        console.log(err)
       }
     }
 

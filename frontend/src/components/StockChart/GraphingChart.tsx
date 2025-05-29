@@ -5,6 +5,8 @@ import {
   ISeriesApi,
   UTCTimestamp,
   CrosshairMode,
+  createSeriesMarkers,
+  SeriesMarker
 } from "lightweight-charts";
 import { useEffect, useRef, useState } from "react";
 import { useMainChartData } from "./useMainChartData";
@@ -13,7 +15,7 @@ import { useDrawingManager } from "./DrawingManager";
 import { usePreviewManager } from "./PreviewManager";
 import { useDrawingRenderer } from "./DrawingRenderer";
 import { useClickHandler } from "./ClickHandler";
-import { Point, CopyTrendlineBuffer } from "./types";
+import { Point, CopyTrendlineBuffer, Candle } from "./types";
 
 
 interface GraphingChartProps {
@@ -29,7 +31,7 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     const [timeframe, setTimeframe] = useState<"daily" | "weekly" | "monthly">("weekly");
 
 
-  // Drawing tool states and refs
+    // Drawing tool states and refs
     const [selectedDrawingIndex, setSelectedDrawingIndex] = useState<number | null>(null);
     const [draggedEndpoint, setDraggedEndpoint] = useState<'start' | 'end' | null>(null);
     const moveEndpointFixedRef = useRef<Point | null>(null);
@@ -41,6 +43,12 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     const sixPointPreviewRef = useRef<ISeriesApi<"Line"> | null>(null);
     const sixPointDotPreviewRef = useRef<ISeriesApi<"Line"> | null>(null);
     const sixPointHoverLineRef = useRef<ISeriesApi<"Line"> | null>(null);
+
+    // Strategy signals 
+    // Track markers for strategy signals (TrendInvestorPro etc)
+    const [strategyMarkers, setStrategyMarkers] = useState<SeriesMarker<number>[]>([]);
+    const [showTrendInvestorPro, setShowTrendInvestorPro] = useState(false); // for checkbox/toggle
+
 
     
     const copyBufferRef = useRef<CopyTrendlineBuffer | null>(null);
@@ -163,7 +171,9 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
         return Math.sqrt(dx * dx + dy * dy);
     }
 
-    // Chart creation and teardown
+    /**
+     * Main useEffect
+     */
     useEffect(() => {
         if (!chartContainerRef.current) return;
 
@@ -172,28 +182,28 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
 
         // Create chart
         const chart = createChart(chartContainerRef.current, {
-        width: chartContainerRef.current.clientWidth || 900,
-        height: 600,
-        layout: { background: { color: "#fff" }, textColor: "#222" },
-        grid: { vertLines: { color: "#eee" }, horzLines: { color: "#eee" } },
-        crosshair: { mode: CrosshairMode.Normal },
-        timeScale: { timeVisible: true, secondsVisible: false },
-        handleScroll: { pressedMouseMove: true, mouseWheel: true, horzTouchDrag: true, vertTouchDrag: false },
-        handleScale: { axisPressedMouseMove: true, axisDoubleClickReset: true, mouseWheel: true, pinch: true },
+            width: chartContainerRef.current.clientWidth || 900,
+            height: 600,
+            layout: { background: { color: "#fff" }, textColor: "#222" },
+            grid: { vertLines: { color: "#eee" }, horzLines: { color: "#eee" } },
+            crosshair: { mode: CrosshairMode.Normal },
+            timeScale: { timeVisible: true, secondsVisible: false },
+            handleScroll: { pressedMouseMove: true, mouseWheel: true, horzTouchDrag: true, vertTouchDrag: false },
+            handleScale: { axisPressedMouseMove: true, axisDoubleClickReset: true, mouseWheel: true, pinch: true },
         });
 
         // Add candlestick series
         const series = chart.addSeries(CandlestickSeries, {
-        upColor: "#26a69a",
-        downColor: "#ef5350",
-        borderVisible: false,
-        wickUpColor: "#26a69a",
-        wickDownColor: "#ef5350",
+            upColor: "#26a69a",
+            downColor: "#ef5350",
+            borderVisible: false,
+            wickUpColor: "#26a69a",
+            wickDownColor: "#ef5350",
         });
 
         chartInstanceRef.current = chart;
         candleSeriesRef.current = series;
-
+        
         // Resize observer for responsive width
         const resizeObserver = new ResizeObserver(entries => {
         for (let entry of entries) {
@@ -254,21 +264,120 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
 
         // Cleanup
         return () => {
-        chart.remove();
-        chartInstanceRef.current = null;
-        candleSeriesRef.current = null;
-        resizeObserver.disconnect();
+            chart.remove();
+            chartInstanceRef.current = null;
+            candleSeriesRef.current = null;
+            resizeObserver.disconnect();
         };
     }, [stockSymbol, timeframe]);
 
-    // Drawings
+    /**
+     * Drawings
+     */
     useEffect(() => {
         drawingsRef.current = drawings;
     }, [drawings, selectedDrawingIndex]);
 
+    /**
+     * Strategy Markers 
+     */
+    useEffect(() => {
+        console.log("Effect triggered", { showTrendInvestorPro, stockSymbol, timeframe });
+        if (!showTrendInvestorPro) {
+            // Remove markers when toggled off
+            console.log("TrendInvestorPro toggled off, clearing markers.");
+            setStrategyMarkers([]);
+            if (candleSeriesRef.current) {
+                createSeriesMarkers(candleSeriesRef.current, []); // Clear strategy markers
+            }
+            return;
+        }
 
-    // Attach price data (hook handles fetching and updating the chart)
-    useMainChartData(stockSymbol, candleSeriesRef, timeframe, chartInstanceRef);
+        const fetchSignals = async () => {
+            try {
+                const res = await fetch(
+                    `http://localhost:8000/api/signals_${timeframe}/${stockSymbol}?strategy=trendinvestorpro`
+                );
+                const data = await res.json();
+                console.log("Fetched signal response:", data);
+                if (!Array.isArray(data.markers)) {
+                    console.warn("No markers in backend response!");
+                    return;
+                }
+                // Map backend markers to SeriesMarker shape
+                const markers: SeriesMarker<number>[] = data.markers.map((m: any) => ({
+                    time: m.time,
+                    price: m.price,
+                    position: m.side === "buy" ? "belowBar" : "aboveBar",
+                    color: m.side === "buy" ? "#009944" : "#e91e63",
+                    shape: m.side === "buy" ? "arrowUp" : "arrowDown",
+                    text: m.label || (m.side === "buy" ? "BUY" : "SELL"),
+                }));
+                console.log("Converted markers:", markers);
+                setStrategyMarkers(markers);
+                if (candleSeriesRef.current) {
+                    console.log("Setting series markers on series", candleSeriesRef.current, markers);
+                    createSeriesMarkers(candleSeriesRef.current, markers);
+                } else {
+                    console.warn("candleSeriesRef.current is null!");
+                }
+            } catch (e) {
+                // Optionally handle error
+                console.error("Error fetching signals:", e);
+                setStrategyMarkers([]);
+            }
+        };
+
+        fetchSignals();
+    }, [stockSymbol, timeframe, showTrendInvestorPro]);
+
+
+
+    useMainChartData(
+        stockSymbol,
+        candleSeriesRef,
+        timeframe,
+        chartInstanceRef,
+        (loadedCandles) => {
+            console.log("Candles loaded into series:", loadedCandles.length);
+            if (!candleSeriesRef.current || !loadedCandles.length) return;
+
+            const firstCandle = loadedCandles[0];
+            const lastCandle = loadedCandles[loadedCandles.length - 1];
+
+            /*
+            const markers: SeriesMarker<number>[] = [
+             {
+                time: firstCandle.time,
+                position: "belowBar",
+                price: firstCandle.low, // required!
+                color: "#009944",
+                shape: "arrowUp",
+                text: "BUY",
+            },
+            {
+                time: lastCandle.time,
+                position: "aboveBar",
+                price: lastCandle.high, // required!
+                color: "#e91e63",
+                shape: "arrowDown",
+                text: "SELL",
+            },
+            ];
+
+            console.log("Final marker array:", markers);
+
+            createSeriesMarkers(
+                candleSeriesRef.current,
+                markers as unknown as SeriesMarker<any>[]
+            );
+            */
+
+        }
+    );
+
+
+
 
     return (
         <div className="graphing-chart-popup">
@@ -339,6 +448,16 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
                 </button>
             ))}
             </div>
+            <label className="d-flex align-items-center gap-1" style={{ fontWeight: 500 }}>
+                <input
+                    type="checkbox"
+                    checked={showTrendInvestorPro}
+                    onChange={() => setShowTrendInvestorPro((v) => !v)}
+                    style={{ marginRight: 4 }}
+                />
+                TrendInvestorPro
+            </label>
+
             <button className="btn btn-sm btn-danger ms-3" style={{ fontSize: "1.2rem" }} onClick={onClose}>
             Close
             </button>
