@@ -655,8 +655,6 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     };
   }, [stockSymbol]);
 
-
-
   // useWebSocketData(stockSymbol, candleSeriesRef, timeframe);
   useMainChartData(stockSymbol, candleSeriesRef, timeframe, chartRef);
 
@@ -734,8 +732,6 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     };
 
   }, [showBollingerBand, overlayData.bb_middle, overlayData.bb_upper, overlayData.bb_lower]);
-
-
 
   /*
     MEAN REV CHART'S USEEFFECT 

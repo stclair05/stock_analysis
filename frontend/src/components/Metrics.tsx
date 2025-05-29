@@ -292,13 +292,6 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
                   {renderColoredCell(metrics.super_trend.twentyone_days_ago)}
                 </tr>
                 <tr>
-                  <td>📍 ADX (Weekly)</td>
-                  {renderColoredCell(metrics.adx.current)}
-                  {renderColoredCell(metrics.adx.seven_days_ago)}
-                  {renderColoredCell(metrics.adx.fourteen_days_ago)}
-                  {renderColoredCell(metrics.adx.twentyone_days_ago)}
-                </tr>
-                <tr>
                   <td>⚖️ MACE</td>
                   {renderColoredCell(metrics.mace.current)}
                   {renderColoredCell(metrics.mace.seven_days_ago)}
@@ -402,6 +395,13 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
                   {renderColoredCell(metrics.chaikin_money_flow.seven_days_ago)}
                   {renderColoredCell(metrics.chaikin_money_flow.fourteen_days_ago)}
                   {renderColoredCell(metrics.chaikin_money_flow.twentyone_days_ago)}
+                </tr>
+                <tr>
+                  <td>📍 ADX (Weekly)</td>
+                  {renderColoredCell(metrics.adx.current)}
+                  {renderColoredCell(metrics.adx.seven_days_ago)}
+                  {renderColoredCell(metrics.adx.fourteen_days_ago)}
+                  {renderColoredCell(metrics.adx.twentyone_days_ago)}
                 </tr>
               </tbody>
             </table>
