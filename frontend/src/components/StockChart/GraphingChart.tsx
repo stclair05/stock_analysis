@@ -5,7 +5,8 @@ import {
   ISeriesApi,
   UTCTimestamp,
   CrosshairMode,
-  createSeriesMarkers
+  createSeriesMarkers,
+  SeriesMarker
 } from "lightweight-charts";
 import { useEffect, useRef, useState } from "react";
 import { useMainChartData } from "./useMainChartData";
@@ -45,21 +46,6 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
 
     
     const copyBufferRef = useRef<CopyTrendlineBuffer | null>(null);
-
-    const [latestCandle, setLatestCandle] = useState<Candle | null>(null);
-
-    // This marker will appear below the latest candle
-    const markers = [
-        {
-            time: 1716854400, // Example UTCTimestamp
-            position: 'belowBar',
-            color: '#009944',
-            shape: 'arrowUp',
-            text: 'BUY',
-        },
-        // ... add more markers as needed
-    ];
-
 
     const {
         drawingModeRef,
@@ -297,10 +283,11 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
             console.log("Placing marker at first candle:", firstCandle);
             console.log("Placing marker at last candle:", lastCandle);
 
-            const markers = [
-            {
+            const markers: SeriesMarker<number>[] = [
+             {
                 time: firstCandle.time,
                 position: "belowBar",
+                price: firstCandle.low, // required!
                 color: "#009944",
                 shape: "arrowUp",
                 text: "BUY",
@@ -308,6 +295,7 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
             {
                 time: lastCandle.time,
                 position: "aboveBar",
+                price: lastCandle.high, // required!
                 color: "#e91e63",
                 shape: "arrowDown",
                 text: "SELL",
@@ -316,7 +304,11 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
 
             console.log("Final marker array:", markers);
 
-            createSeriesMarkers(candleSeriesRef.current, markers);
+            createSeriesMarkers(
+                candleSeriesRef.current,
+                markers as unknown as SeriesMarker<any>[]
+            );
+
         }
     );
 
