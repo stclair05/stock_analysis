@@ -16,13 +16,8 @@ import { useDrawingManager } from "./DrawingManager";
 import { usePreviewManager } from "./PreviewManager";
 import { useDrawingRenderer } from "./DrawingRenderer";
 import { useClickHandler } from "./ClickHandler";
-import { Point, CopyTrendlineBuffer, SignalSummary, Timeframe, SignalSide } from "./types";
+import { Point, CopyTrendlineBuffer, SignalSummary, Timeframe, SignalSide, GraphingChartProps } from "./types";
 
-
-interface GraphingChartProps {
-  stockSymbol: string;
-  onClose: () => void; // To close the popup
-}
 
 const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     const chartContainerRef = useRef<HTMLDivElement>(null);

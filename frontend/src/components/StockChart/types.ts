@@ -47,3 +47,8 @@ export type SignalSummary = {
     [T in Timeframe]: SignalSide;
   }
 };
+
+export interface GraphingChartProps {
+  stockSymbol: string;
+  onClose: () => void; // To close the popup
+}

@@ -715,79 +715,58 @@ class StockAnalyser:
     def compare_ratio_with(
         self,
         other_symbol: str,
-        timeframe: str = "weekly",  # default to weekly!
+        timeframe: str = "weekly",
         period: str = None
     ) -> dict:
-        """
-        timeframe: "daily" | "weekly" | "monthly"
-        period: not used here because we are using cached price data (modify if needed)
-        """
-        # Get correct DataFrames based on requested timeframe
         symbol1 = self.symbol
         raw_symbol2 = other_symbol.upper().strip()
         symbol2 = SYMBOL_ALIASES.get(raw_symbol2, raw_symbol2)
         other = StockAnalyser(symbol2)
 
         if timeframe == "daily":
-            df1 = self.df
-            df2 = other.df
+            df1 = self.df.copy()
+            df2 = other.df.copy()
         elif timeframe == "weekly":
-            df1 = self.weekly_df
-            df2 = other.weekly_df
+            df1 = self.weekly_df.copy()
+            df2 = other.weekly_df.copy()
         elif timeframe == "monthly":
-            # Locally resample to proper monthly candle
-            df1 = self.df.resample("M").agg({
-                "Open": "first",
-                "High": "max",
-                "Low": "min",
-                "Close": "last",
-                "Volume": "sum" if "Volume" in self.df.columns else "first"
-            }).dropna()
-            df2 = other.df.resample("M").agg({
-                "Open": "first",
-                "High": "max",
-                "Low": "min",
-                "Close": "last",
-                "Volume": "sum" if "Volume" in other.df.columns else "first"
-            }).dropna()
-
+            df1 = self.monthly_df.copy()
+            df2 = other.monthly_df.copy()
         else:
             raise ValueError(f"Unsupported timeframe: {timeframe}")
 
-        # Align by index (date)
-        df1, df2 = df1.align(df2, join='inner', axis=0)
-        if df1.empty or df2.empty:
-            return {"error": f"No data found for one or both symbols: {symbol1}, {symbol2}"}
+        # 1. Union of all dates
+        all_dates = df1.index.union(df2.index).sort_values()
+        df1_ff = df1.reindex(all_dates).ffill()
+        df2_ff = df2.reindex(all_dates).ffill()
 
-        def get_col(df, col):
-            s = df[col]
-            return s.iloc[:, 0] if isinstance(s, pd.DataFrame) else s
+        # 2. Only keep rows where both have data (should always be true after ffill, unless one never traded yet)
+        mask = df1_ff["Close"].notna() & df2_ff["Close"].notna()
+        ratio_df = pd.DataFrame(index=all_dates[mask])
 
-        open1 = get_col(df1, "Open")
-        high1 = get_col(df1, "High")
-        low1 = get_col(df1, "Low")
-        close1 = get_col(df1, "Close")
-        volume = get_col(df1, "Volume")
+        # 3. Calculate ratio columns (OHLC)
+        for col in ["Open", "High", "Low", "Close"]:
+            ratio_df[col] = df1_ff[col][mask] / df2_ff[col][mask]
 
-        open2 = get_col(df2, "Open")
-        high2 = get_col(df2, "High")
-        low2 = get_col(df2, "Low")
-        close2 = get_col(df2, "Close")
+        # 4. For volume, just use first ticker’s (not meaningful, but for chart API shape)
+        ratio_df["Volume"] = df1_ff["Volume"][mask] if "Volume" in df1_ff else 0
 
+        # 5. Format for frontend
         ratio_history = [
             {
                 "time": int(pd.Timestamp(idx).timestamp()),
-                "open": round(float(o1) / float(o2), 4) if o2 else None,
-                "high": round(float(h1) / float(h2), 4) if h2 else None,
-                "low": round(float(l1) / float(l2), 4) if l2 else None,
-                "close": round(float(c1) / float(c2), 4) if c2 else None,
-                "volume": round(float(v), 2) if v else 0.0,
+                "open": round(float(o), 4) if pd.notna(o) else None,
+                "high": round(float(h), 4) if pd.notna(h) else None,
+                "low": round(float(l), 4) if pd.notna(l) else None,
+                "close": round(float(c), 4) if pd.notna(c) else None,
+                "volume": round(float(v), 2) if pd.notna(v) else 0.0,
             }
-            for idx, o1, h1, l1, c1, v, o2, h2, l2, c2 in zip(
-                df1.index, open1, high1, low1, close1, volume, open2, high2, low2, close2
+            for idx, o, h, l, c, v in zip(
+                ratio_df.index, ratio_df["Open"], ratio_df["High"], ratio_df["Low"], ratio_df["Close"], ratio_df["Volume"]
             )
         ]
         return {"history": ratio_history}
+
     
 
     '''
