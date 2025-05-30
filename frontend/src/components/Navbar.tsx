@@ -14,13 +14,17 @@ export default function Navbar() {
         </Link>
         <Link
           to="/portfolio"
-          className={`nav-link ${location.pathname === "/portfolio" ? "active" : ""}`}
+          className={`nav-link ${
+            location.pathname === "/portfolio" ? "active" : ""
+          }`}
         >
           Portfolio
         </Link>
         <Link
           to="/watchlist"
-          className={`nav-link ${location.pathname === "/watchlist" ? "active" : ""}`}
+          className={`nav-link ${
+            location.pathname === "/watchlist" ? "active" : ""
+          }`}
         >
           Watchlist
         </Link>

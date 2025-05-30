@@ -1,6 +1,10 @@
 import React from "react";
 
-const SkeletonCard = ({ type = "standard" }: { type?: "standard" | "metrics" | "chart" }) => {
+const SkeletonCard = ({
+  type = "standard",
+}: {
+  type?: "standard" | "metrics" | "chart";
+}) => {
   if (type === "chart") {
     return (
       <div className="bg-light rounded shadow-sm p-4 mb-3 w-100">

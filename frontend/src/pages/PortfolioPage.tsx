@@ -10,7 +10,12 @@ function PortfolioPage() {
   const underlineRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
-  const tabs = ["Overview", "Market Positions", "Recent Trades", "What-If Analysis"];
+  const tabs = [
+    "Overview",
+    "Market Positions",
+    "Recent Trades",
+    "What-If Analysis",
+  ];
 
   useEffect(() => {
     const activeIndex = tabs.indexOf(activeTab);
@@ -22,8 +27,6 @@ function PortfolioPage() {
     }
   }, [activeTab]);
 
-
-
   return (
     <div className="container mt-4">
       <h1 className="fw-bold text-dark mb-4">Portfolio</h1>
@@ -34,8 +37,8 @@ function PortfolioPage() {
           <button
             key={tab}
             ref={(el: HTMLButtonElement | null) => {
-                if (el) tabRefs.current[index] = el;
-              }}
+              if (el) tabRefs.current[index] = el;
+            }}
             className={`custom-tab-button ${activeTab === tab ? "active" : ""}`}
             onClick={() => setActiveTab(tab)}
           >
@@ -48,19 +51,28 @@ function PortfolioPage() {
       {/* Content */}
       <div>
         <div style={{ display: activeTab === "Overview" ? "block" : "none" }}>
-            <OverviewTab />
+          <OverviewTab />
         </div>
-        <div style={{ display: activeTab === "Market Positions" ? "block" : "none" }}>
-            <MarketPositionsTab />
+        <div
+          style={{
+            display: activeTab === "Market Positions" ? "block" : "none",
+          }}
+        >
+          <MarketPositionsTab />
         </div>
-        <div style={{ display: activeTab === "Recent Trades" ? "block" : "none" }}>
-            <RecentTradesTab />
+        <div
+          style={{ display: activeTab === "Recent Trades" ? "block" : "none" }}
+        >
+          <RecentTradesTab />
         </div>
-        <div style={{ display: activeTab === "What-If Analysis" ? "block" : "none" }}>
-            <WhatIfAnalysisTab />
+        <div
+          style={{
+            display: activeTab === "What-If Analysis" ? "block" : "none",
+          }}
+        >
+          <WhatIfAnalysisTab />
         </div>
-        </div>
-
+      </div>
     </div>
   );
 }

@@ -22,7 +22,14 @@ const S3Gallery: React.FC<S3GalleryProps> = ({ folder = "natgas" }) => {
   if (!images.length) return <div>No images found.</div>;
 
   return (
-    <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap", margin: "2rem 0" }}>
+    <div
+      style={{
+        display: "flex",
+        gap: "1.5rem",
+        flexWrap: "wrap",
+        margin: "2rem 0",
+      }}
+    >
       {images.map((url) => (
         <img
           key={url}

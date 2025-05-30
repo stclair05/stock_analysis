@@ -10,7 +10,8 @@ function HomePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isValidSymbol = (symbol: string) => /^[A-Za-z0-9.=]{1,10}$/.test(symbol);
+  const isValidSymbol = (symbol: string) =>
+    /^[A-Za-z0-9.=]{1,10}$/.test(symbol);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value.toUpperCase());
@@ -21,7 +22,9 @@ function HomePage() {
     if (!inputValue.trim()) return;
 
     if (!isValidSymbol(inputValue)) {
-      setError("Invalid symbol. Please enter a valid stock symbol (e.g., AAPL or ^DJI).");
+      setError(
+        "Invalid symbol. Please enter a valid stock symbol (e.g., AAPL or ^DJI)."
+      );
       return;
     }
 
@@ -40,7 +43,10 @@ function HomePage() {
 
       {/* Search Bar */}
       <div className="search-bar-container d-flex justify-content-center mb-5">
-        <div className="input-group shadow-sm" style={{ maxWidth: "600px", width: "100%" }}>
+        <div
+          className="input-group shadow-sm"
+          style={{ maxWidth: "600px", width: "100%" }}
+        >
           <input
             type="text"
             className="form-control search-input"
@@ -49,9 +55,15 @@ function HomePage() {
             onChange={handleInputChange}
             onKeyPress={handleKeyPress}
           />
-          <button className="btn btn-primary search-button" onClick={handleSearch}>
+          <button
+            className="btn btn-primary search-button"
+            onClick={handleSearch}
+          >
             {loading ? (
-              <div className="spinner-border spinner-border-sm text-light" role="status">
+              <div
+                className="spinner-border spinner-border-sm text-light"
+                role="status"
+              >
                 <span className="visually-hidden">Loading...</span>
               </div>
             ) : (
@@ -62,7 +74,10 @@ function HomePage() {
       </div>
 
       {error && (
-        <div className="text-center text-danger mt-2" style={{ fontWeight: 500 }}>
+        <div
+          className="text-center text-danger mt-2"
+          style={{ fontWeight: 500 }}
+        >
           {error}
         </div>
       )}
@@ -72,26 +87,28 @@ function HomePage() {
         <>
           <div className="cards-wrapper-row">
             <div className="metric-card">
-              <Metrics stockSymbol={stockSymbol} setParentLoading={setLoading} />
+              <Metrics
+                stockSymbol={stockSymbol}
+                setParentLoading={setLoading}
+              />
             </div>
 
             <div className="chart-card">
               <StockChart stockSymbol={stockSymbol} />
             </div>
-   
+
             <div className="fundamental-card">
               <Fundamentals stockSymbol={stockSymbol} />
             </div>
-        
-          </div>   
+          </div>
         </>
       ) : (
         <div className="text-center mt-5">
-          <h4 className="text-muted">🔎 Search for a stock to view metrics and chart</h4>
+          <h4 className="text-muted">
+            🔎 Search for a stock to view metrics and chart
+          </h4>
         </div>
       )}
-
-
     </div>
   );
 }

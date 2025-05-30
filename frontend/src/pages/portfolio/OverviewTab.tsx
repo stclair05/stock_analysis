@@ -20,12 +20,10 @@ type Holding = {
   static_asset?: boolean;
 };
 const formatMoney = (value: number): string => {
-    if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(2)}M`;
-    if (value >= 1_000) return `$${(value / 1_000).toFixed(2)}K`;
-    return `$${value.toFixed(2)}`;
-  };
-  
-  
+  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(2)}M`;
+  if (value >= 1_000) return `$${(value / 1_000).toFixed(2)}K`;
+  return `$${value.toFixed(2)}`;
+};
 
 const OverviewTab = () => {
   const [portfolio, setPortfolio] = useState<Holding[]>([]);
@@ -33,7 +31,7 @@ const OverviewTab = () => {
 
   useEffect(() => {
     let mounted = true; // flag to track if component is still mounted
-  
+
     const fetchPortfolio = async () => {
       try {
         const res = await fetch("http://localhost:8000/portfolio_live_data");
@@ -45,24 +43,30 @@ const OverviewTab = () => {
         if (mounted) setLoading(false); // only update if still mounted
       }
     };
-  
+
     fetchPortfolio();
-  
+
     return () => {
       mounted = false; // cleanup when component unmounts
     };
   }, []);
 
   const getSum = (field: keyof Holding): string => {
-    const sum = portfolio.reduce((acc, item) => acc + ((item[field] as number) ?? 0), 0);
+    const sum = portfolio.reduce(
+      (acc, item) => acc + ((item[field] as number) ?? 0),
+      0
+    );
     return `$${sum.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
   };
 
   const getPnlPercent = (): string => {
-    const invested = portfolio.reduce((acc, item) => acc + item.invested_capital, 0);
+    const invested = portfolio.reduce(
+      (acc, item) => acc + item.invested_capital,
+      0
+    );
     const pnl = portfolio.reduce((acc, item) => acc + item.pnl, 0);
     if (invested === 0) return "0.00";
-    return (pnl / invested * 100).toFixed(2);
+    return ((pnl / invested) * 100).toFixed(2);
   };
 
   const StatCard = ({
@@ -97,8 +101,10 @@ const OverviewTab = () => {
   // Categorize tickers into asset classes
   const categorizeAsset = (ticker: string): string => {
     if (ticker === "FIXED INCOME") return "Fixed Income";
-    if (["PTE EQTY", "JSS PRIVATE INV", "DEEP BLUE FISH"].includes(ticker)) return "Private Equity";
-    if (["RE DEBT STRAT 1", "RE DEBT STRAT 2", "SAFRA"].includes(ticker)) return "Alt Debt";
+    if (["PTE EQTY", "JSS PRIVATE INV", "DEEP BLUE FISH"].includes(ticker))
+      return "Private Equity";
+    if (["RE DEBT STRAT 1", "RE DEBT STRAT 2", "SAFRA"].includes(ticker))
+      return "Alt Debt";
     return "Equities";
   };
 
@@ -133,14 +139,20 @@ const OverviewTab = () => {
           </div>
           <div className="bg-light rounded shadow-sm p-4">
             <div className="placeholder col-4 mb-3"></div>
-            <div className="placeholder col-12" style={{ height: "160px" }}></div>
+            <div
+              className="placeholder col-12"
+              style={{ height: "160px" }}
+            ></div>
           </div>
         </div>
       ) : (
         <>
           {/* Stat Cards */}
           <div className="row g-4 mb-4">
-            <StatCard title="Total Invested" value={getSum("invested_capital")} />
+            <StatCard
+              title="Total Invested"
+              value={getSum("invested_capital")}
+            />
             <StatCard title="Current Value" value={getSum("market_value")} />
             <StatCard title="Total PnL" value={getSum("pnl")} colored />
             <StatCard title="PnL %" value={`${getPnlPercent()}%`} colored />
@@ -153,22 +165,30 @@ const OverviewTab = () => {
                 <h5 className="fw-bold mb-3">Portfolio Allocation</h5>
                 <ResponsiveContainer width="100%" height={250}>
                   <PieChart>
-                  <Pie
-                    data={getAllocationData()}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    label={({ value }) => formatMoney(value)}
+                    <Pie
+                      data={getAllocationData()}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      label={({ value }) => formatMoney(value)}
                     >
-                    {getAllocationData().map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
+                      {getAllocationData().map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={COLORS[index % COLORS.length]}
+                        />
+                      ))}
                     </Pie>
-                    <Tooltip formatter={(value: number, name: string) =>
-                    [`$${value.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, name]
-                    } />
+                    <Tooltip
+                      formatter={(value: number, name: string) => [
+                        `$${value.toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                        })}`,
+                        name,
+                      ]}
+                    />
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>
@@ -179,10 +199,9 @@ const OverviewTab = () => {
           {/* Graph */}
           <div className="col-md-6">
             <div className="p-4 bg-light rounded shadow-sm h-100 d-flex justify-content-center align-items-center">
-                <div className="text-muted fw-semibold">Chart coming soon...</div>
+              <div className="text-muted fw-semibold">Chart coming soon...</div>
             </div>
           </div>
-
         </>
       )}
     </div>
