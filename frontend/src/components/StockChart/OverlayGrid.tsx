@@ -19,7 +19,7 @@ const chartConfigs = [
   {
     label: "3Y MA",
     keys: ["three_year_ma"],
-    colors: ["#3f51b5"],
+    colors: ["#18b85a"], // Green (3Y MA)
     names: ["3Y MA"],
   },
   {
@@ -31,13 +31,21 @@ const chartConfigs = [
   {
     label: "MACE (4W/13W/26W) + 40W MA",
     keys: ["mace_4w", "mace_13w", "mace_26w", "forty_week_ma"],
-    colors: ["#e91e63", "#9c27b0", "#03a9f4", "#795548"],
+    colors: [
+      "#000000", // Black (MACE 4W)
+      "#ffe600", // Yellow (MACE 13W)
+      "#f23645", // Red (MACE 26W)
+      "#1e88e5" // Blue (40W MA)
+    ],
     names: ["MACE 4W", "MACE 13W", "MACE 26W", "40W MA"],
   },
   {
     label: "50DMA + 150DMA",
     keys: ["dma_50", "dma_150"],
-    colors: ["#ff9800", "#607d8b"],
+    colors: [
+      "#1e88e5", // Blue (50DMA)
+      "#ff9800"  // Orange (150DMA)
+    ],
     names: ["50DMA", "150DMA"],
   },
 ];
