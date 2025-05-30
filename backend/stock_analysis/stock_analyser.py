@@ -633,20 +633,31 @@ class StockAnalyser:
         }
 
     
-    def get_volatility_bbwp(self):
-        df_weekly = self.weekly_df
-        close = df_weekly["Close"]
+    def get_volatility_bbwp(self, timeframe: str = "weekly"):
+        if timeframe == "daily":
+            close = self.df["Close"]
+        elif timeframe == "weekly":
+            close = self.weekly_df["Close"]
+        elif timeframe == "monthly":
+            close = self.monthly_df["Close"]
+        else:
+            raise ValueError(f"Invalid timeframe: {timeframe}")
 
-        # Match TradingView: BB Length = 13, Percentile Lookback = 252
-        bbwp = compute_bbwp(close, length=13, bbwp_window=252)
+        # You may want to adjust the defaults for each timeframe for BBWP calculation
+        length = 13
+        bbwp_window = 252
 
-        # Reindex to full close index to preserve alignment
+        # Optionally, tune these for daily/monthly (e.g. length=20 for daily, etc)
+        # For now, match TradingView weekly logic for all
+        bbwp = compute_bbwp(close, length=length, bbwp_window=bbwp_window)
+
         bbwp_full = pd.Series(index=close.index, dtype=float)
         bbwp_full.loc[bbwp.index] = bbwp.values
 
         print(f"✅ [TV Match] BBWP length: {len(bbwp_full.dropna())} of {len(bbwp_full)}")
 
         return to_series(bbwp_full)
+
 
     def get_ichimoku_lines(self):
         df_weekly = self.weekly_df
@@ -731,9 +742,9 @@ class StockAnalyser:
             "dma_150": self.get_150dma_series(),
 
             # Others
-            **self.get_rsi_lines(timeframe=timeframe),
-            "volatility": self.get_volatility_bbwp(),
-            **self.get_mean_reversion_deviation_lines(),
+            **self.get_rsi_lines(timeframe=timeframe), #3rd chart from price
+            "volatility": self.get_volatility_bbwp(timeframe=timeframe),  #1st chart from price
+            **self.get_mean_reversion_deviation_lines(), #2nd chart from price
         }
 
 
