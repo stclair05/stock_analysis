@@ -838,7 +838,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     if (overlayData.rsi_ma_14) {
       const ma14Series = chart.addSeries(LineSeries, {
         color: "#ff1a6a", // teal
-        lineWidth: 1,
+        lineWidth: 2,
         priceLineVisible: false,
         lastValueVisible: false,
       });
