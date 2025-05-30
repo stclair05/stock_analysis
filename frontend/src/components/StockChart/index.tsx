@@ -23,6 +23,8 @@ import {
 
 import { useWebSocketData } from "./useWebSocketData";
 
+import { useMainChartData } from "./useMainChartData";
+
 import { useDrawingManager } from "./DrawingManager";
 
 import { usePreviewManager } from "./PreviewManager";
@@ -36,7 +38,7 @@ import OverlayGrid from "./OverlayGrid";
 import SecondaryChart from "./SecondaryChart";
 
 import S3Gallery from "../S3Gallery";
-import { useMainChartData } from "./useMainChartData";
+
 import GraphingChart from "./GraphingChart";
 
 
@@ -397,13 +399,23 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     });
 
     // --- 5. Helper: Create chart with shared options ---
-    function initChart(ref: React.RefObject<HTMLDivElement | null>, width: number, height: number) {
+    function initChart(
+      ref: React.RefObject<HTMLDivElement | null>,
+      width: number,
+      height: number,
+      bgColor?: string,
+      gridColor?: string,
+      textColor?: string
+    ) {
       if (!ref.current) throw new Error("Chart container not mounted");
       return createChart(ref.current, {
         width,
         height,
-        layout: { background: { color: "#fff" }, textColor: "#000" },
-        grid: { vertLines: { color: "#eee" }, horzLines: { color: "#eee" } },
+        layout: { background: { color: bgColor ?? "#fff" }, textColor: textColor ?? "#000" },
+        grid: {
+          vertLines: { color: gridColor ?? "#eee" },
+          horzLines: { color: gridColor ?? "#eee" }
+        },
         crosshair: { mode: CrosshairMode.Normal },
         timeScale: { timeVisible: true, secondsVisible: false },
         handleScroll: {
@@ -414,6 +426,8 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         },
       });
     }
+
+
 
     // --- 6. Create all charts ---
     const chart = initChart(chartContainerRef, 0, 400);
@@ -427,7 +441,15 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     ]);
     meanRevLineRef.current = meanRevLineSeries;
 
-    const rsiChart = initChart(rsiChartRef, rsiChartRef.current!.clientWidth, 150);
+    const rsiChart = initChart(
+      rsiChartRef,
+      rsiChartRef.current!.clientWidth,
+      150,
+      "#251a3b",      // purple background
+      "#392c57",      // purple grid lines (lighter for contrast)
+      "#fff"          // white text
+    );
+
     rsiChartInstance.current = rsiChart;
     const rsiLine = rsiChart.addSeries(LineSeries, { color: "#f44336", lineWidth: 1 });
     rsiLine.setData([{ time: Date.now() / 1000 as UTCTimestamp, value: 50 }]);
