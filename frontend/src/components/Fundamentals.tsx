@@ -21,27 +21,51 @@ function getColor(label: string, value: number | null): string {
 
   switch (label) {
     case "FCF Yield":
-      return value >= thresholds.fcf_yield ? "text-success fw-bold" : "text-danger fw-bold";
+      return value >= thresholds.fcf_yield
+        ? "text-success fw-bold"
+        : "text-danger fw-bold";
     case "FCF Growth":
-      return value >= thresholds.fcf_growth ? "text-success fw-bold" : "text-danger";
+      return value >= thresholds.fcf_growth
+        ? "text-success fw-bold"
+        : "text-danger";
     case "Yield + Growth":
-      return value >= thresholds.yield_plus_growth ? "text-success fw-bold" : "text-danger";
+      return value >= thresholds.yield_plus_growth
+        ? "text-success fw-bold"
+        : "text-danger";
     case "ROCE":
       return value >= thresholds.roce ? "text-success fw-bold" : "text-warning";
     case "WACC":
-      return value < 7 ? "text-success" : value < 10 ? "text-warning" : "text-danger";
+      return value < 7
+        ? "text-success"
+        : value < 10
+        ? "text-warning"
+        : "text-danger";
     case "ROCE – WACC":
-      return value >= thresholds.roce_minus_wacc ? "text-success fw-bold" : "text-danger";
+      return value >= thresholds.roce_minus_wacc
+        ? "text-success fw-bold"
+        : "text-danger";
     case "Cash Conversion Ratio":
-      return value >= thresholds.cash_conversion ? "text-success" : "text-danger";
+      return value >= thresholds.cash_conversion
+        ? "text-success"
+        : "text-danger";
     case "Rule of 40 Score":
       return value >= 40 ? "text-success fw-bold" : "text-warning";
     case "Gross Margin":
-      return value >= thresholds.gross_margin ? "text-success fw-bold" : "text-danger";
+      return value >= thresholds.gross_margin
+        ? "text-success fw-bold"
+        : "text-danger";
     case "Sortino Ratio":
-      return value > 1 ? "text-success fw-bold" : value > 0.5 ? "text-warning" : "text-danger";
+      return value > 1
+        ? "text-success fw-bold"
+        : value > 0.5
+        ? "text-warning"
+        : "text-danger";
     case "Beta":
-      return value < 1 ? "text-success" : value === 1 ? "text-warning" : "text-danger";
+      return value < 1
+        ? "text-success"
+        : value === 1
+        ? "text-warning"
+        : "text-danger";
     default:
       return "";
   }
@@ -76,31 +100,38 @@ const Fundamentals = ({ stockSymbol }: Props) => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-
   useEffect(() => {
     if (!stockSymbol) return;
 
     const fetchData = async () => {
-        try {
-            setError(null);
-            setLoading(true); // Start loading
-            const res = await fetch(`http://localhost:8000/fmp_financials/${stockSymbol}`);
-            if (!res.ok) throw new Error("Failed to fetch financials.");
-            const json = await res.json();
-            setData(json);
-          } catch (err: any) {
-            setError(err.message || "Unexpected error");
-          } finally {
-            setLoading(false); // Stop loading
-          }
+      try {
+        setError(null);
+        setLoading(true); // Start loading
+        const res = await fetch(
+          `http://localhost:8000/fmp_financials/${stockSymbol}`
+        );
+        if (!res.ok) throw new Error("Failed to fetch financials.");
+        const json = await res.json();
+        setData(json);
+      } catch (err: any) {
+        setError(err.message || "Unexpected error");
+      } finally {
+        setLoading(false); // Stop loading
+      }
     };
 
     fetchData();
   }, [stockSymbol]);
 
-  const renderRow = (label: string, value: number | string | null, suffix = "") => {
-    const display = value !== null && value !== undefined ? `${value}${suffix}` : "N/A";
-    const className = typeof value === "number" ? getColor(label, value) : "text-secondary";
+  const renderRow = (
+    label: string,
+    value: number | string | null,
+    suffix = ""
+  ) => {
+    const display =
+      value !== null && value !== undefined ? `${value}${suffix}` : "N/A";
+    const className =
+      typeof value === "number" ? getColor(label, value) : "text-secondary";
     return (
       <tr>
         <td>{label}</td>
@@ -109,17 +140,31 @@ const Fundamentals = ({ stockSymbol }: Props) => {
     );
   };
 
-  if (error) return <div className="no-fundamentals">No fundamental data available</div>;
-  if (loading) return <div className="placeholder">Loading fundamentals...</div>;
+  if (error)
+    return <div className="no-fundamentals">No fundamental data available</div>;
+  if (loading)
+    return <div className="placeholder">Loading fundamentals...</div>;
   if (!data) return <div className="placeholder">Loading fundamentals...</div>;
 
   return (
     <div className="table-responsive fade-in" style={{ width: "100%" }}>
-      <h2 className="mb-3">Fundamentals for <strong>{data.ticker}</strong></h2>
+      <h2 className="mb-3">
+        Fundamentals for <strong>{data.ticker}</strong>
+      </h2>
       <table className="table table-striped metrics-table">
         <tbody>
-          {renderRow("Revenue", data.revenue ? `$${(data.revenue / 1_000_000_000).toFixed(1)}B` : "N/A")}
-          {renderRow("Net Income", data.net_income ? `$${(data.net_income / 1_000_000_000).toFixed(1)}B` : "N/A")}
+          {renderRow(
+            "Revenue",
+            data.revenue
+              ? `$${(data.revenue / 1_000_000_000).toFixed(1)}B`
+              : "N/A"
+          )}
+          {renderRow(
+            "Net Income",
+            data.net_income
+              ? `$${(data.net_income / 1_000_000_000).toFixed(1)}B`
+              : "N/A"
+          )}
           {renderRow("Dividend Yield", data.dividend_yield, "%")}
           {renderRow("P/E Ratio", data.pe_ratio)}
           {renderRow("P/S Ratio", data.ps_ratio)}
