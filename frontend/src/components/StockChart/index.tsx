@@ -445,8 +445,8 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       rsiChartRef,
       rsiChartRef.current!.clientWidth,
       150,
-      "#251a3b",      // purple background
-      "#392c57",      // purple grid lines (lighter for contrast)
+      "#5e35b1",      // purple background
+      "#5e35b1",      // purple grid lines (lighter for contrast)
       "#fff"          // white text
     );
 
@@ -852,9 +852,9 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
     // --- 70/50/30 Bands ---
     const bandColors = {
-      rsi_upper_band: "#ffffff",
-      rsi_middle_band: "#ffffff",
-      rsi_lower_band: "#ffffff",
+      rsi_upper_band: "#cccccc",
+      rsi_middle_band: "#cccccc",
+      rsi_lower_band: "#cccccc",
     };
 
     (["rsi_upper_band", "rsi_middle_band", "rsi_lower_band"] as const).forEach((key) => {
@@ -867,6 +867,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         priceLineVisible: false,
         lastValueVisible: false,
         lineStyle: 2, // Dashed
+        crosshairMarkerVisible: false,
       });
       bandSeries.setData(
         data.map((d) => ({
