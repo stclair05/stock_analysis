@@ -852,9 +852,9 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
     // --- 70/50/30 Bands ---
     const bandColors = {
-      rsi_upper_band: "#787B86",
-      rsi_middle_band: "#787B86",
-      rsi_lower_band: "#787B86",
+      rsi_upper_band: "#ffffff",
+      rsi_middle_band: "#ffffff",
+      rsi_lower_band: "#ffffff",
     };
 
     (["rsi_upper_band", "rsi_middle_band", "rsi_lower_band"] as const).forEach((key) => {
