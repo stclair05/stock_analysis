@@ -601,6 +601,38 @@ class StockAnalyser:
         print(f"RSI Min: {rsi.min()}, Max: {rsi.max()}")
         return to_series(reindex_indicator(close, rsi))
     
+    def get_rsi_lines(self, period: int = 14, timeframe: str = "weekly") -> dict:
+        if timeframe == "daily":
+            df = self.df
+        elif timeframe == "weekly":
+            df = self.weekly_df
+        elif timeframe == "monthly":
+            df = self.monthly_df
+        else:
+            raise ValueError(f"Invalid timeframe: {timeframe}")
+
+        close = df["Close"]
+        rsi = compute_wilder_rsi(close, period)
+        rsi_aligned = reindex_indicator(close, rsi)
+        rsi_series = to_series(rsi_aligned)
+        rsi_ma = rsi.rolling(window=period).mean()
+        rsi_ma_aligned = reindex_indicator(close, rsi_ma)
+        rsi_ma_series = to_series(rsi_ma_aligned)
+
+        rsi_times = [point["time"] for point in rsi_series]
+        rsi_upper_band = [{"time": t, "value": 70} for t in rsi_times]
+        rsi_middle_band = [{"time": t, "value": 50} for t in rsi_times]
+        rsi_lower_band = [{"time": t, "value": 30} for t in rsi_times]
+
+        return {
+            "rsi": rsi_series,
+            "rsi_ma_14": rsi_ma_series,
+            "rsi_upper_band": rsi_upper_band,
+            "rsi_middle_band": rsi_middle_band,
+            "rsi_lower_band": rsi_lower_band,
+        }
+
+    
     def get_volatility_bbwp(self):
         df_weekly = self.weekly_df
         close = df_weekly["Close"]
@@ -699,8 +731,7 @@ class StockAnalyser:
             "dma_150": self.get_150dma_series(),
 
             # Others
-            "rsi": self.get_rsi_series(),
-            "rsi_ma_14": self.get_rsi_ma_series(),
+            **self.get_rsi_lines(timeframe=timeframe),
             "volatility": self.get_volatility_bbwp(),
             **self.get_mean_reversion_deviation_lines(),
         }

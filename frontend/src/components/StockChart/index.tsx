@@ -10,6 +10,7 @@ import {
   LineStyleOptions,
   SeriesOptionsCommon,
   HistogramSeries,
+  AreaSeries,
 } from "lightweight-charts";
 import { useEffect, useRef, useState } from "react";
 import { Ruler, Minus, RotateCcw, ArrowUpDown, PlusCircle, X } from "lucide-react";
@@ -21,6 +22,8 @@ import {
 } from "./types";
 
 import { useWebSocketData } from "./useWebSocketData";
+
+import { useMainChartData } from "./useMainChartData";
 
 import { useDrawingManager } from "./DrawingManager";
 
@@ -35,7 +38,7 @@ import OverlayGrid from "./OverlayGrid";
 import SecondaryChart from "./SecondaryChart";
 
 import S3Gallery from "../S3Gallery";
-import { useMainChartData } from "./useMainChartData";
+
 import GraphingChart from "./GraphingChart";
 
 
@@ -108,6 +111,9 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     mean_rev_3yma?: { time: number; value: number }[];
     rsi?: { time: number; value: number }[];
     rsi_ma_14?: { time: number; value: number }[];
+    rsi_upper_band?: { time: number; value: number }[];
+    rsi_middle_band?: { time: number; value: number }[];
+    rsi_lower_band?: { time: number; value: number }[];
     volatility?: { time: number; value: number }[];
     bb_middle?: { time: number; value: number }[];
     bb_upper?: { time: number; value: number }[];
@@ -393,13 +399,23 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     });
 
     // --- 5. Helper: Create chart with shared options ---
-    function initChart(ref: React.RefObject<HTMLDivElement | null>, width: number, height: number) {
+    function initChart(
+      ref: React.RefObject<HTMLDivElement | null>,
+      width: number,
+      height: number,
+      bgColor?: string,
+      gridColor?: string,
+      textColor?: string
+    ) {
       if (!ref.current) throw new Error("Chart container not mounted");
       return createChart(ref.current, {
         width,
         height,
-        layout: { background: { color: "#fff" }, textColor: "#000" },
-        grid: { vertLines: { color: "#eee" }, horzLines: { color: "#eee" } },
+        layout: { background: { color: bgColor ?? "#fff" }, textColor: textColor ?? "#000" },
+        grid: {
+          vertLines: { color: gridColor ?? "#eee" },
+          horzLines: { color: gridColor ?? "#eee" }
+        },
         crosshair: { mode: CrosshairMode.Normal },
         timeScale: { timeVisible: true, secondsVisible: false },
         handleScroll: {
@@ -410,6 +426,8 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         },
       });
     }
+
+
 
     // --- 6. Create all charts ---
     const chart = initChart(chartContainerRef, 0, 400);
@@ -423,7 +441,15 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     ]);
     meanRevLineRef.current = meanRevLineSeries;
 
-    const rsiChart = initChart(rsiChartRef, rsiChartRef.current!.clientWidth, 150);
+    const rsiChart = initChart(
+      rsiChartRef,
+      rsiChartRef.current!.clientWidth,
+      150,
+      "#251a3b",      // purple background
+      "#392c57",      // purple grid lines (lighter for contrast)
+      "#fff"          // white text
+    );
+
     rsiChartInstance.current = rsiChart;
     const rsiLine = rsiChart.addSeries(LineSeries, { color: "#f44336", lineWidth: 1 });
     rsiLine.setData([{ time: Date.now() / 1000 as UTCTimestamp, value: 50 }]);
@@ -787,50 +813,87 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
   useEffect(() => {
     const chart = rsiChartInstance.current;
     if (!chart) return;
-  
-    // Clean up old line if it exists
-    if (rsiLineRef.current) {
-      chart.removeSeries(rsiLineRef.current);
-      rsiLineRef.current = null;
-    }
-  
-    const lineOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
-      lineWidth: 2,
-      priceLineVisible: false,
-      lastValueVisible: false,
-      color: "#7E57C2",
-    };
-  
-     // --- RSI Line ---
+
+    // Track all series created in this effect for cleanup
+    const createdSeries: ISeriesApi<"Line">[] = [];
+
+    // --- RSI Line ---
+    let mainRSISeries: ISeriesApi<"Line"> | null = null;
     if (overlayData.rsi) {
-      const series = chart.addSeries(LineSeries, lineOptions);
-      series.setData(
-        overlayData.rsi.map((d) => ({
-          time: d.time as UTCTimestamp,
-          value: d.value,
-        }))
+      mainRSISeries = chart.addSeries(LineSeries, {
+        color: "#ffe600",
+        lineWidth: 2,
+        priceLineVisible: false,
+        lastValueVisible: false,
+      });
+      mainRSISeries.setData(
+        overlayData.rsi.map((d) => ({ time: d.time as UTCTimestamp, value: d.value }))
       );
-      rsiLineRef.current = series;
+      createdSeries.push(mainRSISeries);
+      rsiLineRef.current = mainRSISeries;
     }
 
     // --- MA14 Overlay ---
     if (overlayData.rsi_ma_14) {
       const ma14Series = chart.addSeries(LineSeries, {
-        color: "#009688",  // teal
+        color: "#ff1a6a", // teal
         lineWidth: 1,
         priceLineVisible: false,
         lastValueVisible: false,
       });
-
       ma14Series.setData(
         overlayData.rsi_ma_14.map((d) => ({
           time: d.time as UTCTimestamp,
           value: d.value,
         }))
       );
+      createdSeries.push(ma14Series);
     }
-    
-  }, [overlayData.rsi]);
+
+    // --- 70/50/30 Bands ---
+    const bandColors = {
+      rsi_upper_band: "#787B86",
+      rsi_middle_band: "#787B86",
+      rsi_lower_band: "#787B86",
+    };
+
+    (["rsi_upper_band", "rsi_middle_band", "rsi_lower_band"] as const).forEach((key) => {
+      const data = overlayData[key];
+      if (!data) return;
+
+      const bandSeries = chart.addSeries(LineSeries, {
+        color: bandColors[key],
+        lineWidth: 1,
+        priceLineVisible: false,
+        lastValueVisible: false,
+        lineStyle: 2, // Dashed
+      });
+      bandSeries.setData(
+        data.map((d) => ({
+          time: d.time as UTCTimestamp,
+          value: d.value,
+        }))
+      );
+      createdSeries.push(bandSeries);
+    });
+
+    // --- Cleanup: Remove only the series we created ---
+    return () => {
+      createdSeries.forEach((series) => {
+        try {
+          chart.removeSeries(series);
+        } catch {}
+      });
+    };
+  }, [
+    overlayData.rsi,
+    overlayData.rsi_ma_14,
+    overlayData.rsi_upper_band,
+    overlayData.rsi_middle_band,
+    overlayData.rsi_lower_band,
+  ]);
+
+
 
   /*
     VOLATILITY CHART'S USEEFFECT 
@@ -1149,8 +1212,8 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           {/* 🏷️ RSI Chart Legend */}
             <div className="d-flex flex-wrap mt-1">
               {[
-                { color: "#7E57C2", label: "RSI (14-day)" },
-                { color: "#009688", label: "14-Day Moving Average (Price)" },
+                { color: "#ffe600", label: "RSI (14-day)" },
+                { color: "#ff1a6a", label: "14-Day Moving Average" },
               ].map(({ color, label }) => (
                 <div key={label} className="me-3 d-flex align-items-center small">
                   <span

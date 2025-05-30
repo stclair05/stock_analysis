@@ -19,3 +19,8 @@ function App() {
 }
 
 export default App;
+
+
+// Saving for future feature: Graph configs for dark mode: 
+// layout: { background: { color: "#191d29" }, textColor: "#ffffff" },
+// grid: { vertLines: { color: "#2d3140" }, horzLines: { color: "#2d3140" } },
