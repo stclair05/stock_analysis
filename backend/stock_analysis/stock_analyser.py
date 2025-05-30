@@ -656,7 +656,12 @@ class StockAnalyser:
 
         print(f"✅ [TV Match] BBWP length: {len(bbwp_full.dropna())} of {len(bbwp_full)}")
 
-        return to_series(bbwp_full)
+        bbwp_ma_5 = bbwp_full.rolling(window=5).mean()
+
+        return {
+            "volatility": to_series(bbwp_full),
+            "volatility_ma_5": to_series(bbwp_ma_5)
+        }
 
 
     def get_ichimoku_lines(self):
@@ -743,7 +748,7 @@ class StockAnalyser:
 
             # Others
             **self.get_rsi_lines(timeframe=timeframe), #3rd chart from price
-            "volatility": self.get_volatility_bbwp(timeframe=timeframe),  #1st chart from price
+            **self.get_volatility_bbwp(timeframe=timeframe),  #1st chart from price
             **self.get_mean_reversion_deviation_lines(), #2nd chart from price
         }
 
