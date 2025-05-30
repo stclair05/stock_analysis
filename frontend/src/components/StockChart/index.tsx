@@ -1014,9 +1014,10 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     // Track all series created in this effect for cleanup
     const createdSeries: ISeriesApi<any>[] = [];
 
-    // Main BBWP line
+    // --- Main BBWP line ---
+    let bbwpLine: ISeriesApi<"Line"> | null = null;
     if (overlayData.volatility) {
-      const bbwpLine = chart.addSeries(LineSeries, {
+      bbwpLine = chart.addSeries(LineSeries, {
         color: "#8d6e63", // brown
         lineWidth: 1,
         priceLineVisible: false,
@@ -1029,9 +1030,12 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         }))
       );
       createdSeries.push(bbwpLine);
+
+      // --- 🟢 This is the key fix! ---
+      volLineRef.current = bbwpLine;
     }
 
-    // MA5 line
+    // --- MA5 line ---
     if (overlayData.volatility_ma_5) {
       const ma5Line = chart.addSeries(LineSeries, {
         color: "#ff9800", // orange
@@ -1048,7 +1052,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       createdSeries.push(ma5Line);
     }
 
-    // Histogram (vertical bars for percentile)
+    // --- Histogram (vertical bars for percentile) ---
     if (overlayData.volatility) {
       const histogramSeries = chart.addSeries(HistogramSeries, {
         priceLineVisible: false,
@@ -1078,6 +1082,10 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           chart.removeSeries(series);
         } catch {}
       });
+      // Optionally: clear the ref to avoid dangling reference
+      if (volLineRef.current && bbwpLine === volLineRef.current) {
+        volLineRef.current = null;
+      }
     };
   }, [overlayData.volatility, overlayData.volatility_ma_5]);
 
