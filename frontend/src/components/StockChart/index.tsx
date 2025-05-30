@@ -115,6 +115,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     rsi_middle_band?: { time: number; value: number }[];
     rsi_lower_band?: { time: number; value: number }[];
     volatility?: { time: number; value: number }[];
+    volatility_ma_5?: { time: number; value: number }[];
     bb_middle?: { time: number; value: number }[];
     bb_upper?: { time: number; value: number }[];
     bb_lower?: { time: number; value: number }[];
@@ -445,8 +446,8 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       rsiChartRef,
       rsiChartRef.current!.clientWidth,
       150,
-      "#251a3b",      // purple background
-      "#392c57",      // purple grid lines (lighter for contrast)
+      "#5e35b1",      // purple background
+      "#5e35b1",      // purple grid lines (lighter for contrast)
       "#fff"          // white text
     );
 
@@ -852,9 +853,9 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
     // --- 70/50/30 Bands ---
     const bandColors = {
-      rsi_upper_band: "#ffffff",
-      rsi_middle_band: "#ffffff",
-      rsi_lower_band: "#ffffff",
+      rsi_upper_band: "#cccccc",
+      rsi_middle_band: "#cccccc",
+      rsi_lower_band: "#cccccc",
     };
 
     (["rsi_upper_band", "rsi_middle_band", "rsi_lower_band"] as const).forEach((key) => {
@@ -867,6 +868,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         priceLineVisible: false,
         lastValueVisible: false,
         lineStyle: 2, // Dashed
+        crosshairMarkerVisible: false,
       });
       bandSeries.setData(
         data.map((d) => ({
@@ -893,8 +895,6 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     overlayData.rsi_lower_band,
   ]);
 
-
-
   /*
     VOLATILITY CHART'S USEEFFECT 
   */
@@ -902,49 +902,75 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     const chart = volChartInstance.current;
     if (!chart) return;
 
-    if (volLineRef.current) {
-      chart.removeSeries(volLineRef.current);
-      volLineRef.current = null;
+    // Track all series created in this effect for cleanup
+    const createdSeries: ISeriesApi<any>[] = [];
+
+    // Main BBWP line
+    if (overlayData.volatility) {
+      const bbwpLine = chart.addSeries(LineSeries, {
+        color: "#8d6e63", // brown
+        lineWidth: 1,
+        priceLineVisible: false,
+        lastValueVisible: false,
+      });
+      bbwpLine.setData(
+        overlayData.volatility.map((d) => ({
+          time: d.time as UTCTimestamp,
+          value: d.value,
+        }))
+      );
+      createdSeries.push(bbwpLine);
     }
 
-    if (!overlayData.volatility) return;
+    // MA5 line
+    if (overlayData.volatility_ma_5) {
+      const ma5Line = chart.addSeries(LineSeries, {
+        color: "#ff9800", // orange
+        lineWidth: 2,
+        priceLineVisible: false,
+        lastValueVisible: false,
+      });
+      ma5Line.setData(
+        overlayData.volatility_ma_5.map((d) => ({
+          time: d.time as UTCTimestamp,
+          value: d.value,
+        }))
+      );
+      createdSeries.push(ma5Line);
+    }
 
-    // Line overlay for BBWP (percentile line)
-    const bbwpLine = chart.addSeries(LineSeries, {
-      color: "#8d6e63", // brown
-      lineWidth: 1,
-      priceLineVisible: false,
-      lastValueVisible: false,
-    });
+    // Histogram (vertical bars for percentile)
+    if (overlayData.volatility) {
+      const histogramSeries = chart.addSeries(HistogramSeries, {
+        priceLineVisible: false,
+        lastValueVisible: false,
+        color: "#aaa",
+        base: 0,
+      });
 
-    bbwpLine.setData(
-      overlayData.volatility.map((d) => ({
-        time: d.time as UTCTimestamp,
-        value: d.value,
-      }))
-    );
-    volLineRef.current = bbwpLine;
+      const histogramData = overlayData.volatility.map((point) => {
+        const { time, value } = point;
+        return {
+          time: time as UTCTimestamp,
+          value: 100,
+          color: value >= 90 ? "#f44336" : value <= 10 ? "#2196f3" : "rgba(0,0,0,0)", // red, blue, or invisible
+        };
+      });
 
-    // Vertical bars
-    const histogramSeries = chart.addSeries(HistogramSeries, {
-      priceLineVisible: false,
-      lastValueVisible: false,
-      color: "#aaa",
-      base: 0,
-    });
+      histogramSeries.setData(histogramData);
+      createdSeries.push(histogramSeries);
+    }
 
-    const histogramData = overlayData.volatility.map((point) => {
-      const { time, value } = point;
-      return {
-        time: time as UTCTimestamp,
-        value: 100,
-        color: value >= 90 ? "#f44336" : value <= 10 ? "#2196f3" : "rgba(0,0,0,0)", // red, blue, or invisible
-      };
-    });
+    // Cleanup all lines created by this effect
+    return () => {
+      createdSeries.forEach((series) => {
+        try {
+          chart.removeSeries(series);
+        } catch {}
+      });
+    };
+  }, [overlayData.volatility, overlayData.volatility_ma_5]);
 
-    histogramSeries.setData(histogramData);
-
-  }, [overlayData.volatility]);
 
   return (
     <div className="position-relative bg-white p-3 shadow-sm rounded border">
