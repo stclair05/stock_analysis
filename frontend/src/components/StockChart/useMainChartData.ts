@@ -20,13 +20,32 @@ export function useMainChartData(
         if (!candleSeries) return;
 
         if (data.history) {
-          const formattedData = (data.history as Candle[]).map((c) => ({
+          let formattedData = (data.history as Candle[]).map((c) => ({
             time: c.time as UTCTimestamp,
             open: c.open,
             high: c.high,
             low: c.low,
             close: c.close,
           }));
+
+           // ====== ADD WHITESPACE BARS FOR FUTURE ======
+          if (formattedData.length > 0) {
+            const FUTURE_BARS = 100; // extra 100 bars into the future!
+            let lastTime = formattedData[formattedData.length - 1].time as number;
+
+            // Calculate interval based on your timeframe
+            let interval = 0;
+            if (timeframe === "daily") interval = 24 * 60 * 60;
+            else if (timeframe === "weekly") interval = 7 * 24 * 60 * 60;
+            else if (timeframe === "monthly") interval = 31 * 24 * 60 * 60; // crude approx
+
+            const whitespace: { time: UTCTimestamp }[] = [];
+            for (let i = 1; i <= FUTURE_BARS; ++i) {
+              whitespace.push({ time: (lastTime + i * interval) as UTCTimestamp });
+            }
+            formattedData = [...formattedData, ...whitespace as any];
+          }
+          // ===========================================
           candleSeries.setData(formattedData);
 
           if (onData) onData(formattedData); 
