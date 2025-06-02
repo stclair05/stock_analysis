@@ -2,13 +2,17 @@ import "../App.css";
 import Metrics from "../components/Metrics";
 import Fundamentals from "../components/Fundamentals";
 import StockChart from "../components/StockChart";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import ETFHoldings from "../components/ETFHoldings";
+import etfList from "../utils/etfs.json";
 
 function HomePage() {
   const [inputValue, setInputValue] = useState("");
   const [stockSymbol, setStockSymbol] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [isETF, setIsETF] = useState<boolean | null>(null);
 
   const isValidSymbol = (symbol: string) =>
     /^[A-Za-z0-9.=]{1,10}$/.test(symbol);
@@ -36,6 +40,11 @@ function HomePage() {
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") handleSearch();
   };
+
+  useEffect(() => {
+    if (!stockSymbol) return;
+    setIsETF(etfList.etfs.includes(stockSymbol.toUpperCase()));
+  }, [stockSymbol]);
 
   return (
     <div className="app-container">
@@ -98,7 +107,11 @@ function HomePage() {
             </div>
 
             <div className="fundamental-card">
-              <Fundamentals stockSymbol={stockSymbol} />
+              {isETF ? (
+                <ETFHoldings stockSymbol={stockSymbol} />
+              ) : (
+                <Fundamentals stockSymbol={stockSymbol} />
+              )}
             </div>
           </div>
         </>

@@ -66,6 +66,12 @@ function getColor(label: string, value: number | null): string {
         : value === 1
         ? "text-warning"
         : "text-danger";
+    case "FCF Margin":
+      return value >= 15
+        ? "text-success fw-bold"
+        : value >= 5
+        ? "text-warning"
+        : "text-danger";
     default:
       return "";
   }
@@ -81,6 +87,7 @@ type FinancialMetrics = {
   beta: number | null;
   fcf_yield: number | null;
   fcf_growth: number | null;
+  fcf_margin: number | null;
   yield_plus_growth: number | null;
   roce: number | null;
   wacc: number | null;
@@ -172,6 +179,7 @@ const Fundamentals = ({ stockSymbol }: Props) => {
           {renderRow("FCF Yield", data.fcf_yield, "%")}
           {renderRow("FCF Growth", data.fcf_growth, "%")}
           {renderRow("Yield + Growth", data.yield_plus_growth, "%")}
+          {renderRow("FCF Margin", data.fcf_margin, "%")}
           {renderRow("ROCE", data.roce, "%")}
           {renderRow("WACC", data.wacc, "%")}
           {renderRow("ROCE – WACC", data.roce_minus_wacc, "%")}

@@ -79,6 +79,7 @@ class FinancialMetrics(BaseModel):
     beta: Optional[float]
     fcf_yield: Optional[float]
     fcf_growth: Optional[float]
+    fcf_margin: Optional[float]
     yield_plus_growth: Optional[float]
     roce: Optional[float]
     wacc: Optional[float]
