@@ -1,5 +1,8 @@
 import os
 import requests
+import numpy as np
+import pandas as pd
+from datetime import datetime
 from dotenv import load_dotenv
 from typing import Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -53,6 +56,16 @@ class FMPFundamentals:
         return try_fetch(fallback_url)
 
 
+    def price_history(self, period='1y'):
+        """Fetches daily historical prices from FMP (adjust as needed for your API limits)."""
+        url = f"{FMP_BASE_URL}/historical-price-full/{self.symbol}?serietype=line&apikey={FMP_API_KEY}"
+        try:
+            data = requests.get(url, timeout=5).json()
+            # You may need to slice or process to get last N years/months
+            return data.get('historical', [])
+        except Exception as e:
+            print(f"❌ Error fetching price history: {e}")
+            return []
 
     def _load_all_data(self):
         endpoints = {
@@ -192,6 +205,67 @@ class FMPFundamentals:
             return round(((rev - cogs) / rev) * 100, 2)
         except:
             return None
+        
+    @staticmethod
+    def compute_sortino_ratio(price_history, risk_free_rate=0.04, period='monthly'):
+        """
+        price_history: List of dicts with at least 'date' and 'close' keys.
+        """
+        # Convert to DataFrame for easier resampling
+        if not price_history or len(price_history) < 13:
+            return None
+        df = pd.DataFrame(price_history)
+        df['date'] = pd.to_datetime(df['date'])
+        df.set_index('date', inplace=True)
+        df = df.sort_index()
+
+        # Resample to month-end closes
+        monthly_closes = df['close'].resample('M').last().dropna()
+        if len(monthly_closes) < 13:
+            return None
+
+        returns = monthly_closes.pct_change().dropna()
+        if returns.empty:
+            return None
+
+        # Convert risk-free rate to monthly
+        rf_period = (1 + risk_free_rate) ** (1/12) - 1
+        excess_returns = returns - rf_period
+        annualized_return = (1 + returns.mean()) ** 12 - 1
+
+        # Downside deviation (below rf)
+        downside_returns = excess_returns[excess_returns < 0]
+        downside_deviation = np.sqrt((downside_returns ** 2).mean()) * np.sqrt(12)
+        if downside_deviation == 0 or np.isnan(downside_deviation):
+            return None
+
+        sortino = (annualized_return - risk_free_rate) / downside_deviation
+        return round(sortino, 3)
+    
+    def sortino_ratio(self, risk_free_rate=0.04):
+        price_hist = self.price_history(period='3y')  # At least 3y preferred
+        return self.compute_sortino_ratio(price_hist, risk_free_rate=risk_free_rate)
+    
+    def fcf_margin(self) -> Optional[float]:
+        """
+        Calculates the most recent quarterly FCF margin: (Operating Cash Flow - CapEx) / Revenue
+        Returns as a percentage, or None if data is missing.
+        """
+        try:
+            # Get the latest cash flow and income data
+            cf = self.cashflow_data()[0]
+            income = self.income_data()[0]
+            ocf = cf.get("operatingcashflow")
+            capex = cf.get("capitalexpenditure")
+            revenue = income.get("revenue")
+            if None in (ocf, capex, revenue) or revenue == 0:
+                return None
+            fcf = ocf - abs(capex)
+            return round((fcf / revenue) * 100, 2)
+        except Exception as e:
+            return None
+
+
 
     def get_financial_metrics(self) -> FinancialMetrics:
         fcf_yield = self.fcf_yield()
@@ -211,6 +285,7 @@ class FMPFundamentals:
             fcf_growth=fcf_growth,
             yield_plus_growth=round(fcf_yield + fcf_growth, 2)
                 if fcf_yield and fcf_growth else None,
+            fcf_margin=self.fcf_margin(),
             roce=roce,
             wacc=wacc,
             roce_minus_wacc=round(roce - wacc, 2)
@@ -218,5 +293,5 @@ class FMPFundamentals:
             cash_conversion=self.cash_conversion(),
             rule_of_40=self.rule_of_40(),
             gross_margin=self.gross_margin(),
-            sortino_ratio=None
+            sortino_ratio=self.sortino_ratio()
         )
