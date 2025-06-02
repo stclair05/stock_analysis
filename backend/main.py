@@ -1,5 +1,6 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+import requests
 from stock_analysis.stock_analyser import StockAnalyser
 from stock_analysis.portfolio_analyser import PortfolioAnalyser
 from stock_analysis.models import StockRequest, StockAnalysisResponse, ElliottWaveScenariosResponse, FinancialMetrics
@@ -349,4 +350,28 @@ def get_signals(timeframe: str, symbol: str, strategy: str = Query("trendinvesto
         return {"markers": analyser.get_northstar_signals(timeframe)}
     else:
         return {"error": f"Unknown strategy: {strategy}"}
+    
 
+FMP_API_KEY = os.getenv("FMP_API_KEY")
+FMP_BASE_URL = os.getenv("FMP_BASE_URL")
+
+
+@app.get("/etf_holdings/{symbol}")
+def get_etf_holdings(symbol: str):
+    url = f"https://financialmodelingprep.com/stable/etf/holdings?symbol={symbol.upper()}&apikey={FMP_API_KEY}"
+    try:
+        resp = requests.get(url, timeout=8)
+        resp.raise_for_status()
+        data = resp.json()
+        if not data or not isinstance(data, list):
+            return JSONResponse(status_code=404, content={"error": "No ETF holdings found for this symbol"})
+
+        # Limit to top 20 holdings (by order given, which is typically by weight)
+        top_holdings = data[:20]
+
+        return {
+            "symbol": symbol.upper(),
+            "holdings": top_holdings
+        }
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
