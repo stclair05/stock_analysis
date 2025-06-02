@@ -162,6 +162,9 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     "BNE",
   ];
 
+  // Healthcare stocks
+  const HEALTHCARE_STOCKS = ["ARKG", "LLY", "NVO", "MRNA"];
+
   const {
     drawingModeRef,
     lineBufferRef,
@@ -1441,6 +1444,20 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           </h2>
           {/* === Pictures === */}
           <S3Gallery folder="oil" />
+        </>
+      )}
+
+      {HEALTHCARE_STOCKS.includes(stockSymbol?.toUpperCase() ?? "") && (
+        <>
+          {/* === Oil Model Header === */}
+          <h2
+            className="fw-bold my-4 text-center"
+            style={{ fontSize: "2rem", letterSpacing: "1px" }}
+          >
+            Healthcare Model
+          </h2>
+          {/* === Pictures === */}
+          <S3Gallery folder="healthcare" />
         </>
       )}
     </div>
