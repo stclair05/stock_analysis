@@ -1,6 +1,7 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import requests
+from stock_analysis.pricetarget import find_downtrend_lines
 from stock_analysis.stock_analyser import StockAnalyser
 from stock_analysis.portfolio_analyser import PortfolioAnalyser
 from stock_analysis.models import StockRequest, StockAnalysisResponse, ElliottWaveScenariosResponse, FinancialMetrics
@@ -352,6 +353,20 @@ def get_signals(timeframe: str, symbol: str, strategy: str = Query("trendinvesto
         return {"error": f"Unknown strategy: {strategy}"}
     
 
+@app.get("/signal_lines/{symbol}")
+def get_signal_lines(
+    symbol: str,
+    timeframe: str = "daily"
+):
+    try:
+        analyser = StockAnalyser(symbol)
+        lines = analyser.get_signal_lines(timeframe=timeframe)
+        return lines
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+    
+
 FMP_API_KEY = os.getenv("FMP_API_KEY")
 FMP_BASE_URL = os.getenv("FMP_BASE_URL")
 
@@ -375,3 +390,19 @@ def get_etf_holdings(symbol: str):
         }
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+@app.get("/api/projection_arrows/{symbol}")
+def get_projection_arrows(symbol: str, timeframe: str = Query("weekly")):
+    analyser = StockAnalyser(symbol)
+    if timeframe == "daily":
+        df = analyser.df
+    elif timeframe == "weekly":
+        df = analyser.weekly_df
+    elif timeframe == "monthly":
+        df = analyser.monthly_df
+    else:
+        return {"error": f"Invalid timeframe: {timeframe}"}
+
+    result = find_downtrend_lines(df)
+    return result
