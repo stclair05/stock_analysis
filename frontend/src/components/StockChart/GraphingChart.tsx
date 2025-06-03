@@ -466,8 +466,20 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
   useEffect(() => {
     // Remove previous signal MAs from chart
     if (signalMASeriesRef.current.length > 0 && chartInstanceRef.current) {
+      signalMASeriesRef.current = signalMASeriesRef.current.filter(Boolean);
       signalMASeriesRef.current.forEach((series) => {
-        chartInstanceRef.current!.removeSeries(series);
+        if (
+          chartInstanceRef.current &&
+          series &&
+          typeof series.setData === "function"
+        ) {
+          try {
+            chartInstanceRef.current.removeSeries(series);
+          } catch (e) {
+            // Optional: log or ignore if the series is already removed/destroyed
+            console.warn("Series remove error", e);
+          }
+        }
       });
       signalMASeriesRef.current = [];
     }
@@ -521,11 +533,14 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
               title: cfg.label,
             });
             series.setData(data[cfg.key]);
-            signalMASeriesRef.current.push(series);
+            if (series && typeof series.setData === "function") {
+              signalMASeriesRef.current.push(series);
+            }
           }
         });
       } catch (e) {
         setSignalMAData(null);
+        console.error(e);
       }
     }
     fetchSignalLines();
@@ -533,8 +548,22 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     // Cleanup function: remove on strategy change/unmount
     return () => {
       if (signalMASeriesRef.current.length > 0 && chartInstanceRef.current) {
-        signalMASeriesRef.current.forEach((series) => {
-          chartInstanceRef.current!.removeSeries(series);
+        // Remove undefined/null and duplicates
+        const uniqueSeries = [
+          ...new Set(signalMASeriesRef.current.filter(Boolean)),
+        ];
+        uniqueSeries.forEach((series) => {
+          if (
+            chartInstanceRef.current &&
+            series &&
+            typeof series.setData === "function"
+          ) {
+            try {
+              chartInstanceRef.current.removeSeries(series);
+            } catch (e) {
+              console.warn("Series remove error", e);
+            }
+          }
         });
         signalMASeriesRef.current = [];
       }
