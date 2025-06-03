@@ -433,39 +433,20 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     timeframe,
     chartInstanceRef,
     (loadedCandles) => {
-      console.log("Candles loaded into series:", loadedCandles.length);
-      if (!candleSeriesRef.current || !loadedCandles.length) return;
+      // ... existing logic
+      const mainSeriesData = loadedCandles;
+      if (!chartInstanceRef.current || !mainSeriesData.length) return;
 
-      const firstCandle = loadedCandles[0];
-      const lastCandle = loadedCandles[loadedCandles.length - 1];
+      const lastTime = mainSeriesData[mainSeriesData.length - 1].time;
+      const FUTURE_WEEKS = 26; // show 6 months extra
+      const SECONDS_IN_WEEK = 7 * 24 * 60 * 60;
+      const futureLimit = lastTime + FUTURE_WEEKS * SECONDS_IN_WEEK;
 
-      /*
-            const markers: SeriesMarker<number>[] = [
-             {
-                time: firstCandle.time,
-                position: "belowBar",
-                price: firstCandle.low, // required!
-                color: "#009944",
-                shape: "arrowUp",
-                text: "BUY",
-            },
-            {
-                time: lastCandle.time,
-                position: "aboveBar",
-                price: lastCandle.high, // required!
-                color: "#e91e63",
-                shape: "arrowDown",
-                text: "SELL",
-            },
-            ];
-
-            console.log("Final marker array:", markers);
-
-            createSeriesMarkers(
-                candleSeriesRef.current,
-                markers as unknown as SeriesMarker<any>[]
-            );
-            */
+      // Extend the visible range
+      chartInstanceRef.current.timeScale().setVisibleRange({
+        from: mainSeriesData[0].time as UTCTimestamp,
+        to: futureLimit as UTCTimestamp,
+      });
     }
   );
 

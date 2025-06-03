@@ -10,6 +10,11 @@
     "XLF",
     "EEM",
     "XLE",
+    "XLV",
+    "XLU",
+    "XLK",
+    "XLI",
+    "XLY",
     "VYM",
     "LQD",
     "VNQ",
@@ -20,6 +25,12 @@
     "ARKQ",
     "ARKX",
     "PRNT",
-    "IZRL"
+    "IZRL",
+    "GDXJ",
+    "GDX",
+    "SILJ",
+    "RING", 
+    "XME",
+    "FCG"
   ]
 }
