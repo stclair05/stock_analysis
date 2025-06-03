@@ -73,10 +73,15 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
 
   const copyBufferRef = useRef<CopyTrendlineBuffer | null>(null);
 
+  // Overlay lines for the different trading signals
+  const signalMASeriesRef = useRef<ISeriesApi<"Line">[]>([]);
+  const [signalMAData, setSignalMAData] = useState<any>(null);
+  const [showOverlayLines, setShowOverlayLines] = useState(false);
+
   // Trendlines
   const [trendLines, setTrendLines] = useState<any[]>([]);
   const trendLineSeriesRef = useRef<ISeriesApi<"Line">[]>([]);
-  const [showTrendLines, setShowTrendLines] = useState(true);
+  const [showTrendLines, setShowTrendLines] = useState(false);
 
   const {
     drawingModeRef,
@@ -457,6 +462,87 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
   );
 
   /**
+   * Plotting overlays
+   */
+  useEffect(() => {
+    // Remove previous signal MAs from chart
+    if (signalMASeriesRef.current.length > 0 && chartInstanceRef.current) {
+      signalMASeriesRef.current.forEach((series) => {
+        chartInstanceRef.current!.removeSeries(series);
+      });
+      signalMASeriesRef.current = [];
+    }
+
+    // Do nothing if overlays should not be shown
+    if (!selectedStrategy || !showOverlayLines) return;
+
+    // Fetch signal lines from backend
+    async function fetchSignalLines() {
+      try {
+        const res = await fetch(
+          `http://localhost:8000/signal_lines/${stockSymbol}?timeframe=${timeframe}`
+        );
+        const data = await res.json();
+        setSignalMAData(data);
+
+        if (!chartInstanceRef.current) return;
+
+        // Decide which lines to plot
+        let maConfigs: { key: string; color: string; label: string }[] = [];
+        if (selectedStrategy === "trendinvestorpro") {
+          maConfigs = [
+            { key: "dma_200", color: "#2e93fa", label: "200DMA" },
+            { key: "ma_5d", color: "#ff9800", label: "5DMA" },
+          ];
+        } else if (selectedStrategy === "stclair") {
+          maConfigs = [
+            { key: "dma_200", color: "#2e93fa", label: "200DMA" },
+            { key: "ma_20d", color: "#ff9800", label: "20DMA" },
+          ];
+        } else if (selectedStrategy === "northstar") {
+          maConfigs = [
+            { key: "ma_12", color: "#00c853", label: "12MA" },
+            { key: "ma_36", color: "#d500f9", label: "36MA" },
+          ];
+        }
+
+        // Add each MA as a line series
+        maConfigs.forEach((cfg) => {
+          if (
+            data &&
+            data[cfg.key] &&
+            Array.isArray(data[cfg.key]) &&
+            data[cfg.key].length > 0
+          ) {
+            const series = chartInstanceRef.current!.addSeries(LineSeries, {
+              color: cfg.color,
+              lineWidth: 2,
+              priceLineVisible: false,
+              lastValueVisible: false,
+              title: cfg.label,
+            });
+            series.setData(data[cfg.key]);
+            signalMASeriesRef.current.push(series);
+          }
+        });
+      } catch (e) {
+        setSignalMAData(null);
+      }
+    }
+    fetchSignalLines();
+
+    // Cleanup function: remove on strategy change/unmount
+    return () => {
+      if (signalMASeriesRef.current.length > 0 && chartInstanceRef.current) {
+        signalMASeriesRef.current.forEach((series) => {
+          chartInstanceRef.current!.removeSeries(series);
+        });
+        signalMASeriesRef.current = [];
+      }
+    };
+  }, [selectedStrategy, stockSymbol, timeframe, showOverlayLines]);
+
+  /**
    * Fetching Trendlines and projection lines from backend
    */
   useEffect(() => {
@@ -687,6 +773,19 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
         className="mt-3 d-flex align-items-center"
         style={{ fontSize: "1.1rem" }}
       >
+        <input
+          type="checkbox"
+          id="show-overlaylines-checkbox"
+          checked={showOverlayLines}
+          onChange={() => setShowOverlayLines((v) => !v)}
+          style={{ marginLeft: 24, marginRight: 8 }}
+        />
+        <label
+          htmlFor="show-overlaylines-checkbox"
+          style={{ cursor: "pointer" }}
+        >
+          Show Overlay Lines
+        </label>
         <input
           type="checkbox"
           id="show-trendlines-checkbox"

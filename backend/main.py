@@ -353,6 +353,20 @@ def get_signals(timeframe: str, symbol: str, strategy: str = Query("trendinvesto
         return {"error": f"Unknown strategy: {strategy}"}
     
 
+@app.get("/signal_lines/{symbol}")
+def get_signal_lines(
+    symbol: str,
+    timeframe: str = "daily"
+):
+    try:
+        analyser = StockAnalyser(symbol)
+        lines = analyser.get_signal_lines(timeframe=timeframe)
+        return lines
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+    
+
 FMP_API_KEY = os.getenv("FMP_API_KEY")
 FMP_BASE_URL = os.getenv("FMP_BASE_URL")
 

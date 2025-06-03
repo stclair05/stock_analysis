@@ -723,6 +723,20 @@ class StockAnalyser:
             "bb_middle": to_series(reindex_indicator(close, sma)),
             "bb_lower": to_series(reindex_indicator(close, lower)),
         }
+    
+    def get_ma_series(self, period: int, timeframe: str = "weekly"):
+        if timeframe == "daily":
+            df = self.df
+        elif timeframe == "weekly":
+            df = self.weekly_df
+        elif timeframe == "monthly":
+            df = self.monthly_df
+        else:
+            raise ValueError(f"Invalid timeframe: {timeframe}")
+        close = df["Close"]
+        ma = close.rolling(window=period).mean()
+        return to_series(reindex_indicator(close, ma))
+
 
 
     def get_overlay_lines(self, timeframe: str = "daily") -> dict:
@@ -751,6 +765,54 @@ class StockAnalyser:
             **self.get_volatility_bbwp(timeframe=timeframe),  #1st chart from price
             **self.get_mean_reversion_deviation_lines(), #2nd chart from price
         }
+    
+    def get_signal_lines(self, timeframe: str = "daily") -> dict:
+        """
+        Returns the correct overlays for each strategy, aligning all moving averages
+        with the requested chart timeframe. Daily MAs are resampled for weekly/monthly.
+        """
+        overlays = {}
+
+        # 1. Setup base dataframes for each resolution
+        if timeframe == "daily":
+            index = self.df.index
+            # Northstar: daily MA12, MA36
+            overlays["ma_12"] = self.get_ma_series(12, timeframe="daily")
+            overlays["ma_36"] = self.get_ma_series(36, timeframe="daily")
+            # StClair/TrendInvestorPro: daily MA20, MA200, MA5, MA200
+            overlays["ma_20d"] = self.get_ma_series(20, timeframe="daily")    # StClair
+            overlays["dma_200"] = self.get_ma_series(200, timeframe="daily")  # TrendInvestorPro
+            overlays["ma_5d"] = self.get_ma_series(5, timeframe="daily")      # TrendInvestorPro
+        elif timeframe == "weekly":
+            index = self.weekly_df.index
+            # -- Daily MAs (e.g. 20DMA, 200DMA, 5DMA) need to be computed on daily closes then resampled to weekly --
+            ma_20_daily = self.df["Close"].rolling(20).mean().resample("W-FRI").last().reindex(index)
+            ma_200_daily = self.df["Close"].rolling(200).mean().resample("W-FRI").last().reindex(index)
+            ma_5_daily = self.df["Close"].rolling(5).mean().resample("W-FRI").last().reindex(index)
+            # Northstar: uses *weekly* MA12, MA36
+            overlays["ma_12"] = self.get_ma_series(12, timeframe="weekly")
+            overlays["ma_36"] = self.get_ma_series(36, timeframe="weekly")
+            # StClair/TrendInvestorPro: resampled daily MAs
+            overlays["ma_20d"] = to_series(ma_20_daily)
+            overlays["dma_200"] = to_series(ma_200_daily)
+            overlays["ma_5d"] = to_series(ma_5_daily)
+        elif timeframe == "monthly":
+            index = self.monthly_df.index
+            # -- Daily MAs resampled to monthly --
+            ma_20_daily = self.df["Close"].rolling(20).mean().resample("M").last().reindex(index)
+            ma_200_daily = self.df["Close"].rolling(200).mean().resample("M").last().reindex(index)
+            ma_5_daily = self.df["Close"].rolling(5).mean().resample("M").last().reindex(index)
+            # Northstar: uses *monthly* MA12, MA36
+            overlays["ma_12"] = self.get_ma_series(12, timeframe="monthly")
+            overlays["ma_36"] = self.get_ma_series(36, timeframe="monthly")
+            # StClair/TrendInvestorPro: resampled daily MAs
+            overlays["ma_20d"] = to_series(ma_20_daily)
+            overlays["dma_200"] = to_series(ma_200_daily)
+            overlays["ma_5d"] = to_series(ma_5_daily)
+        else:
+            raise ValueError(f"Unsupported timeframe: {timeframe}")
+
+        return overlays
 
 
     def price_targets(self) -> dict:
