@@ -696,7 +696,6 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
           ))}
         </div>
 
-        {/* Checkboxes for signals */}
         {/* Checkboxes for signals with labels */}
         <div className="d-flex align-items-end gap-3">
           {/* TrendInvestorPro: D: BUY/SELL */}
@@ -790,15 +789,17 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
         ref={chartContainerRef}
         style={{
           width: "100%",
-          height: "600px",
+          height: "100%",
           border: "1.5px solid #ddd",
           borderRadius: "12px",
           boxShadow: "0 2px 12px rgba(0,0,0,0.09)",
           background: "#fff",
         }}
       />
+
+      {/* Checkboxes below the chart*/}
       <div
-        className="mt-3 d-flex align-items-center"
+        className="mt-3 d-flex align-items-center gap-3"
         style={{ fontSize: "1.1rem" }}
       >
         <input

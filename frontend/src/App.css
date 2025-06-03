@@ -29,11 +29,11 @@
   background-color: #1e40af;
 }
 
-h1, h2 {
+h1,
+h2 {
   font-weight: 700;
   letter-spacing: -0.5px;
 }
-
 
 /* Cards Side-by-Side */
 .cards-wrapper-row {
@@ -73,7 +73,6 @@ h1, h2 {
   overflow: hidden;
   padding: 0;
   overflow: visible; /* ensure no overflow clipping */
-  
 }
 
 .fundamental-card {
@@ -82,7 +81,7 @@ h1, h2 {
   padding: 20px;
   min-height: 500px;
   box-shadow: var(--card-shadow);
-  
+
   flex: 1 1 20%;
   max-width: 20%;
   min-width: 280px;
@@ -91,18 +90,15 @@ h1, h2 {
 }
 
 .no-fundamentals {
-  min-height: 120px;          /* Or adjust for your taste */
+  min-height: 120px; /* Or adjust for your taste */
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.1rem;
-  color: #64748b;             /* Soft secondary gray */
+  color: #64748b; /* Soft secondary gray */
   font-weight: 500;
   letter-spacing: 0.2px;
 }
-
-
-
 
 /* Spinner */
 .spinner-border {
@@ -156,7 +152,6 @@ h1, h2 {
   background-color: #d32f2f;
 }
 
-
 /* Optional: stack vertically on smaller screens */
 @media (max-width: 1200px) {
   .cards-wrapper-row {
@@ -193,7 +188,7 @@ h1, h2 {
   color: #2563eb;
   font-weight: 500;
   padding: 0.5rem 1rem;
-  transition: color 0.25s cubic-bezier(.4,0,.2,1);
+  transition: color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -205,17 +200,19 @@ h1, h2 {
   border-radius: 2px;
   background: #2563eb;
   width: 0;
-  transition: width 0.3s cubic-bezier(.4,0,.2,1);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: absolute;
   left: 0;
   bottom: 0;
 }
 
-.nav-link.active::after, .nav-link:hover::after {
+.nav-link.active::after,
+.nav-link:hover::after {
   width: 100%;
 }
 
-.nav-link.active, .nav-link:hover {
+.nav-link.active,
+.nav-link:hover {
   color: #1e293b;
 }
 
@@ -233,7 +230,7 @@ h1, h2 {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.24);
+  background: rgba(0, 0, 0, 0.24);
   z-index: 2000;
   display: flex;
   align-items: center;
@@ -246,11 +243,11 @@ h1, h2 {
   background: #fff;
   border-radius: 22px;
   padding: 44px 40px;
-  box-shadow: 0 10px 48px rgba(0,0,0,0.18);
-  max-width: 1200px;
+  box-shadow: 0 10px 48px rgba(0, 0, 0, 0.18);
+  max-width: 1440px;
   width: 98vw;
   max-height: 96vh;
-  min-height: 720px;
+  min-height: 864px;
   overflow-y: auto;
   position: relative;
   animation: modalZoomIn 0.22s;
@@ -258,22 +255,42 @@ h1, h2 {
 
 /* Animations */
 @keyframes modalFadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 @keyframes modalZoomIn {
-  from { transform: scale(0.94); opacity: 0; }
-  to   { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0.94);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 /* Simple fade/zoom in animation */
 @keyframes modalFadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 @keyframes modalZoomIn {
-  from { transform: scale(0.96); opacity: 0; }
-  to   { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0.96);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 /* Minimal close button */
@@ -299,5 +316,5 @@ h1, h2 {
 
 .modal-content .modal-close-btn:hover {
   color: #c00;
-  background: rgba(0,0,0,0.06);
+  background: rgba(0, 0, 0, 0.06);
 }
