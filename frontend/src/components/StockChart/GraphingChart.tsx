@@ -12,7 +12,7 @@ import {
 } from "lightweight-charts";
 import { useEffect, useRef, useState } from "react";
 import { useMainChartData } from "./useMainChartData";
-import { Ruler, Minus, RotateCcw } from "lucide-react";
+import { Ruler, Minus, RotateCcw, Eye, EyeOff, X } from "lucide-react";
 import { useDrawingManager } from "./DrawingManager";
 import { usePreviewManager } from "./PreviewManager";
 import { useDrawingRenderer } from "./DrawingRenderer";
@@ -69,6 +69,8 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     stclair: { daily: "", weekly: "", monthly: "" },
     northstar: { daily: "", weekly: "", monthly: "" },
   });
+
+  const [showSummary, setShowSummary] = useState(false);
 
   const copyBufferRef = useRef<CopyTrendlineBuffer | null>(null);
 
@@ -228,16 +230,21 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     if (!last || !last.side) return "";
     return last.side.toUpperCase() === "BUY" ? "BUY" : "SELL";
   }
-  // Render latest signal
-  function renderSignal(signal: SignalSide) {
-    if (signal === "BUY") {
-      return <span style={{ color: "#009944", fontWeight: "bold" }}>BUY</span>;
-    }
-    if (signal === "SELL") {
-      return <span style={{ color: "#e91e63", fontWeight: "bold" }}>SELL</span>;
-    }
-    return <span style={{ color: "#aaa" }}>-</span>;
-  }
+
+  // Remder which signal is unavailable
+  const isUnavailable = (
+    strategy: "trendinvestorpro" | "stclair" | "northstar",
+    tf: "daily" | "weekly" | "monthly"
+  ) => {
+    if (
+      strategy === "trendinvestorpro" &&
+      (tf === "weekly" || tf === "monthly")
+    )
+      return true;
+    if (strategy === "stclair" && (tf === "daily" || tf === "monthly"))
+      return true;
+    return false;
+  };
 
   /**
    * Main useEffect
@@ -621,9 +628,42 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
 
   return (
     <div className="graphing-chart-popup">
-      <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      {/* Close Button Row */}
+      <div
+        className="d-flex justify-content-end"
+        style={{ padding: "8px 16px 0 16px" }}
+      >
+        <button
+          className="btn"
+          style={{
+            border: "none",
+            background: "transparent",
+            padding: 4,
+            borderRadius: 7,
+            marginTop: 2,
+            cursor: "pointer",
+          }}
+          onClick={onClose}
+          title="Close"
+        >
+          <X size={20} color="#e91e63" />
+        </button>
+      </div>
+
+      {/* Main Controls Row */}
+      <div
+        className="d-flex align-items-center justify-content-between mb-2"
+        style={{
+          gap: 12,
+          padding: "10px 32px 6px 32px",
+          borderBottom: "1.5px solid #e5e7eb",
+          background: "#fafbfc",
+          borderRadius: "0 0 16px 16px",
+          minHeight: 56,
+        }}
+      >
         {/* Toolbar */}
-        <div className="toolbar d-flex gap-2">
+        <div className="d-flex align-items-center gap-2">
           <button
             onClick={() => toggleMode("trendline")}
             className={`tool-button ${
@@ -680,8 +720,9 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
               </button>
             )}
         </div>
+
         {/* Period Toggle */}
-        <div className="btn-group">
+        <div className="btn-group d-flex align-items-center justify-content-center gap-2">
           {["daily", "weekly", "monthly"].map((tf) => (
             <button
               key={tf}
@@ -700,10 +741,6 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
         <div className="d-flex align-items-end gap-3">
           {/* TrendInvestorPro: D: BUY/SELL */}
           <div className="d-flex flex-column align-items-center">
-            <span style={{ fontSize: "1.1rem", marginBottom: 2 }}>
-              <strong>D:</strong>{" "}
-              {renderSignal(signalSummary.trendinvestorpro.daily)}
-            </span>
             <label
               className="d-flex align-items-center gap-1"
               style={{ fontWeight: 500 }}
@@ -725,9 +762,6 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
           </div>
           {/* StClair: W: BUY/SELL */}
           <div className="d-flex flex-column align-items-center">
-            <span style={{ fontSize: "1.1rem", marginBottom: 2 }}>
-              <strong>W:</strong> {renderSignal(signalSummary.stclair.weekly)}
-            </span>
             <label
               className="d-flex align-items-center gap-1"
               style={{ fontWeight: 500 }}
@@ -750,13 +784,6 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
             className="d-flex flex-column align-items-center"
             style={{ marginLeft: "2.2rem" }}
           >
-            <span style={{ fontSize: "1.1rem", marginBottom: 2 }}>
-              <strong>D:</strong> {renderSignal(signalSummary.northstar.daily)}{" "}
-              <span style={{ color: "#ccc" }}>|</span> <strong>W:</strong>{" "}
-              {renderSignal(signalSummary.northstar.weekly)}{" "}
-              <span style={{ color: "#ccc" }}>|</span> <strong>M:</strong>{" "}
-              {renderSignal(signalSummary.northstar.monthly)}
-            </span>
             <label
               className="d-flex align-items-center gap-1"
               style={{ fontWeight: 500 }}
@@ -776,14 +803,53 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
           </div>
         </div>
 
+        {/* Latest current signal */}
+        {selectedStrategy && (
+          <span
+            style={{
+              fontWeight: 900,
+              fontSize: "1.5rem",
+              color: isUnavailable(selectedStrategy, timeframe)
+                ? "#232323"
+                : signalSummary[selectedStrategy][timeframe] === "BUY"
+                ? "#009944"
+                : signalSummary[selectedStrategy][timeframe] === "SELL"
+                ? "#e91e63"
+                : "#aaa",
+              opacity: isUnavailable(selectedStrategy, timeframe) ? 0.5 : 1,
+              minWidth: 64,
+              marginLeft: 12,
+              letterSpacing: 1.2,
+            }}
+          >
+            {isUnavailable(selectedStrategy, timeframe)
+              ? "—"
+              : signalSummary[selectedStrategy][timeframe] || "-"}
+          </span>
+        )}
+
         <button
-          className="btn btn-sm btn-danger ms-3"
-          style={{ fontSize: "1.2rem" }}
-          onClick={onClose}
+          className="btn btn-sm"
+          style={{
+            border: "none",
+            background: "transparent",
+            marginLeft: 5,
+            padding: 3,
+            outline: "none",
+            boxShadow: "none",
+            cursor: "pointer",
+          }}
+          onClick={() => setShowSummary((v) => !v)}
+          title={showSummary ? "Hide Summary" : "Show Summary"}
         >
-          Close
+          {showSummary ? (
+            <EyeOff size={19} color="#2563eb" />
+          ) : (
+            <Eye size={19} color="#2563eb" />
+          )}
         </button>
       </div>
+
       {/* Main chart area */}
       <div
         ref={chartContainerRef}
@@ -826,6 +892,123 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
           Show Trendlines
         </label>
       </div>
+
+      {/* Summary of signals*/}
+      {showSummary && (
+        <div
+          style={{
+            width: "100%",
+            margin: "28px auto 10px auto",
+            maxWidth: 570,
+          }}
+        >
+          <table
+            style={{
+              width: "100%",
+              borderCollapse: "separate",
+              borderSpacing: 0,
+              background: "#fff",
+              borderRadius: 16,
+              boxShadow: "0 2px 14px rgba(36,64,138,0.09)",
+              overflow: "hidden",
+              fontSize: "1.08rem",
+            }}
+          >
+            <thead>
+              <tr style={{ background: "#f4f6f8" }}>
+                <th
+                  style={{
+                    padding: "12px 10px",
+                    fontWeight: 700,
+                    borderBottom: "2px solid #e5e7eb",
+                  }}
+                >
+                  Strategy
+                </th>
+                <th
+                  style={{
+                    padding: "12px 10px",
+                    fontWeight: 700,
+                    borderBottom: "2px solid #e5e7eb",
+                  }}
+                >
+                  Daily
+                </th>
+                <th
+                  style={{
+                    padding: "12px 10px",
+                    fontWeight: 700,
+                    borderBottom: "2px solid #e5e7eb",
+                  }}
+                >
+                  Weekly
+                </th>
+                <th
+                  style={{
+                    padding: "12px 10px",
+                    fontWeight: 700,
+                    borderBottom: "2px solid #e5e7eb",
+                  }}
+                >
+                  Monthly
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {(["trendinvestorpro", "stclair", "northstar"] as const).map(
+                (strat, i) => (
+                  <tr
+                    key={strat}
+                    style={{
+                      background: i % 2 === 1 ? "#fafbfc" : "#fff",
+                      borderBottom: "1.5px solid #f0f2f4",
+                    }}
+                  >
+                    <td
+                      style={{
+                        fontWeight: 600,
+                        padding: "10px 10px",
+                        textTransform: "capitalize",
+                      }}
+                    >
+                      {strat}
+                    </td>
+                    {(["daily", "weekly", "monthly"] as const).map((tf) => {
+                      const unavailable = isUnavailable(strat, tf);
+                      let content;
+                      let color = "#bdbdbd";
+                      if (unavailable) {
+                        content = "—";
+                        color = "#232323";
+                      } else if (signalSummary[strat][tf] === "BUY") {
+                        content = "BUY";
+                        color = "#009944";
+                      } else if (signalSummary[strat][tf] === "SELL") {
+                        content = "SELL";
+                        color = "#e91e63";
+                      }
+                      return (
+                        <td
+                          key={tf}
+                          style={{
+                            textAlign: "center",
+                            fontWeight: 700,
+                            padding: "10px 0",
+                            color,
+                            opacity: unavailable ? 0.7 : 1,
+                          }}
+                        >
+                          <span>{content ?? "-"}</span>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                )
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 };
