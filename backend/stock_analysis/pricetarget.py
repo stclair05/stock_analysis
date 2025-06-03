@@ -1,5 +1,6 @@
 from .utils import safe_value, compute_wilder_rsi, detect_zigzag_pivots
 import pandas as pd
+import numpy as np
 
 
 def calculate_mean_reversion_50dma_target(df: pd.DataFrame, lookback: int = 756) -> dict:
@@ -135,3 +136,34 @@ def get_price_targets(df: pd.DataFrame, symbol: str = "") -> dict:
         }
     }
 
+
+def find_downtrend_lines(df: pd.DataFrame, threshold=0.07, window=5):
+    def get_utctimestamp(idx):
+        val = df.index[idx]
+        if isinstance(val, (int, float, np.integer, np.floating)):
+            return int(val)
+        return int(pd.to_datetime(val).timestamp())
+    
+    pivots = detect_zigzag_pivots(df, threshold=threshold, window=window)
+    lines = []
+
+    i = 0
+    while i < len(pivots) - 1:
+        idx_i, price_i = pivots[i]
+        if price_i == df['High'].iloc[idx_i]:
+            for j in range(i + 1, len(pivots)):
+                idx_j, price_j = pivots[j]
+                if price_j == df['Low'].iloc[idx_j]:
+                    trendline = {
+                        "start": [get_utctimestamp(idx_i), float(df['High'].iloc[idx_i])],
+                        "end": [get_utctimestamp(idx_j), float(df['Low'].iloc[idx_j])]
+                    }
+                    lines.append(trendline)
+                    i = j  # Skip ahead to just after the trough
+                    break
+            else:
+                i += 1
+        else:
+            i += 1
+
+    return {"trendlines": lines}

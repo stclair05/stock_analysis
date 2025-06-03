@@ -8,6 +8,7 @@ import {
   createSeriesMarkers,
   SeriesMarker,
   ISeriesMarkersPluginApi,
+  LineSeries,
 } from "lightweight-charts";
 import { useEffect, useRef, useState } from "react";
 import { useMainChartData } from "./useMainChartData";
@@ -71,6 +72,11 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
   });
 
   const copyBufferRef = useRef<CopyTrendlineBuffer | null>(null);
+
+  // Trendlines
+  const [trendLines, setTrendLines] = useState<any[]>([]);
+  const trendLineSeriesRef = useRef<ISeriesApi<"Line">[]>([]);
+  const [showTrendLines, setShowTrendLines] = useState(true);
 
   const {
     drawingModeRef,
@@ -450,6 +456,55 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     }
   );
 
+  /**
+   * Fetching Trendlines and projection lines from backend
+   */
+  useEffect(() => {
+    async function fetchTrendlines() {
+      try {
+        const res = await fetch(
+          `http://localhost:8000/api/projection_arrows/${stockSymbol}?timeframe=${timeframe}`
+        );
+        const data = await res.json();
+        setTrendLines(data.trendlines || []); // Only use trendlines!
+      } catch (err) {
+        setTrendLines([]);
+      }
+    }
+    fetchTrendlines();
+  }, [stockSymbol, timeframe]);
+
+  /**
+   * Plotting trendlines
+   */
+  useEffect(() => {
+    if (!chartInstanceRef.current) return;
+
+    // Remove any previously rendered trendlines
+    trendLineSeriesRef.current.forEach((series) => {
+      chartInstanceRef.current?.removeSeries(series);
+    });
+    trendLineSeriesRef.current = [];
+
+    // Only add trendlines if toggled on
+    if (showTrendLines) {
+      trendLines.forEach((line) => {
+        const series = chartInstanceRef.current!.addSeries(LineSeries, {
+          color: "#2e93fa",
+          lineWidth: 2,
+          priceLineVisible: false,
+          lastValueVisible: false,
+          crosshairMarkerVisible: false,
+        });
+        series.setData([
+          { time: line.start[0], value: line.start[1] },
+          { time: line.end[0], value: line.end[1] },
+        ]);
+        trendLineSeriesRef.current.push(series);
+      });
+    }
+  }, [trendLines, showTrendLines]);
+
   return (
     <div className="graphing-chart-popup">
       <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
@@ -628,6 +683,21 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
           background: "#fff",
         }}
       />
+      <div
+        className="mt-3 d-flex align-items-center"
+        style={{ fontSize: "1.1rem" }}
+      >
+        <input
+          type="checkbox"
+          id="show-trendlines-checkbox"
+          checked={showTrendLines}
+          onChange={() => setShowTrendLines((v) => !v)}
+          style={{ marginRight: 8 }}
+        />
+        <label htmlFor="show-trendlines-checkbox" style={{ cursor: "pointer" }}>
+          Show Trendlines
+        </label>
+      </div>
     </div>
   );
 };

@@ -1,6 +1,6 @@
 {
-    "etfs": [
-   "SPY",
+  "etfs": [
+    "SPY",
     "QQQ",
     "IVV",
     "VOO",
@@ -29,8 +29,9 @@
     "GDXJ",
     "GDX",
     "SILJ",
-    "RING", 
+    "RING",
     "XME",
-    "FCG"
+    "FCG",
+    "BOIL"
   ]
 }

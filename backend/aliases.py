@@ -6,11 +6,13 @@ SYMBOL_ALIASES = {
     "WTI": "CL=F",
     "BRENT": "BZ=F",
     "XAG/USD": "SI=F",
+    "XAG": "SI=F",
     "XAGUSD": "SI=F",
     "SILVER": "SI=F",
     "XAU/USD": "GC=F",
     "XAUUSD": "GC=F",
     "GOLD": "GC=F",
+    "XAU": "GC=F",
     "COPPER": "HG=F",
 
     # Cryptocurrencies
