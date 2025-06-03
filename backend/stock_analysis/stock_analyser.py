@@ -20,6 +20,7 @@ class StockAnalyser:
 
     def _download_data(self) -> pd.DataFrame:
         df = yf.download(self.symbol, period='20y', interval='1d', auto_adjust=False)
+        print(df.tail())
         if df.empty:
             raise HTTPException(status_code=400, detail="Stock symbol not found or data unavailable.")
         if isinstance(df.columns, pd.MultiIndex):
@@ -39,12 +40,20 @@ class StockAnalyser:
             try:
                 live_df = yf.download(symbol, period="1d", interval="1d")
                 if not live_df.empty:
-                    df.loc[live_df.index[-1]] = live_df.iloc[-1]
+                    # Align columns and patch
+                    live_df = live_df[df.columns]
+                    for idx in live_df.index:
+                        df.loc[pd.to_datetime(idx)] = live_df.loc[idx]
             except Exception:
                 pass
             if isinstance(df.columns, pd.MultiIndex):
                 df.columns = df.columns.droplevel(1)
+            # Clean up index and rows after patch
+            df = df.sort_index()
+            df = df[~df.index.duplicated(keep='last')]
+            df = df[df['Close'].notna()]
             return df
+
 
     
     @cached_property
@@ -1083,7 +1092,7 @@ class StockAnalyser:
 
         return markers
 
-    def get_northstar_signals(self, timeframe: str = "weekly") -> list[dict]:
+    def get_northstar_signals(self, timeframe: str = "daily") -> list[dict]:
         """
         Implements the NorthStar trend-following strategy:
         Entry: Price > 12MA and Price > 36MA
@@ -1102,6 +1111,7 @@ class StockAnalyser:
             raise ValueError(f"Invalid timeframe: {timeframe}")
 
         df = df.copy().dropna()
+        
         if len(df) < 40:
             return []  # not enough data
 
@@ -1150,5 +1160,6 @@ class StockAnalyser:
                     "label": "EXIT",
                 })
                 in_position = False
+
 
         return markers

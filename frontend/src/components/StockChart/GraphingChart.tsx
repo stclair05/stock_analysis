@@ -55,7 +55,6 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
   const sixPointHoverLineRef = useRef<ISeriesApi<"Line"> | null>(null);
 
   // Strategy signals
-  // Track markers for strategy signals (TrendInvestorPro etc)
   const strategyMarkersPluginRef =
     useRef<ISeriesMarkersPluginApi<number> | null>(null);
   const [strategyMarkers, setStrategyMarkers] = useState<
