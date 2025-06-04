@@ -38,14 +38,17 @@ export type CopyTrendlineBuffer = {
   original?: [Point, Point];
 };
 
-
 export type Timeframe = "daily" | "weekly" | "monthly";
 export type SignalSide = "BUY" | "SELL" | ""; // "" for no signal
 
 export type SignalSummary = {
-  [strategy in "trendinvestorpro" | "stclair" | "northstar"]: {
+  [strategy in
+    | "trendinvestorpro"
+    | "stclair"
+    | "northstar"
+    | "stclairlongterm"]: {
     [T in Timeframe]: SignalSide;
-  }
+  };
 };
 
 export interface GraphingChartProps {

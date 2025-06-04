@@ -1163,3 +1163,101 @@ class StockAnalyser:
 
 
         return markers
+
+    def get_stclairlongterm_signals(self, timeframe: str = "weekly") -> list[dict]:
+        """
+        Implements StClairLongTerm strategy.
+        Entry: At least 2/3 signals True:
+            - Supertrend is Buy (weekly)
+            - Price above Ichimoku cloud (weekly)
+            - Weekly RSI > Monthly RSI MA (use most recent up to this week)
+        Exit: At least 2/3 signals True:
+            - Supertrend is Sell (weekly)
+            - Price below Ichimoku cloud (weekly)
+            - Weekly RSI < Monthly RSI MA (use most recent up to this week)
+        Returns markers: {time, price, side, label}
+        """
+        if timeframe != "weekly":
+            raise HTTPException(status_code=400, detail="stclairlongterm is only available for weekly timeframe.")
+        df_weekly = self.weekly_df
+        if len(df_weekly) < 40:
+            return []
+
+        close = df_weekly["Close"]
+        # --- Supertrend ---
+        df_st = compute_supertrend_lines(df_weekly)
+        st_signal = df_st["Signal"]  # "Buy" or "Sell", already weekly indexed
+
+        # --- Ichimoku Cloud ---
+        _, _, span_a, span_b = compute_ichimoku_lines(df_weekly)
+        upper_cloud = np.maximum(span_a, span_b)
+        lower_cloud = np.minimum(span_a, span_b)
+        ichimoku_status = pd.Series(
+            np.where(close > upper_cloud, "Above",
+                np.where(close < lower_cloud, "Below", "Inside")),
+            index=close.index
+        )
+
+        # --- Weekly RSI ---
+        weekly_rsi = compute_wilder_rsi(close, 14)
+        # --- Monthly RSI MA (use last value up to each week) ---
+        monthly_close = self.monthly_df["Close"]
+        monthly_rsi = compute_wilder_rsi(monthly_close, 14)
+        monthly_rsi_ma = monthly_rsi.rolling(window=14).mean()
+
+        # Reindex monthly RSI MA to weekly (use most recent up to this week)
+        # If a week is after a month, use last known value
+        rsi_ma_for_week = monthly_rsi_ma.reindex(df_weekly.index, method="ffill")
+
+        # --- Iterate and detect signals ---
+        markers = []
+        in_position = False
+
+        for idx in range(len(df_weekly)):
+            t = df_weekly.index[idx]
+            price = close.iloc[idx]
+            # Signals for this week
+            signals_entry = 0
+            signals_exit = 0
+
+            # Supertrend
+            if st_signal.iloc[idx] == "Buy":
+                signals_entry += 1
+            if st_signal.iloc[idx] == "Sell":
+                signals_exit += 1
+
+            # Ichimoku
+            if ichimoku_status.iloc[idx] == "Above":
+                signals_entry += 1
+            if ichimoku_status.iloc[idx] == "Below":
+                signals_exit += 1
+
+            # RSI vs monthly RSI MA
+            rsi_val = weekly_rsi.iloc[idx]
+            rsi_ma_val = rsi_ma_for_week.iloc[idx]
+            if pd.notna(rsi_val) and pd.notna(rsi_ma_val):
+                if rsi_val > rsi_ma_val:
+                    signals_entry += 1
+                if rsi_val < rsi_ma_val:
+                    signals_exit += 1
+
+            # --- Entry (at least 2/3) ---
+            if not in_position and signals_entry >= 2:
+                markers.append({
+                    "time": int(pd.Timestamp(t).timestamp()),
+                    "price": price,
+                    "side": "buy",
+                    "label": "ENTRY"
+                })
+                in_position = True
+            # --- Exit (at least 2/3) ---
+            elif in_position and signals_exit >= 2:
+                markers.append({
+                    "time": int(pd.Timestamp(t).timestamp()),
+                    "price": price,
+                    "side": "sell",
+                    "label": "EXIT"
+                })
+                in_position = False
+
+        return markers

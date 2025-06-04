@@ -62,14 +62,22 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     SeriesMarker<number>[]
   >([]);
   const [selectedStrategy, setSelectedStrategy] = useState<
-    null | "trendinvestorpro" | "stclair" | "northstar"
+    null | "trendinvestorpro" | "stclair" | "northstar" | "stclairlongterm"
   >(null);
 
   const [signalSummary, setSignalSummary] = useState<SignalSummary>({
     trendinvestorpro: { daily: "", weekly: "", monthly: "" },
     stclair: { daily: "", weekly: "", monthly: "" },
     northstar: { daily: "", weekly: "", monthly: "" },
+    stclairlongterm: { daily: "", weekly: "", monthly: "" },
   });
+  const strategies = [
+    "trendinvestorpro",
+    "stclair",
+    "northstar",
+    "stclairlongterm",
+  ] as const;
+  const timeframes = ["daily", "weekly", "monthly"] as const;
 
   const [showSummary, setShowSummary] = useState(false);
 
@@ -221,20 +229,28 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     strategy: string,
     timeframe: Timeframe
   ) {
-    const res = await fetch(
-      `http://localhost:8000/api/signals_${timeframe}/${stockSymbol}?strategy=${strategy}`
-    );
-    const data = await res.json();
-    if (!Array.isArray(data.markers) || data.markers.length === 0) return "";
-    // Use the last marker as the latest signal (adjust if your backend sorts differently)
-    const last = data.markers[data.markers.length - 1];
-    if (!last || !last.side) return "";
-    return last.side.toUpperCase() === "BUY" ? "BUY" : "SELL";
+    try {
+      const res = await fetch(
+        `http://localhost:8000/api/signals_${timeframe}/${stockSymbol}?strategy=${strategy}`
+      );
+      if (!res.ok) {
+        // If 400, treat as unavailable
+        if (res.status === 400) return "";
+        return "";
+      }
+      const data = await res.json();
+      if (!Array.isArray(data.markers) || data.markers.length === 0) return "";
+      const last = data.markers[data.markers.length - 1];
+      if (!last || !last.side) return "";
+      return last.side.toUpperCase() === "BUY" ? "BUY" : "SELL";
+    } catch (err) {
+      return "";
+    }
   }
 
   // Remder which signal is unavailable
   const isUnavailable = (
-    strategy: "trendinvestorpro" | "stclair" | "northstar",
+    strategy: (typeof strategies)[number],
     tf: "daily" | "weekly" | "monthly"
   ) => {
     if (
@@ -243,6 +259,9 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     )
       return true;
     if (strategy === "stclair" && (tf === "daily" || tf === "monthly"))
+      return true;
+    if (strategy === "stclairlongterm" && tf !== "weekly")
+      // ONLY weekly supported
       return true;
     return false;
   };
@@ -416,14 +435,18 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
    */
   useEffect(() => {
     let cancelled = false;
+
+    // Build a blank SignalSummary object programmatically
+    const makeEmptySignalSummary = (): SignalSummary => {
+      const summary: any = {};
+      strategies.forEach((s) => {
+        summary[s] = { daily: "", weekly: "", monthly: "" };
+      });
+      return summary as SignalSummary;
+    };
+
     async function fetchAllSignals() {
-      const strategies = ["trendinvestorpro", "stclair", "northstar"] as const;
-      const timeframes = ["daily", "weekly", "monthly"] as const;
-      const summary: SignalSummary = {
-        trendinvestorpro: { daily: "", weekly: "", monthly: "" },
-        stclair: { daily: "", weekly: "", monthly: "" },
-        northstar: { daily: "", weekly: "", monthly: "" },
-      };
+      const summary = makeEmptySignalSummary();
 
       await Promise.all(
         strategies.flatMap((strategy) =>
@@ -437,8 +460,10 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
           })
         )
       );
+
       if (!cancelled) setSignalSummary(summary);
     }
+
     fetchAllSignals();
     return () => {
       cancelled = true;
@@ -714,18 +739,20 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
 
         {/* Checkboxes for signals */}
         <div className="signal-toggles">
-          {["trendinvestorpro", "stclair", "northstar"].map((name) => (
+          {strategies.map((name) => (
             <label className="signal-label" key={name}>
               <input
                 type="checkbox"
                 checked={selectedStrategy === name}
                 onChange={() =>
-                  setSelectedStrategy(
-                    selectedStrategy === name ? null : (name as any)
-                  )
+                  setSelectedStrategy(selectedStrategy === name ? null : name)
                 }
               />
-              <span>{name.replace(/^\w/, (c) => c.toUpperCase())}</span>
+              <span>
+                {name
+                  .replace(/^\w/, (c) => c.toUpperCase())
+                  .replace("longterm", " LongTerm")}
+              </span>
             </label>
           ))}
         </div>
@@ -791,47 +818,48 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
             <thead>
               <tr>
                 <th>Strategy</th>
-                <th>Daily</th>
-                <th>Weekly</th>
-                <th>Monthly</th>
+                {timeframes.map((tf) => (
+                  <th key={tf}>{tf.charAt(0).toUpperCase() + tf.slice(1)}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {(["trendinvestorpro", "stclair", "northstar"] as const).map(
-                (strat, i) => (
-                  <tr key={strat}>
-                    <td>{strat.charAt(0).toUpperCase() + strat.slice(1)}</td>
-                    {(["daily", "weekly", "monthly"] as const).map((tf) => {
-                      const unavailable = isUnavailable(strat, tf);
-                      let content;
-                      let color = "#bdbdbd";
-                      if (unavailable) {
-                        content = "—";
-                        color = "#232323";
-                      } else if (signalSummary[strat][tf] === "BUY") {
-                        content = "BUY";
-                        color = "#009944";
-                      } else if (signalSummary[strat][tf] === "SELL") {
-                        content = "SELL";
-                        color = "#e91e63";
-                      }
-                      return (
-                        <td
-                          key={tf}
-                          style={{
-                            color,
-                            opacity: unavailable ? 0.7 : 1,
-                            textAlign: "center",
-                            fontWeight: 700,
-                          }}
-                        >
-                          <span>{content ?? "-"}</span>
-                        </td>
-                      );
-                    })}
-                  </tr>
-                )
-              )}
+              {strategies.map((strat) => (
+                <tr key={strat}>
+                  <td>
+                    {strat.charAt(0).toUpperCase() +
+                      strat.slice(1).replace("longterm", " LongTerm")}
+                  </td>
+                  {timeframes.map((tf) => {
+                    const unavailable = isUnavailable(strat, tf);
+                    let content;
+                    let color = "#bdbdbd";
+                    if (unavailable) {
+                      content = "—";
+                      color = "#232323";
+                    } else if (signalSummary[strat][tf] === "BUY") {
+                      content = "BUY";
+                      color = "#009944";
+                    } else if (signalSummary[strat][tf] === "SELL") {
+                      content = "SELL";
+                      color = "#e91e63";
+                    }
+                    return (
+                      <td
+                        key={tf}
+                        style={{
+                          color,
+                          opacity: unavailable ? 0.7 : 1,
+                          textAlign: "center",
+                          fontWeight: 700,
+                        }}
+                      >
+                        <span>{content ?? "-"}</span>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
