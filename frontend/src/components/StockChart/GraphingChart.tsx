@@ -9,10 +9,11 @@ import {
   SeriesMarker,
   ISeriesMarkersPluginApi,
   LineSeries,
+  PriceScaleMode,
 } from "lightweight-charts";
 import { useEffect, useRef, useState } from "react";
 import { useMainChartData } from "./useMainChartData";
-import { Ruler, Minus, RotateCcw } from "lucide-react";
+import { Ruler, Minus, RotateCcw, Eye, EyeOff, X } from "lucide-react";
 import { useDrawingManager } from "./DrawingManager";
 import { usePreviewManager } from "./PreviewManager";
 import { useDrawingRenderer } from "./DrawingRenderer";
@@ -25,6 +26,7 @@ import {
   SignalSide,
   GraphingChartProps,
 } from "./types";
+import "./graphing-chart.css"; // <-- Add your custom styles here
 
 const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -61,14 +63,24 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     SeriesMarker<number>[]
   >([]);
   const [selectedStrategy, setSelectedStrategy] = useState<
-    null | "trendinvestorpro" | "stclair" | "northstar"
+    null | "trendinvestorpro" | "stclair" | "northstar" | "stclairlongterm"
   >(null);
 
   const [signalSummary, setSignalSummary] = useState<SignalSummary>({
     trendinvestorpro: { daily: "", weekly: "", monthly: "" },
     stclair: { daily: "", weekly: "", monthly: "" },
     northstar: { daily: "", weekly: "", monthly: "" },
+    stclairlongterm: { daily: "", weekly: "", monthly: "" },
   });
+  const strategies = [
+    "trendinvestorpro",
+    "stclair",
+    "northstar",
+    "stclairlongterm",
+  ] as const;
+  const timeframes = ["daily", "weekly", "monthly"] as const;
+
+  const [showSummary, setShowSummary] = useState(false);
 
   const copyBufferRef = useRef<CopyTrendlineBuffer | null>(null);
 
@@ -218,26 +230,42 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     strategy: string,
     timeframe: Timeframe
   ) {
-    const res = await fetch(
-      `http://localhost:8000/api/signals_${timeframe}/${stockSymbol}?strategy=${strategy}`
-    );
-    const data = await res.json();
-    if (!Array.isArray(data.markers) || data.markers.length === 0) return "";
-    // Use the last marker as the latest signal (adjust if your backend sorts differently)
-    const last = data.markers[data.markers.length - 1];
-    if (!last || !last.side) return "";
-    return last.side.toUpperCase() === "BUY" ? "BUY" : "SELL";
-  }
-  // Render latest signal
-  function renderSignal(signal: SignalSide) {
-    if (signal === "BUY") {
-      return <span style={{ color: "#009944", fontWeight: "bold" }}>BUY</span>;
+    try {
+      const res = await fetch(
+        `http://localhost:8000/api/signals_${timeframe}/${stockSymbol}?strategy=${strategy}`
+      );
+      if (!res.ok) {
+        // If 400, treat as unavailable
+        if (res.status === 400) return "";
+        return "";
+      }
+      const data = await res.json();
+      if (!Array.isArray(data.markers) || data.markers.length === 0) return "";
+      const last = data.markers[data.markers.length - 1];
+      if (!last || !last.side) return "";
+      return last.side.toUpperCase() === "BUY" ? "BUY" : "SELL";
+    } catch (err) {
+      return "";
     }
-    if (signal === "SELL") {
-      return <span style={{ color: "#e91e63", fontWeight: "bold" }}>SELL</span>;
-    }
-    return <span style={{ color: "#aaa" }}>-</span>;
   }
+
+  // Remder which signal is unavailable
+  const isUnavailable = (
+    strategy: (typeof strategies)[number],
+    tf: "daily" | "weekly" | "monthly"
+  ) => {
+    if (
+      strategy === "trendinvestorpro" &&
+      (tf === "weekly" || tf === "monthly")
+    )
+      return true;
+    if (strategy === "stclair" && (tf === "daily" || tf === "monthly"))
+      return true;
+    if (strategy === "stclairlongterm" && tf !== "weekly")
+      // ONLY weekly supported
+      return true;
+    return false;
+  };
 
   /**
    * Main useEffect
@@ -284,6 +312,9 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
 
     // Initialize the strategy markers plugin
     strategyMarkersPluginRef.current = createSeriesMarkers(series, []);
+    chart
+      .priceScale("right")
+      .applyOptions({ mode: PriceScaleMode.Logarithmic });
 
     // Resize observer for responsive width
     const resizeObserver = new ResizeObserver((entries) => {
@@ -408,14 +439,18 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
    */
   useEffect(() => {
     let cancelled = false;
+
+    // Build a blank SignalSummary object programmatically
+    const makeEmptySignalSummary = (): SignalSummary => {
+      const summary: any = {};
+      strategies.forEach((s) => {
+        summary[s] = { daily: "", weekly: "", monthly: "" };
+      });
+      return summary as SignalSummary;
+    };
+
     async function fetchAllSignals() {
-      const strategies = ["trendinvestorpro", "stclair", "northstar"] as const;
-      const timeframes = ["daily", "weekly", "monthly"] as const;
-      const summary: SignalSummary = {
-        trendinvestorpro: { daily: "", weekly: "", monthly: "" },
-        stclair: { daily: "", weekly: "", monthly: "" },
-        northstar: { daily: "", weekly: "", monthly: "" },
-      };
+      const summary = makeEmptySignalSummary();
 
       await Promise.all(
         strategies.flatMap((strategy) =>
@@ -429,8 +464,10 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
           })
         )
       );
+
       if (!cancelled) setSignalSummary(summary);
     }
+
     fetchAllSignals();
     return () => {
       cancelled = true;
@@ -515,9 +552,27 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
             { key: "ma_12", color: "#00c853", label: "12MA" },
             { key: "ma_36", color: "#d500f9", label: "36MA" },
           ];
+        } else if (selectedStrategy === "stclairlongterm") {
+          maConfigs = [
+            { key: "supertrend_up", color: "#26a69a", label: "Supertrend Up" }, // Greenish
+            {
+              key: "supertrend_down",
+              color: "#ef5350",
+              label: "Supertrend Down",
+            }, // Red
+            {
+              key: "ichimoku_span_a",
+              color: "#ffb300",
+              label: "Ichimoku Span A",
+            },
+            {
+              key: "ichimoku_span_b",
+              color: "#1976d2",
+              label: "Ichimoku Span B",
+            },
+          ];
         }
 
-        // Add each MA as a line series
         maConfigs.forEach((cfg) => {
           if (
             data &&
@@ -620,76 +675,84 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
   }, [trendLines, showTrendLines]);
 
   return (
-    <div className="graphing-chart-popup">
-      <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div className="graphing-chart-popup-modern">
+      {/* Close Button Row */}
+      <div className="close-row">
+        <button className="close-btn" onClick={onClose} title="Close">
+          <X size={20} />
+        </button>
+      </div>
+
+      {/* Main Controls Row */}
+      <div className="controls-row">
         {/* Toolbar */}
-        <div className="toolbar d-flex gap-2">
+        <div className="toolbar">
           <button
-            onClick={() => toggleMode("trendline")}
-            className={`tool-button ${
-              drawingModeRef.current === "trendline" ? "active" : ""
+            className={`tool-btn${
+              drawingModeRef.current === "trendline" ? " active" : ""
             }`}
             title="Trendline"
+            onClick={() => toggleMode("trendline")}
           >
-            <Ruler size={24} />
+            <Ruler size={20} />
           </button>
           <button
-            onClick={() => toggleMode("horizontal")}
-            className={`tool-button ${
-              drawingModeRef.current === "horizontal" ? "active" : ""
+            className={`tool-btn${
+              drawingModeRef.current === "horizontal" ? " active" : ""
             }`}
             title="Horizontal Line"
+            onClick={() => toggleMode("horizontal")}
           >
-            <Minus size={24} />
+            <Minus size={20} />
           </button>
           <button
-            onClick={() => toggleMode("sixpoint")}
-            className={`tool-button ${
-              drawingModeRef.current === "sixpoint" ? "active" : ""
+            className={`tool-btn${
+              drawingModeRef.current === "sixpoint" ? " active" : ""
             }`}
             title="6 Point Tool"
+            onClick={() => toggleMode("sixpoint")}
           >
             1→5
           </button>
           <button
-            onClick={resetChart}
-            className="tool-button"
+            className="tool-btn"
             title="Reload Chart"
+            onClick={resetChart}
           >
-            <RotateCcw size={24} />
+            <RotateCcw size={20} />
           </button>
-
           {selectedDrawingIndex !== null && (
             <button
-              className="btn btn-sm btn-danger"
+              className="ghost-btn danger"
               onClick={handleDeleteDrawing}
               title="Delete Selected Drawing"
             >
-              🗑️ Delete
+              <span role="img" aria-label="delete">
+                🗑️
+              </span>
             </button>
           )}
-
           {selectedDrawingIndex !== null &&
             drawings[selectedDrawingIndex]?.type === "line" && (
               <button
-                className="btn btn-sm btn-info"
+                className="ghost-btn info"
                 onClick={handleCopyDrawing}
                 title="Copy Selected Trendline"
               >
-                📋 Copy
+                <span role="img" aria-label="copy">
+                  📋
+                </span>
               </button>
             )}
         </div>
+
         {/* Period Toggle */}
-        <div className="btn-group">
+        <div className="period-toggle">
           {["daily", "weekly", "monthly"].map((tf) => (
             <button
               key={tf}
               onClick={() => setTimeframe(tf as "daily" | "weekly" | "monthly")}
-              className={`btn btn-sm ${
-                timeframe === tf ? "btn-primary" : "btn-outline-secondary"
-              }`}
-              style={{ fontSize: "1.2rem", minWidth: "100px" }}
+              className={`period-btn${timeframe === tf ? " active" : ""}`}
             >
               {tf.toUpperCase()}
             </button>
@@ -697,134 +760,132 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
         </div>
 
         {/* Checkboxes for signals */}
-        {/* Checkboxes for signals with labels */}
-        <div className="d-flex align-items-end gap-3">
-          {/* TrendInvestorPro: D: BUY/SELL */}
-          <div className="d-flex flex-column align-items-center">
-            <span style={{ fontSize: "1.1rem", marginBottom: 2 }}>
-              <strong>D:</strong>{" "}
-              {renderSignal(signalSummary.trendinvestorpro.daily)}
-            </span>
-            <label
-              className="d-flex align-items-center gap-1"
-              style={{ fontWeight: 500 }}
-            >
+        <div className="signal-toggles">
+          {strategies.map((name) => (
+            <label className="signal-label" key={name}>
               <input
                 type="checkbox"
-                checked={selectedStrategy === "trendinvestorpro"}
+                checked={selectedStrategy === name}
                 onChange={() =>
-                  setSelectedStrategy(
-                    selectedStrategy === "trendinvestorpro"
-                      ? null
-                      : "trendinvestorpro"
-                  )
+                  setSelectedStrategy(selectedStrategy === name ? null : name)
                 }
-                style={{ marginRight: 4 }}
               />
-              TrendInvestorPro
+              <span>
+                {name
+                  .replace(/^\w/, (c) => c.toUpperCase())
+                  .replace("longterm", " LongTerm")}
+              </span>
             </label>
-          </div>
-          {/* StClair: W: BUY/SELL */}
-          <div className="d-flex flex-column align-items-center">
-            <span style={{ fontSize: "1.1rem", marginBottom: 2 }}>
-              <strong>W:</strong> {renderSignal(signalSummary.stclair.weekly)}
-            </span>
-            <label
-              className="d-flex align-items-center gap-1"
-              style={{ fontWeight: 500 }}
-            >
-              <input
-                type="checkbox"
-                checked={selectedStrategy === "stclair"}
-                onChange={() =>
-                  setSelectedStrategy(
-                    selectedStrategy === "stclair" ? null : "stclair"
-                  )
-                }
-                style={{ marginRight: 4 }}
-              />
-              StClair
-            </label>
-          </div>
-          {/* Northstar: D: | W: | M: */}
-          <div
-            className="d-flex flex-column align-items-center"
-            style={{ marginLeft: "2.2rem" }}
-          >
-            <span style={{ fontSize: "1.1rem", marginBottom: 2 }}>
-              <strong>D:</strong> {renderSignal(signalSummary.northstar.daily)}{" "}
-              <span style={{ color: "#ccc" }}>|</span> <strong>W:</strong>{" "}
-              {renderSignal(signalSummary.northstar.weekly)}{" "}
-              <span style={{ color: "#ccc" }}>|</span> <strong>M:</strong>{" "}
-              {renderSignal(signalSummary.northstar.monthly)}
-            </span>
-            <label
-              className="d-flex align-items-center gap-1"
-              style={{ fontWeight: 500 }}
-            >
-              <input
-                type="checkbox"
-                checked={selectedStrategy === "northstar"}
-                onChange={() =>
-                  setSelectedStrategy(
-                    selectedStrategy === "northstar" ? null : "northstar"
-                  )
-                }
-                style={{ marginRight: 4 }}
-              />
-              NorthStar
-            </label>
-          </div>
+          ))}
         </div>
 
+        {/* Latest current signal */}
+        {selectedStrategy && (
+          <span
+            className={
+              "main-signal" +
+              (isUnavailable(selectedStrategy, timeframe)
+                ? " unavailable"
+                : "") +
+              (signalSummary[selectedStrategy][timeframe] === "BUY"
+                ? " buy"
+                : "") +
+              (signalSummary[selectedStrategy][timeframe] === "SELL"
+                ? " sell"
+                : "")
+            }
+          >
+            {isUnavailable(selectedStrategy, timeframe)
+              ? "—"
+              : signalSummary[selectedStrategy][timeframe] || "-"}
+          </span>
+        )}
+
         <button
-          className="btn btn-sm btn-danger ms-3"
-          style={{ fontSize: "1.2rem" }}
-          onClick={onClose}
+          className="eye-btn"
+          onClick={() => setShowSummary((v) => !v)}
+          title={showSummary ? "Hide Summary" : "Show Summary"}
         >
-          Close
+          {showSummary ? <EyeOff size={19} /> : <Eye size={19} />}
         </button>
       </div>
+
       {/* Main chart area */}
-      <div
-        ref={chartContainerRef}
-        style={{
-          width: "100%",
-          height: "600px",
-          border: "1.5px solid #ddd",
-          borderRadius: "12px",
-          boxShadow: "0 2px 12px rgba(0,0,0,0.09)",
-          background: "#fff",
-        }}
-      />
-      <div
-        className="mt-3 d-flex align-items-center"
-        style={{ fontSize: "1.1rem" }}
-      >
-        <input
-          type="checkbox"
-          id="show-overlaylines-checkbox"
-          checked={showOverlayLines}
-          onChange={() => setShowOverlayLines((v) => !v)}
-          style={{ marginLeft: 24, marginRight: 8 }}
-        />
-        <label
-          htmlFor="show-overlaylines-checkbox"
-          style={{ cursor: "pointer" }}
-        >
-          Show Overlay Lines
+      <div ref={chartContainerRef} className="chart-area" />
+
+      {/* Toggles below the chart */}
+      <div className="toggles-row">
+        <label>
+          <input
+            type="checkbox"
+            checked={showOverlayLines}
+            onChange={() => setShowOverlayLines((v) => !v)}
+          />
+          <span>Show Overlay Lines</span>
         </label>
-        <input
-          type="checkbox"
-          id="show-trendlines-checkbox"
-          checked={showTrendLines}
-          onChange={() => setShowTrendLines((v) => !v)}
-          style={{ marginRight: 8 }}
-        />
-        <label htmlFor="show-trendlines-checkbox" style={{ cursor: "pointer" }}>
-          Show Trendlines
+        <label>
+          <input
+            type="checkbox"
+            checked={showTrendLines}
+            onChange={() => setShowTrendLines((v) => !v)}
+          />
+          <span>Show Trendlines</span>
         </label>
       </div>
+
+      {/* Summary of signals */}
+      {showSummary && (
+        <div className="signal-summary-table-wrap">
+          <table className="signal-summary-table">
+            <thead>
+              <tr>
+                <th>Strategy</th>
+                {timeframes.map((tf) => (
+                  <th key={tf}>{tf.charAt(0).toUpperCase() + tf.slice(1)}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {strategies.map((strat) => (
+                <tr key={strat}>
+                  <td>
+                    {strat.charAt(0).toUpperCase() +
+                      strat.slice(1).replace("longterm", " LongTerm")}
+                  </td>
+                  {timeframes.map((tf) => {
+                    const unavailable = isUnavailable(strat, tf);
+                    let content;
+                    let color = "#bdbdbd";
+                    if (unavailable) {
+                      content = "—";
+                      color = "#232323";
+                    } else if (signalSummary[strat][tf] === "BUY") {
+                      content = "BUY";
+                      color = "#009944";
+                    } else if (signalSummary[strat][tf] === "SELL") {
+                      content = "SELL";
+                      color = "#e91e63";
+                    }
+                    return (
+                      <td
+                        key={tf}
+                        style={{
+                          color,
+                          opacity: unavailable ? 0.7 : 1,
+                          textAlign: "center",
+                          fontWeight: 700,
+                        }}
+                      >
+                        <span>{content ?? "-"}</span>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 };

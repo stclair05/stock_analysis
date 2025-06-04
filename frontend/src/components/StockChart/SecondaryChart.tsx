@@ -5,6 +5,7 @@ import {
   IChartApi,
   ISeriesApi,
   UTCTimestamp,
+  PriceScaleMode,
 } from "lightweight-charts";
 import { useEffect, useRef, useState } from "react";
 
@@ -66,6 +67,9 @@ const SecondaryChart = ({
     candleSeriesRef.current = series;
     externalChartRef && (externalChartRef.current = chart);
     externalSeriesRef && (externalSeriesRef.current = series);
+    chart
+      .priceScale("right")
+      .applyOptions({ mode: PriceScaleMode.Logarithmic });
 
     return () => {
       chart.remove();

@@ -11,6 +11,7 @@ import {
   SeriesOptionsCommon,
   HistogramSeries,
   AreaSeries,
+  PriceScaleMode,
 } from "lightweight-charts";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -164,6 +165,9 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
   // Healthcare stocks
   const HEALTHCARE_STOCKS = ["ARKG", "LLY", "NVO", "MRNA"];
+
+  // Copper stocks
+  const COPPER_STOCKS = ["FCX", "SCCO", "HBM", "COPX", "CPER"];
 
   const {
     drawingModeRef,
@@ -562,6 +566,9 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       wickDownColor: "#ef5350",
     });
     candleSeriesRef.current = candleSeries;
+    chart
+      .priceScale("right")
+      .applyOptions({ mode: PriceScaleMode.Logarithmic });
 
     // --- 9. Visible range sync helper ---
     function safeSetVisibleRange(chart: IChartApi | null, range: any) {
@@ -1458,6 +1465,20 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           </h2>
           {/* === Pictures === */}
           <S3Gallery folder="healthcare" />
+        </>
+      )}
+
+      {COPPER_STOCKS.includes(stockSymbol?.toUpperCase() ?? "") && (
+        <>
+          {/* === Oil Model Header === */}
+          <h2
+            className="fw-bold my-4 text-center"
+            style={{ fontSize: "2rem", letterSpacing: "1px" }}
+          >
+            Copper Model
+          </h2>
+          {/* === Pictures === */}
+          <S3Gallery folder="copper" />
         </>
       )}
     </div>

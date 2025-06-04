@@ -12,9 +12,26 @@ const S3Gallery: React.FC<S3GalleryProps> = ({ folder = "natgas" }) => {
     fetch(`http://localhost:8000/s3-images?prefix=${folder}/`)
       .then((res) => res.json())
       .then((data) => {
-        setImages(data.images || []);
+        console.log("Original images:", data.images); // <--- see what you get
+        const sortImages = (images: string[]) => {
+          return images.slice().sort((a, b) => {
+            // Always get the filename portion from the URL
+            const fileA = a.split("/").pop() || a;
+            const fileB = b.split("/").pop() || b;
+            // Extract the number after "copper_" (handles decimals like 11.5)
+            const matchA = fileA.match(/copper_(\d+(\.\d+)?)/);
+            const matchB = fileB.match(/copper_(\d+(\.\d+)?)/);
+            const numA = matchA ? parseFloat(matchA[1]) : 0;
+            const numB = matchB ? parseFloat(matchB[1]) : 0;
+            return numA - numB;
+          });
+        };
+        const sorted = sortImages(data.images || []);
+        console.log("Sorted images:", sorted); // <--- see the result
+        setImages(sorted);
         setLoading(false);
       })
+
       .catch(() => setLoading(false));
   }, [folder]);
 
