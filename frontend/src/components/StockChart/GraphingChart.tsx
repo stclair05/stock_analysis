@@ -556,10 +556,19 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
               color: "#ef5350",
               label: "Supertrend Down",
             }, // Red
+            {
+              key: "ichimoku_span_a",
+              color: "#ffb300",
+              label: "Ichimoku Span A",
+            },
+            {
+              key: "ichimoku_span_b",
+              color: "#1976d2",
+              label: "Ichimoku Span B",
+            },
           ];
         }
 
-        // Add each MA as a line series
         maConfigs.forEach((cfg) => {
           if (
             data &&
