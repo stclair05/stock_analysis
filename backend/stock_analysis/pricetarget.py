@@ -25,9 +25,9 @@ def calculate_mean_reversion_50dma_target(df: pd.DataFrame, lookback: int = 756)
         return {"mean_reversion_50dma_target": "in progress"}
 
     # Calculate deviation metrics
-    typical_dev = round(recent_dev.abs().quantile(0.9), 2)
-    deviation_band_pct_lower = round(recent_dev.quantile(0.1), 2)
-    deviation_band_pct_upper = round(recent_dev.quantile(0.9), 2)
+    typical_dev = round(recent_dev.abs().quantile(0.95), 2)
+    deviation_band_pct_lower = round(recent_dev.quantile(0.05), 2)
+    deviation_band_pct_upper = round(recent_dev.quantile(0.95), 2)
 
     current_price = price.iloc[-1]
     latest_ma_50 = ma_50.iloc[-1]

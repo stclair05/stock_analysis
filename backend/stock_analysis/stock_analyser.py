@@ -279,22 +279,29 @@ class StockAnalyser:
             twentyone_days_ago=safe_value(ma_50, -21),
         )
     
-    def mean_reversion_50dma(self) -> TimeSeriesMetric:
+    def mean_reversion_50dma(self, lookback: int = 756) -> TimeSeriesMetric:
         if len(self.df) < 60:
             return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
 
         price = self.df['Close']
         ma_50 = price.rolling(window=50).mean()
         deviation = (price - ma_50) / ma_50 * 100
+        recent_dev = deviation[-lookback:].dropna()
+
+        if len(recent_dev) < 30:
+            return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
+
+        lower = recent_dev.quantile(0.05)
+        upper = recent_dev.quantile(0.95)
 
         def classify(dev: float | None) -> str | None:
             if dev is None or pd.isna(dev):
                 return None
-            if isinstance(dev, str):  # <-- Defensive!
+            if isinstance(dev, str):
                 return dev
-            if dev > 5:
-                return "Extended"
-            elif dev < -5:
+            if dev > upper:
+                return "Overbought"
+            elif dev < lower:
                 return "Oversold"
             else:
                 return "Average"
@@ -307,22 +314,29 @@ class StockAnalyser:
         )
 
 
-    def mean_reversion_200dma(self) -> TimeSeriesMetric:
+    def mean_reversion_200dma(self, lookback: int = 220*3) -> TimeSeriesMetric:
         if len(self.df) < 220:
             return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
-        
+
         price = self.df['Close']
         ma_200 = price.rolling(window=200).mean()
         deviation = (price - ma_200) / ma_200 * 100
+        recent_dev = deviation[-lookback:].dropna()
+
+        if len(recent_dev) < 30:
+            return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
+
+        lower = recent_dev.quantile(0.05)
+        upper = recent_dev.quantile(0.95)
 
         def classify(dev: float | None) -> str | None:
             if dev is None or pd.isna(dev):
                 return None
-            if isinstance(dev, str):  # <-- Defensive!
+            if isinstance(dev, str):
                 return dev
-            if dev > 5:
-                return "Extended"
-            elif dev < -5:
+            if dev > upper:
+                return "Overbought"
+            elif dev < lower:
                 return "Oversold"
             else:
                 return "Average"
@@ -335,26 +349,33 @@ class StockAnalyser:
         )
 
 
-    def mean_reversion_3yma(self) -> TimeSeriesMetric:
+
+    def mean_reversion_3yma(self, lookback: int = 36*3) -> TimeSeriesMetric:
         if len(self.df) < 800:
             return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
-        
+
         monthly_close = self.monthly_df["Close"]
         ma_3y = monthly_close.rolling(window=36).mean()
         deviation = (monthly_close - ma_3y) / ma_3y * 100
+        recent_dev = deviation[-lookback:].dropna()
+
+        if len(recent_dev) < 10:
+            return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
+
+        lower = recent_dev.quantile(0.05)
+        upper = recent_dev.quantile(0.95)
 
         def classify(dev: float | str | None) -> str | None:
             if dev is None or pd.isna(dev) or dev == "in progress":
                 return "in progress"
-            if isinstance(dev, str):  # <-- Defensive!
+            if isinstance(dev, str):
                 return dev
-            if dev > 5:
-                return "Extended"
-            elif dev < -5:
+            if dev > upper:
+                return "Overbought"
+            elif dev < lower:
                 return "Oversold"
             else:
                 return "Average"
-
 
         return TimeSeriesMetric(
             current=classify(safe_value(deviation, -1)),
@@ -362,6 +383,7 @@ class StockAnalyser:
             fourteen_days_ago=classify(safe_value(deviation, -3)),
             twentyone_days_ago=classify(safe_value(deviation, -4)),
         )
+
     
     def rsi_and_ma_daily(self) -> TimeSeriesMetric:
         close = self.df['Close']
