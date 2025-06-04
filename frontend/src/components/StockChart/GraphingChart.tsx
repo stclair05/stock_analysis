@@ -25,6 +25,7 @@ import {
   SignalSide,
   GraphingChartProps,
 } from "./types";
+import "./graphing-chart.css"; // <-- Add your custom styles here
 
 const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -627,200 +628,123 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
   }, [trendLines, showTrendLines]);
 
   return (
-    <div className="graphing-chart-popup">
+    <div className="graphing-chart-popup-modern">
       {/* Close Button Row */}
-      <div
-        className="d-flex justify-content-end"
-        style={{ padding: "8px 16px 0 16px" }}
-      >
-        <button
-          className="btn"
-          style={{
-            border: "none",
-            background: "transparent",
-            padding: 4,
-            borderRadius: 7,
-            marginTop: 2,
-            cursor: "pointer",
-          }}
-          onClick={onClose}
-          title="Close"
-        >
-          <X size={20} color="#e91e63" />
+      <div className="close-row">
+        <button className="close-btn" onClick={onClose} title="Close">
+          <X size={20} />
         </button>
       </div>
 
       {/* Main Controls Row */}
-      <div
-        className="d-flex align-items-center justify-content-between mb-2"
-        style={{
-          gap: 12,
-          padding: "10px 32px 6px 32px",
-          borderBottom: "1.5px solid #e5e7eb",
-          background: "#fafbfc",
-          borderRadius: "0 0 16px 16px",
-          minHeight: 56,
-        }}
-      >
+      <div className="controls-row">
         {/* Toolbar */}
-        <div className="d-flex align-items-center gap-2">
+        <div className="toolbar">
           <button
-            onClick={() => toggleMode("trendline")}
-            className={`tool-button ${
-              drawingModeRef.current === "trendline" ? "active" : ""
+            className={`tool-btn${
+              drawingModeRef.current === "trendline" ? " active" : ""
             }`}
             title="Trendline"
+            onClick={() => toggleMode("trendline")}
           >
-            <Ruler size={24} />
+            <Ruler size={20} />
           </button>
           <button
-            onClick={() => toggleMode("horizontal")}
-            className={`tool-button ${
-              drawingModeRef.current === "horizontal" ? "active" : ""
+            className={`tool-btn${
+              drawingModeRef.current === "horizontal" ? " active" : ""
             }`}
             title="Horizontal Line"
+            onClick={() => toggleMode("horizontal")}
           >
-            <Minus size={24} />
+            <Minus size={20} />
           </button>
           <button
-            onClick={() => toggleMode("sixpoint")}
-            className={`tool-button ${
-              drawingModeRef.current === "sixpoint" ? "active" : ""
+            className={`tool-btn${
+              drawingModeRef.current === "sixpoint" ? " active" : ""
             }`}
             title="6 Point Tool"
+            onClick={() => toggleMode("sixpoint")}
           >
             1→5
           </button>
           <button
-            onClick={resetChart}
-            className="tool-button"
+            className="tool-btn"
             title="Reload Chart"
+            onClick={resetChart}
           >
-            <RotateCcw size={24} />
+            <RotateCcw size={20} />
           </button>
-
           {selectedDrawingIndex !== null && (
             <button
-              className="btn btn-sm btn-danger"
+              className="ghost-btn danger"
               onClick={handleDeleteDrawing}
               title="Delete Selected Drawing"
             >
-              🗑️ Delete
+              <span role="img" aria-label="delete">
+                🗑️
+              </span>
             </button>
           )}
-
           {selectedDrawingIndex !== null &&
             drawings[selectedDrawingIndex]?.type === "line" && (
               <button
-                className="btn btn-sm btn-info"
+                className="ghost-btn info"
                 onClick={handleCopyDrawing}
                 title="Copy Selected Trendline"
               >
-                📋 Copy
+                <span role="img" aria-label="copy">
+                  📋
+                </span>
               </button>
             )}
         </div>
 
         {/* Period Toggle */}
-        <div className="btn-group d-flex align-items-center justify-content-center gap-2">
+        <div className="period-toggle">
           {["daily", "weekly", "monthly"].map((tf) => (
             <button
               key={tf}
               onClick={() => setTimeframe(tf as "daily" | "weekly" | "monthly")}
-              className={`btn btn-sm ${
-                timeframe === tf ? "btn-primary" : "btn-outline-secondary"
-              }`}
-              style={{ fontSize: "1.2rem", minWidth: "100px" }}
+              className={`period-btn${timeframe === tf ? " active" : ""}`}
             >
               {tf.toUpperCase()}
             </button>
           ))}
         </div>
 
-        {/* Checkboxes for signals with labels */}
-        <div className="d-flex align-items-end gap-3">
-          {/* TrendInvestorPro: D: BUY/SELL */}
-          <div className="d-flex flex-column align-items-center">
-            <label
-              className="d-flex align-items-center gap-1"
-              style={{ fontWeight: 500 }}
-            >
+        {/* Checkboxes for signals */}
+        <div className="signal-toggles">
+          {["trendinvestorpro", "stclair", "northstar"].map((name) => (
+            <label className="signal-label" key={name}>
               <input
                 type="checkbox"
-                checked={selectedStrategy === "trendinvestorpro"}
+                checked={selectedStrategy === name}
                 onChange={() =>
                   setSelectedStrategy(
-                    selectedStrategy === "trendinvestorpro"
-                      ? null
-                      : "trendinvestorpro"
+                    selectedStrategy === name ? null : (name as any)
                   )
                 }
-                style={{ marginRight: 4 }}
               />
-              TrendInvestorPro
+              <span>{name.replace(/^\w/, (c) => c.toUpperCase())}</span>
             </label>
-          </div>
-          {/* StClair: W: BUY/SELL */}
-          <div className="d-flex flex-column align-items-center">
-            <label
-              className="d-flex align-items-center gap-1"
-              style={{ fontWeight: 500 }}
-            >
-              <input
-                type="checkbox"
-                checked={selectedStrategy === "stclair"}
-                onChange={() =>
-                  setSelectedStrategy(
-                    selectedStrategy === "stclair" ? null : "stclair"
-                  )
-                }
-                style={{ marginRight: 4 }}
-              />
-              StClair
-            </label>
-          </div>
-          {/* Northstar: D: | W: | M: */}
-          <div
-            className="d-flex flex-column align-items-center"
-            style={{ marginLeft: "2.2rem" }}
-          >
-            <label
-              className="d-flex align-items-center gap-1"
-              style={{ fontWeight: 500 }}
-            >
-              <input
-                type="checkbox"
-                checked={selectedStrategy === "northstar"}
-                onChange={() =>
-                  setSelectedStrategy(
-                    selectedStrategy === "northstar" ? null : "northstar"
-                  )
-                }
-                style={{ marginRight: 4 }}
-              />
-              NorthStar
-            </label>
-          </div>
+          ))}
         </div>
 
         {/* Latest current signal */}
         {selectedStrategy && (
           <span
-            style={{
-              fontWeight: 900,
-              fontSize: "1.5rem",
-              color: isUnavailable(selectedStrategy, timeframe)
-                ? "#232323"
-                : signalSummary[selectedStrategy][timeframe] === "BUY"
-                ? "#009944"
-                : signalSummary[selectedStrategy][timeframe] === "SELL"
-                ? "#e91e63"
-                : "#aaa",
-              opacity: isUnavailable(selectedStrategy, timeframe) ? 0.5 : 1,
-              minWidth: 64,
-              marginLeft: 12,
-              letterSpacing: 1.2,
-            }}
+            className={
+              "main-signal" +
+              (isUnavailable(selectedStrategy, timeframe)
+                ? " unavailable"
+                : "") +
+              (signalSummary[selectedStrategy][timeframe] === "BUY"
+                ? " buy"
+                : "") +
+              (signalSummary[selectedStrategy][timeframe] === "SELL"
+                ? " sell"
+                : "")
+            }
           >
             {isUnavailable(selectedStrategy, timeframe)
               ? "—"
@@ -829,150 +753,54 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
         )}
 
         <button
-          className="btn btn-sm"
-          style={{
-            border: "none",
-            background: "transparent",
-            marginLeft: 5,
-            padding: 3,
-            outline: "none",
-            boxShadow: "none",
-            cursor: "pointer",
-          }}
+          className="eye-btn"
           onClick={() => setShowSummary((v) => !v)}
           title={showSummary ? "Hide Summary" : "Show Summary"}
         >
-          {showSummary ? (
-            <EyeOff size={19} color="#2563eb" />
-          ) : (
-            <Eye size={19} color="#2563eb" />
-          )}
+          {showSummary ? <EyeOff size={19} /> : <Eye size={19} />}
         </button>
       </div>
 
       {/* Main chart area */}
-      <div
-        ref={chartContainerRef}
-        style={{
-          width: "100%",
-          height: "100%",
-          border: "1.5px solid #ddd",
-          borderRadius: "12px",
-          boxShadow: "0 2px 12px rgba(0,0,0,0.09)",
-          background: "#fff",
-        }}
-      />
+      <div ref={chartContainerRef} className="chart-area" />
 
-      {/* Checkboxes below the chart*/}
-      <div
-        className="mt-3 d-flex align-items-center gap-3"
-        style={{ fontSize: "1.1rem" }}
-      >
-        <input
-          type="checkbox"
-          id="show-overlaylines-checkbox"
-          checked={showOverlayLines}
-          onChange={() => setShowOverlayLines((v) => !v)}
-          style={{ marginLeft: 24, marginRight: 8 }}
-        />
-        <label
-          htmlFor="show-overlaylines-checkbox"
-          style={{ cursor: "pointer" }}
-        >
-          Show Overlay Lines
+      {/* Toggles below the chart */}
+      <div className="toggles-row">
+        <label>
+          <input
+            type="checkbox"
+            checked={showOverlayLines}
+            onChange={() => setShowOverlayLines((v) => !v)}
+          />
+          <span>Show Overlay Lines</span>
         </label>
-        <input
-          type="checkbox"
-          id="show-trendlines-checkbox"
-          checked={showTrendLines}
-          onChange={() => setShowTrendLines((v) => !v)}
-          style={{ marginRight: 8 }}
-        />
-        <label htmlFor="show-trendlines-checkbox" style={{ cursor: "pointer" }}>
-          Show Trendlines
+        <label>
+          <input
+            type="checkbox"
+            checked={showTrendLines}
+            onChange={() => setShowTrendLines((v) => !v)}
+          />
+          <span>Show Trendlines</span>
         </label>
       </div>
 
-      {/* Summary of signals*/}
+      {/* Summary of signals */}
       {showSummary && (
-        <div
-          style={{
-            width: "100%",
-            margin: "28px auto 10px auto",
-            maxWidth: 570,
-          }}
-        >
-          <table
-            style={{
-              width: "100%",
-              borderCollapse: "separate",
-              borderSpacing: 0,
-              background: "#fff",
-              borderRadius: 16,
-              boxShadow: "0 2px 14px rgba(36,64,138,0.09)",
-              overflow: "hidden",
-              fontSize: "1.08rem",
-            }}
-          >
+        <div className="signal-summary-table-wrap">
+          <table className="signal-summary-table">
             <thead>
-              <tr style={{ background: "#f4f6f8" }}>
-                <th
-                  style={{
-                    padding: "12px 10px",
-                    fontWeight: 700,
-                    borderBottom: "2px solid #e5e7eb",
-                  }}
-                >
-                  Strategy
-                </th>
-                <th
-                  style={{
-                    padding: "12px 10px",
-                    fontWeight: 700,
-                    borderBottom: "2px solid #e5e7eb",
-                  }}
-                >
-                  Daily
-                </th>
-                <th
-                  style={{
-                    padding: "12px 10px",
-                    fontWeight: 700,
-                    borderBottom: "2px solid #e5e7eb",
-                  }}
-                >
-                  Weekly
-                </th>
-                <th
-                  style={{
-                    padding: "12px 10px",
-                    fontWeight: 700,
-                    borderBottom: "2px solid #e5e7eb",
-                  }}
-                >
-                  Monthly
-                </th>
+              <tr>
+                <th>Strategy</th>
+                <th>Daily</th>
+                <th>Weekly</th>
+                <th>Monthly</th>
               </tr>
             </thead>
             <tbody>
               {(["trendinvestorpro", "stclair", "northstar"] as const).map(
                 (strat, i) => (
-                  <tr
-                    key={strat}
-                    style={{
-                      background: i % 2 === 1 ? "#fafbfc" : "#fff",
-                      borderBottom: "1.5px solid #f0f2f4",
-                    }}
-                  >
-                    <td
-                      style={{
-                        fontWeight: 600,
-                        padding: "10px 10px",
-                        textTransform: "capitalize",
-                      }}
-                    >
-                      {strat}
-                    </td>
+                  <tr key={strat}>
+                    <td>{strat.charAt(0).toUpperCase() + strat.slice(1)}</td>
                     {(["daily", "weekly", "monthly"] as const).map((tf) => {
                       const unavailable = isUnavailable(strat, tf);
                       let content;
@@ -991,11 +819,10 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
                         <td
                           key={tf}
                           style={{
-                            textAlign: "center",
-                            fontWeight: 700,
-                            padding: "10px 0",
                             color,
                             opacity: unavailable ? 0.7 : 1,
+                            textAlign: "center",
+                            fontWeight: 700,
                           }}
                         >
                           <span>{content ?? "-"}</span>

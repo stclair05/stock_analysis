@@ -1,0 +1,208 @@
+.graphing-chart-popup-modern {
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 0;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  min-height: unset;
+  max-height: none !important;
+  position: static;
+  height: auto !important;
+  overflow: visible !important;
+}
+
+.close-row {
+  padding: 6px 16px 0 0;
+  text-align: right;
+}
+.close-btn {
+  background: none;
+  border: none;
+  color: #e91e63;
+  border-radius: 50%;
+  transition: background 0.12s;
+  padding: 6px;
+  cursor: pointer;
+}
+.close-btn:hover {
+  background: #f6f2f8;
+}
+.controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  background: #fff;
+  border-bottom: 1.5px solid #eceef1;
+  border-radius: 0 0 16px 16px;
+  min-height: 60px;
+  padding: 16px 36px 12px 36px;
+  box-shadow: 0 0.5px 2px rgba(120, 130, 140, 0.04);
+}
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.tool-btn,
+.ghost-btn,
+.eye-btn {
+  background: none;
+  border: none;
+  color: #222;
+  border-radius: 9px;
+  padding: 6px 7px;
+  font-size: 1.15rem;
+  transition: background 0.13s, box-shadow 0.13s;
+  cursor: pointer;
+}
+.tool-btn.active,
+.tool-btn:hover,
+.ghost-btn:hover,
+.eye-btn:hover {
+  background: #f6f7fa;
+  box-shadow: 0 1px 4px rgba(140, 150, 170, 0.08);
+}
+.ghost-btn.danger {
+  color: #e91e63;
+}
+.ghost-btn.info {
+  color: #0096db;
+}
+.period-toggle {
+  display: flex;
+  gap: 7px;
+}
+.period-btn {
+  background: none;
+  border: 1.3px solid #d0d5df;
+  color: #353f4f;
+  border-radius: 7px;
+  padding: 6px 18px;
+  min-width: 85px;
+  font-size: 1.08rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  transition: background 0.14s, border 0.13s;
+}
+.period-btn.active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+.signal-toggles {
+  display: flex;
+  align-items: end;
+  gap: 21px;
+}
+.signal-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 500;
+  font-size: 1.06rem;
+}
+.signal-label input[type="checkbox"] {
+  accent-color: #2563eb;
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+}
+.main-signal {
+  font-weight: 900;
+  font-size: 1.7rem;
+  letter-spacing: 1.1px;
+  min-width: 70px;
+  margin-left: 22px;
+  display: inline-block;
+  color: #222;
+  background: #f6f8fa;
+  border-radius: 9px;
+  padding: 2.5px 18px 2.5px 14px;
+  box-shadow: 0 1.5px 9px rgba(60, 70, 90, 0.06);
+  transition: color 0.13s, background 0.13s;
+}
+.main-signal.buy {
+  color: #009944 !important;
+  background: #eaffef !important;
+}
+.main-signal.sell {
+  color: #e91e63 !important;
+  background: #fff0f5 !important;
+}
+
+.main-signal.unavailable {
+  color: #666;
+  background: #f5f5f7;
+  opacity: 0.5;
+}
+.eye-btn {
+  margin-left: 12px;
+  color: #2563eb;
+}
+.chart-area {
+  width: 100%;
+  height: 570px;
+  border-radius: 16px;
+  background: #fff;
+  border: 1.5px solid #e4e7ec;
+  box-shadow: 0 1.5px 14px rgba(36, 64, 138, 0.07);
+  margin: 10px 0 0 0;
+  overflow: visible;
+}
+.toggles-row {
+  margin: 40px 0 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  font-size: 1.08rem;
+  padding-left: 30px;
+  position: static;
+  z-index: 2;
+}
+.toggles-row label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.toggles-row input[type="checkbox"] {
+  accent-color: #2563eb;
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+}
+.signal-summary-table-wrap {
+  margin: 28px auto 10px auto;
+  max-width: 610px;
+  width: 100%;
+}
+.signal-summary-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 1.5px 13px rgba(36, 64, 138, 0.08);
+  overflow: hidden;
+  font-size: 1.1rem;
+  margin: 0 auto;
+}
+.signal-summary-table thead tr {
+  background: #f6f7fb;
+}
+.signal-summary-table th,
+.signal-summary-table td {
+  padding: 13px 13px;
+  font-weight: 600;
+  border-bottom: 2px solid #eceef1;
+  text-align: center;
+}
+.signal-summary-table td {
+  border-bottom: 1.2px solid #e6e7ea;
+}
+.signal-summary-table tr:last-child td {
+  border-bottom: none;
+}
