@@ -548,6 +548,15 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
             { key: "ma_12", color: "#00c853", label: "12MA" },
             { key: "ma_36", color: "#d500f9", label: "36MA" },
           ];
+        } else if (selectedStrategy === "stclairlongterm") {
+          maConfigs = [
+            { key: "supertrend_up", color: "#26a69a", label: "Supertrend Up" }, // Greenish
+            {
+              key: "supertrend_down",
+              color: "#ef5350",
+              label: "Supertrend Down",
+            }, // Red
+          ];
         }
 
         // Add each MA as a line series

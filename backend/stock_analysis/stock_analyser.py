@@ -792,6 +792,7 @@ class StockAnalyser:
             overlays["ma_20d"] = self.get_ma_series(20, timeframe="daily")    # StClair
             overlays["dma_200"] = self.get_ma_series(200, timeframe="daily")  # TrendInvestorPro
             overlays["ma_5d"] = self.get_ma_series(5, timeframe="daily")      # TrendInvestorPro
+
         elif timeframe == "weekly":
             index = self.weekly_df.index
             # -- Daily MAs (e.g. 20DMA, 200DMA, 5DMA) need to be computed on daily closes then resampled to weekly --
@@ -805,6 +806,8 @@ class StockAnalyser:
             overlays["ma_20d"] = to_series(ma_20_daily)
             overlays["dma_200"] = to_series(ma_200_daily)
             overlays["ma_5d"] = to_series(ma_5_daily)
+            # StClairLongterm
+            overlays.update(self.get_supertrend_lines())
         elif timeframe == "monthly":
             index = self.monthly_df.index
             # -- Daily MAs resampled to monthly --
