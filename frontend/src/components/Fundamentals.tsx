@@ -77,6 +77,19 @@ function getColor(label: string, value: number | null): string {
   }
 }
 
+function formatNumber(value: number | null | undefined): string {
+  if (value == null) return "N/A";
+  const absValue = Math.abs(value);
+  const sign = value < 0 ? "-" : "";
+  if (absValue >= 1_000_000_000)
+    return `${sign}$${(absValue / 1_000_000_000).toFixed(1)}B`;
+  if (absValue >= 1_000_000)
+    return `${sign}$${(absValue / 1_000_000).toFixed(1)}M`;
+  if (absValue >= 1_000) return `${sign}$${(absValue / 1_000).toFixed(1)}K`;
+  // For smaller values, add commas
+  return `${sign}$${absValue.toLocaleString()}`;
+}
+
 type FinancialMetrics = {
   ticker: string;
   revenue: number | null;
@@ -160,18 +173,8 @@ const Fundamentals = ({ stockSymbol }: Props) => {
       </h2>
       <table className="table table-striped metrics-table">
         <tbody>
-          {renderRow(
-            "Revenue",
-            data.revenue
-              ? `$${(data.revenue / 1_000_000_000).toFixed(1)}B`
-              : "N/A"
-          )}
-          {renderRow(
-            "Net Income",
-            data.net_income
-              ? `$${(data.net_income / 1_000_000_000).toFixed(1)}B`
-              : "N/A"
-          )}
+          {renderRow("Revenue", formatNumber(data.revenue))}
+          {renderRow("Net Income", formatNumber(data.net_income))}
           {renderRow("Dividend Yield", data.dividend_yield, "%")}
           {renderRow("P/E Ratio", data.pe_ratio)}
           {renderRow("P/S Ratio", data.ps_ratio)}

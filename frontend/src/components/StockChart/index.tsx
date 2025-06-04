@@ -11,6 +11,7 @@ import {
   SeriesOptionsCommon,
   HistogramSeries,
   AreaSeries,
+  PriceScaleMode,
 } from "lightweight-charts";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -565,6 +566,9 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       wickDownColor: "#ef5350",
     });
     candleSeriesRef.current = candleSeries;
+    chart
+      .priceScale("right")
+      .applyOptions({ mode: PriceScaleMode.Logarithmic });
 
     // --- 9. Visible range sync helper ---
     function safeSetVisibleRange(chart: IChartApi | null, range: any) {

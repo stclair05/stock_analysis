@@ -134,58 +134,47 @@ class FMPFundamentals:
 
 
     def fcf_yield(self) -> Optional[float]:
-        # Try to use FMP's freeCashFlowYield if it exists, else calculate
-        fcf_yield = self.latest_ratios.get("freeCashFlowYield")
-        if fcf_yield is not None:
-            return round(fcf_yield*100, 2)
-        # else fallback to manual
         try:
-            cf = self.latest_cashflow
-            quote = self.quote_data[0] if self.quote_data else {}
-            ocf = cf.get("operatingCashFlow")
-            capex = cf.get("capitalExpenditure")
-            mktcap = quote.get("marketCap")
-            if None in (ocf, capex, mktcap) or mktcap == 0:
+            fcf_per_share = self.latest_ratios.get("freeCashFlowPerShare")
+            price = self.profile_data[0].get("price") if self.profile_data else None
+            if fcf_per_share is None or price in (None, 0):
                 return None
-            fcf = ocf - abs(capex)
-            return round((fcf / mktcap) * 100, 2)
-        except:
+            return round((fcf_per_share / price) * 100, 2)
+        except Exception as e:
+            print("fcf_yield error:", e)
             return None
+
 
     def fcf_growth(self, periods: int = 3) -> Optional[float]:
         """
-        Compound annual growth rate for FCF over N periods (annual preferred).
-        Returns None if not enough valid (positive, non-null) FCF values.
+        Calculates CAGR of FCF per Share over N annual periods.
         """
         try:
-            # Try annual first
-            annual_url = f"{FMP_BASE_URL}/cash-flow-statement/{self.symbol}?period=annual&apikey={FMP_API_KEY}"
-            annual_data = requests.get(annual_url, timeout=5).json()
-            print("=== Annual FCFs ===", [entry.get("freeCashFlow") for entry in annual_data])
-            fcf_list = [entry.get("freeCashFlow") for entry in annual_data if entry.get("freeCashFlow") is not None]
-            if len(fcf_list) > periods:
-                start, end = fcf_list[periods], fcf_list[0]
-                print(f"Annual FCF start: {start}, end: {end}")
-                if start is None or end is None or start <= 0 or end <= 0:
-                    return None
-                cagr = (end / start) ** (1 / periods) - 1
-                return round(cagr * 100, 2)
-            # Fallback to quarters
-            fcf_list = [entry.get("freeCashFlow") for entry in self.cashflow_data if entry.get("freeCashFlow") is not None]
-            print("=== Quarterly FCFs ===", fcf_list)
-            if len(fcf_list) > periods:
-                start, end = fcf_list[periods], fcf_list[0]
-                print(f"Quarterly FCF start: {start}, end: {end}")
-                if start is None or end is None or start <= 0 or end <= 0:
-                    return None
-                cagr = (end / start) ** (1 / periods) - 1
-                annualized = ((1 + cagr) ** 4) - 1  # Annualize quarterly
-                return round(annualized * 100, 2)
-            return None
-        except Exception as e:
-            print("FCF growth error:", e)
-            return None
+            url = f"{FMP_BASE_URL}/ratios/{self.symbol}?period=annual&apikey={FMP_API_KEY}"
+            data = requests.get(url, timeout=5).json()
 
+            if not isinstance(data, list):
+                print(f"[FCF GROWTH DEBUG] Unexpected API response: {data}")
+                return None
+
+            fcfps_list = [entry.get("freeCashFlowPerShare") for entry in data if entry.get("freeCashFlowPerShare") is not None]
+            print(f"[FCF GROWTH DEBUG] FCFPS Raw List: {fcfps_list}")
+
+            if len(fcfps_list) <= periods:
+                print(f"[FCF GROWTH DEBUG] Not enough data points: found {len(fcfps_list)} needed {periods+1}")
+                return None
+
+            start, end = fcfps_list[periods], fcfps_list[0]
+            if start <= 0 or end <= 0:
+                print(f"[FCF GROWTH DEBUG] Invalid start/end values: start={start}, end={end}")
+                return None
+
+            cagr = (end / start) ** (1 / periods) - 1
+            print(f"[FCF GROWTH DEBUG] CAGR: {cagr:.4f}")
+            return round(cagr * 100, 2)
+        except Exception as e:
+            print("fcf_growth error:", e)
+            return None
 
 
 
@@ -200,20 +189,26 @@ class FMPFundamentals:
 
     def rule_of_40(self) -> Optional[float]:
         try:
-            now, prev = self.income_data[0], self.income_data[1]
-            rev_now, rev_prev = now.get("revenue"), prev.get("revenue")
-            ni_now = now.get("netIncome")
-            print(f"rule_of_40: rev_now={rev_now}, rev_prev={rev_prev}, ni_now={ni_now}")
-            if None in (rev_now, rev_prev, ni_now) or rev_prev is None or rev_prev <= 0 or rev_now is None or rev_now == 0:
+            # 1. Get trailing 12-month revenue growth (or use 3Y CAGR)
+            annual_data = self._fetch_endpoint("income-statement")  # Already fetched
+            if len(annual_data) < 2:
+                return None
+            rev_now = annual_data[0].get("revenue")
+            rev_prev = annual_data[1].get("revenue")
+            if None in (rev_now, rev_prev) or rev_prev <= 0:
                 return None
             growth = ((rev_now - rev_prev) / rev_prev) * 100
-            margin = (ni_now / rev_now) * 100
-            print(f"rule_of_40: growth={growth}, margin={margin}")
-            return round(growth + margin, 2)
+
+            # 2. Use FCF margin instead of Net Income margin
+            fcf_margin = self.fcf_margin()
+            if fcf_margin is None:
+                return None
+
+            print(f"[Rule of 40] rev_now={rev_now}, rev_prev={rev_prev}, growth={growth}, fcf_margin={fcf_margin}")
+            return round(growth + fcf_margin, 2)
         except Exception as e:
             print("Rule of 40 error:", e)
             return None
-
 
         
     @staticmethod

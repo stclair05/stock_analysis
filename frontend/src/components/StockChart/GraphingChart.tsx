@@ -9,6 +9,7 @@ import {
   SeriesMarker,
   ISeriesMarkersPluginApi,
   LineSeries,
+  PriceScaleMode,
 } from "lightweight-charts";
 import { useEffect, useRef, useState } from "react";
 import { useMainChartData } from "./useMainChartData";
@@ -311,6 +312,9 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
 
     // Initialize the strategy markers plugin
     strategyMarkersPluginRef.current = createSeriesMarkers(series, []);
+    chart
+      .priceScale("right")
+      .applyOptions({ mode: PriceScaleMode.Logarithmic });
 
     // Resize observer for responsive width
     const resizeObserver = new ResizeObserver((entries) => {
