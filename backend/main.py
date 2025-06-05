@@ -1,3 +1,4 @@
+from datetime import datetime
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import requests
@@ -405,3 +406,44 @@ def get_projection_arrows(symbol: str, timeframe: str = Query("weekly")):
 
     result = find_downtrend_lines(df)
     return result
+
+
+@app.get("/api/backtest_signals_{timeframe}/{symbol}")
+def backtest_signals(
+    timeframe: str, 
+    symbol: str,
+    start: str = Query(..., description="Start date DDMMYYYY"),
+    end: str = Query(..., description="End date DDMMYYYY"),
+    strategy: str = Query("northstar")
+):
+    def parse_date(d: str) -> datetime:
+        return datetime.strptime(d, "%d%m%Y")
+    start_dt = parse_date(start)
+    end_dt = parse_date(end)
+
+    analyser = StockAnalyser(symbol)
+
+    # No dataframe filtering by date here!
+
+    # Get all signals
+    if strategy == "trendinvestorpro":
+        markers = analyser.get_trendinvestorpro_signals(timeframe)
+    elif strategy == "stclair":
+        markers = analyser.get_stclair_signals(timeframe)
+    elif strategy == "northstar":
+        markers = analyser.get_northstar_signals(timeframe)
+    elif strategy == "stclairlongterm":
+        markers = analyser.get_stclairlongterm_signals(timeframe)
+    else:
+        return {"error": f"Unknown strategy: {strategy}"}
+
+    # Filter markers by date
+    start_ts = int(start_dt.timestamp())
+    end_ts = int(end_dt.timestamp())
+    filtered_markers = [
+        m for m in markers if start_ts <= m["time"] <= end_ts
+    ]
+
+    print("Filtered markers:", filtered_markers)
+    results = analyser.backtest_signal_markers(filtered_markers)
+    return results

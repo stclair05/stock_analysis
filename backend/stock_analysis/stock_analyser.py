@@ -1287,3 +1287,43 @@ class StockAnalyser:
                 in_position = False
 
         return markers
+
+
+    def backtest_signal_markers(self, markers: list[dict]) -> dict:
+        """
+        Given a list of {time, price, side, label}, pairs ENTRY/EXIT and computes stats.
+        Returns:
+            - trades: list of {entry_time, entry_price, exit_time, exit_price, profit}
+            - stats: number of trades, profitable trades, total profit, total loss, net profit
+        """
+        trades = []
+        entry = None
+
+        for m in markers:
+            if m['side'] == 'buy':
+                entry = m
+            elif m['side'] == 'sell' and entry is not None:
+                profit = m['price'] - entry['price']
+                trades.append({
+                    "entry_time": entry['time'],
+                    "entry_price": entry['price'],
+                    "exit_time": m['time'],
+                    "exit_price": m['price'],
+                    "profit": profit
+                })
+                entry = None  # reset for next trade
+
+        num_trades = len(trades)
+        profitable_trades = sum(1 for t in trades if t['profit'] > 0)
+        total_profit = sum(t['profit'] for t in trades if t['profit'] > 0)
+        total_loss = sum(t['profit'] for t in trades if t['profit'] < 0)
+        net_profit = total_profit + total_loss
+
+        return {
+            "num_trades": num_trades,
+            "profitable_trades": profitable_trades,
+            "total_profit": total_profit,
+            "total_loss": total_loss,
+            "net_profit": net_profit,
+            "trades": trades,
+        }
