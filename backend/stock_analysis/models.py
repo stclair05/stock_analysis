@@ -71,20 +71,59 @@ class ElliottWaveScenariosResponse(BaseModel):
 
 class FinancialMetrics(BaseModel):
     ticker: str
-    revenue: Optional[float]
-    net_income: Optional[float]
-    dividend_yield: Optional[float]
-    pe_ratio: Optional[float]
-    ps_ratio: Optional[float]
-    beta: Optional[float]
-    fcf_yield: Optional[float]
-    fcf_growth: Optional[float]
-    fcf_margin: Optional[float]
-    yield_plus_growth: Optional[float]
-    roce: Optional[float]
-    wacc: Optional[float]
-    roce_minus_wacc: Optional[float]
-    cash_conversion: Optional[float]
-    rule_of_40: Optional[float]
-    gross_margin: Optional[float]
-    sortino_ratio: Optional[float]
+    as_of_date: Optional[str] = None
+    
+    # Revenue
+    revenue_quarter: Optional[float]
+    revenue_annual: Optional[float]
+
+    # Net Income
+    net_income_quarter: Optional[float]
+    net_income_annual: Optional[float]
+
+    # Dividend Yield
+    dividend_yield_quarter: Optional[float]
+    dividend_yield_annual: Optional[float]
+
+    # PE Ratio
+    pe_ratio_quarter: Optional[float]
+    pe_ratio_annual: Optional[float]
+
+    # PS Ratio
+    ps_ratio_quarter: Optional[float]
+    ps_ratio_annual: Optional[float]
+
+    # FCF Margin
+    fcf_margin_quarter: Optional[float]
+    fcf_margin_annual: Optional[float]
+
+    # FCF Yield
+    fcf_yield_quarter: Optional[float]
+    fcf_yield_annual: Optional[float]
+
+    # FCF Growth (annual only, as discussed)
+    fcf_growth_annual: Optional[float]
+
+    # ROCE
+    roce_quarter: Optional[float]
+    roce_annual: Optional[float]
+
+    # WACC
+    wacc_quarter: Optional[float]
+    wacc_annual: Optional[float]
+
+    # ROCE - WACC
+    roce_minus_wacc_quarter: Optional[float]
+    roce_minus_wacc_annual: Optional[float]
+
+    # Cash Conversion
+    cash_conversion_quarter: Optional[float]
+    cash_conversion_annual: Optional[float]
+
+    # Rule of 40
+    rule_of_40_quarter: Optional[float]
+    rule_of_40_annual: Optional[float]
+
+    # Gross Margin
+    gross_margin_quarter: Optional[float]
+    gross_margin_annual: Optional[float]

@@ -86,22 +86,18 @@ def get_portfolio_live_data():
     except Exception as e:
         return {"error": str(e)}
 
-def get_cached_fundamentals(symbol: str, ttl: int = 900):
-    symbol = symbol.upper()
-    now = time()
-    if symbol in _fundamentals_cache:
-        fundamentals, timestamp = _fundamentals_cache[symbol]
-        if now - timestamp < ttl:
-            return fundamentals
-    fundamentals = FMPFundamentals(symbol)
-    _fundamentals_cache[symbol] = (fundamentals, now)
-    return fundamentals
-
 @app.get("/fmp_financials/{symbol}", response_model=FinancialMetrics)
 async def get_fmp_financials(symbol: str):
     try:
         fundamentals = FMPFundamentals(symbol)
-        return fundamentals.get_financial_metrics()
+        metrics = fundamentals.get_financial_metrics()
+        # Grab the latest quarterly income statement date (or use another source if you prefer)
+        as_of_date = fundamentals.income_data[0].get("date") if fundamentals.income_data else None
+        # Convert metrics to dict
+        metrics_dict = metrics.model_dump() if hasattr(metrics, "model_dump") else metrics.dict()
+        # Add the as_of_date field
+        metrics_dict["as_of_date"] = as_of_date
+        return JSONResponse(metrics_dict)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
