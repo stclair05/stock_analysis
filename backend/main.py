@@ -434,6 +434,8 @@ def backtest_signals(
         markers = analyser.get_northstar_signals(timeframe)
     elif strategy == "stclairlongterm":
         markers = analyser.get_stclairlongterm_signals(timeframe)
+    elif strategy == "new_signal":
+        markers = analyser.get_mace_40w_signals()
     else:
         return {"error": f"Unknown strategy: {strategy}"}
 

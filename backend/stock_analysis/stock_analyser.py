@@ -1327,3 +1327,73 @@ class StockAnalyser:
             "net_profit": net_profit,
             "trades": trades,
         }
+    
+    def get_mace_40w_signals(self) -> list[dict]:
+        df_weekly = self.weekly_df
+        if len(df_weekly) < 60:
+            print("Not enough data (less than 60 bars).")
+            return []
+
+        close = df_weekly['Close']
+        s = close.rolling(4).mean()
+        m = close.rolling(13).mean()
+        l = close.rolling(26).mean()
+        mace_signals = classify_mace_signal(s, m, l)
+
+        ma_40 = close.rolling(40).mean()
+        slope = ma_40.diff()
+        fortyw_signals = classify_40w_status(close, ma_40, slope)
+
+        markers = []
+        in_position = False
+
+        for idx in range(len(df_weekly)):
+            if idx < 41:
+                continue
+
+            date = df_weekly.index[idx]
+
+            mace_now = mace_signals.iloc[idx]
+            mace_prev = mace_signals.iloc[idx - 1]
+
+            status_now = fortyw_signals.iloc[idx]
+            status_prev = fortyw_signals.iloc[idx - 1]
+
+            entry_cond = (
+                ((mace_now in ['U2', 'U3']) or
+                (status_now == "Above Rising MA ++")) and
+                ((mace_prev in ['U1', 'U2', 'D1']) or
+                (status_prev in ["Above Rising MA ++", "Below Rising MA -+"]))
+            )
+
+
+            exit_cond = (
+                (mace_now not in ['U2', 'U3']) or
+                (status_now != "Above Rising MA ++")
+            )
+
+            price = close.iloc[idx]
+
+            if entry_cond and not in_position:
+                print(f"--> Entry triggered on {date.date()} at price {price:.2f}")
+                markers.append({
+                    "time": int(pd.Timestamp(date).timestamp()),
+                    "price": price,
+                    "side": "buy",
+                    "label": "ENTRY"
+                })
+                in_position = True
+
+            elif exit_cond and in_position:
+                print(f"--> Exit triggered on {date.date()} at price {price:.2f}")
+                markers.append({
+                    "time": int(pd.Timestamp(date).timestamp()),
+                    "price": price,
+                    "side": "sell",
+                    "label": "EXIT"
+                })
+                in_position = False
+
+        print("Final markers:", markers)
+        return markers
+
