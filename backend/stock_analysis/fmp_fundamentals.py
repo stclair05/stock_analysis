@@ -1,292 +1,272 @@
 import os
 import requests
-import numpy as np
-import pandas as pd
-from datetime import datetime
-from dotenv import load_dotenv
-from typing import Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Optional
+from dotenv import load_dotenv
 from stock_analysis.models import FinancialMetrics
 
 load_dotenv()
-FMP_API_KEY = os.getenv("FMP_API_KEY", "DjcoHwCSKT4sHqpSVdLNBoxhaZTXTR0Q")
+FMP_API_KEY = os.getenv("FMP_API_KEY", "YOUR_KEY_HERE")
 FMP_BASE_URL = os.getenv("FMP_BASE_URL", "https://financialmodelingprep.com/api/v3")
 
 class FMPFundamentals:
     def __init__(self, symbol: str):
         self.symbol = symbol.upper()
-        self.ratios_data = self._fetch_ratios()
-        self.income_data = self._fetch_endpoint("income-statement")
-        self.cashflow_data = self._fetch_endpoint("cash-flow-statement")
-        self.balance_data = self._fetch_endpoint("balance-sheet-statement")
-        self.profile_data = self._fetch_endpoint("profile")
-        self.quote_data = self._fetch_endpoint("quote")
-        # FMP returns most recent quarter at [0]
-        self.latest_ratios = self.ratios_data[0] if self.ratios_data else {}
-        self.latest_income = self.income_data[0] if self.income_data else {}
-        self.latest_cashflow = self.cashflow_data[0] if self.cashflow_data else {}
-        self.latest_balance = self.balance_data[0] if self.balance_data else {}
+        endpoints = {
+            'ratios': f"{FMP_BASE_URL}/ratios/{self.symbol}?period=quarter&apikey={FMP_API_KEY}",
+            'ratios_annual': f"{FMP_BASE_URL}/ratios/{self.symbol}?period=annual&apikey={FMP_API_KEY}",
+            'income': f"{FMP_BASE_URL}/income-statement/{self.symbol}?period=quarter&apikey={FMP_API_KEY}",
+            'income_annual': f"{FMP_BASE_URL}/income-statement/{self.symbol}?period=annual&apikey={FMP_API_KEY}",
+            'cashflow': f"{FMP_BASE_URL}/cash-flow-statement/{self.symbol}?period=quarter&apikey={FMP_API_KEY}",
+            'cashflow_annual': f"{FMP_BASE_URL}/cash-flow-statement/{self.symbol}?period=annual&apikey={FMP_API_KEY}",
+            'balance': f"{FMP_BASE_URL}/balance-sheet-statement/{self.symbol}?period=quarter&apikey={FMP_API_KEY}",
+            'balance_annual': f"{FMP_BASE_URL}/balance-sheet-statement/{self.symbol}?period=annual&apikey={FMP_API_KEY}",
+            'profile': f"{FMP_BASE_URL}/profile/{self.symbol}?apikey={FMP_API_KEY}",
+            'quote': f"{FMP_BASE_URL}/quote/{self.symbol}?apikey={FMP_API_KEY}",
+        }
+        results = {}
+        with ThreadPoolExecutor() as executor:
+            future_map = {executor.submit(requests.get, url, timeout=5): key for key, url in endpoints.items()}
+            for future in as_completed(future_map):
+                key = future_map[future]
+                try:
+                    resp = future.result()
+                    resp.raise_for_status()
+                    results[key] = resp.json()
+                except Exception as e:
+                    print(f"Error fetching {key}: {e}")
+                    results[key] = []
+        # Store results for quarterly and annual
+        self.ratios_data = results['ratios']
+        self.ratios_annual = results['ratios_annual']
+        self.income_data = results['income']
+        self.income_annual = results['income_annual']
+        self.cashflow_data = results['cashflow']
+        self.cashflow_annual = results['cashflow_annual']
+        self.balance_data = results['balance']
+        self.balance_annual = results['balance_annual']
+        self.profile_data = results['profile']
+        self.quote_data = results['quote']
+        print("============ Ratios data (quarterly) ============")
+        print(self.ratios_data[:2])
+        print("============ Ratios data (annual) ===============")
+        print(self.ratios_annual[:2])
 
-        print("=== Raw ratios_data[0] ===")
-        print(self.latest_ratios)
-        print("=== Raw income_data[0] ===")
-        print(self.latest_income)
-        print("=== Raw cashflow_data[0] ===")
-        print(self.latest_cashflow)
-        print("=== Raw balance_data[0] ===")
-        print(self.latest_balance)
-        print("=== Raw profile_data[0] ===")
+        print("============ Income statement (quarterly) =======")
+        print(self.income_data[:2])
+        print("============ Income statement (annual) ==========")
+        print(self.income_annual[:2])
+
+        print("============ Cashflow statement (quarterly) =====")
+        print(self.cashflow_data[:2])
+        print("============ Cashflow statement (annual) ========")
+        print(self.cashflow_annual[:2])
+
+        print("============ Balance sheet (quarterly) ==========")
+        print(self.balance_data[:2])
+        print("============ Balance sheet (annual) =============")
+        print(self.balance_annual[:2])
+
+        print("============ Profile data =======================")
         print(self.profile_data[0] if self.profile_data else {})
+        print("============ Quote data =========================")
+        print(self.quote_data[0] if self.quote_data else {})
 
 
-    def _fetch_endpoint(self, endpoint: str):
-        url = f"{FMP_BASE_URL}/{endpoint}/{self.symbol}?period=quarter&apikey={FMP_API_KEY}"
-        try:
-            response = requests.get(url, timeout=5)
-            response.raise_for_status()
-            data = response.json()
-            return data if data else []
-        except Exception as e:
-            print(f"Error fetching {endpoint}: {e}")
-            return []
+    def _select(self, data, annual):
+        return data['annual'][0] if annual and data['annual'] else data['quarter'][0] if data['quarter'] else {}
 
-    def _fetch_ratios(self):
-        url = f"{FMP_BASE_URL}/ratios/{self.symbol}?period=quarter&apikey={FMP_API_KEY}"
-        try:
-            response = requests.get(url, timeout=5)
-            response.raise_for_status()
-            data = response.json()
-            return data if data else []
-        except Exception as e:
-            print(f"Error fetching ratios: {e}")
-            return []
+    # ----- Periodized Metrics -----
 
-    # --- Direct from ratios ---
-    def revenue(self): return self.latest_income.get("revenue")
-    def net_income(self): return self.latest_income.get("netIncome")
-    def dividend_yield(self): return self.latest_ratios.get("dividendYield")
-    def pe_ratio(self): return self.latest_ratios.get("priceEarningsRatio")
-    def ps_ratio(self): return self.latest_ratios.get("priceToSalesRatio")
-    def gross_margin(self): 
-        gm = self.latest_ratios.get("grossProfitMargin")
-        return round(gm*100, 2) if gm is not None else None
-    
-    def fcf_margin(self):
-        fcfm = self.latest_ratios.get("freeCashFlowMargin")
-        print(f"fcf_margin - FMP value: {fcfm}")
-        if fcfm is not None:
-            return round(fcfm * 100, 2)
-        try:
-            ocf = self.latest_cashflow.get("operatingCashFlow")
-            capex = self.latest_cashflow.get("capitalExpenditure")
-            revenue = self.latest_income.get("revenue")
-            print(f"fcf_margin - Manual: OCF={ocf}, CapEx={capex}, Revenue={revenue}")
-            if None in (ocf, capex, revenue) or revenue == 0:
-                return None
-            fcf = ocf - abs(capex)
-            return round((fcf / revenue) * 100, 2)
-        except Exception as e:
-            print("fcf_margin error:", e)
-            return None
+    def revenue(self, annual=False):
+        if annual:
+            return self.income_annual[0].get("revenue") if self.income_annual else None
+        else:
+            return self.income_data[0].get("revenue") if self.income_data else None
 
+    def net_income(self, annual=False):
+        if annual:
+            return self.income_annual[0].get("netIncome") if self.income_annual else None
+        else:
+            return self.income_data[0].get("netIncome") if self.income_data else None
 
-    def roce(self):
-        roce = self.latest_ratios.get("returnOnCapitalEmployed")
-        return round(roce*100, 2) if roce is not None else None
-    def beta(self):
-        if self.profile_data:
-            return self.profile_data[0].get("beta")
+    def dividend_yield(self, annual=False):
+        ratios = self.ratios_annual[0] if annual and self.ratios_annual else self.ratios_data[0] if self.ratios_data else {}
+        dy = ratios.get("dividendYield")
+        return round(dy * 100, 2) if dy is not None else None
+
+    def pe_ratio(self, annual=False):
+        # Use FMP's computed ratio (mainstream value)
+        ratios = (
+            self.ratios_annual[0] if annual and self.ratios_annual else
+            self.ratios_data[0] if self.ratios_data else {}
+        )
+        pe = ratios.get("priceEarningsRatio")
+        if pe is not None:
+            return round(pe, 2)
+        
+        # Fallback: use quote EPS (from FMP /quote endpoint)
+        price = self.profile_data[0].get("price") if self.profile_data else None
+        eps = self.quote_data[0].get("eps") if self.quote_data else None
+        if price is not None and eps not in (None, 0):
+            return round(price / eps, 2)
         return None
 
-    def wacc(self, rf: float = 0.04, erp: float = 0.05) -> Optional[float]:
-        try:
-            # Equity (market cap)
-            profile = self.profile_data[0] if self.profile_data else {}
-            market_cap = profile.get("mktCap") or profile.get("marketCap")
-            if not market_cap or market_cap <= 0:
-                return None
-            # Debt (short + long)
-            balance = self.latest_balance
-            debt = (balance.get("shortTermDebt") or 0) + (balance.get("longTermDebt") or 0)
-            # Beta
-            beta = profile.get("beta", self.beta())
-            if beta is None:
-                return None
-            # Cost of equity (CAPM)
-            cost_equity = rf + beta * erp
-            # Cost of debt (interest expense / total debt)
-            income = self.latest_income
-            interest = income.get("interestExpense") or 0
-            cost_debt = (abs(interest) / debt) if debt > 0 else 0
-            # Tax rate (income tax / pre-tax income)
+
+    def ps_ratio(self, annual=False):
+        ratios = self.ratios_annual[0] if annual and self.ratios_annual else self.ratios_data[0] if self.ratios_data else {}
+        ps = ratios.get("priceToSalesRatio")
+        if ps is not None:
+            return round(ps, 2)
+        # Fallback manual
+        price = self.profile_data[0].get("price") if self.profile_data else None
+        income = self.income_annual[0] if annual and self.income_annual else self.income_data[0] if self.income_data else {}
+        revenue = income.get("revenue")
+        shares_out = income.get("weightedAverageShsOut")
+        if None in (price, revenue, shares_out) or shares_out == 0:
+            return None
+        revenue_per_share = revenue / shares_out
+        return round(price / revenue_per_share, 2)
+
+    def gross_margin(self, annual=False):
+        ratios = self.ratios_annual[0] if annual and self.ratios_annual else self.ratios_data[0] if self.ratios_data else {}
+        gm = ratios.get("grossProfitMargin")
+        return round(gm * 100, 2) if gm is not None else None
+
+    def fcf_margin(self, annual=False):
+        ratios = self.ratios_annual[0] if annual and self.ratios_annual else self.ratios_data[0] if self.ratios_data else {}
+        fcfm = ratios.get("freeCashFlowMargin")
+        if fcfm is not None:
+            return round(fcfm * 100, 2)
+        # Manual fallback
+        cashflow = self.cashflow_annual[0] if annual and self.cashflow_annual else self.cashflow_data[0] if self.cashflow_data else {}
+        income = self.income_annual[0] if annual and self.income_annual else self.income_data[0] if self.income_data else {}
+        ocf = cashflow.get("operatingCashFlow")
+        capex = cashflow.get("capitalExpenditure")
+        revenue = income.get("revenue")
+        if None in (ocf, capex, revenue) or revenue == 0:
+            return None
+        fcf = ocf - abs(capex)
+        return round((fcf / revenue) * 100, 2)
+
+    def roce(self, annual=False):
+        ratios = self.ratios_annual[0] if annual and self.ratios_annual else self.ratios_data[0] if self.ratios_data else {}
+        roce = ratios.get("returnOnCapitalEmployed")
+        return round(roce * 100, 2) if roce is not None else None
+
+    def wacc(self, annual=False, rf: float = 0.04, erp: float = 0.05):
+        profile = self.profile_data[0] if self.profile_data else {}
+        market_cap = profile.get("mktCap") or profile.get("marketCap")
+        if not market_cap or market_cap <= 0:
+            return None
+        # Debt (short + long)
+        balance = self.balance_annual[0] if annual and self.balance_annual else self.balance_data[0] if self.balance_data else {}
+        debt = (balance.get("shortTermDebt") or 0) + (balance.get("longTermDebt") or 0)
+        beta = profile.get("beta")
+        if beta is None:
+            return None
+        cost_equity = rf + beta * erp
+        # Cost of debt (interest expense / total debt)
+        income = self.income_annual[0] if annual and self.income_annual else self.income_data[0] if self.income_data else {}
+        interest = income.get("interestExpense") or 0
+        cost_debt = (abs(interest) / debt) if debt > 0 else 0
+        # Tax rate (income tax / pre-tax income)
+        ratios = self.ratios_annual[0] if annual and self.ratios_annual else self.ratios_data[0] if self.ratios_data else {}
+        tax_rate = ratios.get("effectiveTaxRate")
+        if tax_rate is None:
             pretax = income.get("incomeBeforeTax")
             tax = income.get("incomeTaxExpense") or 0
             tax_rate = tax / pretax if pretax and pretax != 0 else 0
-            # Total capital
-            total = market_cap + debt
-            # WACC
-            wacc = (market_cap / total) * cost_equity + (debt / total) * cost_debt * (1 - tax_rate)
-            return round(wacc * 100, 2)
-        except Exception as e:
-            print("WACC error:", e)
+        tax_rate = max(0, min(tax_rate, 1))
+        total = market_cap + debt
+        wacc = (market_cap / total) * cost_equity + (debt / total) * cost_debt * (1 - tax_rate)
+        return round(wacc * 100, 2)
+
+    def fcf_yield(self, annual=False):
+        ratios = self.ratios_annual[0] if annual and self.ratios_annual else self.ratios_data[0] if self.ratios_data else {}
+        fcf_per_share = ratios.get("freeCashFlowPerShare")
+        price = self.profile_data[0].get("price") if self.profile_data else None
+        if fcf_per_share is None or price in (None, 0):
             return None
+        return round((fcf_per_share / price) * 100, 2)
 
-
-
-    def fcf_yield(self) -> Optional[float]:
-        try:
-            fcf_per_share = self.latest_ratios.get("freeCashFlowPerShare")
-            price = self.profile_data[0].get("price") if self.profile_data else None
-            if fcf_per_share is None or price in (None, 0):
-                return None
-            return round((fcf_per_share / price) * 100, 2)
-        except Exception as e:
-            print("fcf_yield error:", e)
+    def fcf_growth(self, periods: int = 3, annual=True):
+        # Always use annual for growth
+        data = self.ratios_annual
+        if not isinstance(data, list):
             return None
-
-
-    def fcf_growth(self, periods: int = 3) -> Optional[float]:
-        """
-        Calculates CAGR of FCF per Share over N annual periods.
-        """
-        try:
-            url = f"{FMP_BASE_URL}/ratios/{self.symbol}?period=annual&apikey={FMP_API_KEY}"
-            data = requests.get(url, timeout=5).json()
-
-            if not isinstance(data, list):
-                print(f"[FCF GROWTH DEBUG] Unexpected API response: {data}")
-                return None
-
-            fcfps_list = [entry.get("freeCashFlowPerShare") for entry in data if entry.get("freeCashFlowPerShare") is not None]
-            print(f"[FCF GROWTH DEBUG] FCFPS Raw List: {fcfps_list}")
-
-            if len(fcfps_list) <= periods:
-                print(f"[FCF GROWTH DEBUG] Not enough data points: found {len(fcfps_list)} needed {periods+1}")
-                return None
-
-            start, end = fcfps_list[periods], fcfps_list[0]
-            if start <= 0 or end <= 0:
-                print(f"[FCF GROWTH DEBUG] Invalid start/end values: start={start}, end={end}")
-                return None
-
-            cagr = (end / start) ** (1 / periods) - 1
-            print(f"[FCF GROWTH DEBUG] CAGR: {cagr:.4f}")
-            return round(cagr * 100, 2)
-        except Exception as e:
-            print("fcf_growth error:", e)
+        fcfps_list = [entry.get("freeCashFlowPerShare") for entry in data if entry.get("freeCashFlowPerShare") is not None]
+        if len(fcfps_list) <= periods:
             return None
-
-
-
-    def cash_conversion(self) -> Optional[float]:
-        try:
-            ocf = self.latest_cashflow.get("operatingCashFlow")
-            ni = self.latest_income.get("netIncome")
-            if ocf is None or ni in (None, 0): return None
-            return round(ocf / ni, 2)
-        except:
+        start, end = fcfps_list[periods], fcfps_list[0]
+        if start <= 0 or end <= 0:
             return None
+        cagr = (end / start) ** (1 / periods) - 1
+        return round(cagr * 100, 2)
 
-    def rule_of_40(self) -> Optional[float]:
-        try:
-            # 1. Get trailing 12-month revenue growth (or use 3Y CAGR)
-            annual_data = self._fetch_endpoint("income-statement")  # Already fetched
-            if len(annual_data) < 2:
+    def cash_conversion(self, annual=False):
+        cashflow = self.cashflow_annual[0] if annual and self.cashflow_annual else self.cashflow_data[0] if self.cashflow_data else {}
+        income = self.income_annual[0] if annual and self.income_annual else self.income_data[0] if self.income_data else {}
+        ocf = cashflow.get("operatingCashFlow")
+        ni = income.get("netIncome")
+        if ocf is None or ni in (None, 0):
+            return None
+        return round(ocf / ni, 2)
+
+    def rule_of_40(self, annual=False):
+        # Rule of 40 is only meaningful annually, but we provide a quarterly version too if wanted
+        if annual:
+            if len(self.income_annual) < 2:
                 return None
-            rev_now = annual_data[0].get("revenue")
-            rev_prev = annual_data[1].get("revenue")
+            rev_now = self.income_annual[0].get("revenue")
+            rev_prev = self.income_annual[1].get("revenue")
             if None in (rev_now, rev_prev) or rev_prev <= 0:
                 return None
             growth = ((rev_now - rev_prev) / rev_prev) * 100
-
-            # 2. Use FCF margin instead of Net Income margin
-            fcf_margin = self.fcf_margin()
-            if fcf_margin is None:
+            fcf_margin = self.fcf_margin(annual=True)
+        else:
+            if len(self.income_data) < 2:
                 return None
-
-            print(f"[Rule of 40] rev_now={rev_now}, rev_prev={rev_prev}, growth={growth}, fcf_margin={fcf_margin}")
-            return round(growth + fcf_margin, 2)
-        except Exception as e:
-            print("Rule of 40 error:", e)
+            rev_now = self.income_data[0].get("revenue")
+            rev_prev = self.income_data[1].get("revenue")
+            if None in (rev_now, rev_prev) or rev_prev <= 0:
+                return None
+            growth = ((rev_now - rev_prev) / rev_prev) * 100
+            fcf_margin = self.fcf_margin(annual=False)
+        if fcf_margin is None:
             return None
+        return round(growth + fcf_margin, 2)
 
-        
-    @staticmethod
-    def compute_sortino_ratio(price_history, risk_free_rate=0.04, period='monthly'):
-        """
-        price_history: List of dicts with at least 'date' and 'close' keys.
-        """
-        if not price_history or len(price_history) < 13:
-            return None
-        df = pd.DataFrame(price_history)
-        df['date'] = pd.to_datetime(df['date'])
-        df.set_index('date', inplace=True)
-        df = df.sort_index()
-
-        # Resample to month-end closes
-        monthly_closes = df['close'].resample('M').last().dropna()
-        if len(monthly_closes) < 13:
-            return None
-
-        returns = monthly_closes.pct_change().dropna()
-        if returns.empty:
-            return None
-
-        # Convert risk-free rate to monthly
-        rf_period = (1 + risk_free_rate) ** (1/12) - 1
-        excess_returns = returns - rf_period
-        annualized_return = (1 + returns.mean()) ** 12 - 1
-
-        # Downside deviation (below rf)
-        downside_returns = excess_returns[excess_returns < 0]
-        downside_deviation = np.sqrt((downside_returns ** 2).mean()) * np.sqrt(12)
-        if downside_deviation == 0 or np.isnan(downside_deviation):
-            return None
-
-        sortino = (annualized_return - risk_free_rate) / downside_deviation
-        return round(sortino, 3)
-
-    def price_history(self, period='1y'):
-        url = f"{FMP_BASE_URL}/historical-price-full/{self.symbol}?serietype=line&apikey={FMP_API_KEY}"
-        try:
-            data = requests.get(url, timeout=5).json()
-            return data.get('historical', [])
-        except Exception as e:
-            print(f"Error fetching price history: {e}")
-            return []
-
-    def sortino_ratio(self, risk_free_rate=0.04):
-        price_hist = self.price_history(period='3y')
-        return self.compute_sortino_ratio(price_hist, risk_free_rate=risk_free_rate)
-
-
-    # --- Sortino and other custom metrics can stay as before ---
-
+    # ----- API Output Aggregator -----
     def get_financial_metrics(self) -> FinancialMetrics:
-        fcf_yield = self.fcf_yield()
-        fcf_growth = self.fcf_growth()
-        roce = self.roce()
-        wacc = self.wacc()
-
+        # For each metric, provide both quarterly and annual versions
         return FinancialMetrics(
             ticker=self.symbol,
-            revenue=self.revenue(),
-            net_income=self.net_income(),
-            dividend_yield=round(self.dividend_yield(), 2) if self.dividend_yield() is not None else None,
-            pe_ratio=round(self.pe_ratio(),2),
-            ps_ratio=round(self.ps_ratio(), 2) if self.ps_ratio() is not None else None,
-            beta=self.beta(),
-            fcf_yield=fcf_yield,
-            fcf_growth=fcf_growth,
-            yield_plus_growth=round(fcf_yield + fcf_growth, 2)
-                if fcf_yield and fcf_growth else None,
-            fcf_margin=self.fcf_margin(),
-            roce=roce,
-            wacc=wacc,
-            roce_minus_wacc=round(roce - wacc, 2)
-                if roce and wacc else None,
-            cash_conversion=self.cash_conversion(),
-            rule_of_40=self.rule_of_40(),
-            gross_margin=self.gross_margin(),
-            sortino_ratio=self.sortino_ratio()  # Implement as before
+            revenue_quarter=self.revenue(False),
+            revenue_annual=self.revenue(True),
+            net_income_quarter=self.net_income(False),
+            net_income_annual=self.net_income(True),
+            dividend_yield_quarter=self.dividend_yield(False),
+            dividend_yield_annual=self.dividend_yield(True),
+            pe_ratio_quarter=self.pe_ratio(False),
+            pe_ratio_annual=self.pe_ratio(True),
+            ps_ratio_quarter=self.ps_ratio(False),
+            ps_ratio_annual=self.ps_ratio(True),
+            fcf_margin_quarter=self.fcf_margin(False),
+            fcf_margin_annual=self.fcf_margin(True),
+            fcf_yield_quarter=self.fcf_yield(False),
+            fcf_yield_annual=self.fcf_yield(True),
+            fcf_growth_annual=self.fcf_growth(annual=True), # only annual meaningful
+            roce_quarter=self.roce(False),
+            roce_annual=self.roce(True),
+            wacc_quarter=self.wacc(False),
+            wacc_annual=self.wacc(True),
+            roce_minus_wacc_quarter=(self.roce(False) - self.wacc(False)) if self.roce(False) and self.wacc(False) else None,
+            roce_minus_wacc_annual=(self.roce(True) - self.wacc(True)) if self.roce(True) and self.wacc(True) else None,
+            cash_conversion_quarter=self.cash_conversion(False),
+            cash_conversion_annual=self.cash_conversion(True),
+            rule_of_40_quarter=self.rule_of_40(False),
+            rule_of_40_annual=self.rule_of_40(True),
+            gross_margin_quarter=self.gross_margin(False),
+            gross_margin_annual=self.gross_margin(True)
         )

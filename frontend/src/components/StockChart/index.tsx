@@ -566,9 +566,6 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       wickDownColor: "#ef5350",
     });
     candleSeriesRef.current = candleSeries;
-    chart
-      .priceScale("right")
-      .applyOptions({ mode: PriceScaleMode.Logarithmic });
 
     // --- 9. Visible range sync helper ---
     function safeSetVisibleRange(chart: IChartApi | null, range: any) {

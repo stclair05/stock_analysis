@@ -90,25 +90,45 @@ function formatNumber(value: number | null | undefined): string {
   return `${sign}$${absValue.toLocaleString()}`;
 }
 
+const formatPercent = (value: number | null | undefined) =>
+  value != null ? `${Number(value).toFixed(2)}%` : "N/A";
+
+const greyed = (text: string) => (
+  <span className="text-secondary" style={{ opacity: 0.5 }}>
+    {text}
+  </span>
+);
+
 type FinancialMetrics = {
   ticker: string;
-  revenue: number | null;
-  net_income: number | null;
-  dividend_yield: number | null;
-  pe_ratio: number | null;
-  ps_ratio: number | null;
-  beta: number | null;
-  fcf_yield: number | null;
-  fcf_growth: number | null;
-  fcf_margin: number | null;
-  yield_plus_growth: number | null;
-  roce: number | null;
-  wacc: number | null;
-  roce_minus_wacc: number | null;
-  cash_conversion: number | null;
-  rule_of_40: number | null;
-  gross_margin: number | null;
-  sortino_ratio: number | null;
+  as_of_date?: string;
+  revenue_quarter: number | null;
+  revenue_annual: number | null;
+  net_income_quarter: number | null;
+  net_income_annual: number | null;
+  dividend_yield_quarter: number | null;
+  dividend_yield_annual: number | null;
+  pe_ratio_quarter: number | null;
+  pe_ratio_annual: number | null;
+  ps_ratio_quarter: number | null;
+  ps_ratio_annual: number | null;
+  fcf_margin_quarter: number | null;
+  fcf_margin_annual: number | null;
+  fcf_yield_quarter: number | null;
+  fcf_yield_annual: number | null;
+  fcf_growth_annual: number | null;
+  roce_quarter: number | null;
+  roce_annual: number | null;
+  wacc_quarter: number | null;
+  wacc_annual: number | null;
+  roce_minus_wacc_quarter: number | null;
+  roce_minus_wacc_annual: number | null;
+  cash_conversion_quarter: number | null;
+  cash_conversion_annual: number | null;
+  rule_of_40_quarter: number | null;
+  rule_of_40_annual: number | null;
+  gross_margin_quarter: number | null;
+  gross_margin_annual: number | null;
 };
 
 type Props = {
@@ -126,7 +146,7 @@ const Fundamentals = ({ stockSymbol }: Props) => {
     const fetchData = async () => {
       try {
         setError(null);
-        setLoading(true); // Start loading
+        setLoading(true);
         const res = await fetch(
           `http://localhost:8000/fmp_financials/${stockSymbol}`
         );
@@ -136,7 +156,7 @@ const Fundamentals = ({ stockSymbol }: Props) => {
       } catch (err: any) {
         setError(err.message || "Unexpected error");
       } finally {
-        setLoading(false); // Stop loading
+        setLoading(false);
       }
     };
 
@@ -145,17 +165,32 @@ const Fundamentals = ({ stockSymbol }: Props) => {
 
   const renderRow = (
     label: string,
-    value: number | string | null,
-    suffix = ""
+    qValue: number | null,
+    aValue: number | null,
+    formatter: (v: number | null | undefined) => string = (v) => String(v),
+    greyOutQuarter: boolean = false
   ) => {
-    const display =
-      value !== null && value !== undefined ? `${value}${suffix}` : "N/A";
-    const className =
-      typeof value === "number" ? getColor(label, value) : "text-secondary";
+    // FCF Growth: grey out quarter
+    const qDisplay = greyOutQuarter ? greyed("N/A") : formatter(qValue);
+    const aDisplay = formatter(aValue);
+    // Coloring for annual by default (you can also add quarterly coloring)
+    const aClass =
+      typeof aValue === "number" ? getColor(label, aValue) : "text-secondary";
+    const qClass =
+      greyOutQuarter || qValue == null
+        ? "text-secondary"
+        : typeof qValue === "number"
+        ? getColor(label, qValue)
+        : "text-secondary";
     return (
       <tr>
         <td>{label}</td>
-        <td className={className}>{display}</td>
+        <td className={qClass} style={{ minWidth: 90, textAlign: "center" }}>
+          {qDisplay}
+        </td>
+        <td className={aClass} style={{ minWidth: 90, textAlign: "center" }}>
+          {aDisplay}
+        </td>
       </tr>
     );
   };
@@ -168,28 +203,105 @@ const Fundamentals = ({ stockSymbol }: Props) => {
 
   return (
     <div className="table-responsive fade-in" style={{ width: "100%" }}>
+      {data.as_of_date && (
+        <div
+          style={{
+            fontStyle: "italic",
+            fontSize: "1em",
+            opacity: 0.6,
+            marginBottom: 8,
+          }}
+        >
+          as of {data.as_of_date}
+        </div>
+      )}
       <h2 className="mb-3">
         Fundamentals for <strong>{data.ticker}</strong>
       </h2>
       <table className="table table-striped metrics-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Quarterly</th>
+            <th>Annual</th>
+          </tr>
+        </thead>
         <tbody>
-          {renderRow("Revenue", formatNumber(data.revenue))}
-          {renderRow("Net Income", formatNumber(data.net_income))}
-          {renderRow("Dividend Yield", data.dividend_yield, "%")}
-          {renderRow("P/E Ratio", data.pe_ratio)}
-          {renderRow("P/S Ratio", data.ps_ratio)}
-          {renderRow("Beta", data.beta)}
-          {renderRow("FCF Yield", data.fcf_yield, "%")}
-          {renderRow("FCF Growth", data.fcf_growth, "%")}
-          {renderRow("Yield + Growth", data.yield_plus_growth, "%")}
-          {renderRow("FCF Margin", data.fcf_margin, "%")}
-          {renderRow("ROCE", data.roce, "%")}
-          {renderRow("WACC", data.wacc, "%")}
-          {renderRow("ROCE – WACC", data.roce_minus_wacc, "%")}
-          {renderRow("Cash Conversion Ratio", data.cash_conversion)}
-          {renderRow("Rule of 40 Score", data.rule_of_40, "%")}
-          {renderRow("Gross Margin", data.gross_margin, "%")}
-          {renderRow("Sortino Ratio", data.sortino_ratio)}
+          {renderRow(
+            "Revenue",
+            data.revenue_quarter,
+            data.revenue_annual,
+            formatNumber
+          )}
+          {renderRow(
+            "Net Income",
+            data.net_income_quarter,
+            data.net_income_annual,
+            formatNumber
+          )}
+          {renderRow(
+            "Dividend Yield",
+            data.dividend_yield_quarter,
+            data.dividend_yield_annual,
+            formatPercent
+          )}
+          {renderRow("P/E Ratio", data.pe_ratio_quarter, data.pe_ratio_annual)}
+          {renderRow("P/S Ratio", data.ps_ratio_quarter, data.ps_ratio_annual)}
+          {renderRow(
+            "FCF Yield",
+            data.fcf_yield_quarter,
+            data.fcf_yield_annual,
+            formatPercent
+          )}
+          {renderRow(
+            "FCF Growth",
+            null,
+            data.fcf_growth_annual,
+            formatPercent,
+            true
+          )}
+          {renderRow(
+            "FCF Margin",
+            data.fcf_margin_quarter,
+            data.fcf_margin_annual,
+            formatPercent
+          )}
+          {renderRow(
+            "ROCE",
+            data.roce_quarter,
+            data.roce_annual,
+            formatPercent
+          )}
+          {renderRow(
+            "WACC",
+            data.wacc_quarter,
+            data.wacc_annual,
+            formatPercent
+          )}
+          {renderRow(
+            "ROCE – WACC",
+            data.roce_minus_wacc_quarter,
+            data.roce_minus_wacc_annual,
+            formatPercent
+          )}
+          {renderRow(
+            "Cash Conversion Ratio",
+            data.cash_conversion_quarter,
+            data.cash_conversion_annual,
+            formatNumber
+          )}
+          {renderRow(
+            "Rule of 40 Score",
+            data.rule_of_40_quarter,
+            data.rule_of_40_annual,
+            formatPercent
+          )}
+          {renderRow(
+            "Gross Margin",
+            data.gross_margin_quarter,
+            data.gross_margin_annual,
+            formatPercent
+          )}
         </tbody>
       </table>
     </div>
