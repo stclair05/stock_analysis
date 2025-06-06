@@ -63,7 +63,12 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     SeriesMarker<number>[]
   >([]);
   const [selectedStrategy, setSelectedStrategy] = useState<
-    null | "trendinvestorpro" | "stclair" | "northstar" | "stclairlongterm"
+    | null
+    | "trendinvestorpro"
+    | "stclair"
+    | "northstar"
+    | "stclairlongterm"
+    | "mace_40w"
   >(null);
 
   const [signalSummary, setSignalSummary] = useState<SignalSummary>({
@@ -71,12 +76,14 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     stclair: { daily: "", weekly: "", monthly: "" },
     northstar: { daily: "", weekly: "", monthly: "" },
     stclairlongterm: { daily: "", weekly: "", monthly: "" },
+    mace_40w: { daily: "", weekly: "", monthly: "" },
   });
   const strategies = [
     "trendinvestorpro",
     "stclair",
     "northstar",
     "stclairlongterm",
+    "mace_40w",
   ] as const;
   const timeframes = ["daily", "weekly", "monthly"] as const;
 
@@ -106,6 +113,15 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     start: string;
     end: string;
   } | null>(null);
+  const backtestWindows = [
+    { label: "6 Months", value: "6m", months: 6 },
+    { label: "1 Year", value: "1y", months: 12 },
+    { label: "2 Years", value: "2y", months: 24 },
+    { label: "5 Years", value: "5y", months: 60 },
+  ];
+  const [selectedBacktestWindow, setSelectedBacktestWindow] = useState(
+    backtestWindows[2]
+  ); // default: 2y
 
   const {
     drawingModeRef,
@@ -277,21 +293,22 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     if (strategy === "stclairlongterm" && tf !== "weekly")
       // ONLY weekly supported
       return true;
+    if (strategy === "mace_40w" && tf !== "weekly") return true;
     return false;
   };
 
-  function getLastTwoYearsDateStrings() {
+  function getBacktestDateStrings(monthsAgo: number) {
     const today = new Date();
     const end =
       today.getDate().toString().padStart(2, "0") +
       String(today.getMonth() + 1).padStart(2, "0") +
       today.getFullYear();
-    const twoYearsAgo = new Date(today);
-    twoYearsAgo.setFullYear(today.getFullYear() - 2);
+    const from = new Date(today);
+    from.setMonth(today.getMonth() - monthsAgo);
     const start =
-      twoYearsAgo.getDate().toString().padStart(2, "0") +
-      String(twoYearsAgo.getMonth() + 1).padStart(2, "0") +
-      twoYearsAgo.getFullYear();
+      from.getDate().toString().padStart(2, "0") +
+      String(from.getMonth() + 1).padStart(2, "0") +
+      from.getFullYear();
     return { start, end };
   }
 
@@ -322,12 +339,19 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
 
   // Example: fetch whenever selectedStrategy/timeframe changes
   useEffect(() => {
-    if (!stockSymbol || !timeframe || !selectedStrategy) return;
-    // Set actual date ranges as needed
-    const { start, end } = getLastTwoYearsDateStrings();
+    if (
+      !stockSymbol ||
+      !timeframe ||
+      !selectedStrategy ||
+      !selectedBacktestWindow
+    )
+      return;
+    const { start, end } = getBacktestDateStrings(
+      selectedBacktestWindow.months
+    );
     setBacktestRange({ start, end });
     fetchBacktestSummary(stockSymbol, timeframe, selectedStrategy, start, end);
-  }, [stockSymbol, timeframe, selectedStrategy]);
+  }, [stockSymbol, timeframe, selectedStrategy, selectedBacktestWindow]);
 
   useEffect(() => {
     if (!selectedStrategy) {
@@ -640,6 +664,12 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
               label: "Ichimoku Span B",
             },
           ];
+        } else if (selectedStrategy === "mace_40w") {
+          maConfigs = [
+            { key: "ma_4w", color: "#111", label: "4W" }, // Black
+            { key: "ma_13w", color: "#ffd600", label: "13W" }, // Yellow (bright)
+            { key: "ma_26w", color: "#e53935", label: "26W" }, // Red
+          ];
         }
 
         maConfigs.forEach((cfg) => {
@@ -903,17 +933,49 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
       </div>
       {backtestSummary && (
         <div style={{ marginTop: "1.5rem", maxWidth: 380 }}>
-          <h4
+          <div
             style={{
-              margin: 0,
-              fontWeight: 600,
-              fontSize: "1.05rem",
-              color: "#333",
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              marginBottom: 2,
             }}
           >
-            Backtest: Last 2 Years
-          </h4>
-
+            <h4
+              style={{
+                margin: 0,
+                fontWeight: 600,
+                fontSize: "1.05rem",
+                color: "#333",
+                display: "inline",
+              }}
+            >
+              Backtest:
+            </h4>
+            <select
+              value={selectedBacktestWindow.value}
+              onChange={(e) => {
+                const win = backtestWindows.find(
+                  (w) => w.value === e.target.value
+                );
+                if (win) setSelectedBacktestWindow(win);
+              }}
+              style={{
+                fontSize: "1em",
+                padding: "3px 8px",
+                borderRadius: 6,
+                border: "1px solid #bdbdbd",
+                marginLeft: 8,
+                background: "#f7f7fa",
+              }}
+            >
+              {backtestWindows.map((w) => (
+                <option key={w.value} value={w.value}>
+                  {w.label}
+                </option>
+              ))}
+            </select>
+          </div>
           {backtestRange && (
             <div
               style={{ marginBottom: 12, color: "#666", fontSize: "0.96em" }}

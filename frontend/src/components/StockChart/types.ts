@@ -46,7 +46,8 @@ export type SignalSummary = {
     | "trendinvestorpro"
     | "stclair"
     | "northstar"
-    | "stclairlongterm"]: {
+    | "stclairlongterm"
+    | "mace_40w"]: {
     [T in Timeframe]: SignalSide;
   };
 };

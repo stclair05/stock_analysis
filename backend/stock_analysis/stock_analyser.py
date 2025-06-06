@@ -831,6 +831,11 @@ class StockAnalyser:
             # StClairLongterm
             overlays.update(self.get_supertrend_lines())
             overlays.update(self.get_ichimoku_lines())
+
+            # MACE_40W
+            overlays["ma_4w"] = self.get_ma_series(4, timeframe="weekly")      # 4-week MA
+            overlays["ma_13w"] = self.get_ma_series(13, timeframe="weekly")    # 13-week MA
+            overlays["ma_26w"] = self.get_ma_series(26, timeframe="weekly")    # 26-week MA
         elif timeframe == "monthly":
             index = self.monthly_df.index
             # -- Daily MAs resampled to monthly --
