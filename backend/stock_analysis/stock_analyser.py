@@ -1293,7 +1293,7 @@ class StockAnalyser:
         """
         Given a list of {time, price, side, label}, pairs ENTRY/EXIT and computes stats.
         Returns:
-            - trades: list of {entry_time, entry_price, exit_time, exit_price, profit}
+            - trades: list of {entry_time, entry_price, exit_time, exit_price, profit, profit_pct}
             - stats: number of trades, profitable trades, total profit, total loss, net profit
         """
         trades = []
@@ -1304,29 +1304,32 @@ class StockAnalyser:
                 entry = m
             elif m['side'] == 'sell' and entry is not None:
                 profit = m['price'] - entry['price']
+                profit_pct = (profit / entry['price']) * 100 if entry['price'] != 0 else 0
                 trades.append({
                     "entry_time": entry['time'],
                     "entry_price": entry['price'],
                     "exit_time": m['time'],
                     "exit_price": m['price'],
-                    "profit": profit
+                    "profit": profit,
+                    "profit_pct": profit_pct,
                 })
                 entry = None  # reset for next trade
 
         num_trades = len(trades)
         profitable_trades = sum(1 for t in trades if t['profit'] > 0)
-        total_profit = sum(t['profit'] for t in trades if t['profit'] > 0)
-        total_loss = sum(t['profit'] for t in trades if t['profit'] < 0)
-        net_profit = total_profit + total_loss
+        total_profit_pct = sum(t['profit_pct'] for t in trades if t['profit_pct'] > 0)
+        total_loss_pct = sum(t['profit_pct'] for t in trades if t['profit_pct'] < 0)
+        net_profit_pct = total_profit_pct + total_loss_pct
 
         return {
             "num_trades": num_trades,
             "profitable_trades": profitable_trades,
-            "total_profit": total_profit,
-            "total_loss": total_loss,
-            "net_profit": net_profit,
+            "total_profit_pct": total_profit_pct,
+            "total_loss_pct": total_loss_pct,
+            "net_profit_pct": net_profit_pct,
             "trades": trades,
         }
+
     
     def get_mace_40w_signals(self) -> list[dict]:
         df_weekly = self.weekly_df
