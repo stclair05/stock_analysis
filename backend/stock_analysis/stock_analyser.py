@@ -1358,17 +1358,23 @@ class StockAnalyser:
 
             status_now = fortyw_signals.iloc[idx]
             status_prev = fortyw_signals.iloc[idx - 1]
-
+            '''
+            first draft: not bad results but can be
             entry_cond = (
                 ((mace_now in ['U2', 'U3']) or
                 (status_now == "Above Rising MA ++")) and
                 ((mace_prev in ['U1', 'U2', 'D1']) or
                 (status_prev in ["Above Rising MA ++", "Below Rising MA -+"]))
             )
+            '''
+            entry_cond = (
+                ((mace_now in ['U2', 'U3']) or (status_now == "Above Rising MA ++")) and
+                ((mace_prev not in ['D2', 'D3']) and (status_prev != "Below Falling MA --"))
+            )
 
 
             exit_cond = (
-                (mace_now not in ['U2', 'U3']) or
+                (mace_now not in ['U2', 'U3']) or     #change to and for a more patient trade
                 (status_now != "Above Rising MA ++")
             )
 
@@ -1396,4 +1402,5 @@ class StockAnalyser:
 
         print("Final markers:", markers)
         return markers
-
+    
+    
