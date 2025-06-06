@@ -831,6 +831,11 @@ class StockAnalyser:
             # StClairLongterm
             overlays.update(self.get_supertrend_lines())
             overlays.update(self.get_ichimoku_lines())
+
+            # MACE_40W
+            overlays["ma_4w"] = self.get_ma_series(4, timeframe="weekly")      # 4-week MA
+            overlays["ma_13w"] = self.get_ma_series(13, timeframe="weekly")    # 13-week MA
+            overlays["ma_26w"] = self.get_ma_series(26, timeframe="weekly")    # 26-week MA
         elif timeframe == "monthly":
             index = self.monthly_df.index
             # -- Daily MAs resampled to monthly --
@@ -1287,3 +1292,123 @@ class StockAnalyser:
                 in_position = False
 
         return markers
+
+
+    def backtest_signal_markers(self, markers: list[dict]) -> dict:
+        """
+        Given a list of {time, price, side, label}, pairs ENTRY/EXIT and computes stats.
+        Returns:
+            - trades: list of {entry_time, entry_price, exit_time, exit_price, profit, profit_pct}
+            - stats: number of trades, profitable trades, total profit, total loss, net profit
+        """
+        trades = []
+        entry = None
+
+        for m in markers:
+            if m['side'] == 'buy':
+                entry = m
+            elif m['side'] == 'sell' and entry is not None:
+                profit = m['price'] - entry['price']
+                profit_pct = (profit / entry['price']) * 100 if entry['price'] != 0 else 0
+                trades.append({
+                    "entry_time": entry['time'],
+                    "entry_price": entry['price'],
+                    "exit_time": m['time'],
+                    "exit_price": m['price'],
+                    "profit": profit,
+                    "profit_pct": profit_pct,
+                })
+                entry = None  # reset for next trade
+
+        num_trades = len(trades)
+        profitable_trades = sum(1 for t in trades if t['profit'] > 0)
+        total_profit_pct = sum(t['profit_pct'] for t in trades if t['profit_pct'] > 0)
+        total_loss_pct = sum(t['profit_pct'] for t in trades if t['profit_pct'] < 0)
+        net_profit_pct = total_profit_pct + total_loss_pct
+
+        return {
+            "num_trades": num_trades,
+            "profitable_trades": profitable_trades,
+            "total_profit_pct": total_profit_pct,
+            "total_loss_pct": total_loss_pct,
+            "net_profit_pct": net_profit_pct,
+            "trades": trades,
+        }
+
+    
+    def get_mace_40w_signals(self) -> list[dict]:
+        df_weekly = self.weekly_df
+        if len(df_weekly) < 60:
+            print("Not enough data (less than 60 bars).")
+            return []
+
+        close = df_weekly['Close']
+        s = close.rolling(4).mean()
+        m = close.rolling(13).mean()
+        l = close.rolling(26).mean()
+        mace_signals = classify_mace_signal(s, m, l)
+
+        ma_40 = close.rolling(40).mean()
+        slope = ma_40.diff()
+        fortyw_signals = classify_40w_status(close, ma_40, slope)
+
+        markers = []
+        in_position = False
+
+        for idx in range(len(df_weekly)):
+            if idx < 41:
+                continue
+
+            date = df_weekly.index[idx]
+
+            mace_now = mace_signals.iloc[idx]
+            mace_prev = mace_signals.iloc[idx - 1]
+
+            status_now = fortyw_signals.iloc[idx]
+            status_prev = fortyw_signals.iloc[idx - 1]
+            '''
+            first draft: not bad results but can be
+            entry_cond = (
+                ((mace_now in ['U2', 'U3']) or
+                (status_now == "Above Rising MA ++")) and
+                ((mace_prev in ['U1', 'U2', 'D1']) or
+                (status_prev in ["Above Rising MA ++", "Below Rising MA -+"]))
+            )
+            '''
+            entry_cond = (
+                ((mace_now in ['U2', 'U3']) or (status_now == "Above Rising MA ++")) and
+                ((mace_prev not in ['D2', 'D3']) and (status_prev != "Below Falling MA --"))
+            )
+
+
+            exit_cond = (
+                (mace_now not in ['U2', 'U3']) or     #change to and for a more patient trade
+                (status_now != "Above Rising MA ++")
+            )
+
+            price = close.iloc[idx]
+
+            if entry_cond and not in_position:
+                print(f"--> Entry triggered on {date.date()} at price {price:.2f}")
+                markers.append({
+                    "time": int(pd.Timestamp(date).timestamp()),
+                    "price": price,
+                    "side": "buy",
+                    "label": "ENTRY"
+                })
+                in_position = True
+
+            elif exit_cond and in_position:
+                print(f"--> Exit triggered on {date.date()} at price {price:.2f}")
+                markers.append({
+                    "time": int(pd.Timestamp(date).timestamp()),
+                    "price": price,
+                    "side": "sell",
+                    "label": "EXIT"
+                })
+                in_position = False
+
+        print("Final markers:", markers)
+        return markers
+    
+    

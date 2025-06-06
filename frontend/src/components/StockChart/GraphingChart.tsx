@@ -63,7 +63,12 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     SeriesMarker<number>[]
   >([]);
   const [selectedStrategy, setSelectedStrategy] = useState<
-    null | "trendinvestorpro" | "stclair" | "northstar" | "stclairlongterm"
+    | null
+    | "trendinvestorpro"
+    | "stclair"
+    | "northstar"
+    | "stclairlongterm"
+    | "mace_40w"
   >(null);
 
   const [signalSummary, setSignalSummary] = useState<SignalSummary>({
@@ -71,12 +76,14 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     stclair: { daily: "", weekly: "", monthly: "" },
     northstar: { daily: "", weekly: "", monthly: "" },
     stclairlongterm: { daily: "", weekly: "", monthly: "" },
+    mace_40w: { daily: "", weekly: "", monthly: "" },
   });
   const strategies = [
     "trendinvestorpro",
     "stclair",
     "northstar",
     "stclairlongterm",
+    "mace_40w",
   ] as const;
   const timeframes = ["daily", "weekly", "monthly"] as const;
 
@@ -93,6 +100,28 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
   const [trendLines, setTrendLines] = useState<any[]>([]);
   const trendLineSeriesRef = useRef<ISeriesApi<"Line">[]>([]);
   const [showTrendLines, setShowTrendLines] = useState(false);
+
+  // Backtesting summary
+  const [backtestSummary, setBacktestSummary] = useState<null | {
+    num_trades: number;
+    profitable_trades: number;
+    total_profit_pct: number;
+    total_loss_pct: number;
+    net_profit_pct: number;
+  }>(null);
+  const [backtestRange, setBacktestRange] = useState<{
+    start: string;
+    end: string;
+  } | null>(null);
+  const backtestWindows = [
+    { label: "6 Months", value: "6m", months: 6 },
+    { label: "1 Year", value: "1y", months: 12 },
+    { label: "2 Years", value: "2y", months: 24 },
+    { label: "5 Years", value: "5y", months: 60 },
+  ];
+  const [selectedBacktestWindow, setSelectedBacktestWindow] = useState(
+    backtestWindows[2]
+  ); // default: 2y
 
   const {
     drawingModeRef,
@@ -264,8 +293,72 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     if (strategy === "stclairlongterm" && tf !== "weekly")
       // ONLY weekly supported
       return true;
+    if (strategy === "mace_40w" && tf !== "weekly") return true;
     return false;
   };
+
+  function getBacktestDateStrings(monthsAgo: number) {
+    const today = new Date();
+    const end =
+      today.getDate().toString().padStart(2, "0") +
+      String(today.getMonth() + 1).padStart(2, "0") +
+      today.getFullYear();
+    const from = new Date(today);
+    from.setMonth(today.getMonth() - monthsAgo);
+    const start =
+      from.getDate().toString().padStart(2, "0") +
+      String(from.getMonth() + 1).padStart(2, "0") +
+      from.getFullYear();
+    return { start, end };
+  }
+
+  function formatDMY(dmy: string) {
+    // dmy is "DDMMYYYY"
+    return `${dmy.slice(0, 2)}/${dmy.slice(2, 4)}/${dmy.slice(4)}`;
+  }
+
+  // Backtesting results
+  async function fetchBacktestSummary(
+    stockSymbol: string,
+    timeframe: string,
+    strategy: string,
+    start: string, // e.g. "01012023"
+    end: string // e.g. "01062024"
+  ) {
+    const url = `http://localhost:8000/api/backtest_signals_${timeframe}/${stockSymbol}?strategy=${strategy}&start=${start}&end=${end}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    setBacktestSummary({
+      num_trades: data.num_trades,
+      profitable_trades: data.profitable_trades,
+      total_profit_pct: data.total_profit_pct,
+      total_loss_pct: data.total_loss_pct,
+      net_profit_pct: data.net_profit_pct,
+    });
+  }
+
+  // Example: fetch whenever selectedStrategy/timeframe changes
+  useEffect(() => {
+    if (
+      !stockSymbol ||
+      !timeframe ||
+      !selectedStrategy ||
+      !selectedBacktestWindow
+    )
+      return;
+    const { start, end } = getBacktestDateStrings(
+      selectedBacktestWindow.months
+    );
+    setBacktestRange({ start, end });
+    fetchBacktestSummary(stockSymbol, timeframe, selectedStrategy, start, end);
+  }, [stockSymbol, timeframe, selectedStrategy, selectedBacktestWindow]);
+
+  useEffect(() => {
+    if (!selectedStrategy) {
+      setBacktestSummary(null);
+      setBacktestRange(null);
+    }
+  }, [selectedStrategy]);
 
   /**
    * Main useEffect
@@ -571,6 +664,12 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
               label: "Ichimoku Span B",
             },
           ];
+        } else if (selectedStrategy === "mace_40w") {
+          maConfigs = [
+            { key: "ma_4w", color: "#111", label: "4W" }, // Black
+            { key: "ma_13w", color: "#ffd600", label: "13W" }, // Yellow (bright)
+            { key: "ma_26w", color: "#e53935", label: "26W" }, // Red
+          ];
         }
 
         maConfigs.forEach((cfg) => {
@@ -832,6 +931,103 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
           <span>Show Trendlines</span>
         </label>
       </div>
+      {backtestSummary && (
+        <div style={{ marginTop: "1.5rem", maxWidth: 380 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              marginBottom: 2,
+            }}
+          >
+            <h4
+              style={{
+                margin: 0,
+                fontWeight: 600,
+                fontSize: "1.05rem",
+                color: "#333",
+                display: "inline",
+              }}
+            >
+              Backtest:
+            </h4>
+            <select
+              value={selectedBacktestWindow.value}
+              onChange={(e) => {
+                const win = backtestWindows.find(
+                  (w) => w.value === e.target.value
+                );
+                if (win) setSelectedBacktestWindow(win);
+              }}
+              style={{
+                fontSize: "1em",
+                padding: "3px 8px",
+                borderRadius: 6,
+                border: "1px solid #bdbdbd",
+                marginLeft: 8,
+                background: "#f7f7fa",
+              }}
+            >
+              {backtestWindows.map((w) => (
+                <option key={w.value} value={w.value}>
+                  {w.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          {backtestRange && (
+            <div
+              style={{ marginBottom: 12, color: "#666", fontSize: "0.96em" }}
+            >
+              <span>
+                {formatDMY(backtestRange.start)} –{" "}
+                {formatDMY(backtestRange.end)}
+              </span>
+            </div>
+          )}
+          <table style={{ width: "100%", fontSize: "1rem" }}>
+            <tbody>
+              <tr>
+                <td>Number of Trades</td>
+                <td>{backtestSummary.num_trades}</td>
+              </tr>
+              <tr>
+                <td>Profitable Trades</td>
+                <td>{backtestSummary.profitable_trades}</td>
+              </tr>
+              <tr>
+                <td>Total Profit</td>
+                <td style={{ color: "#009944" }}>
+                  {backtestSummary.total_profit_pct.toFixed(2)}%
+                </td>
+              </tr>
+              <tr>
+                <td>Total Loss</td>
+                <td style={{ color: "#e91e63" }}>
+                  {backtestSummary.total_loss_pct.toFixed(2)}%
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <strong>Net Profit</strong>
+                </td>
+                <td
+                  style={{
+                    color:
+                      backtestSummary.net_profit_pct >= 0
+                        ? "#009944"
+                        : "#e91e63",
+                    fontWeight: 700,
+                  }}
+                >
+                  {backtestSummary.net_profit_pct.toFixed(2)}%
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* Summary of signals */}
       {showSummary && (
