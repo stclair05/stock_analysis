@@ -18,11 +18,20 @@ type Holding = {
   pnl: number;
   pnl_percent: number;
   static_asset?: boolean;
+  category?: string;
 };
+
 const formatMoney = (value: number): string => {
   if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(2)}M`;
   if (value >= 1_000) return `$${(value / 1_000).toFixed(2)}K`;
   return `$${value.toFixed(2)}`;
+};
+
+const categoryDisplayName: Record<string, string> = {
+  equities: "Equities",
+  fixed_income: "Fixed Income",
+  alt_debt: "Alt Debt",
+  private_equity: "Private Equity",
 };
 
 const OverviewTab = () => {
@@ -69,6 +78,18 @@ const OverviewTab = () => {
     return ((pnl / invested) * 100).toFixed(2);
   };
 
+  const getAllocationData = () => {
+    const groups: Record<string, number> = {};
+    portfolio.forEach((item) => {
+      const cat = item.category || "Other";
+      groups[cat] = (groups[cat] ?? 0) + item.invested_capital;
+    });
+    return Object.entries(groups).map(([name, value]) => ({
+      name: categoryDisplayName[name] || name,
+      value: parseFloat(value.toFixed(2)),
+    }));
+  };
+
   const StatCard = ({
     title,
     value,
@@ -96,29 +117,6 @@ const OverviewTab = () => {
         </div>
       </div>
     );
-  };
-
-  // Categorize tickers into asset classes
-  const categorizeAsset = (ticker: string): string => {
-    if (ticker === "FIXED INCOME") return "Fixed Income";
-    if (["PTE EQTY", "JSS PRIVATE INV", "DEEP BLUE FISH"].includes(ticker))
-      return "Private Equity";
-    if (["RE DEBT STRAT 1", "RE DEBT STRAT 2", "SAFRA"].includes(ticker))
-      return "Alt Debt";
-    return "Equities";
-  };
-
-  const getAllocationData = () => {
-    const groups: { [category: string]: number } = {};
-    portfolio.forEach((item) => {
-      const category = categorizeAsset(item.ticker);
-      groups[category] = (groups[category] ?? 0) + item.invested_capital;
-    });
-
-    return Object.entries(groups).map(([name, value]) => ({
-      name,
-      value: parseFloat(value.toFixed(2)),
-    }));
   };
 
   const COLORS = ["#3366CC", "#FF9900", "#109618", "#990099"];

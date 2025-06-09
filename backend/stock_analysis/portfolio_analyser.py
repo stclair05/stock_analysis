@@ -14,7 +14,15 @@ class PortfolioAnalyser:
         if not self.json_path.exists():
             raise FileNotFoundError("Portfolio JSON file not found.")
         with open(self.json_path, "r") as f:
-            return json.load(f)
+            data = json.load(f)
+        # flatten all positions into a list, but keep asset class in each item
+        flattened = []
+        for category, items in data.items():
+            for item in items:
+                item = dict(item)  # shallow copy
+                item["category"] = category  # tag with asset class
+                flattened.append(item)
+        return flattened
 
     def _fetch_fx_rate(self):
         try:
@@ -43,6 +51,7 @@ class PortfolioAnalyser:
             shares = item["shares"]
             invested_capital = item["invested_capital"]
             average_cost = item["average_cost"]
+            category = item.get("category", "Other") 
 
             current_price = self._get_price(ticker)
 
@@ -60,6 +69,7 @@ class PortfolioAnalyser:
                     "pnl": 0.0,
                     "pnl_percent": 0.0,
                     "static_asset": True,
+                    "category": category, 
                 }
 
             market_value = shares * current_price
@@ -76,6 +86,7 @@ class PortfolioAnalyser:
                 "pnl": round(pnl, 2),
                 "pnl_percent": round(pnl_percent * 100, 2),
                 "static_asset": False,
+                "category": category,
             }
         except Exception:
             return None

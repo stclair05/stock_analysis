@@ -86,6 +86,18 @@ def get_portfolio_live_data():
         return analyser.analyse()
     except Exception as e:
         return {"error": str(e)}
+    
+
+@app.get("/portfolio_tickers")
+def get_portfolio_tickers():
+    json_path = Path("portfolio_store.json")
+    if not json_path.exists():
+        return []
+    with open(json_path, "r") as f:
+        data = json.load(f)
+        equities = data.get("equities", [])
+        # Return only the ticker for each equity
+        return [item["ticker"] for item in equities if "ticker" in item]
 
 @app.get("/fmp_financials/{symbol}", response_model=FinancialMetrics)
 async def get_fmp_financials(symbol: str):
