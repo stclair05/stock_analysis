@@ -335,61 +335,155 @@ def compute_ichimoku_lines(df_weekly: pd.DataFrame) -> tuple[pd.Series, pd.Serie
     span_b = ((df_weekly['High'].rolling(52).max() + df_weekly['Low'].rolling(52).min()) / 2).shift(26)
     return tenkan_sen, kijun_sen, span_a, span_b
 
-def compute_supertrend_lines(df: pd.DataFrame, period: int = 10, multiplier: float = 3.0) -> pd.DataFrame:
-    df = df.copy()
-    df.index = df.index.tz_localize(None)
+def compute_supertrend_lines(
+    df: pd.DataFrame,
+    atr_period: int = 10,
+    multiplier: float = 3.0,
+    use_wilders_atr: bool = True # Corresponds to changeATR = true in Pine
+) -> pd.DataFrame:
+    """
+    Computes Supertrend lines and signals based on the provided OHLCV DataFrame.
+    This version aims for closer alignment with TradingView's Supertrend logic,
+    especially focusing on a more robust ATR calculation matching Pine Script's rma.
 
-    high = df["High"]
-    low = df["Low"]
-    close = df["Close"]
-    
-    # Step 1: Calculate HL2 and True Range (TR)
+    Args:
+        df (pd.DataFrame): DataFrame with 'High', 'Low', 'Close' columns.
+        atr_period (int): Period for ATR calculation.
+        multiplier (float): Multiplier for ATR to calculate bands.
+        use_wilders_atr (bool): If True, uses Wilder's ATR (default in Pine Script's atr()).
+                                If False, uses SMA of True Range (atr2 in Pine).
+
+    Returns:
+        pd.DataFrame: DataFrame with 'Supertrend', 'Buy', 'Sell', 'Trend', 'Signal' columns.
+    """
+    df_copy = df.copy() # Work on a copy to avoid modifying the original DataFrame
+
+    high = df_copy["High"].values
+    low = df_copy["Low"].values
+    close = df_copy["Close"].values
     hl2 = (high + low) / 2
-    tr1 = high - low
-    tr2 = (high - close.shift(1)).abs()
-    tr3 = (low - close.shift(1)).abs()
-    tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
 
-    # Step 2: Wilder's Smoothing for ATR
-    atr = tr.ewm(alpha=1 / period, adjust=False).mean()
+    # --- 1. True Range (TR) Calculation ---
+    tr_values = np.zeros(len(df_copy))
+    tr_values[0] = high[0] - low[0] # For the first bar, as in Pine Script
+    for i in range(1, len(df_copy)):
+        range1 = high[i] - low[i]
+        range2 = abs(high[i] - close[i-1])
+        range3 = abs(low[i] - close[i-1])
+        tr_values[i] = max(range1, range2, range3)
 
-    # Step 3: Calculate Basic Bands
-    upperband = hl2 + multiplier * atr
-    lowerband = hl2 - multiplier * atr
+    # --- 2. ATR Calculation (Revised for Pine Script compatibility) ---
+    atr = np.zeros(len(df_copy))
+    if use_wilders_atr:
+        # Implement Wilder's Smoothing explicitly to match Pine Script's `rma`
+        # For the first `atr_period` bars, it's a simple moving average
+        # Then, it transitions to the recursive formula: (prev_atr * (period - 1) + current_tr) / period
 
-    # Step 4: Initialize Supertrend columns
-    supertrend = pd.DataFrame(index=df.index)
-    supertrend["Close"] = close
-    supertrend["UpperBand"] = upperband
-    supertrend["LowerBand"] = lowerband
-    supertrend["InUptrend"] = True
+        # Initial SMA for the first 'atr_period' bars
+        atr[atr_period-1] = np.mean(tr_values[:atr_period]) # First ATR value calculated after 'atr_period' bars
 
-    # Step 5: Loop through rows for signal logic
-    for i in range(1, len(supertrend)):
-        prev = supertrend.iloc[i - 1]
-        curr = supertrend.iloc[i]
+        # Recursive calculation for subsequent bars
+        for i in range(atr_period, len(df_copy)):
+            atr[i] = (atr[i-1] * (atr_period - 1) + tr_values[i]) / atr_period
+            
+        # For bars before atr_period-1, Pine Script often just leaves them as NaN or 0, or calculates SMA up to that point.
+        # Let's fill initial values based on a simple rolling mean, mimicking how Pine builds up `sum` for `rma`.
+        # This part ensures non-zero ATR from the start if needed.
+        for i in range(1, atr_period): # Calculate SMA for initial bars
+             atr[i] = np.mean(tr_values[:i+1])
 
-        if curr["Close"] > prev["UpperBand"]:
-            supertrend.iat[i, supertrend.columns.get_loc("InUptrend")] = True
-        elif curr["Close"] < prev["LowerBand"]:
-            supertrend.iat[i, supertrend.columns.get_loc("InUptrend")] = False
+
+    else:
+        # Simple Moving Average of True Range (Pine's sma(tr, Periods))
+        atr = pd.Series(tr_values).rolling(window=atr_period, min_periods=1).mean().values
+
+    # --- 3. Supertrend Band Initialization and Calculation ---
+    final_up_band = np.zeros(len(df_copy))
+    final_dn_band = np.zeros(len(df_copy))
+    trend = np.zeros(len(df_copy), dtype=int) # 1 for uptrend, -1 for downtrend
+
+    supertrend_line = np.zeros(len(df_copy))
+    buy_signals = np.full(len(df_copy), np.nan)
+    sell_signals = np.full(len(df_copy), np.nan)
+
+    for i in range(len(df_copy)):
+        basic_upper_band_curr = hl2[i] + (multiplier * atr[i])
+        basic_lower_band_curr = hl2[i] - (multiplier * atr[i])
+
+        if i == 0:
+            final_up_band[i] = basic_upper_band_curr
+            final_dn_band[i] = basic_lower_band_curr
+            trend[i] = 1 # Assume uptrend initially
         else:
-            supertrend.iat[i, supertrend.columns.get_loc("InUptrend")] = prev["InUptrend"]
-            if prev["InUptrend"]:
-                if curr["LowerBand"] < prev["LowerBand"]:
-                    supertrend.iat[i, supertrend.columns.get_loc("LowerBand")] = prev["LowerBand"]
-                supertrend.iat[i, supertrend.columns.get_loc("UpperBand")] = np.nan
+            # Band stickiness/trailing logic
+            if close[i-1] > final_up_band[i-1]:
+                final_up_band[i] = max(basic_upper_band_curr, final_up_band[i-1])
             else:
-                if curr["UpperBand"] > prev["UpperBand"]:
-                    supertrend.iat[i, supertrend.columns.get_loc("UpperBand")] = prev["UpperBand"]
-                supertrend.iat[i, supertrend.columns.get_loc("LowerBand")] = np.nan
+                final_up_band[i] = basic_upper_band_curr
 
-    # Step 6: Derive Signal and Final Plot Lines
-    supertrend["Signal"] = supertrend["InUptrend"].map(lambda x: "Buy" if x else "Sell")
-    supertrend["ST_Line_Up"] = np.where(supertrend["InUptrend"], supertrend["LowerBand"], np.nan)
-    supertrend["ST_Line_Down"] = np.where(supertrend["InUptrend"], np.nan, supertrend["UpperBand"])
+            if close[i-1] < final_dn_band[i-1]:
+                final_dn_band[i] = min(basic_lower_band_curr, final_dn_band[i-1])
+            else:
+                final_dn_band[i] = basic_lower_band_curr
 
-    return supertrend[["Close", "ST_Line_Up", "ST_Line_Down", "Signal", "InUptrend"]]
+            # Trend determination
+            prev_trend = trend[i-1]
+            if prev_trend == -1 and close[i] > final_dn_band[i-1]:
+                trend[i] = 1
+            elif prev_trend == 1 and close[i] < final_up_band[i-1]:
+                trend[i] = -1
+            else:
+                trend[i] = prev_trend
+
+            # Band adjustment on trend reversal
+            if trend[i] == 1 and prev_trend == -1: # Flipped to Buy
+                final_dn_band[i] = final_dn_band[i-1] # Lock previous lower band as new Supertrend line
+            elif trend[i] == -1 and prev_trend == 1: # Flipped to Sell
+                final_up_band[i] = final_up_band[i-1] # Lock previous upper band as new Supertrend line
+
+        # Calculate Supertrend line and signals
+        if trend[i] == 1:
+            if i > 0 and trend[i-1] == -1:
+                # Just flipped to uptrend (BUY)
+                supertrend_line[i] = final_up_band[i]
+                buy_signals[i] = supertrend_line[i]
+            else:
+                supertrend_line[i] = final_dn_band[i]
+        else:
+            if i > 0 and trend[i-1] == 1:
+                # Just flipped to downtrend (SELL)
+                supertrend_line[i] = final_dn_band[i]
+                sell_signals[i] = supertrend_line[i]
+            else:
+                supertrend_line[i] = final_up_band[i]
+
+        # Debugging prints
+        if i >= len(df_copy) - 50:
+            print(f"Date: {df_copy.index[i].strftime('%Y-%m-%d')}")
+            print(f"  Close: {close[i]:.2f}")
+            print(f"  TR: {tr_values[i]:.4f}")
+            print(f"  ATR: {atr[i]:.4f}") # Print the new ATR
+            print(f"  Basic Up (curr): {basic_upper_band_curr:.2f}, Basic Dn (curr): {basic_lower_band_curr:.2f}")
+            if i > 0:
+                print(f"  Prev Close: {close[i-1]:.2f}, Prev Final Up: {final_up_band[i-1]:.2f}, Prev Final Dn: {final_dn_band[i-1]:.2f}")
+                print(f"  Prev Trend: {trend[i-1]}")
+            print(f"  Final Up: {final_up_band[i]:.2f}, Final Dn: {final_dn_band[i]:.2f}")
+            print(f"  Current Trend: {trend[i]} ({'Buy' if trend[i] == 1 else 'Sell'})")
+            print(f"  Supertrend Line (calculated): {supertrend_line[i]:.2f}")
+            if not np.isnan(buy_signals[i]):
+                print(f"  Buy Signal at: {buy_signals[i]:.2f}")
+            if not np.isnan(sell_signals[i]):
+                print(f"  Sell Signal at: {sell_signals[i]:.2f}")
+            print("-" * 50)
+
+    results_df = pd.DataFrame(index=df_copy.index)
+    results_df["Supertrend"] = supertrend_line
+    results_df["Buy"] = buy_signals
+    results_df["Sell"] = sell_signals
+    results_df["Trend"] = trend
+    results_df["Signal"] = np.where(trend == 1, "Buy", "Sell")
+
+    return results_df
 
 
 

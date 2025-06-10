@@ -133,10 +133,17 @@ class StockAnalyser:
     def super_trend(self) -> TimeSeriesMetric:
         df_weekly = self.weekly_df.last('600D')
 
+        # --- Add these print statements to inspect the INPUT data ---
+        print("\n--- Input df_weekly Data Tail (OHLCV) ---")
+        print(df_weekly.tail(30)) # Print last 30 rows of OHLCV data
+        print("-------------------------------------------\n")
+        # --- End of added print statements ---
+
         if len(df_weekly) < 30 or df_weekly.empty:  # ~30 weeks
             return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
     
         df_st = compute_supertrend_lines(df_weekly)
+
 
         return TimeSeriesMetric(
             current=safe_value(df_st["Signal"], -1),
