@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 
 const timeframes = ["daily", "weekly", "monthly"];
-const strategies = [
+const allStrategies = [
   "trend_investor_pro",
   "northstar",
   "st_clair",
@@ -19,6 +19,10 @@ export default function BuySellSignalsTab() {
     [key: string]: { [ticker: string]: { [strategy: string]: string } };
   }>({});
 
+  // State for sorting
+  const [sortColumn, setSortColumn] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+
   const strategyApiMap: Record<string, string> = {
     trend_investor_pro: "trendinvestorpro",
     st_clair: "stclair",
@@ -27,7 +31,43 @@ export default function BuySellSignalsTab() {
     mace_40w: "mace_40w",
   };
 
-  // Fetch tickers from portfolio (now from new endpoint)
+  const getVisibleAndOrderedStrategies = (timeframe: string) => {
+    let currentVisibleStrategies: string[] = [];
+
+    switch (timeframe) {
+      case "weekly":
+        currentVisibleStrategies = allStrategies.filter(
+          (s) => s !== "trend_investor_pro"
+        );
+        break;
+      case "daily":
+        currentVisibleStrategies = ["trend_investor_pro", "northstar"];
+        break;
+      case "monthly":
+        currentVisibleStrategies = ["northstar"];
+        break;
+      default:
+        currentVisibleStrategies = allStrategies;
+    }
+
+    const filteredStrategies = currentVisibleStrategies.filter(
+      (strategy) => !isUnavailable(strategy, timeframe)
+    );
+
+    filteredStrategies.sort((a, b) => {
+      if (a === "st_clair") return -1;
+      if (b === "st_clair") return 1;
+
+      if (a === "stclair_longterm") return -1;
+      if (b === "stclair_longterm") return 1;
+
+      return 0;
+    });
+
+    return filteredStrategies;
+  };
+
+  // Fetch tickers from portfolio
   useEffect(() => {
     fetch("http://localhost:8000/portfolio_tickers")
       .then((res) => res.json())
@@ -36,14 +76,13 @@ export default function BuySellSignalsTab() {
       });
   }, []);
 
-  // Fetch signals for all stocks/strategies/timeframes
+  // Fetch signals
   useEffect(() => {
     if (portfolio.length === 0) return;
     setSignalsLoading(true);
 
     const cacheKey = selectedTimeframe;
 
-    // If cached, use it immediately
     if (signalsCache.current[cacheKey]) {
       setSignalSummary(signalsCache.current[cacheKey]);
       setSignalsLoading(false);
@@ -52,47 +91,45 @@ export default function BuySellSignalsTab() {
 
     async function fetchAllSignals() {
       const summary: any = {};
+      const strategiesToFetch =
+        getVisibleAndOrderedStrategies(selectedTimeframe);
+
       await Promise.all(
         portfolio.map(async (holding) => {
           const row: any = {};
           await Promise.all(
-            strategies
-              .filter((strategy) => !isUnavailable(strategy, selectedTimeframe))
-              .map(async (strategy) => {
-                try {
-                  const apiStrategy = strategyApiMap[strategy] || strategy;
-                  const res = await fetch(
-                    `http://localhost:8000/api/signals_${selectedTimeframe}/${holding.ticker}?strategy=${apiStrategy}`
-                  );
-                  if (!res.ok) {
-                    row[strategy] = "";
-                    return;
-                  }
-                  const data = await res.json();
-                  if (
-                    !Array.isArray(data.markers) ||
-                    data.markers.length === 0
-                  ) {
+            strategiesToFetch.map(async (strategy) => {
+              try {
+                const apiStrategy = strategyApiMap[strategy] || strategy;
+                const res = await fetch(
+                  `http://localhost:8000/api/signals_${selectedTimeframe}/${holding.ticker}?strategy=${apiStrategy}`
+                );
+                if (!res.ok) {
+                  row[strategy] = "";
+                  return;
+                }
+                const data = await res.json();
+                if (!Array.isArray(data.markers) || data.markers.length === 0) {
+                  row[strategy] = "";
+                } else {
+                  const last = data.markers[data.markers.length - 1];
+                  if (!last || !last.side) {
                     row[strategy] = "";
                   } else {
-                    const last = data.markers[data.markers.length - 1];
-                    if (!last || !last.side) {
-                      row[strategy] = "";
-                    } else {
-                      const side = String(last.side).toUpperCase();
-                      row[strategy] =
-                        side === "BUY" ? "BUY" : side === "SELL" ? "SELL" : "";
-                    }
+                    const side = String(last.side).toUpperCase();
+                    row[strategy] =
+                      side === "BUY" ? "BUY" : side === "SELL" ? "SELL" : "";
                   }
-                } catch (e) {
-                  row[strategy] = "";
                 }
-              })
+              } catch (e) {
+                row[strategy] = "";
+              }
+            })
           );
           summary[holding.ticker] = row;
         })
       );
-      signalsCache.current[cacheKey] = summary; // <-- Store in cache
+      signalsCache.current[cacheKey] = summary;
       setSignalSummary(summary);
       setSignalsLoading(false);
     }
@@ -102,7 +139,7 @@ export default function BuySellSignalsTab() {
   }, [portfolio, selectedTimeframe]);
 
   useEffect(() => {
-    setSignalSummary({}); // Clear signals when portfolio is being reloaded
+    setSignalSummary({});
   }, [portfolio]);
 
   const isUnavailable = (strategy: string, tf: string) => {
@@ -117,6 +154,41 @@ export default function BuySellSignalsTab() {
     if (strategy === "mace_40w" && tf !== "weekly") return true;
     return false;
   };
+
+  const handleHeaderClick = (column: string) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortColumn(column);
+      setSortDirection("asc"); // Default to ascending when changing column
+    }
+  };
+
+  // Prepare sorted portfolio for rendering
+  const sortedPortfolio = React.useMemo(() => {
+    if (!sortColumn || Object.keys(signalSummary).length === 0) {
+      return portfolio;
+    }
+
+    const sortOrder = { BUY: 1, SELL: 2, "": 3, "-": 4 }; // Define custom sort order for signals
+
+    return [...portfolio].sort((a, b) => {
+      const signalA = signalSummary[a.ticker]?.[sortColumn] || "-";
+      const signalB = signalSummary[b.ticker]?.[sortColumn] || "-";
+
+      const valA = sortOrder[signalA as keyof typeof sortOrder] || 4;
+      const valB = sortOrder[signalB as keyof typeof sortOrder] || 4;
+
+      if (valA < valB) return sortDirection === "asc" ? -1 : 1;
+      if (valA > valB) return sortDirection === "asc" ? 1 : -1;
+
+      // If signals are the same, sort by ticker
+      return a.ticker.localeCompare(b.ticker);
+    });
+  }, [portfolio, signalSummary, sortColumn, sortDirection]);
+
+  const visibleAndOrderedStrategies =
+    getVisibleAndOrderedStrategies(selectedTimeframe);
 
   return (
     <div>
@@ -151,18 +223,27 @@ export default function BuySellSignalsTab() {
             <thead>
               <tr>
                 <th>Stock</th>
-                {strategies.map((s) => (
-                  <th key={s}>
+                {visibleAndOrderedStrategies.map((s) => (
+                  <th
+                    key={s}
+                    onClick={() => handleHeaderClick(s)} // Add onClick for sorting
+                    style={{ cursor: "pointer" }} // Make it clear it's clickable
+                  >
                     {s.replace(/_/g, " ").replace("longterm", " LongTerm")}
+                    {sortColumn === s && (
+                      <span className="ms-1">
+                        {sortDirection === "asc" ? " ▲" : " ▼"}
+                      </span>
+                    )}
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {portfolio.map((holding) => (
+              {sortedPortfolio.map((holding) => (
                 <tr key={holding.ticker}>
                   <td>{holding.ticker}</td>
-                  {strategies.map((s) => {
+                  {visibleAndOrderedStrategies.map((s) => {
                     const signal = signalSummary[holding.ticker]?.[s] ?? "";
                     let color = "#bdbdbd";
                     if (signal === "BUY") color = "#009944";

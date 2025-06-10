@@ -38,6 +38,7 @@ SYMBOL_ALIASES = {
     "ALUMINUM": "ALI=F",
     "ALI": "ALI=F",
     "ALI=F": "ALI=F",
+    "PALLADIUM": "PA=F",
 
     # Energy
     "NATGAS": "NG=F",
