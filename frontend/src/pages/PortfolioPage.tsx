@@ -3,10 +3,11 @@ import OverviewTab from "./portfolio/OverviewTab";
 import MarketPositionsTab from "./portfolio/MarketPositionsTab";
 import RecentTradesTab from "./portfolio/RecentTradesTab";
 import WhatIfAnalysisTab from "./portfolio/WhatIfAnalysisTab";
+import BuySellSignalsTab from "./portfolio/BuySellSignalsTab";
 import "./PortfolioPage.css";
 
 function PortfolioPage() {
-  const [activeTab, setActiveTab] = useState("Overview");
+  const [activeTab, setActiveTab] = useState("Buy/Sell Signals");
   const underlineRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
@@ -15,6 +16,7 @@ function PortfolioPage() {
     "Market Positions",
     "Recent Trades",
     "What-If Analysis",
+    "Buy/Sell Signals",
   ];
 
   useEffect(() => {
@@ -71,6 +73,13 @@ function PortfolioPage() {
           }}
         >
           <WhatIfAnalysisTab />
+        </div>
+        <div
+          style={{
+            display: activeTab === "Buy/Sell Signals" ? "block" : "none",
+          }}
+        >
+          <BuySellSignalsTab />
         </div>
       </div>
     </div>
