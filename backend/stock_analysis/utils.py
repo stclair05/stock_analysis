@@ -240,24 +240,34 @@ def classify_40w_status(close: pd.Series, ma_40: pd.Series, slope: pd.Series) ->
 
 def classify_dma_trend(close: pd.Series, ma50: pd.Series, ma150: pd.Series) -> pd.Series:
     """
-    Classify daily price relative to 50DMA and 150DMA into:
-    - "Above Both (Uptrend)"
-    - "Above 150DMA Only"
-    - "Below Both (Downtrend)"
-    - "Below 150DMA Only"
-    - "Between Averages"
+    Label the relationship of price to 50DMA and 150DMA:
+    - 'Strong Uptrend: Price > 50DMA > 150DMA'
+    - 'Above Both MAs, But 50DMA < 150DMA (No Crossover)'
+    - 'Strong Downtrend: Price < 50DMA < 150DMA'
+    - 'Below Both MAs, But 50DMA > 150DMA (No Crossover)'
+    - 'Between/Inside Moving Averages'
     """
     result = pd.Series(index=close.index, dtype='object')
-
     valid = (~close.isna()) & (~ma50.isna()) & (~ma150.isna())
 
-    result[(close > ma50) & (ma50 > ma150) & valid] = "Above Both (Uptrend)"
-    result[(close > ma150) & (ma150 > ma50) & valid] = "Above 150DMA Only"
-    result[(close < ma50) & (ma50 < ma150) & valid] = "Below Both (Downtrend)"
-    result[(close < ma150) & (ma150 < ma50) & valid] = "Below 150DMA Only"
-    result[valid & result.isna()] = "Between Averages"
+    # Strong uptrend: Price above both, 50DMA above 150DMA (classic breakout)
+    result[(close > ma50) & (ma50 > ma150) & valid] = "Strong Uptrend: Price > 50DMA > 150DMA"
+
+    # Price above both, but 50DMA below 150DMA (pre-crossover, trend not confirmed)
+    result[(close > ma150) & (ma150 > ma50) & valid] = "Above Both MAs, But 50DMA < 150DMA (No Crossover)"
+
+    # Strong downtrend: Price below both, 50DMA below 150DMA (classic breakdown)
+    result[(close < ma50) & (ma50 < ma150) & valid] = "Strong Downtrend: Price < 50DMA < 150DMA"
+
+    # Price below both, but 50DMA above 150DMA (pre-crossover on downside, trend not confirmed)
+    result[(close < ma150) & (ma150 < ma50) & valid] = "Below Both MAs, But 50DMA > 150DMA (No Crossover)"
+
+    # All other cases (price between MAs)
+    result[valid & result.isna()] = "Between/Inside Moving Averages"
 
     return result
+
+
 
 def classify_bbwp_percentile(bbwp: pd.Series) -> pd.Series:
     """

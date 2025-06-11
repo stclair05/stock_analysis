@@ -361,16 +361,16 @@
       "average_cost": 148.29
     },
     {
-      "ticker": "^XAU",
-      "shares": 20.0,
-      "invested_capital": 37540.399999999994,
-      "average_cost": 1877.0199999999998
-    },
-    {
-      "ticker": "SI=F",
+      "ticker": "XAGUSD",
       "shares": 492217.0,
       "invested_capital": 13653175.864400001,
       "average_cost": 27.738123356974672
+    },
+    {
+      "ticker": "XAUUSD",
+      "shares": 0,
+      "invested_capital": 0,
+      "average_cost": 0
     },
     {
       "ticker": "PAAS",
