@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from "react"; // Added useRef
+import React, { useState, useEffect, useMemo, useRef } from "react";
 
 const timeframes = ["daily", "weekly", "monthly"];
 const allStrategies = [
@@ -11,7 +11,10 @@ const allStrategies = [
 ];
 
 export default function BuySellSignalsTab() {
-  const [portfolio, setPortfolio] = useState<{ ticker: string }[]>([]); // This will now hold either portfolio or watchlist tickers
+  // MODIFIED: portfolio state now includes sector
+  const [portfolio, setPortfolio] = useState<
+    { ticker: string; sector?: string }[]
+  >([]);
   const [signalSummary, setSignalSummary] = useState<any>({});
   const [selectedTimeframe, setSelectedTimeframe] = useState("weekly");
   const [signalsLoading, setSignalsLoading] = useState(false);
@@ -22,9 +25,10 @@ export default function BuySellSignalsTab() {
   }>({});
 
   // NEW: Cache for the portfolio/watchlist ticker lists themselves
+  // MODIFIED: portfolioDataCache now includes sector
   const portfolioDataCache = useRef<{
-    portfolio?: { ticker: string }[];
-    watchlist?: { ticker: string }[];
+    portfolio?: { ticker: string; sector?: string }[];
+    watchlist?: { ticker: string; sector?: string }[];
   }>({});
 
   // State for list type selection
@@ -87,6 +91,7 @@ export default function BuySellSignalsTab() {
   };
 
   // MODIFIED: Fetch tickers from selected list type, with caching
+  // This useEffect now handles the new backend response format
   useEffect(() => {
     const fetchTickers = async () => {
       // Check cache first
@@ -100,7 +105,7 @@ export default function BuySellSignalsTab() {
 
       setSignalsLoading(true); // Indicate loading when fetching new tickers
       const endpoint =
-        listType === "portfolio" ? "/portfolio_tickers" : "/watchlist";
+        listType === "portfolio" ? "/portfolio_tickers" : "/watchlist"; // Assuming a /watchlist endpoint exists and returns similar data
 
       try {
         const res = await fetch(`http://localhost:8000${endpoint}`);
@@ -108,8 +113,29 @@ export default function BuySellSignalsTab() {
           throw new Error(`HTTP error! status: ${res.status}`);
         }
         const data = await res.json();
-        const tickers = Array.isArray(data) ? data : [];
-        const formattedTickers = tickers.map((ticker: string) => ({ ticker }));
+
+        // MODIFIED: Safely format tickers, expecting { ticker, sector } objects
+        const formattedTickers: { ticker: string; sector?: string }[] =
+          Array.isArray(data)
+            ? data
+                .map((item: any) => {
+                  // Handle both string (old backend) and object (new backend) formats
+                  if (typeof item === "string") {
+                    return { ticker: item, sector: "N/A" }; // Default sector if only ticker string is returned
+                  } else if (
+                    item &&
+                    typeof item === "object" &&
+                    "ticker" in item
+                  ) {
+                    return {
+                      ticker: item.ticker,
+                      sector: item.sector || "N/A",
+                    }; // Use provided sector or default
+                  }
+                  return { ticker: "", sector: "N/A" }; // Fallback for malformed data
+                })
+                .filter((item) => item.ticker !== "") // Filter out any empty tickers resulting from malformed data
+            : [];
 
         // Store in cache
         portfolioDataCache.current[listType] = formattedTickers;
@@ -201,10 +227,6 @@ export default function BuySellSignalsTab() {
     // eslint-disable-next-line
   }, [portfolio, selectedTimeframe]); // Ensure this effect runs when portfolio changes
 
-  // This useEffect (setSignalSummary({})) is now less critical
-  // as state resets are handled in the ticker fetch effect.
-  // Keeping it doesn't hurt, but it might be redundant depending on exact timing.
-  // I'll leave it for now.
   useEffect(() => {
     setSignalSummary({}); // Clear signals when portfolio is being reloaded (e.g., initial load or manual portfolio refresh)
   }, [portfolio]);
@@ -240,7 +262,7 @@ export default function BuySellSignalsTab() {
     if (filterType !== "ALL") {
       currentPortfolio = currentPortfolio.filter((holding) => {
         let hasRelevantSignal = false;
-        let allSignalsMatchFilter = true;
+        let allSignalsMatchFilter = true; // NEW: Flag to ensure all strategies match the filter
 
         for (const strategy of visibleAndOrderedStrategies) {
           const signal = signalSummary[holding.ticker]?.[strategy];
@@ -248,9 +270,13 @@ export default function BuySellSignalsTab() {
           if (signal === "BUY" || signal === "SELL") {
             hasRelevantSignal = true;
             if (signal !== filterType) {
-              allSignalsMatchFilter = false;
-              break;
+              allSignalsMatchFilter = false; // If any visible signal doesn't match, set to false
+              break; // No need to check further strategies for this ticker
             }
+          } else {
+            // If a visible strategy has no signal, then it doesn't "match" the filter in the "ALL X" sense
+            allSignalsMatchFilter = false;
+            break;
           }
         }
         return hasRelevantSignal && allSignalsMatchFilter;
@@ -283,6 +309,34 @@ export default function BuySellSignalsTab() {
     filterType,
     selectedTimeframe,
   ]);
+
+  // NEW: Memoized calculation for sector summary
+  const sectorSummary = useMemo(() => {
+    const counts: Record<string, number> = {};
+    // Only calculate for specific filter types (BUY/SELL)
+    if (filterType === "ALL" || displayedPortfolio.length === 0) {
+      return {};
+    }
+
+    const strategiesToCheck = getVisibleAndOrderedStrategies(selectedTimeframe);
+
+    displayedPortfolio.forEach((holding) => {
+      const signals = signalSummary[holding.ticker];
+      if (!signals || !holding.sector || holding.sector === "N/A") return; // Skip if no signals or no valid sector info
+
+      // Check if ALL visible strategies for this ticker match the current filterType
+      const allSignalsMatch = strategiesToCheck.every(
+        (strategy) => signals[strategy] === filterType
+      );
+
+      if (allSignalsMatch) {
+        const sector = holding.sector;
+        counts[sector] = (counts[sector] || 0) + 1;
+      }
+    });
+
+    return counts;
+  }, [displayedPortfolio, signalSummary, filterType, selectedTimeframe]); // Depend on relevant states
 
   const visibleAndOrderedStrategies =
     getVisibleAndOrderedStrategies(selectedTimeframe);
@@ -343,7 +397,7 @@ export default function BuySellSignalsTab() {
       </div>
 
       {/* Loading or No Data States */}
-      {signalsLoading ? ( // This now covers both initial ticker fetch and subsequent signal fetches
+      {signalsLoading ? (
         <div className="text-center my-4">
           <span className="spinner-border" role="status" aria-hidden="true" />
           <span className="ms-2">Loading signals...</span>
@@ -351,65 +405,94 @@ export default function BuySellSignalsTab() {
       ) : portfolio.length === 0 ? (
         <div className="text-center my-4 text-muted">{emptyListMessage}</div>
       ) : (
-        <div className="table-responsive">
-          <table className="table table-bordered signal-summary-table">
-            <thead>
-              <tr>
-                <th>Stock</th>
-                {visibleAndOrderedStrategies.map((s) => (
-                  <th
-                    key={s}
-                    onClick={() => handleHeaderClick(s)}
-                    style={{ cursor: "pointer" }}
-                  >
-                    {s.replace(/_/g, " ").replace("longterm", " LongTerm")}
-                    {sortColumn === s && (
-                      <span className="ms-1">
-                        {sortDirection === "asc" ? " ▲" : " ▼"}
-                      </span>
-                    )}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {displayedPortfolio.length === 0 ? (
+        <>
+          <div className="table-responsive">
+            <table className="table table-bordered signal-summary-table">
+              <thead>
                 <tr>
-                  <td
-                    colSpan={visibleAndOrderedStrategies.length + 1}
-                    className="text-center text-muted"
-                  >
-                    No signals found matching your filter.
-                  </td>
+                  <th>Stock</th>
+                  {visibleAndOrderedStrategies.map((s) => (
+                    <th
+                      key={s}
+                      onClick={() => handleHeaderClick(s)}
+                      style={{ cursor: "pointer" }}
+                    >
+                      {s.replace(/_/g, " ").replace("longterm", " LongTerm")}
+                      {sortColumn === s && (
+                        <span className="ms-1">
+                          {sortDirection === "asc" ? " ▲" : " ▼"}
+                        </span>
+                      )}
+                    </th>
+                  ))}
                 </tr>
-              ) : (
-                displayedPortfolio.map((holding) => (
-                  <tr key={holding.ticker}>
-                    <td>{holding.ticker}</td>
-                    {visibleAndOrderedStrategies.map((s) => {
-                      const signal = signalSummary[holding.ticker]?.[s] ?? "";
-                      let color = "#bdbdbd";
-                      if (signal === "BUY") color = "#009944";
-                      if (signal === "SELL") color = "#e91e63";
-                      return (
-                        <td
-                          key={s}
-                          style={{
-                            color,
-                            textAlign: "center",
-                            fontWeight: 700,
-                          }}
-                        >
-                          {signal || "-"}
-                        </td>
-                      );
-                    })}
+              </thead>
+              <tbody>
+                {displayedPortfolio.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={visibleAndOrderedStrategies.length + 1}
+                      className="text-center text-muted"
+                    >
+                      No signals found matching your filter.
+                    </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ) : (
+                  displayedPortfolio.map((holding) => (
+                    <tr key={holding.ticker}>
+                      <td>{holding.ticker}</td>
+                      {visibleAndOrderedStrategies.map((s) => {
+                        const signal = signalSummary[holding.ticker]?.[s] ?? "";
+                        let color = "#bdbdbd";
+                        if (signal === "BUY") color = "#009944";
+                        if (signal === "SELL") color = "#e91e63";
+                        return (
+                          <td
+                            key={s}
+                            style={{
+                              color,
+                              textAlign: "center",
+                              fontWeight: 700,
+                            }}
+                          >
+                            {signal || "-"}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* NEW: Display Sector Summary */}
+          {filterType !== "ALL" && Object.keys(sectorSummary).length > 0 && (
+            <div className="card mt-4">
+              <div className="card-header">
+                Summary of {filterType} Signals by Sector (All Visible
+                Strategies Match)
+              </div>
+              <ul className="list-group list-group-flush">
+                {Object.entries(sectorSummary)
+                  .sort(([sectorA], [sectorB]) =>
+                    sectorA.localeCompare(sectorB)
+                  ) // Sort sectors alphabetically
+                  .map(([sector, count]) => (
+                    <li
+                      key={sector}
+                      className="list-group-item d-flex justify-content-between align-items-center"
+                    >
+                      {sector}
+                      <span className="badge bg-primary rounded-pill">
+                        {count}
+                      </span>
+                    </li>
+                  ))}
+              </ul>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

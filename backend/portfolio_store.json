@@ -28,7 +28,8 @@
       "ticker": "SHOP",
       "shares": 4000.0,
       "invested_capital": 424440.0,
-      "average_cost": 106.11
+      "average_cost": 106.11,
+      "sector": "Technology"
     },
     {
       "ticker": "ASML.AS",
@@ -40,7 +41,8 @@
       "ticker": "XOM",
       "shares": 8000.0,
       "invested_capital": 816000.0,
-      "average_cost": 102.0
+      "average_cost": 102.0,
+      "sector": "Energy"
     },
     {
       "ticker": "STO.AX",
@@ -70,25 +72,29 @@
       "ticker": "DK",
       "shares": 9400.0,
       "invested_capital": 296758.0,
-      "average_cost": 31.57
+      "average_cost": 31.57,
+      "sector": "Energy"
     },
     {
       "ticker": "COP",
       "shares": 23267.0,
       "invested_capital": 2591437.18,
-      "average_cost": 111.37822581338376
+      "average_cost": 111.37822581338376,
+      "sector": "Energy"
     },
     {
       "ticker": "XOP",
       "shares": 655.0,
       "invested_capital": 99933.34999999999,
-      "average_cost": 152.57
+      "average_cost": 152.57,
+      "sector": "Energy"
     },
     {
       "ticker": "TALO",
       "shares": 14000.0,
       "invested_capital": 308494.31200000003,
-      "average_cost": 22.035308000000004
+      "average_cost": 22.035308000000004,
+      "sector": "Energy"
     },
     {
       "ticker": "OVV",
@@ -112,31 +118,36 @@
       "ticker": "FCG",
       "shares": 29510.0,
       "invested_capital": 770334.3,
-      "average_cost": 26.104178244662826
+      "average_cost": 26.104178244662826,
+      "sector": "Energy"
     },
     {
       "ticker": "XLE",
       "shares": 14607.0,
       "invested_capital": 1201084.24,
-      "average_cost": 82.22662011364415
+      "average_cost": 82.22662011364415,
+      "sector": "Energy"
     },
     {
       "ticker": "APA",
       "shares": 59968.0,
       "invested_capital": 2275575.9634000002,
-      "average_cost": 37.946504192235864
+      "average_cost": 37.946504192235864,
+      "sector": "Energy"
     },
     {
       "ticker": "SM",
       "shares": 47000.0,
       "invested_capital": 1795438.0,
-      "average_cost": 38.200808510638296
+      "average_cost": 38.200808510638296,
+      "sector": "Energy"
     },
     {
       "ticker": "VET",
       "shares": 70000.0,
       "invested_capital": 961000.0,
-      "average_cost": 13.728571428571428
+      "average_cost": 13.728571428571428,
+      "sector": "Energy"
     },
     {
       "ticker": "VTLE",
@@ -148,13 +159,15 @@
       "ticker": "CVI",
       "shares": 19000.0,
       "invested_capital": 637040.0,
-      "average_cost": 33.52842105263158
+      "average_cost": 33.52842105263158,
+      "sector": "Energy"
     },
     {
       "ticker": "MTDR",
       "shares": 25000.0,
       "invested_capital": 1537440.0,
-      "average_cost": 61.4976
+      "average_cost": 61.4976,
+      "sector": "Energy"
     },
     {
       "ticker": "PR",
@@ -172,31 +185,36 @@
       "ticker": "CRGY",
       "shares": 36250.0,
       "invested_capital": 594950.0,
-      "average_cost": 16.412413793103447
+      "average_cost": 16.412413793103447,
+      "sector": "Energy"
     },
     {
       "ticker": "NNRG.NE",
       "shares": 10000.0,
       "invested_capital": 369900.0,
-      "average_cost": 36.99
+      "average_cost": 36.99,
+      "sector": "Energy"
     },
     {
       "ticker": "ROK.V",
       "shares": 120000.0,
       "invested_capital": 48000.0,
-      "average_cost": 0.4
+      "average_cost": 0.4,
+      "sector": "Energy"
     },
     {
       "ticker": "EQNR",
       "shares": 37020.0,
       "invested_capital": 1050045.072,
-      "average_cost": 28.364264505672608
+      "average_cost": 28.364264505672608,
+      "sector": "Energy"
     },
     {
       "ticker": "CIVI",
       "shares": 11000.0,
       "invested_capital": 796520.0,
-      "average_cost": 72.41090909090909
+      "average_cost": 72.41090909090909,
+      "sector": "Energy"
     },
     {
       "ticker": "IGE",
@@ -214,13 +232,15 @@
       "ticker": "TXP.TO",
       "shares": 180000.0,
       "invested_capital": 91463.46660000001,
-      "average_cost": 0.50813037
+      "average_cost": 0.50813037,
+      "sector": "Energy"
     },
     {
       "ticker": "BIR.TO",
       "shares": 13500.0,
       "invested_capital": 57651.74999999999,
-      "average_cost": 4.270499999999999
+      "average_cost": 4.270499999999999,
+      "sector": "Energy"
     },
     {
       "ticker": "YGR.TO",
@@ -244,7 +264,8 @@
       "ticker": "CF",
       "shares": 10000.0,
       "invested_capital": 899000.0,
-      "average_cost": 89.9
+      "average_cost": 89.9,
+      "sector": "Fertilizer"
     },
     {
       "ticker": "MOS",
@@ -262,31 +283,36 @@
       "ticker": "NTR",
       "shares": 29000.0,
       "invested_capital": 1646200.0,
-      "average_cost": 56.765517241379314
+      "average_cost": 56.765517241379314,
+      "sector": "Fertilizer"
     },
     {
       "ticker": "SPY",
       "shares": 3200.0,
       "invested_capital": 1885894.0,
-      "average_cost": 589.341875
+      "average_cost": 589.341875,
+      "sector": "Index"
     },
     {
       "ticker": "IWM",
       "shares": 4000.0,
       "invested_capital": 948400.0,
-      "average_cost": 237.1
+      "average_cost": 237.1,
+      "sector": "Energy"
     },
     {
       "ticker": "0P0000RU80.L",
       "shares": 41700.0,
       "invested_capital": 181112.8161,
-      "average_cost": 4.343233
+      "average_cost": 4.343233,
+      "sector": "Funds"
     },
     {
       "ticker": "U-UN.TO",
       "shares": 19000.0,
       "invested_capital": 407890.0,
-      "average_cost": 21.467894736842105
+      "average_cost": 21.467894736842105,
+      "sector": "Uranium"
     },
     {
       "ticker": "UEC",
@@ -298,7 +324,8 @@
       "ticker": "IBIT",
       "shares": 109000.0,
       "invested_capital": 4752790.000000001,
-      "average_cost": 43.603577981651384
+      "average_cost": 43.603577981651384,
+      "sector": "Bitcoin"
     },
     {
       "ticker": "RIOT",
@@ -328,7 +355,8 @@
       "ticker": "PBR",
       "shares": 20000.0,
       "invested_capital": 270000.0,
-      "average_cost": 13.5
+      "average_cost": 13.5,
+      "sector": "Energy"
     },
     {
       "ticker": "SGY.TO",
@@ -340,19 +368,22 @@
       "ticker": "FANG",
       "shares": 631.0,
       "invested_capital": 100032.43000000001,
-      "average_cost": 158.53
+      "average_cost": 158.53,
+      "sector": "Energy"
     },
     {
       "ticker": "DVN",
       "shares": 39078.0,
       "invested_capital": 2330922.16,
-      "average_cost": 59.64793899380726
+      "average_cost": 59.64793899380726,
+      "sector": "Energy"
     },
     {
       "ticker": "IPOOD",
       "shares": 30000.0,
       "invested_capital": 66000.0,
-      "average_cost": 2.2
+      "average_cost": 2.2,
+      "sector": "Energy"
     },
     {
       "ticker": "GLD",
@@ -364,19 +395,22 @@
       "ticker": "XAGUSD",
       "shares": 492217.0,
       "invested_capital": 13653175.864400001,
-      "average_cost": 27.738123356974672
+      "average_cost": 27.738123356974672,
+      "sector": "Precious Metals"
     },
     {
       "ticker": "XAUUSD",
       "shares": 0,
       "invested_capital": 0,
-      "average_cost": 0
+      "average_cost": 0,
+      "sector": "Precious Metals"
     },
     {
       "ticker": "PAAS",
       "shares": 20000.0,
       "invested_capital": 508000.0,
-      "average_cost": 25.4
+      "average_cost": 25.4,
+      "sector": "Precious Metals"
     },
     {
       "ticker": "HL",
@@ -388,25 +422,29 @@
       "ticker": "SIL",
       "shares": 9089.0,
       "invested_capital": 404642.28,
-      "average_cost": 44.52
+      "average_cost": 44.52,
+      "sector": "Precious Metals"
     },
     {
       "ticker": "SILJ",
       "shares": 197000.0,
       "invested_capital": 3063462.0,
-      "average_cost": 15.55056852791878
+      "average_cost": 15.55056852791878,
+      "sector": "Precious Metals"
     },
     {
       "ticker": "CDE",
       "shares": 32044.0,
       "invested_capital": 127214.68000000001,
-      "average_cost": 3.97
+      "average_cost": 3.97,
+      "sector": "Precious Metals"
     },
     {
       "ticker": "EQX",
       "shares": 45000.0,
       "invested_capital": 267750.0,
-      "average_cost": 5.95
+      "average_cost": 5.95,
+      "sector": "Precious Metals"
     },
     {
       "ticker": "GFI",
@@ -418,31 +456,28 @@
       "ticker": "AYA.TO",
       "shares": 100000.0,
       "invested_capital": 828500.0,
-      "average_cost": 8.285
+      "average_cost": 8.285,
+      "sector": "Precious Metals"
     },
     {
       "ticker": "SBSW",
       "shares": 100000.0,
       "invested_capital": 485149.99999999994,
-      "average_cost": 4.8515
+      "average_cost": 4.8515,
+      "sector": "Precious Metals"
     },
     {
       "ticker": "SMG",
       "shares": 10470.0,
       "invested_capital": 1277340.0,
-      "average_cost": 122.0
+      "average_cost": 122.0,
+      "sector": "Fertilizer"
     },
     {
       "ticker": "PYPL",
       "shares": 10068.0,
       "invested_capital": 1633533.0,
       "average_cost": 162.25
-    },
-    {
-      "ticker": "CHWY",
-      "shares": 18000.0,
-      "invested_capital": 567400.0,
-      "average_cost": 31.522222222222222
     },
     {
       "ticker": "BIDU",
@@ -460,13 +495,15 @@
       "ticker": "TEM",
       "shares": 0.0,
       "invested_capital": 0.0,
-      "average_cost": 0.0
+      "average_cost": 0.0,
+      "sector": "Technology"
     },
     {
       "ticker": "HOOD",
       "shares": 0.0,
       "invested_capital": 0.0,
-      "average_cost": 0.0
+      "average_cost": 0.0,
+      "sector": "Technology"
     },
     {
       "ticker": "IAG",
@@ -484,25 +521,29 @@
       "ticker": "LLY",
       "shares": 0.0,
       "invested_capital": 0.0,
-      "average_cost": 0.0
+      "average_cost": 0.0,
+      "sector": "HealthCare"
     },
     {
       "ticker": "HBM",
       "shares": 0.0,
       "invested_capital": 0.0,
-      "average_cost": 0.0
+      "average_cost": 0.0,
+      "sector": "Copper"
     },
     {
       "ticker": "0020.HK",
       "shares": 430000.0,
       "invested_capital": 104987.01298701297,
-      "average_cost": 0.24415584415584413
+      "average_cost": 0.24415584415584413,
+      "sector": "Hong Kong and China"
     },
     {
       "ticker": "2318.HK",
       "shares": 333894.0,
       "invested_capital": 3350115.302906325,
-      "average_cost": 10.033469612830196
+      "average_cost": 10.033469612830196,
+      "sector": "Hong Kong and China"
     },
     {
       "ticker": "KWEB",
@@ -514,25 +555,29 @@
       "ticker": "0700.HK",
       "shares": 88515.0,
       "invested_capital": 4657451.31768576,
-      "average_cost": 52.617650315604806
+      "average_cost": 52.617650315604806,
+      "sector": "Hong Kong and China"
     },
     {
       "ticker": "9988.HK",
       "shares": 441137.0,
       "invested_capital": 11991066.281427097,
-      "average_cost": 27.182182137129953
+      "average_cost": 27.182182137129953,
+      "sector": "Hong Kong and China"
     },
     {
       "ticker": "9618.HK",
       "shares": 6411.0,
       "invested_capital": 0.0,
-      "average_cost": 0.0
+      "average_cost": 0.0,
+      "sector": "Hong Kong and China"
     },
     {
       "ticker": "3690.HK",
       "shares": 11022.0,
       "invested_capital": 0.0,
-      "average_cost": 0.0
+      "average_cost": 0.0,
+      "sector": "Hong Kong and China"
     }
   ],
   "fixed_income": [
