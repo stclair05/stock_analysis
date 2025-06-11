@@ -14,8 +14,7 @@ function HomePage() {
 
   const [isETF, setIsETF] = useState<boolean | null>(null);
 
-  const isValidSymbol = (symbol: string) =>
-    /^[A-Za-z0-9.=]{1,10}$/.test(symbol);
+  const isValidSymbol = (symbol: string) => true;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value.toUpperCase());

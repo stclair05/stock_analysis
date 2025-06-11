@@ -131,32 +131,12 @@ class StockAnalyser:
 
 
     def super_trend(self) -> TimeSeriesMetric:
-        df_weekly = self.weekly_df.last('3Y')
+        df_weekly = self.weekly_df.last('600D')
 
-        print(f"DEBUG: Length of df_weekly: {len(df_weekly)} rows")
-        if not df_weekly.empty:
-            print(f"DEBUG: df_weekly Date Range: {df_weekly.index.min()} to {df_weekly.index.max()}")
-            print("DEBUG: df_weekly head:")
-            print(df_weekly.head())
-            print("DEBUG: df_weekly tail:")
-            print(df_weekly.tail())
-        else:
-            print("DEBUG: df_weekly is empty.")
-
-
-        if len(df_weekly) < 30 or df_weekly.empty:
+        if len(df_weekly) < 30 or df_weekly.empty:  # ~30 weeks
             return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
-        
-        # IMPORTANT: Ensure this line correctly unpacks the tuple
-        df_st, debug_df = compute_supertrend_lines(df_weekly) # Make sure you are using the function that returns two DataFrames
-
-        # Then, continue with your existing print statements for df_st and debug_df
-        print("\n--- Full Supertrend Results Tail ---")
-        print(df_st.tail(10))
-        print("\n--- Supertrend Signals ---")
-        print(df_st["Signal"].tail(10))
-        print("\n--- Debug Data Tail ---") # Print this to see the detailed step-by-step
-        print(debug_df.tail(10))
+    
+        df_st = compute_supertrend_lines(df_weekly)
 
         return TimeSeriesMetric(
             current=safe_value(df_st["Signal"], -1),
