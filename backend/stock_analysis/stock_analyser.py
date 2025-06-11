@@ -131,12 +131,32 @@ class StockAnalyser:
 
 
     def super_trend(self) -> TimeSeriesMetric:
-        df_weekly = self.weekly_df.last('600D')
+        df_weekly = self.weekly_df.last('3Y')
 
-        if len(df_weekly) < 30 or df_weekly.empty:  # ~30 weeks
+        print(f"DEBUG: Length of df_weekly: {len(df_weekly)} rows")
+        if not df_weekly.empty:
+            print(f"DEBUG: df_weekly Date Range: {df_weekly.index.min()} to {df_weekly.index.max()}")
+            print("DEBUG: df_weekly head:")
+            print(df_weekly.head())
+            print("DEBUG: df_weekly tail:")
+            print(df_weekly.tail())
+        else:
+            print("DEBUG: df_weekly is empty.")
+
+
+        if len(df_weekly) < 30 or df_weekly.empty:
             return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
-    
-        df_st = compute_supertrend_lines(df_weekly)
+        
+        # IMPORTANT: Ensure this line correctly unpacks the tuple
+        df_st, debug_df = compute_supertrend_lines(df_weekly) # Make sure you are using the function that returns two DataFrames
+
+        # Then, continue with your existing print statements for df_st and debug_df
+        print("\n--- Full Supertrend Results Tail ---")
+        print(df_st.tail(10))
+        print("\n--- Supertrend Signals ---")
+        print(df_st["Signal"].tail(10))
+        print("\n--- Debug Data Tail ---") # Print this to see the detailed step-by-step
+        print(debug_df.tail(10))
 
         return TimeSeriesMetric(
             current=safe_value(df_st["Signal"], -1),
@@ -144,7 +164,6 @@ class StockAnalyser:
             fourteen_days_ago=safe_value(df_st["Signal"], -3),
             twentyone_days_ago=safe_value(df_st["Signal"], -4),
         )
-
 
 
     def adx(self) -> TimeSeriesMetric:
@@ -1197,13 +1216,11 @@ class StockAnalyser:
 
     def get_stclairlongterm_signals(self, timeframe: str = "weekly") -> list[dict]:
         """
-        Implements StClairLongTerm strategy.
-        Entry: At least 2/3 signals True:
-            - Supertrend is Buy (weekly)
+        Implements StClairLongTerm strategy (TEMP: Supertrend disabled).
+        Entry: At least 1/2 signals True:
             - Price above Ichimoku cloud (weekly)
             - Weekly RSI > Monthly RSI MA (use most recent up to this week)
-        Exit: At least 2/3 signals True:
-            - Supertrend is Sell (weekly)
+        Exit: At least 1/2 signals True:
             - Price below Ichimoku cloud (weekly)
             - Weekly RSI < Monthly RSI MA (use most recent up to this week)
         Returns markers: {time, price, side, label}
@@ -1215,9 +1232,10 @@ class StockAnalyser:
             return []
 
         close = df_weekly["Close"]
-        # --- Supertrend ---
-        df_st = compute_supertrend_lines(df_weekly)
-        st_signal = df_st["Signal"]  # "Buy" or "Sell", already weekly indexed
+
+        # --- Supertrend (TEMPORARILY DISABLED) ---
+        # df_st = compute_supertrend_lines(df_weekly)
+        # st_signal = df_st["Signal"]  # "Buy" or "Sell", already weekly indexed
 
         # --- Ichimoku Cloud ---
         _, _, span_a, span_b = compute_ichimoku_lines(df_weekly)
@@ -1237,7 +1255,6 @@ class StockAnalyser:
         monthly_rsi_ma = monthly_rsi.rolling(window=14).mean()
 
         # Reindex monthly RSI MA to weekly (use most recent up to this week)
-        # If a week is after a month, use last known value
         rsi_ma_for_week = monthly_rsi_ma.reindex(df_weekly.index, method="ffill")
 
         # --- Iterate and detect signals ---
@@ -1247,15 +1264,14 @@ class StockAnalyser:
         for idx in range(len(df_weekly)):
             t = df_weekly.index[idx]
             price = close.iloc[idx]
-            # Signals for this week
             signals_entry = 0
             signals_exit = 0
 
-            # Supertrend
-            if st_signal.iloc[idx] == "Buy":
-                signals_entry += 1
-            if st_signal.iloc[idx] == "Sell":
-                signals_exit += 1
+            # --- Supertrend checks commented out
+            # if st_signal.iloc[idx] == "Buy":
+            #     signals_entry += 1
+            # if st_signal.iloc[idx] == "Sell":
+            #     signals_exit += 1
 
             # Ichimoku
             if ichimoku_status.iloc[idx] == "Above":
@@ -1272,8 +1288,8 @@ class StockAnalyser:
                 if rsi_val < rsi_ma_val:
                     signals_exit += 1
 
-            # --- Entry (at least 2/3) ---
-            if not in_position and signals_entry >= 2:
+            # --- Entry (now needs at least 1/2) ---
+            if not in_position and signals_entry >= 1:
                 markers.append({
                     "time": int(pd.Timestamp(t).timestamp()),
                     "price": price,
@@ -1281,8 +1297,8 @@ class StockAnalyser:
                     "label": "ENTRY"
                 })
                 in_position = True
-            # --- Exit (at least 2/3) ---
-            elif in_position and signals_exit >= 2:
+            # --- Exit (now needs at least 1/2) ---
+            elif in_position and signals_exit >= 1:
                 markers.append({
                     "time": int(pd.Timestamp(t).timestamp()),
                     "price": price,
@@ -1292,6 +1308,7 @@ class StockAnalyser:
                 in_position = False
 
         return markers
+
 
 
     def backtest_signal_markers(self, markers: list[dict]) -> dict:

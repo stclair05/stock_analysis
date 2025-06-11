@@ -336,13 +336,27 @@ def compute_ichimoku_lines(df_weekly: pd.DataFrame) -> tuple[pd.Series, pd.Serie
     return tenkan_sen, kijun_sen, span_a, span_b
 
 def compute_supertrend_lines(df: pd.DataFrame, period: int = 10, multiplier: float = 3.0) -> pd.DataFrame:
+    """
+    Calculates the Supertrend indicator lines and signals, replicating Pine Script logic.
+
+    Args:
+        df (pd.DataFrame): DataFrame with 'High', 'Low', 'Close' columns.
+        period (int): ATR period. Defaults to 10.
+        multiplier (float): ATR multiplier. Defaults to 3.0.
+
+    Returns:
+        tuple: A tuple containing:
+            - pd.DataFrame: DataFrame with 'Close', 'ST_Line_Up', 'ST_Line_Down',
+                            'Signal', 'Trend', 'BuySignal', 'SellSignal' columns.
+            - pd.DataFrame: Debugging DataFrame with step-by-step calculation details.
+    """
     df = df.copy()
-    df.index = df.index.tz_localize(None)
+    df.index = df.index.tz_localize(None) # Ensure no timezone issues
 
     high = df["High"]
     low = df["Low"]
     close = df["Close"]
-    
+
     # Step 1: Calculate HL2 and True Range (TR)
     hl2 = (high + low) / 2
     tr1 = high - low
@@ -350,46 +364,110 @@ def compute_supertrend_lines(df: pd.DataFrame, period: int = 10, multiplier: flo
     tr3 = (low - close.shift(1)).abs()
     tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
 
-    # Step 2: Wilder's Smoothing for ATR
+    # Step 2: Wilder's Smoothing for ATR (Pine Script's atr() function uses this)
     atr = tr.ewm(alpha=1 / period, adjust=False).mean()
 
-    # Step 3: Calculate Basic Bands
-    upperband = hl2 + multiplier * atr
-    lowerband = hl2 - multiplier * atr
+    # Initialize series for supertrend calculations
+    # 'up' and 'dn' are the internal Pine Script variables that hold the actual band values
+    # They are then selectively plotted as ST_Line_Up or ST_Line_Down based on the trend
+    up = pd.Series(index=df.index, dtype=float)
+    dn = pd.Series(index=df.index, dtype=float)
+    trend = pd.Series(index=df.index, dtype=int) # 1 for uptrend, -1 for downtrend
 
-    # Step 4: Initialize Supertrend columns
-    supertrend = pd.DataFrame(index=df.index)
-    supertrend["Close"] = close
-    supertrend["UpperBand"] = upperband
-    supertrend["LowerBand"] = lowerband
-    supertrend["InUptrend"] = True
+    # List to store debugging information for each bar
+    debug_data = []
 
-    # Step 5: Loop through rows for signal logic
-    for i in range(1, len(supertrend)):
-        prev = supertrend.iloc[i - 1]
-        curr = supertrend.iloc[i]
+    # Step 3, 4, 5: Iterative Calculation of Bands and Trend
+    for i in range(len(df)):
+        current_date = df.index[i]
+        current_close = close.iloc[i]
+        current_hl2 = hl2.iloc[i]
+        current_atr = atr.iloc[i]
 
-        if curr["Close"] > prev["UpperBand"]:
-            supertrend.iat[i, supertrend.columns.get_loc("InUptrend")] = True
-        elif curr["Close"] < prev["LowerBand"]:
-            supertrend.iat[i, supertrend.columns.get_loc("InUptrend")] = False
+        # Calculate initial upper and lower bands for the current bar based on HL2 and ATR
+        basic_upper_band = current_hl2 + (multiplier * current_atr)
+        basic_lower_band = current_hl2 - (multiplier * current_atr)
+
+        if i == 0:
+            # Initialize for the very first bar
+            trend.iloc[i] = 1 # Pine Script default for 'trend' is 1 (uptrend)
+            up.iloc[i] = basic_lower_band # 'up' variable stores the lower band (for an uptrend line)
+            dn.iloc[i] = basic_upper_band # 'dn' variable stores the upper band (for a downtrend line)
         else:
-            supertrend.iat[i, supertrend.columns.get_loc("InUptrend")] = prev["InUptrend"]
-            if prev["InUptrend"]:
-                if curr["LowerBand"] < prev["LowerBand"]:
-                    supertrend.iat[i, supertrend.columns.get_loc("LowerBand")] = prev["LowerBand"]
-                supertrend.iat[i, supertrend.columns.get_loc("UpperBand")] = np.nan
+            prev_close = close.iloc[i-1]
+            prev_trend = trend.iloc[i-1]
+            prev_up = up.iloc[i-1] # Previous value of the 'up' variable (support line)
+            prev_dn = dn.iloc[i-1] # Previous value of the 'dn' variable (resistance line)
+
+            # --- Pine Script's 'up' and 'dn' variable updates ---
+            # up := close[1] > up1 ? max(up,up1) : up
+            # dn := close[1] < dn1 ? min(dn,dn1) : dn
+            # where 'up1' is nz(up[1], up) and 'dn1' is nz(dn[1], dn)
+
+            # First, calculate the 'up' variable for the current bar
+            # If the previous close was above the previous 'up' line, and current basic_lower_band is higher than prev_up,
+            # then the 'up' line moves up. Otherwise, it resets to current basic_lower_band.
+            if prev_close > prev_up:
+                up.iloc[i] = max(basic_lower_band, prev_up)
             else:
-                if curr["UpperBand"] > prev["UpperBand"]:
-                    supertrend.iat[i, supertrend.columns.get_loc("UpperBand")] = prev["UpperBand"]
-                supertrend.iat[i, supertrend.columns.get_loc("LowerBand")] = np.nan
+                up.iloc[i] = basic_lower_band
 
-    # Step 6: Derive Signal and Final Plot Lines
-    supertrend["Signal"] = supertrend["InUptrend"].map(lambda x: "Buy" if x else "Sell")
-    supertrend["ST_Line_Up"] = np.where(supertrend["InUptrend"], supertrend["LowerBand"], np.nan)
-    supertrend["ST_Line_Down"] = np.where(supertrend["InUptrend"], np.nan, supertrend["UpperBand"])
+            # Second, calculate the 'dn' variable for the current bar
+            # If the previous close was below the previous 'dn' line, and current basic_upper_band is lower than prev_dn,
+            # then the 'dn' line moves down. Otherwise, it resets to current basic_upper_band.
+            if prev_close < prev_dn:
+                dn.iloc[i] = min(basic_upper_band, prev_dn)
+            else:
+                dn.iloc[i] = basic_upper_band
+            
+            # --- Determine the 'trend' for the current bar ---
+            # Pine Script: trend := trend == -1 and close > dn1 ? 1 : trend == 1 and close < up1 ? -1 : trend
+            # Here, prev_dn serves as dn1 and prev_up serves as up1 for the trend flip condition.
 
-    return supertrend[["Close", "ST_Line_Up", "ST_Line_Down", "Signal", "InUptrend"]]
+            if prev_trend == -1 and current_close > prev_dn: # Current close crosses above previous 'dn' line (resistance)
+                trend.iloc[i] = 1 # Trend flips to UP
+            elif prev_trend == 1 and current_close < prev_up: # Current close crosses below previous 'up' line (support)
+                trend.iloc[i] = -1 # Trend flips to DOWN
+            else:
+                trend.iloc[i] = prev_trend # Trend remains unchanged
+
+        # Capture debugging data for this iteration (optional, for detailed inspection)
+        debug_data.append({
+            'Date': current_date,
+            'Close': current_close,
+            'ATR': current_atr,
+            'HL2': current_hl2,
+            'Basic Upper': basic_upper_band,
+            'Basic Lower': basic_lower_band,
+            'Prev Trend': trend.iloc[i-1] if i > 0 else np.nan,
+            'Prev Up (from last bar)': up.iloc[i-1] if i > 0 else np.nan,
+            'Prev Dn (from last bar)': dn.iloc[i-1] if i > 0 else np.nan,
+            'Current Up (calculated for this bar)': up.iloc[i],
+            'Current Dn (calculated for this bar)': dn.iloc[i],
+            'Final Trend (this bar)': trend.iloc[i]
+        })
+
+    # Convert debug data to a DataFrame for easier inspection
+    debug_df = pd.DataFrame(debug_data).set_index('Date')
+
+    # Step 6: Derive Signal and Final Plot Lines for the output DataFrame
+    supertrend_df = pd.DataFrame(index=df.index)
+    supertrend_df["Close"] = close
+    supertrend_df["Trend"] = trend # 1 for uptrend, -1 for downtrend
+
+    # ST_Line_Up: This is the 'up' variable value, but only when the trend is 1 (uptrend)
+    supertrend_df["ST_Line_Up"] = np.where(supertrend_df["Trend"] == 1, up, np.nan)
+    # ST_Line_Down: This is the 'dn' variable value, but only when the trend is -1 (downtrend)
+    supertrend_df["ST_Line_Down"] = np.where(supertrend_df["Trend"] == -1, dn, np.nan)
+
+    # Buy/Sell Signals based on trend changes
+    supertrend_df["BuySignal"] = (supertrend_df["Trend"] == 1) & (supertrend_df["Trend"].shift(1) == -1)
+    supertrend_df["SellSignal"] = (supertrend_df["Trend"] == -1) & (supertrend_df["Trend"].shift(1) == 1)
+
+    # Map numerical trend to "Buy" or "Sell" for the 'Signal' column
+    supertrend_df["Signal"] = supertrend_df["Trend"].map({1: "Buy", -1: "Sell"})
+
+    return supertrend_df[["Close", "ST_Line_Up", "ST_Line_Down", "Signal", "Trend", "BuySignal", "SellSignal"]], debug_df
 
 
 
