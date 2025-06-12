@@ -16,7 +16,8 @@
       "ticker": "AI",
       "shares": 27000.0,
       "invested_capital": 928170.0,
-      "average_cost": 34.376666666666665
+      "average_cost": 34.376666666666665,
+      "sector": "Technology"
     },
     {
       "ticker": "SNPS",
@@ -328,6 +329,13 @@
       "sector": "Bitcoin"
     },
     {
+      "ticker": "ETHA",
+      "shares": 0.0,
+      "invested_capital": 0.0,
+      "average_cost": 0.0,
+      "sector": "Bitcoin"
+    },
+    {
       "ticker": "RIOT",
       "shares": 110000.0,
       "invested_capital": 1339800.0,
@@ -379,7 +387,7 @@
       "sector": "Energy"
     },
     {
-      "ticker": "IPOOD",
+      "ticker": "IPO.TO",
       "shares": 30000.0,
       "invested_capital": 66000.0,
       "average_cost": 2.2,

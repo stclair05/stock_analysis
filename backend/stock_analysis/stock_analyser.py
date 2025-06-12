@@ -25,6 +25,7 @@ class StockAnalyser:
             raise HTTPException(status_code=400, detail="Stock symbol not found or data unavailable.")
         if isinstance(df.columns, pd.MultiIndex):
             df.columns = df.columns.droplevel(1)
+        print(df)
         return df
     
     
@@ -58,13 +59,18 @@ class StockAnalyser:
     
     @cached_property
     def weekly_df(self) -> pd.DataFrame:
-        return self.df.resample("W-FRI").agg({
+        df = self.df.copy()
+        # Use "Adj Close" for resampling if it exists
+        if "Adj Close" in df.columns:
+            df["Close"] = df["Adj Close"]
+        return df.resample("W-FRI").agg({
             "Open": "first",
             "High": "max",
             "Low": "min",
             "Close": "last",
-            "Volume": "sum" if "Volume" in self.df.columns else "first"
+            "Volume": "sum" if "Volume" in df.columns else "first"
         }).dropna()
+
 
     @cached_property
     def monthly_df(self) -> pd.DataFrame:
@@ -74,16 +80,24 @@ class StockAnalyser:
         return safe_value(self.df['Close'], -1)
 
     def calculate_3year_ma(self) -> TimeSeriesMetric:
-        if len(self.df) < 800:
+        # 3 years of weekly closes = 156 weeks
+        if len(self.weekly_df) < 156:
             return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
-        monthly_close = self.monthly_df["Close"]
-        monthly_ma = monthly_close.rolling(window=36).mean()
+        weekly_close = self.weekly_df["Close"]
+        weekly_ma = weekly_close.rolling(window=156).mean()
+
+        print("Last 5 weekly closes:")
+        print(self.weekly_df["Close"].tail(5))
+        print("Last 5 SMA 156:")
+        print(self.weekly_df["Close"].rolling(window=156).mean().tail(5))
+
+
 
         return TimeSeriesMetric(
-            current=safe_value(monthly_ma, -1),
-            seven_days_ago=safe_value(monthly_ma, -2),
-            fourteen_days_ago=safe_value(monthly_ma, -3),
-            twentyone_days_ago=safe_value(monthly_ma, -4),
+            current=safe_value(weekly_ma, -1),
+            seven_days_ago=safe_value(weekly_ma, -2),
+            fourteen_days_ago=safe_value(weekly_ma, -3),
+            twentyone_days_ago=safe_value(weekly_ma, -4),
         )
 
     def calculate_200dma(self) -> TimeSeriesMetric:

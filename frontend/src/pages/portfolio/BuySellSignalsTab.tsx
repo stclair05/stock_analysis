@@ -261,25 +261,23 @@ export default function BuySellSignalsTab() {
 
     if (filterType !== "ALL") {
       currentPortfolio = currentPortfolio.filter((holding) => {
-        let hasRelevantSignal = false;
-        let allSignalsMatchFilter = true; // NEW: Flag to ensure all strategies match the filter
+        let hasMatchingSignal = false; // True if at least one visible strategy matches filterType
+        let hasContradictorySignal = false; // True if any visible strategy contradicts filterType
 
         for (const strategy of visibleAndOrderedStrategies) {
           const signal = signalSummary[holding.ticker]?.[strategy];
 
-          if (signal === "BUY" || signal === "SELL") {
-            hasRelevantSignal = true;
-            if (signal !== filterType) {
-              allSignalsMatchFilter = false; // If any visible signal doesn't match, set to false
-              break; // No need to check further strategies for this ticker
-            }
-          } else {
-            // If a visible strategy has no signal, then it doesn't "match" the filter in the "ALL X" sense
-            allSignalsMatchFilter = false;
-            break;
+          if (signal === filterType) {
+            hasMatchingSignal = true; // Found at least one signal that matches
+          } else if (signal !== "" && signal !== "-") {
+            // If it's a definite signal but NOT the filterType
+            hasContradictorySignal = true; // Found a signal that contradicts the filterType
+            break; // No need to check further strategies for this ticker
           }
+          // If signal is "" or "-", it's neither matching nor contradictory, so it's allowed.
         }
-        return hasRelevantSignal && allSignalsMatchFilter;
+        // Include if it has at least one matching signal AND no contradictory signals
+        return hasMatchingSignal && !hasContradictorySignal;
       });
     }
 
@@ -324,15 +322,16 @@ export default function BuySellSignalsTab() {
       const signals = signalSummary[holding.ticker];
       if (!signals || !holding.sector || holding.sector === "N/A") return; // Skip if no signals or no valid sector info
 
-      // Check if ALL visible strategies for this ticker match the current filterType
-      const allSignalsMatch = strategiesToCheck.every(
-        (strategy) => signals[strategy] === filterType
-      );
+      // IMPORTANT: The filtering for "all buys/sells even with nil" is now handled
+      // by the `displayedPortfolio` itself. So, if a ticker is in `displayedPortfolio`
+      // under a specific filterType, it already meets the new criteria.
+      // We no longer need to re-check `allSignalsMatch` here in `sectorSummary`.
+      // The `displayedPortfolio` will only contain tickers that either
+      // (a) have at least one matching signal AND no contradictory signals,
+      // or (b) are "ALL" where this logic doesn't apply.
 
-      if (allSignalsMatch) {
-        const sector = holding.sector;
-        counts[sector] = (counts[sector] || 0) + 1;
-      }
+      const sector = holding.sector;
+      counts[sector] = (counts[sector] || 0) + 1;
     });
 
     return counts;
@@ -345,6 +344,19 @@ export default function BuySellSignalsTab() {
     listType === "portfolio"
       ? "No equities in your portfolio."
       : "No equities in your watchlist.";
+
+  // Determine the badge color based on the filterType
+  const badgeColorClass =
+    filterType === "BUY"
+      ? "bg-success"
+      : filterType === "SELL"
+      ? "bg-danger"
+      : "bg-primary";
+
+  // Calculate the total count for the summary
+  const totalSectorCount = useMemo(() => {
+    return Object.values(sectorSummary).reduce((sum, count) => sum + count, 0);
+  }, [sectorSummary]);
 
   return (
     <div>
@@ -466,29 +478,45 @@ export default function BuySellSignalsTab() {
             </table>
           </div>
 
-          {/* NEW: Display Sector Summary */}
+          {/* Display Sector Summary - Improved Look */}
           {filterType !== "ALL" && Object.keys(sectorSummary).length > 0 && (
-            <div className="card mt-4">
-              <div className="card-header">
-                Summary of {filterType} Signals by Sector (All Visible
-                Strategies Match)
+            <div className="card mt-4 shadow-sm border-0">
+              <div className="card-header bg-light fw-bold fs-5 border-bottom-0">
+                Summary of {filterType} Signals by Sector (Consistent Signals)
               </div>
               <ul className="list-group list-group-flush">
                 {Object.entries(sectorSummary)
                   .sort(([sectorA], [sectorB]) =>
                     sectorA.localeCompare(sectorB)
-                  ) // Sort sectors alphabetically
+                  )
                   .map(([sector, count]) => (
                     <li
                       key={sector}
-                      className="list-group-item d-flex justify-content-between align-items-center"
+                      className="list-group-item d-flex justify-content-between align-items-center py-3"
+                      style={{ fontSize: "1.12rem" }}
                     >
-                      {sector}
-                      <span className="badge bg-primary rounded-pill">
+                      <span>{sector}</span>
+                      <span
+                        className={`badge ${badgeColorClass} rounded-pill px-4 py-2 fs-5 fw-bold`}
+                        style={{ minWidth: "2.5rem", textAlign: "center" }}
+                      >
                         {count}
                       </span>
                     </li>
                   ))}
+                {/* Total Row - Stand Out */}
+                <li
+                  className="list-group-item d-flex justify-content-between align-items-center fw-bold bg-secondary bg-opacity-10 border-0 py-3"
+                  style={{ fontSize: "1.15rem" }}
+                >
+                  Total Consistent Tickers:
+                  <span
+                    className={`badge ${badgeColorClass} rounded-pill px-4 py-2 fs-5 fw-bold`}
+                    style={{ minWidth: "2.5rem", textAlign: "center" }}
+                  >
+                    {totalSectorCount}
+                  </span>
+                </li>
               </ul>
             </div>
           )}
