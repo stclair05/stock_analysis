@@ -345,61 +345,75 @@ def compute_ichimoku_lines(df_weekly: pd.DataFrame) -> tuple[pd.Series, pd.Serie
     span_b = ((df_weekly['High'].rolling(52).max() + df_weekly['Low'].rolling(52).min()) / 2).shift(26)
     return tenkan_sen, kijun_sen, span_a, span_b
 
-def compute_supertrend_lines(df: pd.DataFrame, period: int = 10, multiplier: float = 3.0) -> pd.DataFrame:
+def compute_supertrend_lines(df, period=10, multiplier=3.0, use_atr_wilder=True):
     df = df.copy()
-    df.index = df.index.tz_localize(None)
-
-    high = df["High"]
-    low = df["Low"]
-    close = df["Close"]
-    
-    # Step 1: Calculate HL2 and True Range (TR)
+    high = df['High']
+    low = df['Low']
+    close = df['Close']
     hl2 = (high + low) / 2
+
+    # True Range
     tr1 = high - low
     tr2 = (high - close.shift(1)).abs()
     tr3 = (low - close.shift(1)).abs()
     tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
 
-    # Step 2: Wilder's Smoothing for ATR
-    atr = tr.ewm(alpha=1 / period, adjust=False).mean()
+    # ATR (Wilder's method by default)
+    if use_atr_wilder:
+        atr = tr.ewm(alpha=1/period, adjust=False).mean()
+    else:
+        atr = tr.rolling(window=period).mean()
 
-    # Step 3: Calculate Basic Bands
-    upperband = hl2 + multiplier * atr
-    lowerband = hl2 - multiplier * atr
+    # Basic Bands
+    up = hl2 - multiplier * atr
+    dn = hl2 + multiplier * atr
 
-    # Step 4: Initialize Supertrend columns
-    supertrend = pd.DataFrame(index=df.index)
-    supertrend["Close"] = close
-    supertrend["UpperBand"] = upperband
-    supertrend["LowerBand"] = lowerband
-    supertrend["InUptrend"] = True
+    up_band = up.copy()
+    dn_band = dn.copy()
+    trend = [1]  # Start with uptrend (1), can start with -1 if desired
 
-    # Step 5: Loop through rows for signal logic
-    for i in range(1, len(supertrend)):
-        prev = supertrend.iloc[i - 1]
-        curr = supertrend.iloc[i]
-
-        if curr["Close"] > prev["UpperBand"]:
-            supertrend.iat[i, supertrend.columns.get_loc("InUptrend")] = True
-        elif curr["Close"] < prev["LowerBand"]:
-            supertrend.iat[i, supertrend.columns.get_loc("InUptrend")] = False
+    # These hold the "sticky" band values
+    for i in range(1, len(df)):
+        # up stickiness
+        if close.iloc[i-1] > up_band.iloc[i-1]:
+            up_band.iloc[i] = max(up.iloc[i], up_band.iloc[i-1])
         else:
-            supertrend.iat[i, supertrend.columns.get_loc("InUptrend")] = prev["InUptrend"]
-            if prev["InUptrend"]:
-                if curr["LowerBand"] < prev["LowerBand"]:
-                    supertrend.iat[i, supertrend.columns.get_loc("LowerBand")] = prev["LowerBand"]
-                supertrend.iat[i, supertrend.columns.get_loc("UpperBand")] = np.nan
-            else:
-                if curr["UpperBand"] > prev["UpperBand"]:
-                    supertrend.iat[i, supertrend.columns.get_loc("UpperBand")] = prev["UpperBand"]
-                supertrend.iat[i, supertrend.columns.get_loc("LowerBand")] = np.nan
+            up_band.iloc[i] = up.iloc[i]
+        # dn stickiness
+        if close.iloc[i-1] < dn_band.iloc[i-1]:
+            dn_band.iloc[i] = min(dn.iloc[i], dn_band.iloc[i-1])
+        else:
+            dn_band.iloc[i] = dn.iloc[i]
 
-    # Step 6: Derive Signal and Final Plot Lines
-    supertrend["Signal"] = supertrend["InUptrend"].map(lambda x: "Buy" if x else "Sell")
-    supertrend["ST_Line_Up"] = np.where(supertrend["InUptrend"], supertrend["LowerBand"], np.nan)
-    supertrend["ST_Line_Down"] = np.where(supertrend["InUptrend"], np.nan, supertrend["UpperBand"])
+    # Trend calculation (1 for uptrend, -1 for downtrend)
+    for i in range(1, len(df)):
+        prev_trend = trend[-1]
+        # PineScript logic:
+        # trend := trend == -1 and close > dn1 ? 1 : trend == 1 and close < up1 ? -1 : trend
+        if prev_trend == -1 and close.iloc[i] > dn_band.iloc[i-1]:
+            trend.append(1)
+        elif prev_trend == 1 and close.iloc[i] < up_band.iloc[i-1]:
+            trend.append(-1)
+        else:
+            trend.append(prev_trend)
 
-    return supertrend[["Close", "ST_Line_Up", "ST_Line_Down", "Signal", "InUptrend"]]
+    trend = pd.Series(trend, index=df.index)
+
+    # Buy/Sell Signals
+    buy = (trend == 1) & (trend.shift(1) == -1)
+    sell = (trend == -1) & (trend.shift(1) == 1)
+
+    df_st = pd.DataFrame(index=df.index)
+    df_st['Close'] = close
+    df_st['Trend'] = trend
+    df_st['Signal'] = np.where(buy, "Buy", np.where(sell, "Sell", np.where(trend==1, "Buy", "Sell")))  # For your summary columns
+
+    # For plotting lines (only show band on the active trend)
+    df_st['ST_Line_Up'] = np.where(trend == 1, up_band, np.nan)
+    df_st['ST_Line_Down'] = np.where(trend == -1, dn_band, np.nan)
+
+    return df_st
+
 
 
 @lru_cache(maxsize=100)

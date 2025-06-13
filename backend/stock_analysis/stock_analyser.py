@@ -1228,8 +1228,8 @@ class StockAnalyser:
         close = df_weekly["Close"]
 
         # --- Supertrend (TEMPORARILY DISABLED) ---
-        # df_st = compute_supertrend_lines(df_weekly)
-        # st_signal = df_st["Signal"]  # "Buy" or "Sell", already weekly indexed
+        df_st = compute_supertrend_lines(df_weekly)
+        st_signal = df_st["Signal"]  # "Buy" or "Sell", already weekly indexed
 
         # --- Ichimoku Cloud ---
         _, _, span_a, span_b = compute_ichimoku_lines(df_weekly)
@@ -1262,10 +1262,10 @@ class StockAnalyser:
             signals_exit = 0
 
             # --- Supertrend checks commented out
-            # if st_signal.iloc[idx] == "Buy":
-            #     signals_entry += 1
-            # if st_signal.iloc[idx] == "Sell":
-            #     signals_exit += 1
+            if st_signal.iloc[idx] == "Buy":
+                signals_entry += 1
+            if st_signal.iloc[idx] == "Sell":
+                signals_exit += 1
 
             # Ichimoku
             if ichimoku_status.iloc[idx] == "Above":
