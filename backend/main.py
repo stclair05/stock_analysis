@@ -96,8 +96,13 @@ def get_portfolio_tickers():
     with open(json_path, "r") as f:
         data = json.load(f)
         equities = data.get("equities", [])
-        # Return only the ticker for each equity
-        return [item["ticker"] for item in equities if "ticker" in item]
+        # MODIFIED: Return ticker and sector for each equity
+        # If 'sector' is not present, default it to "N/A"
+        return [
+            {"ticker": item["ticker"], "sector": item.get("sector", "N/A")}
+            for item in equities
+            if "ticker" in item
+        ]
 
 @app.get("/fmp_financials/{symbol}", response_model=FinancialMetrics)
 async def get_fmp_financials(symbol: str):

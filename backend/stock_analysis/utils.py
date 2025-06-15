@@ -66,25 +66,34 @@ def compute_wilder_rsi(close: pd.Series, period: int) -> pd.Series:
     return rsi
 
 def wilder_smooth(values: pd.Series, period: int) -> pd.Series:
-    """
-    Implements Wilder's smoothing method:
-    - SMA for the first 'period' values
-    - Then (prior * (period - 1) + current) / period
-    """
+    """Wilder's smoothing used for ADX/ATR calculations."""
     result = [np.nan] * (period - 1)
     if len(values) < period:
         return pd.Series(result + [np.nan] * (len(values) - (period - 1)), index=values.index)
 
-    initial = values.iloc[:period].sum()
-    result.append(initial)
+    smoothed = values.iloc[:period].sum()
+    result.append(smoothed)
 
     for i in range(period, len(values)):
-        prev = result[-1]
-        curr = values.iloc[i]
-        smoothed = (prev * (period - 1) + curr) / period
+        smoothed = smoothed - (smoothed / period) + values.iloc[i]
         result.append(smoothed)
 
     return pd.Series(result, index=values.index)
+
+def compute_wilder_atr(tr: pd.Series, period: int) -> pd.Series:
+    """Compute ATR using Wilder's RMA algorithm."""
+    result = [np.nan] * (period - 1)
+    if len(tr) < period:
+        return pd.Series(result + [np.nan] * (len(tr) - (period - 1)), index=tr.index)
+
+    atr = tr.iloc[:period].mean()
+    result.append(atr)
+
+    for i in range(period, len(tr)):
+        atr = (atr * (period - 1) + tr.iloc[i]) / period
+        result.append(atr)
+
+    return pd.Series(result, index=tr.index)
 
 
 def find_pivots(series: np.ndarray, window: int = 3) -> tuple[List[int], List[int]]:
@@ -240,24 +249,34 @@ def classify_40w_status(close: pd.Series, ma_40: pd.Series, slope: pd.Series) ->
 
 def classify_dma_trend(close: pd.Series, ma50: pd.Series, ma150: pd.Series) -> pd.Series:
     """
-    Classify daily price relative to 50DMA and 150DMA into:
-    - "Above Both (Uptrend)"
-    - "Above 150DMA Only"
-    - "Below Both (Downtrend)"
-    - "Below 150DMA Only"
-    - "Between Averages"
+    Label the relationship of price to 50DMA and 150DMA:
+    - 'Strong Uptrend: Price > 50DMA > 150DMA'
+    - 'Above Both MAs, But 50DMA < 150DMA (No Crossover)'
+    - 'Strong Downtrend: Price < 50DMA < 150DMA'
+    - 'Below Both MAs, But 50DMA > 150DMA (No Crossover)'
+    - 'Between/Inside Moving Averages'
     """
     result = pd.Series(index=close.index, dtype='object')
-
     valid = (~close.isna()) & (~ma50.isna()) & (~ma150.isna())
 
-    result[(close > ma50) & (ma50 > ma150) & valid] = "Above Both (Uptrend)"
-    result[(close > ma150) & (ma150 > ma50) & valid] = "Above 150DMA Only"
-    result[(close < ma50) & (ma50 < ma150) & valid] = "Below Both (Downtrend)"
-    result[(close < ma150) & (ma150 < ma50) & valid] = "Below 150DMA Only"
-    result[valid & result.isna()] = "Between Averages"
+    # Strong uptrend: Price above both, 50DMA above 150DMA (classic breakout)
+    result[(close > ma50) & (ma50 > ma150) & valid] = "Strong Uptrend: Price > 50DMA > 150DMA"
+
+    # Price above both, but 50DMA below 150DMA (pre-crossover, trend not confirmed)
+    result[(close > ma150) & (ma150 > ma50) & valid] = "Above Both MAs, But 50DMA < 150DMA (No Crossover)"
+
+    # Strong downtrend: Price below both, 50DMA below 150DMA (classic breakdown)
+    result[(close < ma50) & (ma50 < ma150) & valid] = "Strong Downtrend: Price < 50DMA < 150DMA"
+
+    # Price below both, but 50DMA above 150DMA (pre-crossover on downside, trend not confirmed)
+    result[(close < ma150) & (ma150 < ma50) & valid] = "Below Both MAs, But 50DMA > 150DMA (No Crossover)"
+
+    # All other cases (price between MAs)
+    result[valid & result.isna()] = "Between/Inside Moving Averages"
 
     return result
+
+
 
 def classify_bbwp_percentile(bbwp: pd.Series) -> pd.Series:
     """
@@ -335,62 +354,74 @@ def compute_ichimoku_lines(df_weekly: pd.DataFrame) -> tuple[pd.Series, pd.Serie
     span_b = ((df_weekly['High'].rolling(52).max() + df_weekly['Low'].rolling(52).min()) / 2).shift(26)
     return tenkan_sen, kijun_sen, span_a, span_b
 
-def compute_supertrend_lines(df: pd.DataFrame, period: int = 10, multiplier: float = 3.0) -> pd.DataFrame:
+def compute_supertrend_lines(df, period=10, multiplier=3.0, use_atr_wilder=True):
     df = df.copy()
-    df.index = df.index.tz_localize(None)
-
-    high = df["High"]
-    low = df["Low"]
-    close = df["Close"]
-    
-    # Step 1: Calculate HL2 and True Range (TR)
+    high = df['High']
+    low = df['Low']
+    close = df['Close']
     hl2 = (high + low) / 2
+
+    # True Range
     tr1 = high - low
     tr2 = (high - close.shift(1)).abs()
     tr3 = (low - close.shift(1)).abs()
     tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
 
-    # Step 2: Wilder's Smoothing for ATR
-    atr = tr.ewm(alpha=1 / period, adjust=False).mean()
+    # ATR (Wilder's method by default)
+    if use_atr_wilder:
+        atr = compute_wilder_atr(tr, period)
+    else:
+        atr = tr.rolling(window=period).mean()
 
-    # Step 3: Calculate Basic Bands
-    upperband = hl2 + multiplier * atr
-    lowerband = hl2 - multiplier * atr
+    # Basic Bands
+    up = hl2 - multiplier * atr
+    dn = hl2 + multiplier * atr
 
-    # Step 4: Initialize Supertrend columns
-    supertrend = pd.DataFrame(index=df.index)
-    supertrend["Close"] = close
-    supertrend["UpperBand"] = upperband
-    supertrend["LowerBand"] = lowerband
-    supertrend["InUptrend"] = True
+    up_band = up.copy()
+    dn_band = dn.copy()
+    trend = [1]  # Start with uptrend (1), can start with -1 if desired
 
-    # Step 5: Loop through rows for signal logic
-    for i in range(1, len(supertrend)):
-        prev = supertrend.iloc[i - 1]
-        curr = supertrend.iloc[i]
-
-        if curr["Close"] > prev["UpperBand"]:
-            supertrend.iat[i, supertrend.columns.get_loc("InUptrend")] = True
-        elif curr["Close"] < prev["LowerBand"]:
-            supertrend.iat[i, supertrend.columns.get_loc("InUptrend")] = False
+    # These hold the "sticky" band values
+    for i in range(1, len(df)):
+        # up stickiness
+        if close.iloc[i-1] > up_band.iloc[i-1]:
+            up_band.iloc[i] = max(up.iloc[i], up_band.iloc[i-1])
         else:
-            supertrend.iat[i, supertrend.columns.get_loc("InUptrend")] = prev["InUptrend"]
-            if prev["InUptrend"]:
-                if curr["LowerBand"] < prev["LowerBand"]:
-                    supertrend.iat[i, supertrend.columns.get_loc("LowerBand")] = prev["LowerBand"]
-                supertrend.iat[i, supertrend.columns.get_loc("UpperBand")] = np.nan
-            else:
-                if curr["UpperBand"] > prev["UpperBand"]:
-                    supertrend.iat[i, supertrend.columns.get_loc("UpperBand")] = prev["UpperBand"]
-                supertrend.iat[i, supertrend.columns.get_loc("LowerBand")] = np.nan
+            up_band.iloc[i] = up.iloc[i]
+        # dn stickiness
+        if close.iloc[i-1] < dn_band.iloc[i-1]:
+            dn_band.iloc[i] = min(dn.iloc[i], dn_band.iloc[i-1])
+        else:
+            dn_band.iloc[i] = dn.iloc[i]
 
-    # Step 6: Derive Signal and Final Plot Lines
-    supertrend["Signal"] = supertrend["InUptrend"].map(lambda x: "Buy" if x else "Sell")
-    supertrend["ST_Line_Up"] = np.where(supertrend["InUptrend"], supertrend["LowerBand"], np.nan)
-    supertrend["ST_Line_Down"] = np.where(supertrend["InUptrend"], np.nan, supertrend["UpperBand"])
+    # Trend calculation (1 for uptrend, -1 for downtrend)
+    for i in range(1, len(df)):
+        prev_trend = trend[-1]
+        # PineScript logic:
+        # trend := trend == -1 and close > dn1 ? 1 : trend == 1 and close < up1 ? -1 : trend
+        if prev_trend == -1 and close.iloc[i] > dn_band.iloc[i-1]:
+            trend.append(1)
+        elif prev_trend == 1 and close.iloc[i] < up_band.iloc[i-1]:
+            trend.append(-1)
+        else:
+            trend.append(prev_trend)
 
-    return supertrend[["Close", "ST_Line_Up", "ST_Line_Down", "Signal", "InUptrend"]]
+    trend = pd.Series(trend, index=df.index)
 
+    # Buy/Sell Signals
+    buy = (trend == 1) & (trend.shift(1) == -1)
+    sell = (trend == -1) & (trend.shift(1) == 1)
+
+    df_st = pd.DataFrame(index=df.index)
+    df_st['Close'] = close
+    df_st['Trend'] = trend
+    df_st['Signal'] = np.where(buy, "Buy", np.where(sell, "Sell", np.where(trend==1, "Buy", "Sell")))  # For your summary columns
+
+    # For plotting lines (only show band on the active trend)
+    df_st['ST_Line_Up'] = np.where(trend == 1, up_band, np.nan)
+    df_st['ST_Line_Down'] = np.where(trend == -1, dn_band, np.nan)
+
+    return df_st
 
 
 

@@ -25,6 +25,7 @@ class StockAnalyser:
             raise HTTPException(status_code=400, detail="Stock symbol not found or data unavailable.")
         if isinstance(df.columns, pd.MultiIndex):
             df.columns = df.columns.droplevel(1)
+        print(df)
         return df
     
     
@@ -58,13 +59,18 @@ class StockAnalyser:
     
     @cached_property
     def weekly_df(self) -> pd.DataFrame:
-        return self.df.resample("W-FRI").agg({
+        df = self.df.copy()
+        # Use "Adj Close" for resampling if it exists
+        if "Adj Close" in df.columns:
+            df["Close"] = df["Adj Close"]
+        return df.resample("W-FRI").agg({
             "Open": "first",
             "High": "max",
             "Low": "min",
             "Close": "last",
-            "Volume": "sum" if "Volume" in self.df.columns else "first"
+            "Volume": "sum" if "Volume" in df.columns else "first"
         }).dropna()
+
 
     @cached_property
     def monthly_df(self) -> pd.DataFrame:
@@ -74,16 +80,24 @@ class StockAnalyser:
         return safe_value(self.df['Close'], -1)
 
     def calculate_3year_ma(self) -> TimeSeriesMetric:
-        if len(self.df) < 800:
+        # 3 years of weekly closes = 156 weeks
+        if len(self.weekly_df) < 156:
             return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
-        monthly_close = self.monthly_df["Close"]
-        monthly_ma = monthly_close.rolling(window=36).mean()
+        weekly_close = self.weekly_df["Close"]
+        weekly_ma = weekly_close.rolling(window=156).mean()
+
+        print("Last 5 weekly closes:")
+        print(self.weekly_df["Close"].tail(5))
+        print("Last 5 SMA 156:")
+        print(self.weekly_df["Close"].rolling(window=156).mean().tail(5))
+
+
 
         return TimeSeriesMetric(
-            current=safe_value(monthly_ma, -1),
-            seven_days_ago=safe_value(monthly_ma, -2),
-            fourteen_days_ago=safe_value(monthly_ma, -3),
-            twentyone_days_ago=safe_value(monthly_ma, -4),
+            current=safe_value(weekly_ma, -1),
+            seven_days_ago=safe_value(weekly_ma, -2),
+            fourteen_days_ago=safe_value(weekly_ma, -3),
+            twentyone_days_ago=safe_value(weekly_ma, -4),
         )
 
     def calculate_200dma(self) -> TimeSeriesMetric:
@@ -144,7 +158,6 @@ class StockAnalyser:
             fourteen_days_ago=safe_value(df_st["Signal"], -3),
             twentyone_days_ago=safe_value(df_st["Signal"], -4),
         )
-
 
 
     def adx(self) -> TimeSeriesMetric:
@@ -1197,13 +1210,11 @@ class StockAnalyser:
 
     def get_stclairlongterm_signals(self, timeframe: str = "weekly") -> list[dict]:
         """
-        Implements StClairLongTerm strategy.
-        Entry: At least 2/3 signals True:
-            - Supertrend is Buy (weekly)
+        Implements StClairLongTerm strategy (TEMP: Supertrend disabled).
+        Entry: At least 1/2 signals True:
             - Price above Ichimoku cloud (weekly)
             - Weekly RSI > Monthly RSI MA (use most recent up to this week)
-        Exit: At least 2/3 signals True:
-            - Supertrend is Sell (weekly)
+        Exit: At least 1/2 signals True:
             - Price below Ichimoku cloud (weekly)
             - Weekly RSI < Monthly RSI MA (use most recent up to this week)
         Returns markers: {time, price, side, label}
@@ -1215,7 +1226,8 @@ class StockAnalyser:
             return []
 
         close = df_weekly["Close"]
-        # --- Supertrend ---
+
+        # --- Supertrend (TEMPORARILY DISABLED) ---
         df_st = compute_supertrend_lines(df_weekly)
         st_signal = df_st["Signal"]  # "Buy" or "Sell", already weekly indexed
 
@@ -1237,7 +1249,6 @@ class StockAnalyser:
         monthly_rsi_ma = monthly_rsi.rolling(window=14).mean()
 
         # Reindex monthly RSI MA to weekly (use most recent up to this week)
-        # If a week is after a month, use last known value
         rsi_ma_for_week = monthly_rsi_ma.reindex(df_weekly.index, method="ffill")
 
         # --- Iterate and detect signals ---
@@ -1247,11 +1258,10 @@ class StockAnalyser:
         for idx in range(len(df_weekly)):
             t = df_weekly.index[idx]
             price = close.iloc[idx]
-            # Signals for this week
             signals_entry = 0
             signals_exit = 0
 
-            # Supertrend
+            # --- Supertrend checks commented out
             if st_signal.iloc[idx] == "Buy":
                 signals_entry += 1
             if st_signal.iloc[idx] == "Sell":
@@ -1272,8 +1282,8 @@ class StockAnalyser:
                 if rsi_val < rsi_ma_val:
                     signals_exit += 1
 
-            # --- Entry (at least 2/3) ---
-            if not in_position and signals_entry >= 2:
+            # --- Entry (now needs at least 1/2) ---
+            if not in_position and signals_entry >= 1:
                 markers.append({
                     "time": int(pd.Timestamp(t).timestamp()),
                     "price": price,
@@ -1281,8 +1291,8 @@ class StockAnalyser:
                     "label": "ENTRY"
                 })
                 in_position = True
-            # --- Exit (at least 2/3) ---
-            elif in_position and signals_exit >= 2:
+            # --- Exit (now needs at least 1/2) ---
+            elif in_position and signals_exit >= 1:
                 markers.append({
                     "time": int(pd.Timestamp(t).timestamp()),
                     "price": price,
@@ -1292,6 +1302,7 @@ class StockAnalyser:
                 in_position = False
 
         return markers
+
 
 
     def backtest_signal_markers(self, markers: list[dict]) -> dict:

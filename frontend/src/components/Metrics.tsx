@@ -158,11 +158,13 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
     if (lower.includes("normal")) return "text-secondary";
 
     // 50DMA & 150DMA Composite Signal
-    if (lower.includes("above both")) return "text-success fw-bold"; // Strong uptrend
-    if (lower.includes("above 150dma only")) return "text-success"; // Mild uptrend
-    if (lower.includes("below both")) return "text-danger fw-bold"; // Strong downtrend
-    if (lower.includes("below 150dma only")) return "text-danger"; // Mild downtrend
-    if (lower.includes("between averages")) return "text-warning"; // Choppy
+    if (lower.includes("strong uptrend")) return "text-up-strong fw-bold";
+    if (lower.includes("above both mas, but 50dma < 150dma"))
+      return "text-up-weak";
+    if (lower.includes("strong downtrend")) return "text-down-strong fw-bold";
+    if (lower.includes("below both mas, but 50dma > 150dma"))
+      return "text-down-weak";
+    if (lower.includes("between/inside moving averages")) return "text-neutral";
 
     // ADX Classification
     if (lower === "green") return "text-up-strong"; // Strong bullish
