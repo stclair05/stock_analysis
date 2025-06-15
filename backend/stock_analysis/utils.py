@@ -53,18 +53,6 @@ def detect_zigzag_pivots(df: pd.DataFrame, threshold: float = 0.07, window: int 
     return pivots
 
 
-def compute_wilder_rsi(close: pd.Series, period: int) -> pd.Series:
-    delta = close.diff()
-    gain = delta.where(delta > 0, 0.0)
-    loss = -delta.where(delta < 0, 0.0)
-
-    avg_gain = gain.ewm(alpha=1/period, min_periods=period).mean()
-    avg_loss = loss.ewm(alpha=1/period, min_periods=period).mean()
-
-    rs = avg_gain / avg_loss
-    rsi = 100 - (100 / (1 + rs))
-    return rsi
-
 def wilder_smooth(values: pd.Series, period: int) -> pd.Series:
     """Wilder's smoothing used for ADX/ATR calculations."""
     result = [np.nan] * (period - 1)
