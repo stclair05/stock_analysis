@@ -66,25 +66,34 @@ def compute_wilder_rsi(close: pd.Series, period: int) -> pd.Series:
     return rsi
 
 def wilder_smooth(values: pd.Series, period: int) -> pd.Series:
-    """
-    Implements Wilder's smoothing method:
-    - SMA for the first 'period' values
-    - Then (prior * (period - 1) + current) / period
-    """
+    """Wilder's smoothing used for ADX/ATR calculations."""
     result = [np.nan] * (period - 1)
     if len(values) < period:
         return pd.Series(result + [np.nan] * (len(values) - (period - 1)), index=values.index)
 
-    initial = values.iloc[:period].sum()
-    result.append(initial)
+    smoothed = values.iloc[:period].sum()
+    result.append(smoothed)
 
     for i in range(period, len(values)):
-        prev = result[-1]
-        curr = values.iloc[i]
-        smoothed = (prev * (period - 1) + curr) / period
+        smoothed = smoothed - (smoothed / period) + values.iloc[i]
         result.append(smoothed)
 
     return pd.Series(result, index=values.index)
+
+def compute_wilder_atr(tr: pd.Series, period: int) -> pd.Series:
+    """Compute ATR using Wilder's RMA algorithm."""
+    result = [np.nan] * (period - 1)
+    if len(tr) < period:
+        return pd.Series(result + [np.nan] * (len(tr) - (period - 1)), index=tr.index)
+
+    atr = tr.iloc[:period].mean()
+    result.append(atr)
+
+    for i in range(period, len(tr)):
+        atr = (atr * (period - 1) + tr.iloc[i]) / period
+        result.append(atr)
+
+    return pd.Series(result, index=tr.index)
 
 
 def find_pivots(series: np.ndarray, window: int = 3) -> tuple[List[int], List[int]]:
@@ -360,7 +369,7 @@ def compute_supertrend_lines(df, period=10, multiplier=3.0, use_atr_wilder=True)
 
     # ATR (Wilder's method by default)
     if use_atr_wilder:
-        atr = tr.ewm(alpha=1/period, adjust=False).mean()
+        atr = compute_wilder_atr(tr, period)
     else:
         atr = tr.rolling(window=period).mean()
 
