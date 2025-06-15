@@ -6,7 +6,7 @@ from functools import lru_cache
 from functools import cached_property
 from .models import TimeSeriesMetric
 from aliases import SYMBOL_ALIASES
-from .utils import safe_value, detect_rsi_divergence, find_pivots, compute_wilder_rsi, compute_bbwp, compute_ichimoku_lines, compute_supertrend_lines, to_series, classify_adx_trend, classify_mace_signal, classify_40w_status, classify_dma_trend, classify_bbwp_percentile, wilder_smooth, reindex_indicator
+from .utils import compute_demarker, safe_value, detect_rsi_divergence, find_pivots, compute_wilder_rsi, compute_bbwp, compute_ichimoku_lines, compute_supertrend_lines, to_series, classify_adx_trend, classify_mace_signal, classify_40w_status, classify_dma_trend, classify_bbwp_percentile, wilder_smooth, reindex_indicator
 from .pricetarget import get_price_targets
 from threading import Lock
 
@@ -1227,7 +1227,7 @@ class StockAnalyser:
 
         close = df_weekly["Close"]
 
-        # --- Supertrend (TEMPORARILY DISABLED) ---
+        # --- Supertrend ---
         df_st = compute_supertrend_lines(df_weekly)
         st_signal = df_st["Signal"]  # "Buy" or "Sell", already weekly indexed
 
@@ -1423,3 +1423,61 @@ class StockAnalyser:
         return markers
     
     
+    def get_demarker_signals(self, timeframe: str = "weekly", period: int = 14) -> list[dict]:
+        """
+        Generate buy/sell signals based on the DeMarker indicator.
+        Entry: DeMarker crosses above 0.3 (oversold to rising = Buy)
+        Exit:  DeMarker crosses below 0.7 (overbought to falling = Sell)
+        """
+        # 1. Get data
+        if timeframe == "daily":
+            df = self.df
+        elif timeframe == "weekly":
+            df = self.weekly_df
+        elif timeframe == "monthly":
+            df = self.monthly_df
+        else:
+            raise ValueError(f"Invalid timeframe: {timeframe}")
+        if len(df) < period + 5:
+            return []
+
+        high = df["High"]
+        low = df["Low"]
+        close = df["Close"]
+
+        dem = compute_demarker(close, high, low, period=period)
+
+        markers = []
+        in_position = False
+
+        # Signals: Buy when DeM crosses above 0.3 from below. Sell when DeM crosses below 0.7 from above.
+        for idx in range(1, len(df)):
+            t = df.index[idx]
+            price = close.iloc[idx]
+            dem_prev = dem.iloc[idx - 1]
+            dem_now = dem.iloc[idx]
+
+            # Entry: DeM crosses above 0.3
+            entry_cond = (dem_prev < 0.3) and (dem_now >= 0.3)
+            # Exit: DeM crosses below 0.7
+            exit_cond = (dem_prev > 0.7) and (dem_now <= 0.7)
+
+            if entry_cond and not in_position:
+                markers.append({
+                    "time": int(pd.Timestamp(t).timestamp()),
+                    "price": price,
+                    "side": "buy",
+                    "label": "ENTRY"
+                })
+                in_position = True
+
+            elif exit_cond and in_position:
+                markers.append({
+                    "time": int(pd.Timestamp(t).timestamp()),
+                    "price": price,
+                    "side": "sell",
+                    "label": "EXIT"
+                })
+                in_position = False
+
+        return markers

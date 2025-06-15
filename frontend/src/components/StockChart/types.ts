@@ -47,7 +47,8 @@ export type SignalSummary = {
     | "stclair"
     | "northstar"
     | "stclairlongterm"
-    | "mace_40w"]: {
+    | "mace_40w"
+    | "demarker"]: {
     [T in Timeframe]: SignalSide;
   };
 };

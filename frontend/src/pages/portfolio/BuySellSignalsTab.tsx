@@ -7,6 +7,7 @@ const allStrategies = [
   "st_clair",
   "stclair_longterm",
   "mace_40w",
+  "demarker",
   // Add other strategies if needed
 ];
 
@@ -49,6 +50,7 @@ export default function BuySellSignalsTab() {
     northstar: "northstar",
     stclair_longterm: "stclairlongterm",
     mace_40w: "mace_40w",
+    demarker: "demarker",
   };
 
   const getVisibleAndOrderedStrategies = (timeframe: string) => {

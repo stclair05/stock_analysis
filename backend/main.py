@@ -367,6 +367,8 @@ def get_signals(timeframe: str, symbol: str, strategy: str = Query("trendinvesto
         return {"markers": analyser.get_stclairlongterm_signals(timeframe)}
     elif strategy == "mace_40w":
         return {"markers": analyser.get_mace_40w_signals()}
+    elif strategy == "demarker":
+        return {"markers": analyser.get_demarker_signals(timeframe)}
 
     else:
         return {"error": f"Unknown strategy: {strategy}"}
@@ -455,6 +457,8 @@ def backtest_signals(
         markers = analyser.get_stclairlongterm_signals(timeframe)
     elif strategy == "mace_40w":
         markers = analyser.get_mace_40w_signals()
+    elif strategy == "demarker":
+        markers = analyser.get_demarker_signals(timeframe)
     else:
         return {"error": f"Unknown strategy: {strategy}"}
 
