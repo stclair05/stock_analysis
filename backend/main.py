@@ -458,7 +458,7 @@ def backtest_signals(
     elif strategy == "mace_40w":
         markers = analyser.get_mace_40w_signals()
     elif strategy == "demarker":
-        return analyser.get_demarker_signals(timeframe)
+        markers = analyser.get_demarker_signals(timeframe)
     else:
         return {"error": f"Unknown strategy: {strategy}"}
 
