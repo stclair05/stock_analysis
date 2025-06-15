@@ -69,6 +69,7 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     | "northstar"
     | "stclairlongterm"
     | "mace_40w"
+    | "demarker"
   >(null);
 
   const [signalSummary, setSignalSummary] = useState<SignalSummary>({
@@ -77,6 +78,7 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     northstar: { daily: "", weekly: "", monthly: "" },
     stclairlongterm: { daily: "", weekly: "", monthly: "" },
     mace_40w: { daily: "", weekly: "", monthly: "" },
+    demarker: { daily: "", weekly: "", monthly: "" },
   });
   const strategies = [
     "trendinvestorpro",
@@ -84,6 +86,7 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     "northstar",
     "stclairlongterm",
     "mace_40w",
+    "demarker",
   ] as const;
   const timeframes = ["daily", "weekly", "monthly"] as const;
 
@@ -872,7 +875,8 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
               <span>
                 {name
                   .replace(/^\w/, (c) => c.toUpperCase())
-                  .replace("longterm", " LongTerm")}
+                  .replace("longterm", " LongTerm")
+                  .replace("demarker", "DeMarker")}
               </span>
             </label>
           ))}

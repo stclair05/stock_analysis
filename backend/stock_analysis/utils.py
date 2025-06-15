@@ -510,3 +510,20 @@ def reindex_indicator(base: pd.Series, indicator: pd.Series) -> pd.Series:
     full = pd.Series(index=base.index, dtype=float)
     full.loc[indicator.index] = indicator.values
     return full
+
+
+def compute_demarker(close: pd.Series, high: pd.Series, low: pd.Series, period: int = 14) -> pd.Series:
+    """Compute the DeMarker (DeM) indicator."""
+    # DeMax
+    prev_high = high.shift(1)
+    demax = (high - prev_high).clip(lower=0)
+    demax[high <= prev_high] = 0
+    # DeMin
+    prev_low = low.shift(1)
+    demin = (prev_low - low).clip(lower=0)
+    demin[low >= prev_low] = 0
+    # Sums
+    sum_demax = demax.rolling(window=period).sum()
+    sum_demin = demin.rolling(window=period).sum()
+    dem = sum_demax / (sum_demax + sum_demin)
+    return dem
