@@ -1216,7 +1216,7 @@ class StockAnalyser:
     def get_stclair_status_and_strength(self, timeframe: str = "weekly") -> dict:
         """
         Returns the latest signal ('BUY' or 'SELL') and its trend delta
-        ('crossed', 'strengthening', 'weakening', 'neutral').
+        ('crossed', 'strengthening', 'weakening', 'neutral'), enhanced with Supertrend.
         """
         # Load correct timeframe
         if timeframe == "daily":
@@ -1232,21 +1232,20 @@ class StockAnalyser:
         if len(daily_df) < 200 or len(df) < 3:
             return {"status": None, "delta": None}
 
-        # Compute daily SMAs
+        # --- Daily SMAs for price context
         sma20 = daily_df['Close'].rolling(20).mean()
         sma200 = daily_df['Close'].rolling(200).mean()
 
-        # Compute RSI and RSI MA on selected timeframe
+        # --- RSI and RSI MA on current timeframe
         close = df['Close']
         rsi = compute_wilder_rsi(close, 14)
         rsi_ma = rsi.rolling(14).mean()
 
-        # Helper: compute latest valid values
+        # Helper: extract key values
         def get_latest_values(index):
             t = df.index[index]
             bar_close = close.iloc[index]
 
-            # Most recent daily close data for SMA alignment
             recent_daily = daily_df.loc[:t]
             if len(recent_daily) < 200:
                 return None
@@ -1266,11 +1265,10 @@ class StockAnalyser:
 
         latest = get_latest_values(-1)
         prev = get_latest_values(-2)
-        
         if not latest or not prev:
             return {"status": None, "delta": None}
 
-        # Determine signal status for now and before
+        # Signal classification
         def classify(entry_vals):
             if (
                 entry_vals["bar_close"] > entry_vals["sma200"]
@@ -1283,10 +1281,9 @@ class StockAnalyser:
 
         curr_signal = classify(latest)
         prev_signal = classify(prev)
-        print(f"curr_signal: {curr_signal}")
-        print(f"prev_signal: {prev_signal}")
-        # Signal change
-        if curr_signal != prev_signal and (prev_signal is not None):
+
+        # --- Base delta logic (gap-based)
+        if curr_signal != prev_signal and prev_signal is not None:
             delta = "crossed"
         elif curr_signal == "BUY":
             curr_gap = latest["bar_close"] - latest["sma20"] + latest["rsi"] - latest["rsi_ma"]
@@ -1299,7 +1296,23 @@ class StockAnalyser:
         else:
             return {"status": curr_signal, "delta": None}
 
+        # --- Integrate Supertrend direction into delta
+        st_df = compute_supertrend_lines(df)
+        supertrend_now = st_df["Trend"].iloc[-1]  # 1 = uptrend, -1 = downtrend
+
+        if curr_signal == "BUY":
+            if supertrend_now == 1 and delta == "weakening":
+                delta = "neutral"
+            elif supertrend_now == -1 and delta == "strengthening":
+                delta = "weakening"
+        elif curr_signal == "SELL":
+            if supertrend_now == -1 and delta == "weakening":
+                delta = "neutral"
+            elif supertrend_now == 1 and delta == "strengthening":
+                delta = "weakening"
+
         return {"status": curr_signal, "delta": delta}
+
 
 
     def get_northstar_signals(self, timeframe: str = "daily") -> list[dict]:
@@ -1376,7 +1389,8 @@ class StockAnalyser:
     
     def get_northstar_status_and_strength(self, timeframe: str = "weekly") -> dict:
         """
-        Returns the latest status ('BUY' or 'SELL') and trend delta ('strengthening' / 'weakening' / 'crossed')
+        Returns the latest status ('BUY' or 'SELL') and trend delta
+        ('strengthening' / 'weakening' / 'crossed'), adjusted with Supertrend trend.
         """
         df = {
             "daily": self.df,
@@ -1405,16 +1419,15 @@ class StockAnalyser:
 
         # Determine current and previous signals
         def get_signal(price, ma12, ma36):
-            if price > ma12 and price > ma36:
-                return "BUY"
-            else:
-                return "SELL"
+            return "BUY" if price > ma12 and price > ma36 else "SELL"
 
         curr_sig = get_signal(latest_price, latest_ma12, latest_ma36)
         prev_sig = get_signal(prev_price, prev_ma12, prev_ma36)
+
         print(f"curr_sig is: {curr_sig}")
         print(f"prev_sig is: {prev_sig}")
-        # Determine delta
+
+        # Base delta logic
         if curr_sig != prev_sig and (prev_sig is not None):
             delta = "crossed"
         elif curr_sig == "BUY":
@@ -1424,7 +1437,23 @@ class StockAnalyser:
         else:
             delta = "neutral"
 
+        # Supertrend-enhanced delta adjustment
+        st_df = compute_supertrend_lines(df)
+        supertrend_now = st_df["Trend"].iloc[-1]  # 1 for uptrend, -1 for downtrend
+
+        if curr_sig == "BUY":
+            if supertrend_now == 1 and delta == "weakening":
+                delta = "neutral"
+            elif supertrend_now == -1 and delta == "strengthening":
+                delta = "weakening"
+        elif curr_sig == "SELL":
+            if supertrend_now == -1 and delta == "weakening":
+                delta = "neutral"
+            elif supertrend_now == 1 and delta == "strengthening":
+                delta = "weakening"
+
         return {"status": curr_sig, "delta": delta}
+
 
 
     def get_stclairlongterm_signals(self, timeframe: str = "weekly") -> list[dict]:
@@ -1563,12 +1592,12 @@ class StockAnalyser:
             entry_score = 0
             exit_score = 0
 
-            # Supertrend
+            # Supertrend (weighted more heavily)
             st = st_signal.iloc[idx]
             if st == "Buy":
-                entry_score += 1
+                entry_score += 2
             elif st == "Sell":
-                exit_score += 1
+                exit_score += 2
 
             # Ichimoku
             ich = ichimoku_status.iloc[idx]
@@ -1587,6 +1616,7 @@ class StockAnalyser:
                     exit_score += 1
 
             return entry_score, exit_score
+
 
         idx_now = -1
         idx_prev = -2
@@ -1740,7 +1770,8 @@ class StockAnalyser:
     
     def get_mace_40w_status_and_strength(self) -> dict:
         """
-        Returns the latest MACE+40W signal and whether it's strengthening or weakening based purely on tier rankings.
+        Returns the latest MACE+40W signal and whether it's strengthening or weakening 
+        based on combined MACE, 40W, and Supertrend ranking.
         """
         df = self.weekly_df
         if len(df) < 60:
@@ -1756,6 +1787,9 @@ class StockAnalyser:
         slope = ma_40.diff()
         fortyw_signals = classify_40w_status(close, ma_40, slope)
 
+        df_st = compute_supertrend_lines(df)
+        st_signal = df_st["Signal"]
+
         idx_now = -1
         idx_prev = -2
 
@@ -1763,6 +1797,8 @@ class StockAnalyser:
         mace_prev = mace_signals.iloc[idx_prev]
         status_now = fortyw_signals.iloc[idx_now]
         status_prev = fortyw_signals.iloc[idx_prev]
+        st_now = st_signal.iloc[idx_now]
+        st_prev = st_signal.iloc[idx_prev]
 
         mace_rank = {"U3": 6, "U2": 5, "U1": 4, "D1": 3, "D2": 2, "D3": 1}
         fortyw_rank = {
@@ -1771,42 +1807,46 @@ class StockAnalyser:
             "Below Rising MA -+": 2,
             "Below Falling MA --": 1,
         }
+        st_rank = {"Buy": 2, "Sell": 1}
 
-        # Handle invalid or missing ranks safely
+        # Use rank dictionaries
         mace_now_rank = mace_rank.get(mace_now, 0)
         mace_prev_rank = mace_rank.get(mace_prev, 0)
         fw_now_rank = fortyw_rank.get(status_now, 0)
         fw_prev_rank = fortyw_rank.get(status_prev, 0)
+        st_now_rank = st_rank.get(st_now, 0)
+        st_prev_rank = st_rank.get(st_prev, 0)
 
-        # Determine Signal
+        # Determine signal direction
         is_bullish = mace_now in ["U1", "U2", "U3"] or status_now in [
-            "Above Rising MA ++",
-            "Above Falling MA +-",
-        ]
+            "Above Rising MA ++", "Above Falling MA +-"
+        ] or st_now == "Buy"
+
         is_bearish = mace_now in ["D1", "D2", "D3"] or status_now in [
-            "Below Rising MA -+",
-            "Below Falling MA --",
-        ]
+            "Below Rising MA -+", "Below Falling MA --"
+        ] or st_now == "Sell"
 
         if is_bullish:
             status = "BUY"
         elif is_bearish:
             status = "SELL"
         else:
-            status = None
-
-        if status is None:
             return {"status": None, "delta": None}
 
-        # Determine Delta
+        # Equal-weighted composite score
+        score_now = (mace_now_rank + fw_now_rank + st_now_rank) / 3
+        score_prev = (mace_prev_rank + fw_prev_rank + st_prev_rank) / 3
+
+        # Determine delta
         if status == "BUY":
-            delta = "strengthening" if (mace_now_rank > mace_prev_rank or fw_now_rank > fw_prev_rank) else "weakening"
+            delta = "strengthening" if score_now > score_prev else "weakening"
         elif status == "SELL":
-            delta = "strengthening" if (mace_now_rank < mace_prev_rank or fw_now_rank < fw_prev_rank) else "weakening"
+            delta = "strengthening" if score_now < score_prev else "weakening"
         else:
             delta = "neutral"
 
         return {"status": status, "delta": delta}
+
 
 
     
