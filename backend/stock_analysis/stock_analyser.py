@@ -1050,7 +1050,7 @@ class StockAnalyser:
     
     def get_trendinvestorpro_status_and_strength(self, timeframe: str = "daily") -> dict:
         """
-        Returns the most recent TrendInvestorPro signal (BUY/SELL/HOLD) and whether the signal is
+        Returns the most recent TrendInvestorPro signal (BUY/SELL) and whether the signal is
         strengthening, weakening, or crossed.
         """
         if timeframe == "daily":
@@ -1082,13 +1082,17 @@ class StockAnalyser:
         consec_below = consec_below.groupby((consec_below != consec_below.shift()).cumsum()).cumsum()
 
         # Use last 2 bars
-        i_now = -1
-        i_prev = -2
+        try:
+            s_now = spread_pct.iloc[-1]
+            s_prev = spread_pct.iloc[-2]
+            c_now = consec_below.iloc[-1]
+            c_prev = consec_below.iloc[-2]
+        except IndexError:
+            return {"status": None, "delta": None}
 
-        s_now = spread_pct.iloc[i_now]
-        s_prev = spread_pct.iloc[i_prev]
-        c_now = consec_below.iloc[i_now]
-        c_prev = consec_below.iloc[i_prev]
+        # Defensive default
+        status = None
+        delta = None
 
         # Determine current state
         entry_now = s_now >= 1.0
@@ -1099,13 +1103,13 @@ class StockAnalyser:
         exit_ma_prev = s_prev <= -1.0
         exit_kc_prev = c_prev >= 5
 
-        # Determine signal
+        # Determine status
         if entry_now and not (exit_ma_now or exit_kc_now):
             status = "BUY"
         elif exit_ma_now or exit_kc_now:
             status = "SELL"
         else:
-            status = "HOLD"
+            return {"status": None, "delta": None}
 
         # Determine delta
         if status == "BUY" and not entry_prev:
@@ -1115,12 +1119,10 @@ class StockAnalyser:
         elif status == "BUY":
             delta = "strengthening" if s_now > s_prev else "weakening"
         elif status == "SELL":
-            # More closes below lowerKC = worse
             delta = "strengthening" if c_now > c_prev else "weakening"
-        else:
-            delta = "neutral"
 
         return {"status": status, "delta": delta}
+
 
     
     def get_stclair_signals(self, timeframe: str = "weekly") -> list[dict]:
@@ -1264,6 +1266,7 @@ class StockAnalyser:
 
         latest = get_latest_values(-1)
         prev = get_latest_values(-2)
+        
         if not latest or not prev:
             return {"status": None, "delta": None}
 
@@ -1275,16 +1278,15 @@ class StockAnalyser:
                 and entry_vals["rsi"] > entry_vals["rsi_ma"]
             ):
                 return "BUY"
-            elif entry_vals["rsi"] < entry_vals["rsi_ma"]:
-                return "SELL"
             else:
-                return "HOLD"
+                return "SELL"
 
         curr_signal = classify(latest)
         prev_signal = classify(prev)
-
+        print(f"curr_signal: {curr_signal}")
+        print(f"prev_signal: {prev_signal}")
         # Signal change
-        if curr_signal != prev_signal:
+        if curr_signal != prev_signal and (prev_signal is not None):
             delta = "crossed"
         elif curr_signal == "BUY":
             curr_gap = latest["bar_close"] - latest["sma20"] + latest["rsi"] - latest["rsi_ma"]
@@ -1295,7 +1297,7 @@ class StockAnalyser:
             prev_gap = prev["rsi_ma"] - prev["rsi"]
             delta = "strengthening" if curr_gap > prev_gap else "weakening"
         else:
-            delta = "neutral"
+            return {"status": curr_signal, "delta": None}
 
         return {"status": curr_signal, "delta": delta}
 
@@ -1405,16 +1407,15 @@ class StockAnalyser:
         def get_signal(price, ma12, ma36):
             if price > ma12 and price > ma36:
                 return "BUY"
-            elif price < ma12:
-                return "SELL"
             else:
-                return "HOLD"
+                return "SELL"
 
         curr_sig = get_signal(latest_price, latest_ma12, latest_ma36)
         prev_sig = get_signal(prev_price, prev_ma12, prev_ma36)
-
+        print(f"curr_sig is: {curr_sig}")
+        print(f"prev_sig is: {prev_sig}")
         # Determine delta
-        if curr_sig != prev_sig:
+        if curr_sig != prev_sig and (prev_sig is not None):
             delta = "crossed"
         elif curr_sig == "BUY":
             delta = "strengthening" if latest_price - latest_ma12 > prev_price - prev_ma12 else "weakening"
@@ -1599,21 +1600,23 @@ class StockAnalyser:
                 return "BUY"
             elif exit_score >= 2:
                 return "SELL"
-            else:
-                return "HOLD"
 
         curr = classify(e_now, x_now)
         prev = classify(e_prev, x_prev)
 
-        # Delta logic
-        if curr != prev:
+         # --- Handle undefined signal ---
+        if curr is None:
+            return {"status": None, "delta": None}
+
+        # --- Determine delta ---
+        if curr != prev and prev is not None:
             delta = "crossed"
         elif curr == "BUY":
             delta = "strengthening" if e_now > e_prev else "weakening"
         elif curr == "SELL":
             delta = "strengthening" if x_now > x_prev else "weakening"
         else:
-            delta = "neutral"
+            return {"status": curr, "delta": None}
 
         return {"status": curr, "delta": delta}
 
@@ -1737,7 +1740,7 @@ class StockAnalyser:
     
     def get_mace_40w_status_and_strength(self) -> dict:
         """
-        Returns the latest MACE+40W signal and whether it's strengthening, weakening, or crossed.
+        Returns the latest MACE+40W signal and whether it's strengthening or weakening based purely on tier rankings.
         """
         df = self.weekly_df
         if len(df) < 60:
@@ -1761,56 +1764,50 @@ class StockAnalyser:
         status_now = fortyw_signals.iloc[idx_now]
         status_prev = fortyw_signals.iloc[idx_prev]
 
-        # --- Entry/Exit logic mirrors get_mace_40w_signals() ---
-        entry_now = (
-            (mace_now in ['U2', 'U3']) or (status_now == "Above Rising MA ++")
-        ) and (
-            mace_prev not in ['D2', 'D3'] and status_prev != "Below Falling MA --"
-        )
+        mace_rank = {"U3": 6, "U2": 5, "U1": 4, "D1": 3, "D2": 2, "D3": 1}
+        fortyw_rank = {
+            "Above Rising MA ++": 4,
+            "Above Falling MA +-": 3,
+            "Below Rising MA -+": 2,
+            "Below Falling MA --": 1,
+        }
 
-        entry_prev = (
-            (mace_prev in ['U2', 'U3']) or (status_prev == "Above Rising MA ++")
-        ) and (
-            mace_prev not in ['D2', 'D3'] and status_prev != "Below Falling MA --"
-        )
+        # Handle invalid or missing ranks safely
+        mace_now_rank = mace_rank.get(mace_now, 0)
+        mace_prev_rank = mace_rank.get(mace_prev, 0)
+        fw_now_rank = fortyw_rank.get(status_now, 0)
+        fw_prev_rank = fortyw_rank.get(status_prev, 0)
 
-        exit_now = (
-            (mace_now not in ['U2', 'U3']) or (status_now != "Above Rising MA ++")
-        )
+        # Determine Signal
+        is_bullish = mace_now in ["U1", "U2", "U3"] or status_now in [
+            "Above Rising MA ++",
+            "Above Falling MA +-",
+        ]
+        is_bearish = mace_now in ["D1", "D2", "D3"] or status_now in [
+            "Below Rising MA -+",
+            "Below Falling MA --",
+        ]
 
-        # --- Classify current and previous status ---
-        def classify(entry, exit):
-            if entry and not exit:
-                return "BUY"
-            elif exit:
-                return "SELL"
-            else:
-                return "HOLD"
+        if is_bullish:
+            status = "BUY"
+        elif is_bearish:
+            status = "SELL"
+        else:
+            status = None
 
-        curr_sig = classify(entry_now, exit_now)
-        prev_sig = classify(entry_prev, False)  # Do not check prev_exit to avoid premature flips
+        if status is None:
+            return {"status": None, "delta": None}
 
-        # --- Determine delta ---
-        if curr_sig != prev_sig:
-            delta = "crossed"
-        elif curr_sig == "BUY":
-            # Strengthen if MACE moved from U2 → U3 or status remained ++
-            stronger = (
-                (mace_now == 'U3' and mace_prev in ['U1', 'U2']) or
-                (status_now == "Above Rising MA ++" and status_prev != "Above Rising MA ++")
-            )
-            delta = "strengthening" if stronger else "weakening"
-        elif curr_sig == "SELL":
-            # Strengthen if MACE moved from D2 → D3 or status worsened
-            stronger = (
-                (mace_now == 'D3' and mace_prev in ['D1', 'D2']) or
-                (status_now == "Below Falling MA --" and status_prev != "Below Falling MA --")
-            )
-            delta = "strengthening" if stronger else "weakening"
+        # Determine Delta
+        if status == "BUY":
+            delta = "strengthening" if (mace_now_rank > mace_prev_rank or fw_now_rank > fw_prev_rank) else "weakening"
+        elif status == "SELL":
+            delta = "strengthening" if (mace_now_rank < mace_prev_rank or fw_now_rank < fw_prev_rank) else "weakening"
         else:
             delta = "neutral"
 
-        return {"status": curr_sig, "delta": delta}
+        return {"status": status, "delta": delta}
+
 
     
     
@@ -1903,23 +1900,18 @@ class StockAnalyser:
         dem_now = dem.iloc[idx_now]
         dem_prev = dem.iloc[idx_prev]
 
-        # Determine signal status
-        if dem_prev < 0.3 and dem_now >= 0.3:
-            status = "BUY"
-            delta = "crossed"
-        elif dem_prev > 0.7 and dem_now <= 0.7:
-            status = "SELL"
-            delta = "crossed"
-        elif dem_now >= 0.3 and dem_now <= 0.7:
-            # Still in buy zone
-            status = "BUY"
-            delta = "strengthening" if dem_now > dem_prev else "weakening"
-        elif dem_now > 0.7:
-            status = "SELL"
-            delta = "strengthening" if dem_now < dem_prev else "weakening"
-        else:
-            status = "HOLD"
-            delta = "neutral"
+        if pd.isna(dem_now) or pd.isna(dem_prev):
+            return {"status": None, "delta": None}
 
-        return {"status": status, "delta": delta}
+         # Determine signal and delta
+        if dem_prev < 0.3 and dem_now >= 0.3:
+            return {"status": "BUY", "delta": "crossed"}
+        elif dem_prev > 0.7 and dem_now <= 0.7:
+            return {"status": "SELL", "delta": "crossed"}
+        elif dem_now <= 0.7:  # Default to BUY zone (0.3 to 0.7)
+            delta = "strengthening" if dem_now > dem_prev else "weakening"
+            return {"status": "BUY", "delta": delta}
+        else:  # dem_now > 0.7
+            delta = "strengthening" if dem_now < dem_prev else "weakening"
+            return {"status": "SELL", "delta": delta}
 

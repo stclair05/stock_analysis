@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
+import "../PortfolioPage.css";
 
 const timeframes = ["daily", "weekly", "monthly"];
 const allStrategies = [
@@ -274,15 +275,16 @@ export default function BuySellSignalsTab() {
         let hasSellSignal = false;
 
         for (const strategy of visibleAndOrderedStrategies) {
-          const signal = signalSummary[holding.ticker]?.[strategy];
+          const signalObj = signalSummary[holding.ticker]?.[strategy];
+          const status = signalObj?.status || "";
 
-          if (signal === "BUY") hasBuySignal = true;
-          if (signal === "SELL") hasSellSignal = true;
+          if (status === "BUY") hasBuySignal = true;
+          if (status === "SELL") hasSellSignal = true;
 
           if (filterType === "BUY" || filterType === "SELL") {
-            if (signal === filterType) {
+            if (status === filterType) {
               hasMatchingSignal = true;
-            } else if (signal !== "" && signal !== "-") {
+            } else if (status && status !== "-") {
               hasContradictorySignal = true;
               break;
             }
@@ -301,8 +303,8 @@ export default function BuySellSignalsTab() {
       const sortOrder = { BUY: 1, SELL: 2, "": 3, "-": 4 };
 
       currentPortfolio.sort((a, b) => {
-        const signalA = signalSummary[a.ticker]?.[sortColumn] || "-";
-        const signalB = signalSummary[b.ticker]?.[sortColumn] || "-";
+        const signalA = signalSummary[a.ticker]?.[sortColumn]?.status || "-";
+        const signalB = signalSummary[b.ticker]?.[sortColumn]?.status || "-";
 
         const valA = sortOrder[signalA as keyof typeof sortOrder] || 4;
         const valB = sortOrder[signalB as keyof typeof sortOrder] || 4;
@@ -488,16 +490,28 @@ export default function BuySellSignalsTab() {
                         if (delta === "strengthening") icon = " ↑";
                         else if (delta === "weakening") icon = " ↓";
                         else if (delta === "crossed") icon = " 🔁";
+                        const cellStyle: React.CSSProperties = {
+                          color,
+                          textAlign: "center",
+                          fontWeight: 700,
+                        };
+
+                        let cellClass = "";
+                        if (status === "BUY" && delta === "strengthening")
+                          cellClass = "signal-buy-strengthening";
+                        else if (status === "BUY" && delta === "weakening")
+                          cellClass = "signal-buy-weakening";
+                        else if (status === "SELL" && delta === "strengthening")
+                          cellClass = "signal-sell-strengthening";
+                        else if (status === "SELL" && delta === "weakening")
+                          cellClass = "signal-sell-weakening";
+
+                        if (delta === "crossed") {
+                          cellClass += " signal-crossed";
+                        }
 
                         return (
-                          <td
-                            key={s}
-                            style={{
-                              color,
-                              textAlign: "center",
-                              fontWeight: 700,
-                            }}
-                          >
+                          <td key={s} style={cellStyle} className={cellClass}>
                             <span title={delta}>
                               {status || "-"}
                               {icon}
