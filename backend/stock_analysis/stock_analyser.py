@@ -1313,19 +1313,38 @@ class StockAnalyser:
         if not latest or not prev:
             return {"status": None, "delta": None}
 
-        # Signal classification
-        def classify(entry_vals):
-            if (
-                entry_vals["bar_close"] > entry_vals["sma200"]
-                and entry_vals["bar_close"] > entry_vals["sma20"]
-                and entry_vals["rsi"] > entry_vals["rsi_ma"]
-            ):
-                return "BUY"
-            else:
-                return "SELL"
+        # ----- Build persistent BUY/SELL signals over the series -----
+        in_position = False
+        signals: list[str | None] = []
+        for idx in range(len(df)):
+            vals = get_latest_values(idx)
+            if vals is None:
+                signals.append(None)
+                continue
 
-        curr_signal = classify(latest)
-        prev_signal = classify(prev)
+            entry = (
+                vals["bar_close"] > vals["sma200"]
+                and vals["bar_close"] > vals["sma20"]
+                and vals["rsi"] > vals["rsi_ma"]
+            )
+            exit = vals["rsi"] < vals["rsi_ma"]
+
+            if not in_position and entry:
+                in_position = True
+                signals.append("BUY")
+            elif in_position and exit:
+                in_position = False
+                signals.append("SELL")
+            else:
+                signals.append("BUY" if in_position else "SELL")
+
+        # Filter out leading None values (periods without enough data)
+        valid_signals = [s for s in signals if s is not None]
+        if len(valid_signals) < 2:
+            return {"status": None, "delta": None}
+
+        curr_signal = valid_signals[-1]
+        prev_signal = valid_signals[-2]
 
         # --- Base delta logic (gap-based)
         if curr_signal != prev_signal and prev_signal is not None:
@@ -1357,8 +1376,6 @@ class StockAnalyser:
                 delta = "weakening"
 
         return {"status": curr_signal, "delta": delta}
-
-
 
     def get_northstar_signals(self, timeframe: str = "daily") -> list[dict]:
         """
@@ -1468,9 +1485,6 @@ class StockAnalyser:
 
         curr_sig = get_signal(latest_price, latest_ma12, latest_ma36)
         prev_sig = get_signal(prev_price, prev_ma12, prev_ma36)
-
-        print(f"curr_sig is: {curr_sig}")
-        print(f"prev_sig is: {prev_sig}")
 
         # Base delta logic
         if curr_sig != prev_sig and (prev_sig is not None):
@@ -1637,12 +1651,12 @@ class StockAnalyser:
             entry_score = 0
             exit_score = 0
 
-            # Supertrend (weighted more heavily)
+            # Supertrend (equal weight now)
             st = st_signal.iloc[idx]
             if st == "Buy":
-                entry_score += 2
+                entry_score += 1
             elif st == "Sell":
-                exit_score += 2
+                exit_score += 1
 
             # Ichimoku
             ich = ichimoku_status.iloc[idx]
@@ -1661,7 +1675,6 @@ class StockAnalyser:
                     exit_score += 1
 
             return entry_score, exit_score
-
 
         idx_now = -1
         idx_prev = -2

@@ -259,7 +259,6 @@ export default function BuySellSignalsTab() {
       setSortColumn(column);
       setSortDirection("asc"); // Default to ascending when changing column
     }
-    setFilterType("ALL"); // Reset global filter when sorting a specific column
   };
 
   const displayedPortfolio = useMemo(() => {
