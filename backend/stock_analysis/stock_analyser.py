@@ -934,7 +934,7 @@ class StockAnalyser:
     '''
     Buy / Sell Indicators 
     '''
-    def get_trendinvestorpro_signals(self, timeframe: str = "weekly") -> list[dict]:
+    def get_trendinvestorpro_signals(self, timeframe: str = "daily") -> list[dict]:
         """
         Implements the TrendInvestorPro strategy logic.
         Returns a list of marker dicts: {time, price, side, label}
@@ -1048,7 +1048,7 @@ class StockAnalyser:
 
         return markers
     
-    def get_trendinvestorpro_status_and_strength(self, timeframe: str = "weekly") -> dict:
+    def get_trendinvestorpro_status_and_strength(self, timeframe: str = "daily") -> dict:
         """
         Returns the most recent TrendInvestorPro signal (BUY/SELL/HOLD) and whether the signal is
         strengthening, weakening, or crossed.

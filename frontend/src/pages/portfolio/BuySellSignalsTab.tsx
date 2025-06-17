@@ -194,26 +194,29 @@ export default function BuySellSignalsTab() {
             strategiesToFetch.map(async (strategy) => {
               try {
                 const apiStrategy = strategyApiMap[strategy] || strategy;
-                const res = await fetch(
-                  `http://localhost:8000/api/signals_${selectedTimeframe}/${holding.ticker}?strategy=${apiStrategy}`
-                );
-                if (!res.ok) {
-                  row[strategy] = "";
-                  return;
-                }
-                const data = await res.json();
-                if (!Array.isArray(data.markers) || data.markers.length === 0) {
-                  row[strategy] = "";
-                } else {
-                  const last = data.markers[data.markers.length - 1];
-                  if (!last || !last.side) {
-                    row[strategy] = "";
-                  } else {
-                    const side = String(last.side).toUpperCase();
-                    row[strategy] =
-                      side === "BUY" ? "BUY" : side === "SELL" ? "SELL" : "";
-                  }
-                }
+                const [resSignals, resStrength] = await Promise.all([
+                  fetch(
+                    `http://localhost:8000/api/signals_${selectedTimeframe}/${holding.ticker}?strategy=${apiStrategy}`
+                  ),
+                  fetch(
+                    `http://localhost:8000/api/signal_strength/${holding.ticker}?strategy=${apiStrategy}&timeframe=${selectedTimeframe}`
+                  ),
+                ]);
+
+                const signalData = resSignals.ok
+                  ? await resSignals.json()
+                  : null;
+                const strengthData = resStrength.ok
+                  ? await resStrength.json()
+                  : null;
+
+                const last =
+                  signalData?.markers?.[signalData.markers.length - 1];
+                const status =
+                  last?.side?.toUpperCase() || strengthData?.status || "";
+                const delta = strengthData?.delta || "";
+
+                row[strategy] = { status, delta };
               } catch (e) {
                 row[strategy] = "";
               }
@@ -472,10 +475,20 @@ export default function BuySellSignalsTab() {
                     <tr key={holding.ticker}>
                       <td>{holding.ticker}</td>
                       {visibleAndOrderedStrategies.map((s) => {
-                        const signal = signalSummary[holding.ticker]?.[s] ?? "";
+                        const signalObj =
+                          signalSummary[holding.ticker]?.[s] ?? {};
+                        const status = signalObj.status || "";
+                        const delta = signalObj.delta || "";
+
                         let color = "#bdbdbd";
-                        if (signal === "BUY") color = "#009944";
-                        if (signal === "SELL") color = "#e91e63";
+                        if (status === "BUY") color = "#009944";
+                        if (status === "SELL") color = "#e91e63";
+
+                        let icon = "";
+                        if (delta === "strengthening") icon = " ↑";
+                        else if (delta === "weakening") icon = " ↓";
+                        else if (delta === "crossed") icon = " 🔁";
+
                         return (
                           <td
                             key={s}
@@ -485,7 +498,10 @@ export default function BuySellSignalsTab() {
                               fontWeight: 700,
                             }}
                           >
-                            {signal || "-"}
+                            <span title={delta}>
+                              {status || "-"}
+                              {icon}
+                            </span>
                           </td>
                         );
                       })}
