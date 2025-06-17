@@ -7,7 +7,7 @@ const allStrategies = [
   "st_clair",
   "stclair_longterm",
   "mace_40w",
-  "demarker",
+  // "demarker",
   // Add other strategies if needed
 ];
 
@@ -42,7 +42,9 @@ export default function BuySellSignalsTab() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   // State for global signal filtering
-  const [filterType, setFilterType] = useState<"ALL" | "BUY" | "SELL">("ALL");
+  const [filterType, setFilterType] = useState<
+    "ALL" | "BUY" | "SELL" | "MIXED"
+  >("ALL");
 
   const strategyApiMap: Record<string, string> = {
     trend_investor_pro: "trendinvestorpro",
@@ -50,7 +52,7 @@ export default function BuySellSignalsTab() {
     northstar: "northstar",
     stclair_longterm: "stclairlongterm",
     mace_40w: "mace_40w",
-    demarker: "demarker",
+    // demarker: "demarker",
   };
 
   const getVisibleAndOrderedStrategies = (timeframe: string) => {
@@ -263,20 +265,29 @@ export default function BuySellSignalsTab() {
 
     if (filterType !== "ALL") {
       currentPortfolio = currentPortfolio.filter((holding) => {
-        let hasMatchingSignal = false; // True if at least one visible strategy matches filterType
-        let hasContradictorySignal = false; // True if any visible strategy contradicts filterType
+        let hasMatchingSignal = false; // For BUY/SELL filters
+        let hasContradictorySignal = false;
+        let hasBuySignal = false;
+        let hasSellSignal = false;
 
         for (const strategy of visibleAndOrderedStrategies) {
           const signal = signalSummary[holding.ticker]?.[strategy];
 
-          if (signal === filterType) {
-            hasMatchingSignal = true; // Found at least one signal that matches
-          } else if (signal !== "" && signal !== "-") {
-            // If it's a definite signal but NOT the filterType
-            hasContradictorySignal = true; // Found a signal that contradicts the filterType
-            break; // No need to check further strategies for this ticker
+          if (signal === "BUY") hasBuySignal = true;
+          if (signal === "SELL") hasSellSignal = true;
+
+          if (filterType === "BUY" || filterType === "SELL") {
+            if (signal === filterType) {
+              hasMatchingSignal = true;
+            } else if (signal !== "" && signal !== "-") {
+              hasContradictorySignal = true;
+              break;
+            }
           }
-          // If signal is "" or "-", it's neither matching nor contradictory, so it's allowed.
+        }
+
+        if (filterType === "MIXED") {
+          return hasBuySignal && hasSellSignal;
         }
         // Include if it has at least one matching signal AND no contradictory signals
         return hasMatchingSignal && !hasContradictorySignal;
@@ -314,7 +325,11 @@ export default function BuySellSignalsTab() {
   const sectorSummary = useMemo(() => {
     const counts: Record<string, number> = {};
     // Only calculate for specific filter types (BUY/SELL)
-    if (filterType === "ALL" || displayedPortfolio.length === 0) {
+    if (
+      filterType === "ALL" ||
+      filterType === "MIXED" ||
+      displayedPortfolio.length === 0
+    ) {
       return {};
     }
 
@@ -399,13 +414,14 @@ export default function BuySellSignalsTab() {
           <select
             value={filterType}
             onChange={(e) => {
-              setFilterType(e.target.value as "ALL" | "BUY" | "SELL");
+              setFilterType(e.target.value as "ALL" | "BUY" | "SELL" | "MIXED");
               setSortColumn(null);
             }}
           >
             <option value="ALL">All Signals</option>
             <option value="BUY">BUY Only</option>
             <option value="SELL">SELL Only</option>
+            <option value="MIXED">Mixed</option>
           </select>
         </div>
       </div>
