@@ -1048,6 +1048,81 @@ class StockAnalyser:
 
         return markers
     
+    def get_trendinvestorpro_status_and_strength(self, timeframe: str = "weekly") -> dict:
+        """
+        Returns the most recent TrendInvestorPro signal (BUY/SELL/HOLD) and whether the signal is
+        strengthening, weakening, or crossed.
+        """
+        if timeframe == "daily":
+            df = self.df
+        elif timeframe == "weekly":
+            df = self.weekly_df
+        elif timeframe == "monthly":
+            df = self.monthly_df
+        else:
+            raise ValueError(f"Invalid timeframe: {timeframe}")
+
+        df = df.copy().dropna()
+        if len(df) < 210:
+            return {"status": None, "delta": None}
+
+        close = df["Close"]
+        high = df["High"]
+        low = df["Low"]
+
+        ma_short = close.rolling(window=5).mean()
+        ma_long = close.rolling(window=200).mean()
+        spread_pct = (ma_short - ma_long) / ma_long * 100
+
+        ebasis = close.ewm(span=65, adjust=False).mean()
+        atr_kc = (high.combine(close.shift(), max) - low.combine(close.shift(), min)).rolling(window=65).mean()
+        lower_kc = ebasis - 2 * atr_kc
+
+        consec_below = (close < lower_kc).astype(int)
+        consec_below = consec_below.groupby((consec_below != consec_below.shift()).cumsum()).cumsum()
+
+        # Use last 2 bars
+        i_now = -1
+        i_prev = -2
+
+        s_now = spread_pct.iloc[i_now]
+        s_prev = spread_pct.iloc[i_prev]
+        c_now = consec_below.iloc[i_now]
+        c_prev = consec_below.iloc[i_prev]
+
+        # Determine current state
+        entry_now = s_now >= 1.0
+        exit_ma_now = s_now <= -1.0
+        exit_kc_now = c_now >= 5
+
+        entry_prev = s_prev >= 1.0
+        exit_ma_prev = s_prev <= -1.0
+        exit_kc_prev = c_prev >= 5
+
+        # Determine signal
+        if entry_now and not (exit_ma_now or exit_kc_now):
+            status = "BUY"
+        elif exit_ma_now or exit_kc_now:
+            status = "SELL"
+        else:
+            status = "HOLD"
+
+        # Determine delta
+        if status == "BUY" and not entry_prev:
+            delta = "crossed"
+        elif status == "SELL" and not (exit_ma_prev or exit_kc_prev):
+            delta = "crossed"
+        elif status == "BUY":
+            delta = "strengthening" if s_now > s_prev else "weakening"
+        elif status == "SELL":
+            # More closes below lowerKC = worse
+            delta = "strengthening" if c_now > c_prev else "weakening"
+        else:
+            delta = "neutral"
+
+        return {"status": status, "delta": delta}
+
+    
     def get_stclair_signals(self, timeframe: str = "weekly") -> list[dict]:
         """
         Implements the multi-timeframe trend-following strategy described in PineScript.
@@ -1135,6 +1210,95 @@ class StockAnalyser:
                 entry_price = None
 
         return markers
+    
+    def get_stclair_status_and_strength(self, timeframe: str = "weekly") -> dict:
+        """
+        Returns the latest signal ('BUY' or 'SELL') and its trend delta
+        ('crossed', 'strengthening', 'weakening', 'neutral').
+        """
+        # Load correct timeframe
+        if timeframe == "daily":
+            df = self.df
+        elif timeframe == "weekly":
+            df = self.weekly_df
+        elif timeframe == "monthly":
+            df = self.monthly_df
+        else:
+            raise ValueError(f"Invalid timeframe: {timeframe}")
+
+        daily_df = self.df
+        if len(daily_df) < 200 or len(df) < 3:
+            return {"status": None, "delta": None}
+
+        # Compute daily SMAs
+        sma20 = daily_df['Close'].rolling(20).mean()
+        sma200 = daily_df['Close'].rolling(200).mean()
+
+        # Compute RSI and RSI MA on selected timeframe
+        close = df['Close']
+        rsi = compute_wilder_rsi(close, 14)
+        rsi_ma = rsi.rolling(14).mean()
+
+        # Helper: compute latest valid values
+        def get_latest_values(index):
+            t = df.index[index]
+            bar_close = close.iloc[index]
+
+            # Most recent daily close data for SMA alignment
+            recent_daily = daily_df.loc[:t]
+            if len(recent_daily) < 200:
+                return None
+
+            sma20_val = sma20.loc[:t].iloc[-1]
+            sma200_val = sma200.loc[:t].iloc[-1]
+            rsi_val = rsi.iloc[index]
+            rsi_ma_val = rsi_ma.iloc[index]
+
+            return {
+                "bar_close": bar_close,
+                "sma20": sma20_val,
+                "sma200": sma200_val,
+                "rsi": rsi_val,
+                "rsi_ma": rsi_ma_val,
+            }
+
+        latest = get_latest_values(-1)
+        prev = get_latest_values(-2)
+        if not latest or not prev:
+            return {"status": None, "delta": None}
+
+        # Determine signal status for now and before
+        def classify(entry_vals):
+            if (
+                entry_vals["bar_close"] > entry_vals["sma200"]
+                and entry_vals["bar_close"] > entry_vals["sma20"]
+                and entry_vals["rsi"] > entry_vals["rsi_ma"]
+            ):
+                return "BUY"
+            elif entry_vals["rsi"] < entry_vals["rsi_ma"]:
+                return "SELL"
+            else:
+                return "HOLD"
+
+        curr_signal = classify(latest)
+        prev_signal = classify(prev)
+
+        # Signal change
+        if curr_signal != prev_signal:
+            delta = "crossed"
+        elif curr_signal == "BUY":
+            curr_gap = latest["bar_close"] - latest["sma20"] + latest["rsi"] - latest["rsi_ma"]
+            prev_gap = prev["bar_close"] - prev["sma20"] + prev["rsi"] - prev["rsi_ma"]
+            delta = "strengthening" if curr_gap > prev_gap else "weakening"
+        elif curr_signal == "SELL":
+            curr_gap = latest["rsi_ma"] - latest["rsi"]
+            prev_gap = prev["rsi_ma"] - prev["rsi"]
+            delta = "strengthening" if curr_gap > prev_gap else "weakening"
+        else:
+            delta = "neutral"
+
+        return {"status": curr_signal, "delta": delta}
+
 
     def get_northstar_signals(self, timeframe: str = "daily") -> list[dict]:
         """
@@ -1207,17 +1371,76 @@ class StockAnalyser:
 
 
         return markers
+    
+    def get_northstar_status_and_strength(self, timeframe: str = "weekly") -> dict:
+        """
+        Returns the latest status ('BUY' or 'SELL') and trend delta ('strengthening' / 'weakening' / 'crossed')
+        """
+        df = {
+            "daily": self.df,
+            "weekly": self.weekly_df,
+            "monthly": self.monthly_df
+        }[timeframe].copy()
+
+        if len(df) < 37:
+            return {"status": None, "delta": None}
+
+        close = df["Close"]
+        ma12 = close.rolling(12).mean()
+        ma36 = close.rolling(36).mean()
+
+        latest_idx = -1
+        prev_idx = -2
+
+        latest_price = close.iloc[latest_idx]
+        prev_price = close.iloc[prev_idx]
+
+        latest_ma12 = ma12.iloc[latest_idx]
+        prev_ma12 = ma12.iloc[prev_idx]
+
+        latest_ma36 = ma36.iloc[latest_idx]
+        prev_ma36 = ma36.iloc[prev_idx]
+
+        # Determine current and previous signals
+        def get_signal(price, ma12, ma36):
+            if price > ma12 and price > ma36:
+                return "BUY"
+            elif price < ma12:
+                return "SELL"
+            else:
+                return "HOLD"
+
+        curr_sig = get_signal(latest_price, latest_ma12, latest_ma36)
+        prev_sig = get_signal(prev_price, prev_ma12, prev_ma36)
+
+        # Determine delta
+        if curr_sig != prev_sig:
+            delta = "crossed"
+        elif curr_sig == "BUY":
+            delta = "strengthening" if latest_price - latest_ma12 > prev_price - prev_ma12 else "weakening"
+        elif curr_sig == "SELL":
+            delta = "strengthening" if prev_ma12 - latest_price > prev_ma12 - prev_price else "weakening"
+        else:
+            delta = "neutral"
+
+        return {"status": curr_sig, "delta": delta}
+
 
     def get_stclairlongterm_signals(self, timeframe: str = "weekly") -> list[dict]:
         """
-        Implements StClairLongTerm strategy (TEMP: Supertrend disabled).
-        Entry: At least 1/2 signals True:
-            - Price above Ichimoku cloud (weekly)
-            - Weekly RSI > Monthly RSI MA (use most recent up to this week)
-        Exit: At least 1/2 signals True:
-            - Price below Ichimoku cloud (weekly)
-            - Weekly RSI < Monthly RSI MA (use most recent up to this week)
-        Returns markers: {time, price, side, label}
+        Implements the StClairLongTerm strategy.
+
+        Entry: At least 2 of 3 signals True:
+            1. Weekly Supertrend "Buy"
+            2. Price above the weekly Ichimoku cloud
+            3. Monthly RSI > Monthly RSI MA (using the most recent monthly value)
+
+        Exit: At least 2 of 3 signals True:
+            1. Weekly Supertrend "Sell"
+            2. Price below the weekly Ichimoku cloud
+            3. Monthly RSI < Monthly RSI MA (using the most recent monthly value)
+
+        Returns markers in the form {time, price, side, label}
         """
         if timeframe != "weekly":
             raise HTTPException(status_code=400, detail="stclairlongterm is only available for weekly timeframe.")
@@ -1241,15 +1464,14 @@ class StockAnalyser:
             index=close.index
         )
 
-        # --- Weekly RSI ---
-        weekly_rsi = compute_wilder_rsi(close, 14)
         # --- Monthly RSI MA (use last value up to each week) ---
         monthly_close = self.monthly_df["Close"]
         monthly_rsi = compute_wilder_rsi(monthly_close, 14)
         monthly_rsi_ma = monthly_rsi.rolling(window=14).mean()
 
-        # Reindex monthly RSI MA to weekly (use most recent up to this week)
-        rsi_ma_for_week = monthly_rsi_ma.reindex(df_weekly.index, method="ffill")
+       # Reindex both to weekly
+        monthly_rsi_for_week = monthly_rsi.reindex(df_weekly.index, method="ffill")
+        monthly_rsi_ma_for_week = monthly_rsi_ma.reindex(df_weekly.index, method="ffill")
 
         # --- Iterate and detect signals ---
         markers = []
@@ -1274,16 +1496,17 @@ class StockAnalyser:
                 signals_exit += 1
 
             # RSI vs monthly RSI MA
-            rsi_val = weekly_rsi.iloc[idx]
-            rsi_ma_val = rsi_ma_for_week.iloc[idx]
+            rsi_val = monthly_rsi_for_week.iloc[idx]
+            rsi_ma_val = monthly_rsi_ma_for_week.iloc[idx]
             if pd.notna(rsi_val) and pd.notna(rsi_ma_val):
                 if rsi_val > rsi_ma_val:
                     signals_entry += 1
                 if rsi_val < rsi_ma_val:
                     signals_exit += 1
 
-            # --- Entry (now needs at least 1/2) ---
-            if not in_position and signals_entry >= 1:
+
+            # --- Entry: require at least two confirming signals ---
+            if not in_position and signals_entry >= 2:
                 markers.append({
                     "time": int(pd.Timestamp(t).timestamp()),
                     "price": price,
@@ -1291,8 +1514,8 @@ class StockAnalyser:
                     "label": "ENTRY"
                 })
                 in_position = True
-            # --- Exit (now needs at least 1/2) ---
-            elif in_position and signals_exit >= 1:
+           # --- Exit: require at least two confirming signals ---
+            elif in_position and signals_exit >= 2:
                 markers.append({
                     "time": int(pd.Timestamp(t).timestamp()),
                     "price": price,
@@ -1302,7 +1525,97 @@ class StockAnalyser:
                 in_position = False
 
         return markers
+    
+    def get_stclairlongterm_status_and_strength(self) -> dict:
+        """
+        Returns the most recent StClairLongTerm signal and whether it is
+        strengthening, weakening, or has crossed.
+        """
+        df_weekly = self.weekly_df
+        if len(df_weekly) < 40:
+            return {"status": None, "delta": None}
 
+        close = df_weekly["Close"]
+
+        # --- Supertrend ---
+        df_st = compute_supertrend_lines(df_weekly)
+        st_signal = df_st["Signal"]
+
+        # --- Ichimoku ---
+        _, _, span_a, span_b = compute_ichimoku_lines(df_weekly)
+        upper_cloud = np.maximum(span_a, span_b)
+        lower_cloud = np.minimum(span_a, span_b)
+        ichimoku_status = pd.Series(
+            np.where(close > upper_cloud, "Above",
+            np.where(close < lower_cloud, "Below", "Inside")),
+            index=close.index
+        )
+
+        # --- Monthly RSI and MA ---
+        monthly_rsi = compute_wilder_rsi(self.monthly_df["Close"], 14)
+        monthly_rsi_ma = monthly_rsi.rolling(14).mean()
+        monthly_rsi_for_week = monthly_rsi.reindex(df_weekly.index, method="ffill")
+        monthly_rsi_ma_for_week = monthly_rsi_ma.reindex(df_weekly.index, method="ffill")
+
+        # --- Helper to calculate signal scores for a given index ---
+        def get_scores(idx):
+            entry_score = 0
+            exit_score = 0
+
+            # Supertrend
+            st = st_signal.iloc[idx]
+            if st == "Buy":
+                entry_score += 1
+            elif st == "Sell":
+                exit_score += 1
+
+            # Ichimoku
+            ich = ichimoku_status.iloc[idx]
+            if ich == "Above":
+                entry_score += 1
+            elif ich == "Below":
+                exit_score += 1
+
+            # Monthly RSI
+            rsi_val = monthly_rsi_for_week.iloc[idx]
+            rsi_ma_val = monthly_rsi_ma_for_week.iloc[idx]
+            if pd.notna(rsi_val) and pd.notna(rsi_ma_val):
+                if rsi_val > rsi_ma_val:
+                    entry_score += 1
+                elif rsi_val < rsi_ma_val:
+                    exit_score += 1
+
+            return entry_score, exit_score
+
+        idx_now = -1
+        idx_prev = -2
+
+        e_now, x_now = get_scores(idx_now)
+        e_prev, x_prev = get_scores(idx_prev)
+
+        # Classify signal
+        def classify(entry_score, exit_score):
+            if entry_score >= 2:
+                return "BUY"
+            elif exit_score >= 2:
+                return "SELL"
+            else:
+                return "HOLD"
+
+        curr = classify(e_now, x_now)
+        prev = classify(e_prev, x_prev)
+
+        # Delta logic
+        if curr != prev:
+            delta = "crossed"
+        elif curr == "BUY":
+            delta = "strengthening" if e_now > e_prev else "weakening"
+        elif curr == "SELL":
+            delta = "strengthening" if x_now > x_prev else "weakening"
+        else:
+            delta = "neutral"
+
+        return {"status": curr, "delta": delta}
 
 
     def backtest_signal_markers(self, markers: list[dict]) -> dict:
@@ -1422,6 +1735,84 @@ class StockAnalyser:
         print("Final markers:", markers)
         return markers
     
+    def get_mace_40w_status_and_strength(self) -> dict:
+        """
+        Returns the latest MACE+40W signal and whether it's strengthening, weakening, or crossed.
+        """
+        df = self.weekly_df
+        if len(df) < 60:
+            return {"status": None, "delta": None}
+
+        close = df["Close"]
+        s = close.rolling(4).mean()
+        m = close.rolling(13).mean()
+        l = close.rolling(26).mean()
+        mace_signals = classify_mace_signal(s, m, l)
+
+        ma_40 = close.rolling(40).mean()
+        slope = ma_40.diff()
+        fortyw_signals = classify_40w_status(close, ma_40, slope)
+
+        idx_now = -1
+        idx_prev = -2
+
+        mace_now = mace_signals.iloc[idx_now]
+        mace_prev = mace_signals.iloc[idx_prev]
+        status_now = fortyw_signals.iloc[idx_now]
+        status_prev = fortyw_signals.iloc[idx_prev]
+
+        # --- Entry/Exit logic mirrors get_mace_40w_signals() ---
+        entry_now = (
+            (mace_now in ['U2', 'U3']) or (status_now == "Above Rising MA ++")
+        ) and (
+            mace_prev not in ['D2', 'D3'] and status_prev != "Below Falling MA --"
+        )
+
+        entry_prev = (
+            (mace_prev in ['U2', 'U3']) or (status_prev == "Above Rising MA ++")
+        ) and (
+            mace_prev not in ['D2', 'D3'] and status_prev != "Below Falling MA --"
+        )
+
+        exit_now = (
+            (mace_now not in ['U2', 'U3']) or (status_now != "Above Rising MA ++")
+        )
+
+        # --- Classify current and previous status ---
+        def classify(entry, exit):
+            if entry and not exit:
+                return "BUY"
+            elif exit:
+                return "SELL"
+            else:
+                return "HOLD"
+
+        curr_sig = classify(entry_now, exit_now)
+        prev_sig = classify(entry_prev, False)  # Do not check prev_exit to avoid premature flips
+
+        # --- Determine delta ---
+        if curr_sig != prev_sig:
+            delta = "crossed"
+        elif curr_sig == "BUY":
+            # Strengthen if MACE moved from U2 → U3 or status remained ++
+            stronger = (
+                (mace_now == 'U3' and mace_prev in ['U1', 'U2']) or
+                (status_now == "Above Rising MA ++" and status_prev != "Above Rising MA ++")
+            )
+            delta = "strengthening" if stronger else "weakening"
+        elif curr_sig == "SELL":
+            # Strengthen if MACE moved from D2 → D3 or status worsened
+            stronger = (
+                (mace_now == 'D3' and mace_prev in ['D1', 'D2']) or
+                (status_now == "Below Falling MA --" and status_prev != "Below Falling MA --")
+            )
+            delta = "strengthening" if stronger else "weakening"
+        else:
+            delta = "neutral"
+
+        return {"status": curr_sig, "delta": delta}
+
+    
     
     def get_demarker_signals(self, timeframe: str = "weekly", period: int = 14) -> list[dict]:
         """
@@ -1481,3 +1872,54 @@ class StockAnalyser:
                 in_position = False
 
         return markers
+    
+    def get_demarker_status_and_strength(self, timeframe: str = "weekly", period: int = 14) -> dict:
+        """
+        Returns the most recent DeMarker signal (BUY/SELL/HOLD) and whether the signal is strengthening,
+        weakening, or has just crossed.
+        """
+        if timeframe == "daily":
+            df = self.df
+        elif timeframe == "weekly":
+            df = self.weekly_df
+        elif timeframe == "monthly":
+            df = self.monthly_df
+        else:
+            raise ValueError(f"Invalid timeframe: {timeframe}")
+
+        if len(df) < period + 5:
+            return {"status": None, "delta": None}
+
+        high = df["High"]
+        low = df["Low"]
+        close = df["Close"]
+
+        dem = compute_demarker(close, high, low, period=period)
+
+        # Use the last two bars to detect crossovers and momentum
+        idx_now = -1
+        idx_prev = -2
+
+        dem_now = dem.iloc[idx_now]
+        dem_prev = dem.iloc[idx_prev]
+
+        # Determine signal status
+        if dem_prev < 0.3 and dem_now >= 0.3:
+            status = "BUY"
+            delta = "crossed"
+        elif dem_prev > 0.7 and dem_now <= 0.7:
+            status = "SELL"
+            delta = "crossed"
+        elif dem_now >= 0.3 and dem_now <= 0.7:
+            # Still in buy zone
+            status = "BUY"
+            delta = "strengthening" if dem_now > dem_prev else "weakening"
+        elif dem_now > 0.7:
+            status = "SELL"
+            delta = "strengthening" if dem_now < dem_prev else "weakening"
+        else:
+            status = "HOLD"
+            delta = "neutral"
+
+        return {"status": status, "delta": delta}
+
