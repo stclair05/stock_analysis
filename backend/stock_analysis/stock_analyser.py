@@ -188,21 +188,40 @@ class StockAnalyser:
 
         period = 14
 
-        smoothed_tr = wilder_smooth(tr, period)
-        smoothed_plus_dm = wilder_smooth(pd.Series(plus_dm, index=tr.index), period)
-        smoothed_minus_dm = wilder_smooth(pd.Series(minus_dm, index=tr.index), period)
+        def wilder_smooth_adx(values: pd.Series, period: int) -> pd.Series:
+            """
+            Wilder's smoothing (RMA) as used in ADX, ATR, etc.
+            Starts with the average of the first 'period' values.
+            """
+            result = [np.nan] * (period - 1)
+            if len(values) < period:
+                return pd.Series(result + [np.nan] * (len(values) - (period - 1)), index=values.index)
 
-        plus_di = 100 * smoothed_plus_dm / smoothed_tr
-        minus_di = 100 * smoothed_minus_dm / smoothed_tr
+            # Use average instead of sum
+            smoothed = values.iloc[:period].mean()
+            result.append(smoothed)
+
+            for i in range(period, len(values)):
+                smoothed = (smoothed * (period - 1) + values.iloc[i]) / period
+                result.append(smoothed)
+
+            return pd.Series(result, index=values.index)
+
+
+        smoothed_tr = wilder_smooth_adx(tr, period)
+        smoothed_plus_dm = wilder_smooth_adx(pd.Series(plus_dm, index=tr.index), period)
+        smoothed_minus_dm = wilder_smooth_adx(pd.Series(minus_dm, index=tr.index), period)
+
+        plus_di = smoothed_plus_dm / smoothed_tr * 100
+        minus_di = smoothed_minus_dm / smoothed_tr * 100
         dx = 100 * (plus_di - minus_di).abs() / (plus_di + minus_di)
 
-        adx = wilder_smooth(dx.dropna(), period)
+        adx = wilder_smooth_adx(dx.dropna(), period)
 
         # Align all series to match final ADX index
         common_index = adx.index
         plus_di = plus_di.reindex(common_index)
         minus_di = minus_di.reindex(common_index)
-
 
         # Classification (same as before)
         classification = classify_adx_trend(adx, plus_di, minus_di)
@@ -541,43 +560,65 @@ class StockAnalyser:
             twentyone_days_ago=safe_value(signals, -4),
         )
 
-
-    
+  
     def chaikin_money_flow(self) -> TimeSeriesMetric:
-        df = self.weekly_df 
+        df = self.weekly_df
 
         if df.empty or len(df) < 30:
-            raise HTTPException(status_code=400, detail="Not enough weekly data for CMF.")
+            raise HTTPException(status_code=400, detail="Not enough weekly data for Chaikin Oscillator.")
 
         high = df["High"]
         low = df["Low"]
         close = df["Close"]
         volume = pd.to_numeric(df["Volume"], errors="coerce").fillna(0)
 
-        hl_range = (high - low).replace(0, np.nan)
-        mfm = ((close - low) - (high - close)) / hl_range
+        # Step 1: Money Flow Multiplier (MFM)
+        hl_diff = (high - low).replace(0, np.nan)
+        mfm = ((close - low) - (high - close)) / hl_diff
         mfm = mfm.fillna(0)
 
+        # Step 2: Money Flow Volume (MFV)
         mfv = mfm * volume
-        cmf = mfv.rolling(window=21).sum() / volume.rolling(window=21).sum().replace(0, np.nan)
 
-        def classify_cmf(val: float | None) -> str | None:
-            if val is None or pd.isna(val):
-                return None
-            if val > 0.2:
-                return "Overbought"
-            elif val < -0.2:
-                return "Oversold"
-            else:
-                return "Neutral"
+        # Step 3: Accumulation/Distribution Line (ADL)
+        adl = mfv.cumsum()
 
-        signal = cmf.apply(classify_cmf)
+        # Step 4: Chaikin Oscillator (3 EMA - 10 EMA of ADL)
+        short_period = 3
+        long_period = 10
+        ema_short = adl.ewm(span=short_period, adjust=False).mean()
+        ema_long = adl.ewm(span=long_period, adjust=False).mean()
+
+        osc = ema_short - ema_long
+
+        # Classification
+        def classify_osc(val: float, prev: float) -> str:
+            if pd.isna(val) or pd.isna(prev):
+                return "in progress"
+            if val > 0 and val > prev:
+                return "Money Inflow (increasing)"
+            elif val > 0 and val <= prev:
+                return "Money Inflow (weakening)"
+            elif val < 0 and val < prev:
+                return "Money Outflow (increasing)"
+            elif val < 0 and val >= prev:
+                return "Money Outflow (weakening)"
+            return "Neutral"
+
+        labels = []
+        for i in range(len(osc)):
+            if i == 0:
+                labels.append("in progress")
+                continue
+            labels.append(classify_osc(osc.iloc[i], osc.iloc[i - 1]))
+
+        osc_labels = pd.Series(labels, index=osc.index)
 
         return TimeSeriesMetric(
-            current=safe_value(signal, -1),
-            seven_days_ago=safe_value(signal, -2),
-            fourteen_days_ago=safe_value(signal, -3),
-            twentyone_days_ago=safe_value(signal, -4),
+            current=safe_value(osc_labels, -1),
+            seven_days_ago=safe_value(osc_labels, -2),
+            fourteen_days_ago=safe_value(osc_labels, -3),
+            twentyone_days_ago=safe_value(osc_labels, -4),
         )
 
 
@@ -587,24 +628,28 @@ class StockAnalyser:
 
 
     def get_3year_ma_series(self):
-        monthly_close = self.monthly_df["Close"]
-        ma = monthly_close.rolling(window=36).mean()
-        return to_series(reindex_indicator(monthly_close, ma))
+        """
+        Returns the 3-year simple moving average (SMA) using weekly close prices (156 weeks).
+        """
+        weekly_close = self.weekly_df["Close"]
+        ma = weekly_close.rolling(window=156).mean()
+        return to_series(reindex_indicator(weekly_close, ma))
+
 
 
     def get_200dma_series(self):
-        close = self.df["Close"]
+        close = self.weekly_df["Close"]
         ma = close.rolling(200).mean()
         return to_series(reindex_indicator(close, ma))
 
 
     def get_150dma_series(self):
-        close = self.df["Close"]
+        close = self.weekly_df["Close"]
         ma150 = close.rolling(150).mean()
         return to_series(reindex_indicator(close, ma150))
 
     def get_50dma_series(self):
-        close = self.df["Close"]
+        close = self.weekly_df["Close"]
         ma50 = close.rolling(window=50).mean()
         return to_series(reindex_indicator(close, ma50))
 
@@ -632,7 +677,7 @@ class StockAnalyser:
         return to_series(reindex_indicator(close, ma))
     
     def get_rsi_ma_series(self, period: int = 14):
-        close = self.df["Close"]
+        close = self.weekly_df["Close"]
         rsi = compute_wilder_rsi(close)
         rsi_ma = rsi.rolling(window=period).mean()
         return to_series(reindex_indicator(close, rsi_ma))

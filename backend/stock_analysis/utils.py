@@ -185,7 +185,7 @@ def classify_adx_trend(adx: pd.Series, plus_di: pd.Series, minus_di: pd.Series) 
             labels.append("Light Red")  # weakening bearish trend
         else:
             labels.append("Unknown")
-
+            
     return pd.Series(labels, index=adx.index)
 
 
