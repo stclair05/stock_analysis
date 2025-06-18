@@ -492,10 +492,10 @@ export default function BuySellSignalsTab() {
                           const isShortBullish =
                             details.ma12_now > details.ma36_now;
                           const shortSpreadNow = Math.abs(
-                            details.ma12_now - details.ma36_now
+                            details.spread_short_now
                           );
                           const shortSpreadPrev = Math.abs(
-                            details.ma12_prev - details.ma36_prev
+                            details.spread_short_prev
                           );
 
                           const shortTopColor = isShortBullish
@@ -512,10 +512,10 @@ export default function BuySellSignalsTab() {
                           const isLongBullish =
                             details.ma50_now > details.ma150_now;
                           const longSpreadNow = Math.abs(
-                            details.ma50_now - details.ma150_now
+                            details.spread_long_now
                           );
                           const longSpreadPrev = Math.abs(
-                            details.ma50_prev - details.ma150_prev
+                            details.spread_long_prev
                           );
 
                           const longTopColor = isLongBullish
