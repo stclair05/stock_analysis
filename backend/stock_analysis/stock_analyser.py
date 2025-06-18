@@ -2042,27 +2042,57 @@ class StockAnalyser:
 
         # === Delta logic ===
         if curr_status != prev_status:
+            # Status flipped from previous bar (e.g., BUY → SELL or vice versa)
+            # Indicates a new trend may be forming
             strength = "crossed"
         else:
+            # Default to neutral if no trend change
             strength = "neutral"
+
             if curr_status == "BUY":
+                # --- Weak BUY conditions ---
                 if ma12_now < ma36_now:
+                    # Short-term trend contradicts BUY signal — 12MA below 36MA
                     strength = "very weak"
                 elif spread_short_now < spread_short_prev:
+                    # Spread between 12MA and 36MA is narrowing — momentum weakening
                     strength = "weakening"
-                elif ma50_now > ma150_now and (grad50 > 0 or grad150 < 0) and spread_long_now > spread_long_prev:
+                
+                # --- Strong BUY conditions ---
+                elif (
+                    ma50_now > ma150_now and
+                    (grad50 > 0 or grad150 < 0) and
+                    spread_long_now > spread_long_prev
+                ):
+                    # Long-term uptrend is accelerating: 50DMA > 150DMA, positive slope, widening spread
                     strength = "strengthening"
+                
                 if ma50_prev < ma150_prev and ma50_now > ma150_now:
+                    # 50DMA just crossed above 150DMA → Golden Cross
                     strength = "very strong"
+
             elif curr_status == "SELL":
+                # --- Weak SELL conditions ---
                 if ma12_now > ma36_now:
+                    # Short-term trend contradicts SELL signal — 12MA above 36MA
                     strength = "very weak"
                 elif spread_short_now > spread_short_prev:
+                    # Spread between 12MA and 36MA is narrowing against SELL direction
                     strength = "weakening"
-                elif ma50_now < ma150_now and (grad50 < 0 or grad150 > 0) and spread_long_now < spread_long_prev:
+                
+                # --- Strong SELL conditions ---
+                elif (
+                    ma50_now < ma150_now and
+                    (grad50 < 0 or grad150 > 0) and
+                    spread_long_now < spread_long_prev
+                ):
+                    # Long-term downtrend accelerating: 50DMA < 150DMA, negative slope, widening spread
                     strength = "strengthening"
+                
                 if ma50_prev > ma150_prev and ma50_now < ma150_now:
+                    # 50DMA just crossed below 150DMA → Death Cross
                     strength = "very strong"
+
 
         return {
             "status": curr_status,

@@ -211,11 +211,8 @@ export default function BuySellSignalsTab() {
                   ? await resStrength.json()
                   : null;
 
-                const last =
-                  signalData?.markers?.[signalData.markers.length - 1];
-                const status =
-                  last?.side?.toUpperCase() || strengthData?.status || "";
-                const delta = strengthData?.delta || "";
+                const status = strengthData?.status || "";
+                const delta = strengthData?.strength || "";
 
                 row[strategy] = { status, delta };
               } catch (e) {
