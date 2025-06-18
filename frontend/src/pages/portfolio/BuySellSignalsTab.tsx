@@ -214,8 +214,9 @@ export default function BuySellSignalsTab() {
 
                 const status = strengthData?.status || "";
                 const delta = strengthData?.strength || "";
+                const details = strengthData?.details;
 
-                row[strategy] = { status, delta };
+                row[strategy] = { status, delta, details };
               } catch (e) {
                 row[strategy] = "";
               }
@@ -481,59 +482,71 @@ export default function BuySellSignalsTab() {
 
                         const details = signalObj.details || {};
 
+                        let barContent: React.ReactNode = null;
                         if (
                           details.spread_short_now !== undefined &&
                           details.spread_long_now !== undefined
                         ) {
                           // Determine short MA colors and direction
-                          const shortTop =
-                            details.ma12_now > details.ma36_now
-                              ? "#f37f20"
-                              : "#4CAF50";
-                          const shortBottom =
-                            details.ma12_now > details.ma36_now
-                              ? "#4CAF50"
-                              : "#f37f20";
-                          const shortDirection =
-                            details.spread_short_now > details.spread_short_prev
-                              ? "up"
-                              : "down";
+                          // === Short-term MA: MA12 vs MA36 ===
+                          const isShortBullish =
+                            details.ma12_now > details.ma36_now;
+                          const shortSpreadNow = Math.abs(
+                            details.ma12_now - details.ma36_now
+                          );
+                          const shortSpreadPrev = Math.abs(
+                            details.ma12_prev - details.ma36_prev
+                          );
 
-                          // Determine long MA colors and direction
-                          const longTop =
-                            details.ma50_now > details.ma150_now
-                              ? "#2962FF"
-                              : "#FF9800";
-                          const longBottom =
-                            details.ma50_now > details.ma150_now
-                              ? "#FF9800"
-                              : "#2962FF";
-                          const longDirection =
-                            details.spread_long_now > details.spread_long_prev
-                              ? "up"
-                              : "down";
+                          const shortTopColor = isShortBullish
+                            ? "#00BCD4" // MA12 light blue if on top
+                            : "#4CAF50"; // MA36 green if on top
+                          const shortBottomColor = isShortBullish
+                            ? "#4CAF50"
+                            : "#00BCD4";
 
-                          return (
-                            <td key={s} style={{ textAlign: "center" }}>
-                              <div
-                                style={{
-                                  display: "flex",
-                                  justifyContent: "center",
-                                  gap: 8,
-                                }}
-                              >
-                                <BlockArrowBar
-                                  topColor={shortTop}
-                                  bottomColor={shortBottom}
-                                  direction={shortDirection}
-                                />
-                                <BlockArrowBar
-                                  topColor={longTop}
-                                  bottomColor={longBottom}
-                                  direction={longDirection}
-                                />
-                              </div>
-                            </td>
+                          const shortArrowDirection =
+                            shortSpreadNow > shortSpreadPrev ? "up" : "down";
+
+                          // === Long-term MA: MA50 vs MA150 ===
+                          const isLongBullish =
+                            details.ma50_now > details.ma150_now;
+                          const longSpreadNow = Math.abs(
+                            details.ma50_now - details.ma150_now
+                          );
+                          const longSpreadPrev = Math.abs(
+                            details.ma50_prev - details.ma150_prev
+                          );
+
+                          const longTopColor = isLongBullish
+                            ? "#2962FF"
+                            : "#FF9800"; // MA50 blue if on top
+                          const longBottomColor = isLongBullish
+                            ? "#FF9800"
+                            : "#2962FF"; // MA150 orange if on bottom
+                          const longArrowDirection =
+                            longSpreadNow > longSpreadPrev ? "up" : "down";
+
+                          barContent = (
+                            <div
+                              style={{
+                                display: "flex",
+                                justifyContent: "center",
+                                alignItems: "center",
+                                gap: 8,
+                              }}
+                            >
+                              <BlockArrowBar
+                                topColor={shortTopColor}
+                                bottomColor={shortBottomColor}
+                                direction={shortArrowDirection}
+                              />
+                              <BlockArrowBar
+                                topColor={longTopColor}
+                                bottomColor={longBottomColor}
+                                direction={longArrowDirection}
+                              />
+                            </div>
                           );
                         }
 
@@ -581,10 +594,21 @@ export default function BuySellSignalsTab() {
 
                         return (
                           <td key={s} style={cellStyle} className={cellClass}>
-                            <span title={delta}>
-                              {status || "-"}
-                              {icon}
-                            </span>
+                            <div
+                              style={{
+                                display: "flex",
+                                flexDirection: "row",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                gap: 8,
+                              }}
+                            >
+                              <span title={delta}>
+                                {status || "-"}
+                                {icon}
+                              </span>
+                              {barContent}
+                            </div>
                           </td>
                         );
                       })}

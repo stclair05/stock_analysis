@@ -13,30 +13,21 @@ export const BlockArrowBar: React.FC<BlockArrowBarProps> = ({
   direction,
   size = 24,
 }) => {
-  const arrow =
-    direction === "up" ? (
-      <div
-        style={{
-          width: 0,
-          height: 0,
-          borderLeft: "6px solid transparent",
-          borderRight: "6px solid transparent",
-          borderBottom: `10px solid ${bottomColor}`,
-          marginBottom: 2,
-        }}
-      />
-    ) : (
-      <div
-        style={{
-          width: 0,
-          height: 0,
-          borderLeft: "6px solid transparent",
-          borderRight: "6px solid transparent",
-          borderTop: `10px solid ${topColor}`,
-          marginTop: 2,
-        }}
-      />
-    );
+  const arrowColor = direction === "up" ? "#4caf50" : "#e53935";
+
+  const arrow = (
+    <svg
+      width={12}
+      height={10}
+      style={direction === "up" ? { marginBottom: 2 } : { marginTop: 2 }}
+    >
+      {direction === "up" ? (
+        <polygon points="6,0 12,10 0,10" fill={arrowColor} />
+      ) : (
+        <polygon points="0,0 12,0 6,10" fill={arrowColor} />
+      )}
+    </svg>
+  );
 
   return (
     <div
