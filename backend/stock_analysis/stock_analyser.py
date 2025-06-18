@@ -1360,20 +1360,7 @@ class StockAnalyser:
         else:
             return {"status": curr_signal, "delta": None}
 
-        # --- Integrate Supertrend direction into delta
-        st_df = compute_supertrend_lines(df)
-        supertrend_now = st_df["Trend"].iloc[-1]  # 1 = uptrend, -1 = downtrend
-
-        if curr_signal == "BUY":
-            if supertrend_now == 1 and delta == "weakening":
-                delta = "neutral"
-            elif supertrend_now == -1 and delta == "strengthening":
-                delta = "weakening"
-        elif curr_signal == "SELL":
-            if supertrend_now == -1 and delta == "weakening":
-                delta = "neutral"
-            elif supertrend_now == 1 and delta == "strengthening":
-                delta = "weakening"
+       
 
         return {"status": curr_signal, "delta": delta}
 
@@ -1495,21 +1482,6 @@ class StockAnalyser:
             delta = "strengthening" if prev_ma12 - latest_price > prev_ma12 - prev_price else "weakening"
         else:
             delta = "neutral"
-
-        # Supertrend-enhanced delta adjustment
-        st_df = compute_supertrend_lines(df)
-        supertrend_now = st_df["Trend"].iloc[-1]  # 1 for uptrend, -1 for downtrend
-
-        if curr_sig == "BUY":
-            if supertrend_now == 1 and delta == "weakening":
-                delta = "neutral"
-            elif supertrend_now == -1 and delta == "strengthening":
-                delta = "weakening"
-        elif curr_sig == "SELL":
-            if supertrend_now == -1 and delta == "weakening":
-                delta = "neutral"
-            elif supertrend_now == 1 and delta == "strengthening":
-                delta = "weakening"
 
         return {"status": curr_sig, "delta": delta}
 
@@ -2013,3 +1985,96 @@ class StockAnalyser:
             delta = "strengthening" if dem_now < dem_prev else "weakening"
             return {"status": "SELL", "delta": delta}
 
+
+    def get_generic_strength_status(self, timeframe: str = "weekly") -> dict:
+        """
+        Generic trend strength classification system:
+        - Near-term weakening: 12/36 period MA (from current timeframe)
+        - Long-term strengthening: 50/150 DMA (always from daily data)
+        - Detects "crossed" when status flips from previous period
+        """
+        if timeframe == "daily":
+            df = self.df
+        elif timeframe == "weekly":
+            df = self.weekly_df
+        elif timeframe == "monthly":
+            df = self.monthly_df
+        else:
+            raise ValueError(f"Invalid timeframe: {timeframe}")
+
+        if len(df) < 36:
+            return {"status": None, "strength": None}
+
+        daily_df = self.df
+        if len(daily_df) < 150:
+            return {"status": None, "strength": None}
+
+        close = df["Close"]
+        ma12 = close.rolling(12).mean()
+        ma36 = close.rolling(36).mean()
+
+        # Current and previous values
+        ma12_now, ma12_prev = ma12.iloc[-1], ma12.iloc[-2]
+        ma36_now, ma36_prev = ma36.iloc[-1], ma36.iloc[-2]
+        price_now, price_prev = close.iloc[-1], close.iloc[-2]
+
+        spread_short_now = ma12_now - ma36_now
+        spread_short_prev = ma12_prev - ma36_prev
+
+        # DAILY (long-term)
+        close_daily = daily_df["Close"]
+        ma50 = close_daily.rolling(50).mean()
+        ma150 = close_daily.rolling(150).mean()
+        ma50_now, ma50_prev = ma50.iloc[-1], ma50.iloc[-2]
+        ma150_now, ma150_prev = ma150.iloc[-1], ma150.iloc[-2]
+
+        spread_long_now = ma50_now - ma150_now
+        spread_long_prev = ma50_prev - ma150_prev
+        grad50 = ma50_now - ma50_prev
+        grad150 = ma150_now - ma150_prev
+
+        # === Signal logic ===
+        def get_signal(price, m12, m36, m50, m150):
+            return "BUY" if m12 > m36 and m50 > m150 else "SELL"
+
+        curr_status = get_signal(price_now, ma12_now, ma36_now, ma50_now, ma150_now)
+        prev_status = get_signal(price_prev, ma12_prev, ma36_prev, ma50_prev, ma150_prev)
+
+        # === Delta logic ===
+        if curr_status != prev_status:
+            strength = "crossed"
+        else:
+            strength = "neutral"
+            if curr_status == "BUY":
+                if ma12_now < ma36_now:
+                    strength = "very weak"
+                elif spread_short_now < spread_short_prev:
+                    strength = "weakening"
+                elif ma50_now > ma150_now and (grad50 > 0 or grad150 < 0) and spread_long_now > spread_long_prev:
+                    strength = "strengthening"
+                if ma50_prev < ma150_prev and ma50_now > ma150_now:
+                    strength = "very strong"
+            elif curr_status == "SELL":
+                if ma12_now > ma36_now:
+                    strength = "very weak"
+                elif spread_short_now > spread_short_prev:
+                    strength = "weakening"
+                elif ma50_now < ma150_now and (grad50 < 0 or grad150 > 0) and spread_long_now < spread_long_prev:
+                    strength = "strengthening"
+                if ma50_prev > ma150_prev and ma50_now < ma150_now:
+                    strength = "very strong"
+
+        return {
+            "status": curr_status,
+            "strength": strength,
+            "details": {
+                "ma12_now": ma12_now, "ma36_now": ma36_now,
+                "ma50_now": ma50_now, "ma150_now": ma150_now,
+                "spread_short_now": spread_short_now,
+                "spread_short_prev": spread_short_prev,
+                "spread_long_now": spread_long_now,
+                "spread_long_prev": spread_long_prev,
+                "grad50": grad50,
+                "grad150": grad150,
+            }
+        }

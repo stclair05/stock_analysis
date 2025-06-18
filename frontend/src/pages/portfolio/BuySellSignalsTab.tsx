@@ -200,7 +200,7 @@ export default function BuySellSignalsTab() {
                     `http://localhost:8000/api/signals_${selectedTimeframe}/${holding.ticker}?strategy=${apiStrategy}`
                   ),
                   fetch(
-                    `http://localhost:8000/api/signal_strength/${holding.ticker}?strategy=${apiStrategy}&timeframe=${selectedTimeframe}`
+                    `http://localhost:8000/api/signal_strength/${holding.ticker}?strategy=generic&timeframe=${selectedTimeframe}`
                   ),
                 ]);
 
@@ -486,9 +486,12 @@ export default function BuySellSignalsTab() {
                         if (status === "SELL") color = "#e91e63";
 
                         let icon = "";
-                        if (delta === "strengthening") icon = " ↑";
+                        if (delta === "very strong") icon = " ⬆️";
+                        else if (delta === "strengthening") icon = " ↑";
                         else if (delta === "weakening") icon = " ↓";
+                        else if (delta === "very weak") icon = " ⬇️";
                         else if (delta === "crossed") icon = " 🔁";
+
                         const cellStyle: React.CSSProperties = {
                           color,
                           textAlign: "center",
@@ -496,14 +499,25 @@ export default function BuySellSignalsTab() {
                         };
 
                         let cellClass = "";
-                        if (status === "BUY" && delta === "strengthening")
-                          cellClass = "signal-buy-strengthening";
-                        else if (status === "BUY" && delta === "weakening")
-                          cellClass = "signal-buy-weakening";
-                        else if (status === "SELL" && delta === "strengthening")
-                          cellClass = "signal-sell-strengthening";
-                        else if (status === "SELL" && delta === "weakening")
-                          cellClass = "signal-sell-weakening";
+                        if (status === "BUY") {
+                          if (delta === "very strong")
+                            cellClass = "signal-buy-very-strong";
+                          else if (delta === "strengthening")
+                            cellClass = "signal-buy-strengthening";
+                          else if (delta === "weakening")
+                            cellClass = "signal-buy-weakening";
+                          else if (delta === "very weak")
+                            cellClass = "signal-buy-very-weak";
+                        } else if (status === "SELL") {
+                          if (delta === "very strong")
+                            cellClass = "signal-sell-very-strong";
+                          else if (delta === "strengthening")
+                            cellClass = "signal-sell-strengthening";
+                          else if (delta === "weakening")
+                            cellClass = "signal-sell-weakening";
+                          else if (delta === "very weak")
+                            cellClass = "signal-sell-very-weak";
+                        }
 
                         if (delta === "crossed") {
                           cellClass += " signal-crossed";

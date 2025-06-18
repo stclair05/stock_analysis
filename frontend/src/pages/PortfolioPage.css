@@ -32,17 +32,24 @@
   transition: left 0.3s ease, width 0.3s ease;
 }
 
+/* 🔼 BUY - STRENGTHENING */
 .signal-buy-strengthening {
-  background-color: #d1e7dd !important; /* green tint */
+  background-color: #c7ecd1 !important; /* mid green */
 }
+
+/* 🔽 BUY - WEAKENING */
 .signal-buy-weakening {
-  background-color: #fff3cd !important; /* yellow/orange tint */
+  background-color: #fff3cd !important; /* light orange */
 }
+
+/* 🔼 SELL - STRENGTHENING */
 .signal-sell-strengthening {
-  background-color: #f8d7da !important; /* red tint */
+  background-color: #f9ccd0 !important; /* mid red */
 }
+
+/* 🔽 SELL - WEAKENING */
 .signal-sell-weakening {
-  background-color: #d1e7dd !important; /* green tint again */
+  background-color: #e2f0e9 !important; /* soft green tint */
 }
 
 .signal-crossed {

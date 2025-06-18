@@ -494,5 +494,7 @@ def get_signal_strength(
         return analyser.get_demarker_status_and_strength(timeframe)
     elif strategy == "northstar":
         return analyser.get_northstar_status_and_strength(timeframe)
+    elif strategy == "generic":
+        return analyser.get_generic_strength_status(timeframe)
     else:
         return {"error": f"Unknown strategy: {strategy}"}
