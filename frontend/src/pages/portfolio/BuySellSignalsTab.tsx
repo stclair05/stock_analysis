@@ -473,82 +473,92 @@ export default function BuySellSignalsTab() {
                 ) : (
                   displayedPortfolio.map((holding) => (
                     <tr key={holding.ticker}>
-                      <td>{holding.ticker}</td>
+                      <td
+                        style={{ verticalAlign: "middle", padding: "6px 12px" }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            width: "100%",
+                            gap: 10,
+                          }}
+                        >
+                          <div style={{ fontWeight: "bold", fontSize: "1rem" }}>
+                            {holding.ticker}
+                          </div>
+
+                          {(() => {
+                            const details =
+                              signalSummary[holding.ticker]?.[
+                                visibleAndOrderedStrategies[0]
+                              ]?.details;
+                            if (
+                              details?.spread_short_now !== undefined &&
+                              details?.spread_long_now !== undefined
+                            ) {
+                              const isShortBullish =
+                                details.ma12_now > details.ma36_now;
+                              const shortSpreadNow = Math.abs(
+                                details.spread_short_now
+                              );
+                              const shortSpreadPrev = Math.abs(
+                                details.spread_short_prev
+                              );
+                              const shortTopColor = isShortBullish
+                                ? "#00BCD4"
+                                : "#4CAF50";
+                              const shortBottomColor = isShortBullish
+                                ? "#4CAF50"
+                                : "#00BCD4";
+                              const shortArrowDirection =
+                                shortSpreadNow > shortSpreadPrev
+                                  ? "up"
+                                  : "down";
+
+                              const isLongBullish =
+                                details.ma50_now > details.ma150_now;
+                              const longSpreadNow = Math.abs(
+                                details.spread_long_now
+                              );
+                              const longSpreadPrev = Math.abs(
+                                details.spread_long_prev
+                              );
+                              const longTopColor = isLongBullish
+                                ? "#2962FF"
+                                : "#FF9800";
+                              const longBottomColor = isLongBullish
+                                ? "#FF9800"
+                                : "#2962FF";
+                              const longArrowDirection =
+                                longSpreadNow > longSpreadPrev ? "up" : "down";
+
+                              return (
+                                <div style={{ display: "flex", gap: 4 }}>
+                                  <BlockArrowBar
+                                    topColor={shortTopColor}
+                                    bottomColor={shortBottomColor}
+                                    direction={shortArrowDirection}
+                                  />
+                                  <BlockArrowBar
+                                    topColor={longTopColor}
+                                    bottomColor={longBottomColor}
+                                    direction={longArrowDirection}
+                                  />
+                                </div>
+                              );
+                            }
+                            return null;
+                          })()}
+                        </div>
+                      </td>
+
                       {visibleAndOrderedStrategies.map((s) => {
                         const signalObj =
                           signalSummary[holding.ticker]?.[s] ?? {};
                         const status = signalObj.status || "";
                         const delta = signalObj.delta || "";
-
-                        const details = signalObj.details || {};
-
-                        let barContent: React.ReactNode = null;
-                        if (
-                          details.spread_short_now !== undefined &&
-                          details.spread_long_now !== undefined
-                        ) {
-                          // Determine short MA colors and direction
-                          // === Short-term MA: MA12 vs MA36 ===
-                          const isShortBullish =
-                            details.ma12_now > details.ma36_now;
-                          const shortSpreadNow = Math.abs(
-                            details.spread_short_now
-                          );
-                          const shortSpreadPrev = Math.abs(
-                            details.spread_short_prev
-                          );
-
-                          const shortTopColor = isShortBullish
-                            ? "#00BCD4" // MA12 light blue if on top
-                            : "#4CAF50"; // MA36 green if on top
-                          const shortBottomColor = isShortBullish
-                            ? "#4CAF50"
-                            : "#00BCD4";
-
-                          const shortArrowDirection =
-                            shortSpreadNow > shortSpreadPrev ? "up" : "down";
-
-                          // === Long-term MA: MA50 vs MA150 ===
-                          const isLongBullish =
-                            details.ma50_now > details.ma150_now;
-                          const longSpreadNow = Math.abs(
-                            details.spread_long_now
-                          );
-                          const longSpreadPrev = Math.abs(
-                            details.spread_long_prev
-                          );
-
-                          const longTopColor = isLongBullish
-                            ? "#2962FF"
-                            : "#FF9800"; // MA50 blue if on top
-                          const longBottomColor = isLongBullish
-                            ? "#FF9800"
-                            : "#2962FF"; // MA150 orange if on bottom
-                          const longArrowDirection =
-                            longSpreadNow > longSpreadPrev ? "up" : "down";
-
-                          barContent = (
-                            <div
-                              style={{
-                                display: "flex",
-                                justifyContent: "center",
-                                alignItems: "center",
-                                gap: 8,
-                              }}
-                            >
-                              <BlockArrowBar
-                                topColor={shortTopColor}
-                                bottomColor={shortBottomColor}
-                                direction={shortArrowDirection}
-                              />
-                              <BlockArrowBar
-                                topColor={longTopColor}
-                                bottomColor={longBottomColor}
-                                direction={longArrowDirection}
-                              />
-                            </div>
-                          );
-                        }
 
                         let color = "#bdbdbd";
                         if (status === "BUY") color = "#009944";
@@ -607,7 +617,6 @@ export default function BuySellSignalsTab() {
                                 {status || "-"}
                                 {icon}
                               </span>
-                              {barContent}
                             </div>
                           </td>
                         );
