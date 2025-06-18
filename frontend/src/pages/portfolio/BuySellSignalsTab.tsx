@@ -192,36 +192,58 @@ export default function BuySellSignalsTab() {
       await Promise.all(
         portfolio.map(async (holding) => {
           const row: any = {};
+          // Fetch the generic signal strength once per ticker
+          let genericStrength: any = null;
+          try {
+            const resStrength = await fetch(
+              `http://localhost:8000/api/signal_strength/${holding.ticker}?strategy=generic&timeframe=${selectedTimeframe}`
+            );
+            genericStrength = resStrength.ok ? await resStrength.json() : null;
+          } catch (e) {
+            genericStrength = null;
+          }
           await Promise.all(
             strategiesToFetch.map(async (strategy) => {
               try {
                 const apiStrategy = strategyApiMap[strategy] || strategy;
-                const [resSignals, resStrength] = await Promise.all([
-                  fetch(
-                    `http://localhost:8000/api/signals_${selectedTimeframe}/${holding.ticker}?strategy=${apiStrategy}`
-                  ),
-                  fetch(
-                    `http://localhost:8000/api/signal_strength/${holding.ticker}?strategy=generic&timeframe=${selectedTimeframe}`
-                  ),
-                ]);
+                const resSignals = await fetch(
+                  `http://localhost:8000/api/signals_${selectedTimeframe}/${holding.ticker}?strategy=${apiStrategy}`
+                );
 
                 const signalData = resSignals.ok
                   ? await resSignals.json()
                   : null;
-                const strengthData = resStrength.ok
-                  ? await resStrength.json()
-                  : null;
 
-                const status = strengthData?.status || "";
-                const delta = strengthData?.strength || "";
-                const details = strengthData?.details;
+                const latestSignal =
+                  Array.isArray(signalData?.markers) &&
+                  signalData.markers.length > 0
+                    ? signalData.markers[
+                        signalData.markers.length - 1
+                      ].side.toUpperCase()
+                    : "";
 
-                row[strategy] = { status, delta, details };
+                const status = genericStrength?.status || "";
+                const delta = genericStrength?.strength || "";
+                const details = genericStrength?.details;
+
+                row[strategy] = {
+                  signal: latestSignal,
+                  status,
+                  delta,
+                  details,
+                };
               } catch (e) {
-                row[strategy] = "";
+                row[strategy] = {
+                  signal: "",
+                  status: "",
+                  delta: "",
+                  details: null,
+                };
               }
             })
           );
+          // store generic strength separately for easy access
+          row["_generic"] = genericStrength;
           summary[holding.ticker] = row;
         })
       );
@@ -274,15 +296,15 @@ export default function BuySellSignalsTab() {
 
         for (const strategy of visibleAndOrderedStrategies) {
           const signalObj = signalSummary[holding.ticker]?.[strategy];
-          const status = signalObj?.status || "";
+          const buySell = signalObj?.signal || "";
 
-          if (status === "BUY") hasBuySignal = true;
-          if (status === "SELL") hasSellSignal = true;
+          if (buySell === "BUY") hasBuySignal = true;
+          if (buySell === "SELL") hasSellSignal = true;
 
           if (filterType === "BUY" || filterType === "SELL") {
-            if (status === filterType) {
+            if (buySell === filterType) {
               hasMatchingSignal = true;
-            } else if (status && status !== "-") {
+            } else if (buySell && buySell !== "-") {
               hasContradictorySignal = true;
               break;
             }
@@ -491,9 +513,9 @@ export default function BuySellSignalsTab() {
 
                           {(() => {
                             const details =
-                              signalSummary[holding.ticker]?.[
-                                visibleAndOrderedStrategies[0]
-                              ]?.details;
+                              signalSummary[holding.ticker]?._generic?.details;
+                            const delta =
+                              signalSummary[holding.ticker]?._generic?.strength;
                             if (
                               details?.spread_short_now !== undefined &&
                               details?.spread_long_now !== undefined
@@ -513,9 +535,7 @@ export default function BuySellSignalsTab() {
                                 ? "#4CAF50"
                                 : "#00BCD4";
                               const shortArrowDirection =
-                                signalSummary[holding.ticker]?.[
-                                  visibleAndOrderedStrategies[0]
-                                ]?.delta === "crossed"
+                                delta === "crossed"
                                   ? "cross"
                                   : shortSpreadNow > shortSpreadPrev
                                   ? "up"
@@ -536,9 +556,7 @@ export default function BuySellSignalsTab() {
                                 ? "#FF9800"
                                 : "#2962FF";
                               const longArrowDirection =
-                                signalSummary[holding.ticker]?.[
-                                  visibleAndOrderedStrategies[0]
-                                ]?.delta === "crossed"
+                                delta === "crossed"
                                   ? "cross"
                                   : longSpreadNow > longSpreadPrev
                                   ? "up"
@@ -567,6 +585,7 @@ export default function BuySellSignalsTab() {
                       {visibleAndOrderedStrategies.map((s) => {
                         const signalObj =
                           signalSummary[holding.ticker]?.[s] ?? {};
+                        const buySell = signalObj.signal || "";
                         const status = signalObj.status || "";
                         const delta = signalObj.delta || "";
 
@@ -624,7 +643,7 @@ export default function BuySellSignalsTab() {
                               }}
                             >
                               <span title={delta}>
-                                {status || "-"}
+                                {buySell || "-"}
                                 {icon}
                               </span>
                             </div>
