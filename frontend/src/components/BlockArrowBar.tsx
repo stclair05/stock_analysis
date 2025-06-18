@@ -3,7 +3,7 @@ import React from "react";
 type BlockArrowBarProps = {
   topColor: string;
   bottomColor: string;
-  direction: "up" | "down";
+  direction: "up" | "down" | "cross";
   size?: number;
 };
 
@@ -15,19 +15,20 @@ export const BlockArrowBar: React.FC<BlockArrowBarProps> = ({
 }) => {
   const arrowColor = direction === "up" ? "#4caf50" : "#e53935";
 
-  const arrow = (
-    <svg
-      width={12}
-      height={10}
-      style={direction === "up" ? { marginBottom: 2 } : { marginTop: 2 }}
-    >
-      {direction === "up" ? (
-        <polygon points="6,0 12,10 0,10" fill={arrowColor} />
-      ) : (
-        <polygon points="0,0 12,0 6,10" fill={arrowColor} />
-      )}
-    </svg>
-  );
+  const arrow =
+    direction === "cross" ? null : (
+      <svg
+        width={12}
+        height={10}
+        style={direction === "up" ? { marginBottom: 2 } : { marginTop: 2 }}
+      >
+        {direction === "up" ? (
+          <polygon points="6,0 12,10 0,10" fill={arrowColor} />
+        ) : (
+          <polygon points="0,0 12,0 6,10" fill={arrowColor} />
+        )}
+      </svg>
+    );
 
   return (
     <div

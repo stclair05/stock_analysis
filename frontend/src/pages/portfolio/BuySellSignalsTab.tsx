@@ -513,7 +513,11 @@ export default function BuySellSignalsTab() {
                                 ? "#4CAF50"
                                 : "#00BCD4";
                               const shortArrowDirection =
-                                shortSpreadNow > shortSpreadPrev
+                                signalSummary[holding.ticker]?.[
+                                  visibleAndOrderedStrategies[0]
+                                ]?.delta === "crossed"
+                                  ? "cross"
+                                  : shortSpreadNow > shortSpreadPrev
                                   ? "up"
                                   : "down";
 
@@ -532,7 +536,13 @@ export default function BuySellSignalsTab() {
                                 ? "#FF9800"
                                 : "#2962FF";
                               const longArrowDirection =
-                                longSpreadNow > longSpreadPrev ? "up" : "down";
+                                signalSummary[holding.ticker]?.[
+                                  visibleAndOrderedStrategies[0]
+                                ]?.delta === "crossed"
+                                  ? "cross"
+                                  : longSpreadNow > longSpreadPrev
+                                  ? "up"
+                                  : "down";
 
                               return (
                                 <div style={{ display: "flex", gap: 4 }}>
