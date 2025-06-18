@@ -1,67 +1,11 @@
 {
   "equities": [
     {
-      "ticker": "ARKK",
+      "ticker": "SHOP",
       "shares": 28397.0,
       "invested_capital": 2832316.78,
       "average_cost": 99.74,
       "sector": "Index"
-    },
-    {
-      "ticker": "HBM",
-      "shares": 0.0,
-      "invested_capital": 0.0,
-      "average_cost": 0.0,
-      "sector": "Copper"
-    },
-    {
-      "ticker": "0020.HK",
-      "shares": 430000.0,
-      "invested_capital": 104987.01298701297,
-      "average_cost": 0.24415584415584413,
-      "sector": "Hong Kong and China"
-    },
-    {
-      "ticker": "2318.HK",
-      "shares": 333894.0,
-      "invested_capital": 3350115.302906325,
-      "average_cost": 10.033469612830196,
-      "sector": "Hong Kong and China"
-    },
-    {
-      "ticker": "KWEB",
-      "shares": 14256.0,
-      "invested_capital": 364072.5792,
-      "average_cost": 25.5382,
-      "sector": "Index"
-    },
-    {
-      "ticker": "0700.HK",
-      "shares": 88515.0,
-      "invested_capital": 4657451.31768576,
-      "average_cost": 52.617650315604806,
-      "sector": "Hong Kong and China"
-    },
-    {
-      "ticker": "9988.HK",
-      "shares": 441137.0,
-      "invested_capital": 11991066.281427097,
-      "average_cost": 27.182182137129953,
-      "sector": "Hong Kong and China"
-    },
-    {
-      "ticker": "9618.HK",
-      "shares": 6411.0,
-      "invested_capital": 0.0,
-      "average_cost": 0.0,
-      "sector": "Hong Kong and China"
-    },
-    {
-      "ticker": "3690.HK",
-      "shares": 11022.0,
-      "invested_capital": 0.0,
-      "average_cost": 0.0,
-      "sector": "Hong Kong and China"
     }
   ],
   "fixed_income": [
