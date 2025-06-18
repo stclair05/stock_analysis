@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import "../PortfolioPage.css";
+import { BlockArrowBar } from "../../components/BlockArrowBar";
 
 const timeframes = ["daily", "weekly", "monthly"];
 const allStrategies = [
@@ -477,6 +478,64 @@ export default function BuySellSignalsTab() {
                           signalSummary[holding.ticker]?.[s] ?? {};
                         const status = signalObj.status || "";
                         const delta = signalObj.delta || "";
+
+                        const details = signalObj.details || {};
+
+                        if (
+                          details.spread_short_now !== undefined &&
+                          details.spread_long_now !== undefined
+                        ) {
+                          // Determine short MA colors and direction
+                          const shortTop =
+                            details.ma12_now > details.ma36_now
+                              ? "#f37f20"
+                              : "#4CAF50";
+                          const shortBottom =
+                            details.ma12_now > details.ma36_now
+                              ? "#4CAF50"
+                              : "#f37f20";
+                          const shortDirection =
+                            details.spread_short_now > details.spread_short_prev
+                              ? "up"
+                              : "down";
+
+                          // Determine long MA colors and direction
+                          const longTop =
+                            details.ma50_now > details.ma150_now
+                              ? "#2962FF"
+                              : "#FF9800";
+                          const longBottom =
+                            details.ma50_now > details.ma150_now
+                              ? "#FF9800"
+                              : "#2962FF";
+                          const longDirection =
+                            details.spread_long_now > details.spread_long_prev
+                              ? "up"
+                              : "down";
+
+                          return (
+                            <td key={s} style={{ textAlign: "center" }}>
+                              <div
+                                style={{
+                                  display: "flex",
+                                  justifyContent: "center",
+                                  gap: 8,
+                                }}
+                              >
+                                <BlockArrowBar
+                                  topColor={shortTop}
+                                  bottomColor={shortBottom}
+                                  direction={shortDirection}
+                                />
+                                <BlockArrowBar
+                                  topColor={longTop}
+                                  bottomColor={longBottom}
+                                  direction={longDirection}
+                                />
+                              </div>
+                            </td>
+                          );
+                        }
 
                         let color = "#bdbdbd";
                         if (status === "BUY") color = "#009944";
