@@ -472,3 +472,29 @@ def backtest_signals(
     print("Filtered markers:", filtered_markers)
     results = analyser.backtest_signal_markers(filtered_markers)
     return results
+
+
+@app.get("/api/signal_strength/{symbol}")
+def get_signal_strength(
+    symbol: str,
+    timeframe: str = Query("weekly"),
+    strategy: str = Query("northstar")
+):
+    analyser = StockAnalyser(symbol)
+
+    if strategy == "trendinvestorpro":
+        return analyser.get_trendinvestorpro_status_and_strength(timeframe)
+    elif strategy == "stclair":
+        return analyser.get_stclair_status_and_strength(timeframe)
+    elif strategy == "stclairlongterm":
+        return analyser.get_stclairlongterm_status_and_strength()
+    elif strategy == "mace_40w":
+        return analyser.get_mace_40w_status_and_strength()
+    elif strategy == "demarker":
+        return analyser.get_demarker_status_and_strength(timeframe)
+    elif strategy == "northstar":
+        return analyser.get_northstar_status_and_strength(timeframe)
+    elif strategy == "generic":
+        return analyser.get_generic_strength_status(timeframe)
+    else:
+        return {"error": f"Unknown strategy: {strategy}"}

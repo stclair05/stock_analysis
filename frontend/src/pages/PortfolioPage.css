@@ -1,34 +1,80 @@
 .custom-tabs {
-    display: flex;
-    gap: 2rem;
-    position: relative;
-  }
-  
-  .custom-tab-button {
-    background: none;
-    border: none;
-    font-weight: 500;
-    font-size: 1rem;
-    padding-bottom: 8px;
-    color: #6c757d;
-    transition: color 0.3s ease;
-    position: relative;
-  }
-  
-  .custom-tab-button:hover {
-    color: #000;
-  }
-  
-  .custom-tab-button.active {
-    color: #000;
-    font-weight: 600;
-  }
-  
-  .tab-underline {
-    position: absolute;
-    bottom: 0;
-    height: 3px;
-    background-color: #003366; /* navy blue underline */
-    transition: left 0.3s ease, width 0.3s ease;
-  }
-  
+  display: flex;
+  gap: 2rem;
+  position: relative;
+}
+
+.custom-tab-button {
+  background: none;
+  border: none;
+  font-weight: 500;
+  font-size: 1rem;
+  padding-bottom: 8px;
+  color: #6c757d;
+  transition: color 0.3s ease;
+  position: relative;
+}
+
+.custom-tab-button:hover {
+  color: #000;
+}
+
+.custom-tab-button.active {
+  color: #000;
+  font-weight: 600;
+}
+
+.tab-underline {
+  position: absolute;
+  bottom: 0;
+  height: 3px;
+  background-color: #003366; /* navy blue underline */
+  transition: left 0.3s ease, width 0.3s ease;
+}
+
+/* ✅ BUY - VERY STRONG */
+.signal-buy-very-strong {
+  background-color: #b2d9b5 !important; /* darker green */
+}
+
+/* 🔼 BUY - STRENGTHENING */
+.signal-buy-strengthening {
+  background-color: #c7ecd1 !important; /* mid green */
+}
+
+/* ⬇️ BUY - VERY WEAK */
+.signal-buy-very-weak {
+  background-color: #f2f8e9 !important; /* pale green-yellow */
+}
+
+/* 🔽 BUY - WEAKENING */
+.signal-buy-weakening {
+  background-color: #fff3cd !important; /* light orange */
+}
+
+/* ❌ SELL - VERY STRONG */
+.signal-sell-very-strong {
+  background-color: #f4b8be !important; /* darker red */
+}
+
+/* 🔼 SELL - STRENGTHENING */
+.signal-sell-strengthening {
+  background-color: #f9ccd0 !important; /* mid red */
+}
+
+/* ❌ SELL - VERY WEAK */
+.signal-sell-very-weak {
+  background-color: #f5e9f0 !important; /* pale red */
+}
+
+/* 🔽 SELL - WEAKENING */
+.signal-sell-weakening {
+  background-color: #e2f0e9 !important; /* soft green tint */
+}
+
+.signal-crossed {
+  border: none !important; /* Clear Bootstrap border */
+  outline: 3px solid #2196f3; /* Blue border as an outline */
+  outline-offset: -3px; /* Pulls the outline into the cell */
+  border-radius: 4px; /* Optional for rounded look */
+}

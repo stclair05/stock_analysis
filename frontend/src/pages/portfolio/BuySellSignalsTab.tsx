@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
+import "../PortfolioPage.css";
+import { BlockArrowBar } from "../../components/BlockArrowBar";
 
 const timeframes = ["daily", "weekly", "monthly"];
 const allStrategies = [
@@ -190,35 +192,58 @@ export default function BuySellSignalsTab() {
       await Promise.all(
         portfolio.map(async (holding) => {
           const row: any = {};
+          // Fetch the generic signal strength once per ticker
+          let genericStrength: any = null;
+          try {
+            const resStrength = await fetch(
+              `http://localhost:8000/api/signal_strength/${holding.ticker}?strategy=generic&timeframe=${selectedTimeframe}`
+            );
+            genericStrength = resStrength.ok ? await resStrength.json() : null;
+          } catch (e) {
+            genericStrength = null;
+          }
           await Promise.all(
             strategiesToFetch.map(async (strategy) => {
               try {
                 const apiStrategy = strategyApiMap[strategy] || strategy;
-                const res = await fetch(
+                const resSignals = await fetch(
                   `http://localhost:8000/api/signals_${selectedTimeframe}/${holding.ticker}?strategy=${apiStrategy}`
                 );
-                if (!res.ok) {
-                  row[strategy] = "";
-                  return;
-                }
-                const data = await res.json();
-                if (!Array.isArray(data.markers) || data.markers.length === 0) {
-                  row[strategy] = "";
-                } else {
-                  const last = data.markers[data.markers.length - 1];
-                  if (!last || !last.side) {
-                    row[strategy] = "";
-                  } else {
-                    const side = String(last.side).toUpperCase();
-                    row[strategy] =
-                      side === "BUY" ? "BUY" : side === "SELL" ? "SELL" : "";
-                  }
-                }
+
+                const signalData = resSignals.ok
+                  ? await resSignals.json()
+                  : null;
+
+                const latestSignal =
+                  Array.isArray(signalData?.markers) &&
+                  signalData.markers.length > 0
+                    ? signalData.markers[
+                        signalData.markers.length - 1
+                      ].side.toUpperCase()
+                    : "";
+
+                const status = genericStrength?.status || "";
+                const delta = genericStrength?.strength || "";
+                const details = genericStrength?.details;
+
+                row[strategy] = {
+                  signal: latestSignal,
+                  status,
+                  delta,
+                  details,
+                };
               } catch (e) {
-                row[strategy] = "";
+                row[strategy] = {
+                  signal: "",
+                  status: "",
+                  delta: "",
+                  details: null,
+                };
               }
             })
           );
+          // store generic strength separately for easy access
+          row["_generic"] = genericStrength;
           summary[holding.ticker] = row;
         })
       );
@@ -255,7 +280,6 @@ export default function BuySellSignalsTab() {
       setSortColumn(column);
       setSortDirection("asc"); // Default to ascending when changing column
     }
-    setFilterType("ALL"); // Reset global filter when sorting a specific column
   };
 
   const displayedPortfolio = useMemo(() => {
@@ -271,15 +295,16 @@ export default function BuySellSignalsTab() {
         let hasSellSignal = false;
 
         for (const strategy of visibleAndOrderedStrategies) {
-          const signal = signalSummary[holding.ticker]?.[strategy];
+          const signalObj = signalSummary[holding.ticker]?.[strategy];
+          const buySell = signalObj?.signal || "";
 
-          if (signal === "BUY") hasBuySignal = true;
-          if (signal === "SELL") hasSellSignal = true;
+          if (buySell === "BUY") hasBuySignal = true;
+          if (buySell === "SELL") hasSellSignal = true;
 
           if (filterType === "BUY" || filterType === "SELL") {
-            if (signal === filterType) {
+            if (buySell === filterType) {
               hasMatchingSignal = true;
-            } else if (signal !== "" && signal !== "-") {
+            } else if (buySell && buySell !== "-") {
               hasContradictorySignal = true;
               break;
             }
@@ -298,8 +323,8 @@ export default function BuySellSignalsTab() {
       const sortOrder = { BUY: 1, SELL: 2, "": 3, "-": 4 };
 
       currentPortfolio.sort((a, b) => {
-        const signalA = signalSummary[a.ticker]?.[sortColumn] || "-";
-        const signalB = signalSummary[b.ticker]?.[sortColumn] || "-";
+        const signalA = signalSummary[a.ticker]?.[sortColumn]?.status || "-";
+        const signalB = signalSummary[b.ticker]?.[sortColumn]?.status || "-";
 
         const valA = sortOrder[signalA as keyof typeof sortOrder] || 4;
         const valB = sortOrder[signalB as keyof typeof sortOrder] || 4;
@@ -470,22 +495,245 @@ export default function BuySellSignalsTab() {
                 ) : (
                   displayedPortfolio.map((holding) => (
                     <tr key={holding.ticker}>
-                      <td>{holding.ticker}</td>
+                      <td
+                        style={{ verticalAlign: "middle", padding: "6px 12px" }}
+                      >
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "auto 1fr auto",
+                            alignItems: "center",
+                            width: "100%",
+                            gap: 8,
+                          }}
+                        >
+                          <div style={{ fontWeight: "bold", fontSize: "1rem" }}>
+                            {holding.ticker}
+                          </div>
+
+                          {(() => {
+                            const details =
+                              signalSummary[holding.ticker]?._generic?.details;
+                            const delta =
+                              signalSummary[holding.ticker]?._generic?.strength;
+                            if (
+                              details?.spread_short_now !== undefined &&
+                              details?.spread_long_now !== undefined
+                            ) {
+                              const isShortBullish =
+                                details.ma12_now > details.ma36_now;
+                              const shortSpreadNow = Math.abs(
+                                details.spread_short_now
+                              );
+                              const shortSpreadPrev = Math.abs(
+                                details.spread_short_prev
+                              );
+                              const shortTopColor = isShortBullish
+                                ? "#00BCD4"
+                                : "#4CAF50";
+                              const shortBottomColor = isShortBullish
+                                ? "#4CAF50"
+                                : "#00BCD4";
+                              const shortArrowDirection =
+                                delta === "crossed"
+                                  ? "cross"
+                                  : isShortBullish
+                                  ? shortSpreadNow > shortSpreadPrev
+                                    ? "up"
+                                    : "down"
+                                  : shortSpreadNow < shortSpreadPrev
+                                  ? "up"
+                                  : "down";
+
+                              const isLongBullish =
+                                details.ma50_now > details.ma150_now;
+                              const longSpreadNow = Math.abs(
+                                details.spread_long_now
+                              );
+                              const longSpreadPrev = Math.abs(
+                                details.spread_long_prev
+                              );
+                              const longTopColor = isLongBullish
+                                ? "#2962FF"
+                                : "#FF9800";
+                              const longBottomColor = isLongBullish
+                                ? "#FF9800"
+                                : "#2962FF";
+                              const longArrowDirection =
+                                delta === "crossed"
+                                  ? "cross"
+                                  : isLongBullish
+                                  ? longSpreadNow > longSpreadPrev
+                                    ? "up"
+                                    : "down"
+                                  : longSpreadNow < longSpreadPrev
+                                  ? "up"
+                                  : "down";
+
+                              const shortArrowColor =
+                                shortArrowDirection === "up"
+                                  ? "#4caf50"
+                                  : shortArrowDirection === "down"
+                                  ? "#e53935"
+                                  : "#2196f3";
+                              const longArrowColor =
+                                longArrowDirection === "up"
+                                  ? "#4caf50"
+                                  : longArrowDirection === "down"
+                                  ? "#e53935"
+                                  : "#2196f3";
+
+                              const shortGapText =
+                                shortArrowDirection === "cross"
+                                  ? "recently crossed"
+                                  : isShortBullish
+                                  ? shortArrowDirection === "up"
+                                    ? "gap is widening"
+                                    : "gap is closing"
+                                  : shortArrowDirection === "up"
+                                  ? "gap is closing"
+                                  : "gap is widening";
+
+                              const longGapText =
+                                longArrowDirection === "cross"
+                                  ? "recently crossed"
+                                  : isLongBullish
+                                  ? longArrowDirection === "up"
+                                    ? "gap is widening"
+                                    : "gap is closing"
+                                  : longArrowDirection === "up"
+                                  ? "gap is closing"
+                                  : "gap is widening";
+
+                              const shortText = `${
+                                isShortBullish ? "12w > 36w" : "36w > 12w"
+                              }, ${shortGapText}`;
+                              const longText = `${
+                                isLongBullish ? "50d > 150d" : "150d > 50d"
+                              }, ${longGapText}`;
+
+                              return (
+                                <>
+                                  <div
+                                    style={{
+                                      fontSize: "0.75rem",
+                                      lineHeight: 1.2,
+                                    }}
+                                  >
+                                    <div style={{ color: shortArrowColor }}>
+                                      {shortText}
+                                    </div>
+                                    <div style={{ color: longArrowColor }}>
+                                      {longText}
+                                    </div>
+                                  </div>
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      gap: 4,
+                                      marginLeft: "auto",
+                                    }}
+                                  >
+                                    <BlockArrowBar
+                                      topColor={shortTopColor}
+                                      bottomColor={shortBottomColor}
+                                      direction={shortArrowDirection}
+                                    />
+                                    <BlockArrowBar
+                                      topColor={longTopColor}
+                                      bottomColor={longBottomColor}
+                                      direction={longArrowDirection}
+                                    />
+                                  </div>
+                                </>
+                              );
+                            }
+                            return null;
+                          })()}
+                        </div>
+                      </td>
+
                       {visibleAndOrderedStrategies.map((s) => {
-                        const signal = signalSummary[holding.ticker]?.[s] ?? "";
-                        let color = "#bdbdbd";
-                        if (signal === "BUY") color = "#009944";
-                        if (signal === "SELL") color = "#e91e63";
+                        const signalObj =
+                          signalSummary[holding.ticker]?.[s] ?? {};
+                        const buySell = signalObj.signal || "";
+                        const status = signalObj.status || "";
+                        const delta = signalObj.delta || "";
+
+                        let color = "#bdbdbd"; // neutral gray by default
+
+                        if (status === "BUY") {
+                          if (delta === "very strong")
+                            color = "#007a33"; // dark green
+                          else if (delta === "strengthening")
+                            color = "#4caf50"; // green
+                          else if (delta === "weakening")
+                            color = "#ffa500"; // orange
+                          else if (delta === "very weak")
+                            color = "#ffcc80"; // light orange
+                          else color = "#4caf50"; // default green
+                        } else if (status === "SELL") {
+                          if (delta === "very strong")
+                            color = "#b22222"; // dark red
+                          else if (delta === "strengthening")
+                            color = "#f44336"; // red
+                          else if (delta === "weakening")
+                            color = "#ffa500"; // orange
+                          else if (delta === "very weak")
+                            color = "#ffcc80"; // light orange
+                          else color = "#f44336"; // default red
+                        }
+
+                        let icon = "";
+                        if (delta === "crossed") icon = " 🔁";
+
+                        const cellStyle: React.CSSProperties = {
+                          color,
+                          textAlign: "center",
+                          fontWeight: 700,
+                        };
+
+                        let cellClass = "";
+                        if (status === "BUY") {
+                          if (delta === "very strong")
+                            cellClass = "signal-buy-very-strong";
+                          else if (delta === "strengthening")
+                            cellClass = "signal-buy-strengthening";
+                          else if (delta === "weakening")
+                            cellClass = "signal-buy-weakening";
+                          else if (delta === "very weak")
+                            cellClass = "signal-buy-very-weak";
+                        } else if (status === "SELL") {
+                          if (delta === "very strong")
+                            cellClass = "signal-sell-very-strong";
+                          else if (delta === "strengthening")
+                            cellClass = "signal-sell-strengthening";
+                          else if (delta === "weakening")
+                            cellClass = "signal-sell-weakening";
+                          else if (delta === "very weak")
+                            cellClass = "signal-sell-very-weak";
+                        }
+
+                        if (delta === "crossed") {
+                          cellClass += " signal-crossed";
+                        }
+
                         return (
-                          <td
-                            key={s}
-                            style={{
-                              color,
-                              textAlign: "center",
-                              fontWeight: 700,
-                            }}
-                          >
-                            {signal || "-"}
+                          <td key={s} style={cellStyle} className={cellClass}>
+                            <div
+                              style={{
+                                display: "flex",
+                                flexDirection: "row",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                gap: 8,
+                              }}
+                            >
+                              <span title={delta}>
+                                {buySell || "-"}
+                                {icon}
+                              </span>
+                            </div>
                           </td>
                         );
                       })}

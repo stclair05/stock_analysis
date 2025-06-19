@@ -194,8 +194,12 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
     if (lower.includes("normal")) return "text-secondary";
 
     // Chaikin Money Flow
-    if (lower.includes("positive")) return "text-up-strong";
-    if (lower.includes("negative")) return "text-down-strong";
+    if (lower.includes("money inflow (increasing)"))
+      return "text-up-strong fw-bold";
+    if (lower.includes("money inflow (weakening)")) return "text-up-weak";
+    if (lower.includes("money outflow (increasing)"))
+      return "text-down-strong fw-bold";
+    if (lower.includes("money outflow (weakening)")) return "text-down-weak";
 
     return "text-secondary";
   };

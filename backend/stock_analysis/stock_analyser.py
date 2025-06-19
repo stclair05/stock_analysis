@@ -188,21 +188,40 @@ class StockAnalyser:
 
         period = 14
 
-        smoothed_tr = wilder_smooth(tr, period)
-        smoothed_plus_dm = wilder_smooth(pd.Series(plus_dm, index=tr.index), period)
-        smoothed_minus_dm = wilder_smooth(pd.Series(minus_dm, index=tr.index), period)
+        def wilder_smooth_adx(values: pd.Series, period: int) -> pd.Series:
+            """
+            Wilder's smoothing (RMA) as used in ADX, ATR, etc.
+            Starts with the average of the first 'period' values.
+            """
+            result = [np.nan] * (period - 1)
+            if len(values) < period:
+                return pd.Series(result + [np.nan] * (len(values) - (period - 1)), index=values.index)
 
-        plus_di = 100 * smoothed_plus_dm / smoothed_tr
-        minus_di = 100 * smoothed_minus_dm / smoothed_tr
+            # Use average instead of sum
+            smoothed = values.iloc[:period].mean()
+            result.append(smoothed)
+
+            for i in range(period, len(values)):
+                smoothed = (smoothed * (period - 1) + values.iloc[i]) / period
+                result.append(smoothed)
+
+            return pd.Series(result, index=values.index)
+
+
+        smoothed_tr = wilder_smooth_adx(tr, period)
+        smoothed_plus_dm = wilder_smooth_adx(pd.Series(plus_dm, index=tr.index), period)
+        smoothed_minus_dm = wilder_smooth_adx(pd.Series(minus_dm, index=tr.index), period)
+
+        plus_di = smoothed_plus_dm / smoothed_tr * 100
+        minus_di = smoothed_minus_dm / smoothed_tr * 100
         dx = 100 * (plus_di - minus_di).abs() / (plus_di + minus_di)
 
-        adx = wilder_smooth(dx.dropna(), period)
+        adx = wilder_smooth_adx(dx.dropna(), period)
 
         # Align all series to match final ADX index
         common_index = adx.index
         plus_di = plus_di.reindex(common_index)
         minus_di = minus_di.reindex(common_index)
-
 
         # Classification (same as before)
         classification = classify_adx_trend(adx, plus_di, minus_di)
@@ -541,43 +560,65 @@ class StockAnalyser:
             twentyone_days_ago=safe_value(signals, -4),
         )
 
-
-    
+  
     def chaikin_money_flow(self) -> TimeSeriesMetric:
-        df = self.weekly_df 
+        df = self.weekly_df
 
         if df.empty or len(df) < 30:
-            raise HTTPException(status_code=400, detail="Not enough weekly data for CMF.")
+            raise HTTPException(status_code=400, detail="Not enough weekly data for Chaikin Oscillator.")
 
         high = df["High"]
         low = df["Low"]
         close = df["Close"]
         volume = pd.to_numeric(df["Volume"], errors="coerce").fillna(0)
 
-        hl_range = (high - low).replace(0, np.nan)
-        mfm = ((close - low) - (high - close)) / hl_range
+        # Step 1: Money Flow Multiplier (MFM)
+        hl_diff = (high - low).replace(0, np.nan)
+        mfm = ((close - low) - (high - close)) / hl_diff
         mfm = mfm.fillna(0)
 
+        # Step 2: Money Flow Volume (MFV)
         mfv = mfm * volume
-        cmf = mfv.rolling(window=21).sum() / volume.rolling(window=21).sum().replace(0, np.nan)
 
-        def classify_cmf(val: float | None) -> str | None:
-            if val is None or pd.isna(val):
-                return None
-            if val > 0.2:
-                return "Overbought"
-            elif val < -0.2:
-                return "Oversold"
-            else:
-                return "Neutral"
+        # Step 3: Accumulation/Distribution Line (ADL)
+        adl = mfv.cumsum()
 
-        signal = cmf.apply(classify_cmf)
+        # Step 4: Chaikin Oscillator (3 EMA - 10 EMA of ADL)
+        short_period = 3
+        long_period = 10
+        ema_short = adl.ewm(span=short_period, adjust=False).mean()
+        ema_long = adl.ewm(span=long_period, adjust=False).mean()
+
+        osc = ema_short - ema_long
+
+        # Classification
+        def classify_osc(val: float, prev: float) -> str:
+            if pd.isna(val) or pd.isna(prev):
+                return "in progress"
+            if val > 0 and val > prev:
+                return "Money Inflow (increasing)"
+            elif val > 0 and val <= prev:
+                return "Money Inflow (weakening)"
+            elif val < 0 and val < prev:
+                return "Money Outflow (increasing)"
+            elif val < 0 and val >= prev:
+                return "Money Outflow (weakening)"
+            return "Neutral"
+
+        labels = []
+        for i in range(len(osc)):
+            if i == 0:
+                labels.append("in progress")
+                continue
+            labels.append(classify_osc(osc.iloc[i], osc.iloc[i - 1]))
+
+        osc_labels = pd.Series(labels, index=osc.index)
 
         return TimeSeriesMetric(
-            current=safe_value(signal, -1),
-            seven_days_ago=safe_value(signal, -2),
-            fourteen_days_ago=safe_value(signal, -3),
-            twentyone_days_ago=safe_value(signal, -4),
+            current=safe_value(osc_labels, -1),
+            seven_days_ago=safe_value(osc_labels, -2),
+            fourteen_days_ago=safe_value(osc_labels, -3),
+            twentyone_days_ago=safe_value(osc_labels, -4),
         )
 
 
@@ -587,24 +628,28 @@ class StockAnalyser:
 
 
     def get_3year_ma_series(self):
-        monthly_close = self.monthly_df["Close"]
-        ma = monthly_close.rolling(window=36).mean()
-        return to_series(reindex_indicator(monthly_close, ma))
+        """
+        Returns the 3-year simple moving average (SMA) using weekly close prices (156 weeks).
+        """
+        weekly_close = self.weekly_df["Close"]
+        ma = weekly_close.rolling(window=156).mean()
+        return to_series(reindex_indicator(weekly_close, ma))
+
 
 
     def get_200dma_series(self):
-        close = self.df["Close"]
+        close = self.weekly_df["Close"]
         ma = close.rolling(200).mean()
         return to_series(reindex_indicator(close, ma))
 
 
     def get_150dma_series(self):
-        close = self.df["Close"]
+        close = self.weekly_df["Close"]
         ma150 = close.rolling(150).mean()
         return to_series(reindex_indicator(close, ma150))
 
     def get_50dma_series(self):
-        close = self.df["Close"]
+        close = self.weekly_df["Close"]
         ma50 = close.rolling(window=50).mean()
         return to_series(reindex_indicator(close, ma50))
 
@@ -632,7 +677,7 @@ class StockAnalyser:
         return to_series(reindex_indicator(close, ma))
     
     def get_rsi_ma_series(self, period: int = 14):
-        close = self.df["Close"]
+        close = self.weekly_df["Close"]
         rsi = compute_wilder_rsi(close)
         rsi_ma = rsi.rolling(window=period).mean()
         return to_series(reindex_indicator(close, rsi_ma))
@@ -934,7 +979,7 @@ class StockAnalyser:
     '''
     Buy / Sell Indicators 
     '''
-    def get_trendinvestorpro_signals(self, timeframe: str = "weekly") -> list[dict]:
+    def get_trendinvestorpro_signals(self, timeframe: str = "daily") -> list[dict]:
         """
         Implements the TrendInvestorPro strategy logic.
         Returns a list of marker dicts: {time, price, side, label}
@@ -1048,9 +1093,9 @@ class StockAnalyser:
 
         return markers
     
-    def get_trendinvestorpro_status_and_strength(self, timeframe: str = "weekly") -> dict:
+    def get_trendinvestorpro_status_and_strength(self, timeframe: str = "daily") -> dict:
         """
-        Returns the most recent TrendInvestorPro signal (BUY/SELL/HOLD) and whether the signal is
+        Returns the most recent TrendInvestorPro signal (BUY/SELL) and whether the signal is
         strengthening, weakening, or crossed.
         """
         if timeframe == "daily":
@@ -1082,13 +1127,17 @@ class StockAnalyser:
         consec_below = consec_below.groupby((consec_below != consec_below.shift()).cumsum()).cumsum()
 
         # Use last 2 bars
-        i_now = -1
-        i_prev = -2
+        try:
+            s_now = spread_pct.iloc[-1]
+            s_prev = spread_pct.iloc[-2]
+            c_now = consec_below.iloc[-1]
+            c_prev = consec_below.iloc[-2]
+        except IndexError:
+            return {"status": None, "delta": None}
 
-        s_now = spread_pct.iloc[i_now]
-        s_prev = spread_pct.iloc[i_prev]
-        c_now = consec_below.iloc[i_now]
-        c_prev = consec_below.iloc[i_prev]
+        # Defensive default
+        status = None
+        delta = None
 
         # Determine current state
         entry_now = s_now >= 1.0
@@ -1099,13 +1148,13 @@ class StockAnalyser:
         exit_ma_prev = s_prev <= -1.0
         exit_kc_prev = c_prev >= 5
 
-        # Determine signal
+        # Determine status
         if entry_now and not (exit_ma_now or exit_kc_now):
             status = "BUY"
         elif exit_ma_now or exit_kc_now:
             status = "SELL"
         else:
-            status = "HOLD"
+            return {"status": None, "delta": None}
 
         # Determine delta
         if status == "BUY" and not entry_prev:
@@ -1115,12 +1164,10 @@ class StockAnalyser:
         elif status == "BUY":
             delta = "strengthening" if s_now > s_prev else "weakening"
         elif status == "SELL":
-            # More closes below lowerKC = worse
             delta = "strengthening" if c_now > c_prev else "weakening"
-        else:
-            delta = "neutral"
 
         return {"status": status, "delta": delta}
+
 
     
     def get_stclair_signals(self, timeframe: str = "weekly") -> list[dict]:
@@ -1214,7 +1261,7 @@ class StockAnalyser:
     def get_stclair_status_and_strength(self, timeframe: str = "weekly") -> dict:
         """
         Returns the latest signal ('BUY' or 'SELL') and its trend delta
-        ('crossed', 'strengthening', 'weakening', 'neutral').
+        ('crossed', 'strengthening', 'weakening', 'neutral'), enhanced with Supertrend.
         """
         # Load correct timeframe
         if timeframe == "daily":
@@ -1230,21 +1277,20 @@ class StockAnalyser:
         if len(daily_df) < 200 or len(df) < 3:
             return {"status": None, "delta": None}
 
-        # Compute daily SMAs
+        # --- Daily SMAs for price context
         sma20 = daily_df['Close'].rolling(20).mean()
         sma200 = daily_df['Close'].rolling(200).mean()
 
-        # Compute RSI and RSI MA on selected timeframe
+        # --- RSI and RSI MA on current timeframe
         close = df['Close']
         rsi = compute_wilder_rsi(close, 14)
         rsi_ma = rsi.rolling(14).mean()
 
-        # Helper: compute latest valid values
+        # Helper: extract key values
         def get_latest_values(index):
             t = df.index[index]
             bar_close = close.iloc[index]
 
-            # Most recent daily close data for SMA alignment
             recent_daily = daily_df.loc[:t]
             if len(recent_daily) < 200:
                 return None
@@ -1267,24 +1313,41 @@ class StockAnalyser:
         if not latest or not prev:
             return {"status": None, "delta": None}
 
-        # Determine signal status for now and before
-        def classify(entry_vals):
-            if (
-                entry_vals["bar_close"] > entry_vals["sma200"]
-                and entry_vals["bar_close"] > entry_vals["sma20"]
-                and entry_vals["rsi"] > entry_vals["rsi_ma"]
-            ):
-                return "BUY"
-            elif entry_vals["rsi"] < entry_vals["rsi_ma"]:
-                return "SELL"
+        # ----- Build persistent BUY/SELL signals over the series -----
+        in_position = False
+        signals: list[str | None] = []
+        for idx in range(len(df)):
+            vals = get_latest_values(idx)
+            if vals is None:
+                signals.append(None)
+                continue
+
+            entry = (
+                vals["bar_close"] > vals["sma200"]
+                and vals["bar_close"] > vals["sma20"]
+                and vals["rsi"] > vals["rsi_ma"]
+            )
+            exit = vals["rsi"] < vals["rsi_ma"]
+
+            if not in_position and entry:
+                in_position = True
+                signals.append("BUY")
+            elif in_position and exit:
+                in_position = False
+                signals.append("SELL")
             else:
-                return "HOLD"
+                signals.append("BUY" if in_position else "SELL")
 
-        curr_signal = classify(latest)
-        prev_signal = classify(prev)
+        # Filter out leading None values (periods without enough data)
+        valid_signals = [s for s in signals if s is not None]
+        if len(valid_signals) < 2:
+            return {"status": None, "delta": None}
 
-        # Signal change
-        if curr_signal != prev_signal:
+        curr_signal = valid_signals[-1]
+        prev_signal = valid_signals[-2]
+
+        # --- Base delta logic (gap-based)
+        if curr_signal != prev_signal and prev_signal is not None:
             delta = "crossed"
         elif curr_signal == "BUY":
             curr_gap = latest["bar_close"] - latest["sma20"] + latest["rsi"] - latest["rsi_ma"]
@@ -1295,10 +1358,11 @@ class StockAnalyser:
             prev_gap = prev["rsi_ma"] - prev["rsi"]
             delta = "strengthening" if curr_gap > prev_gap else "weakening"
         else:
-            delta = "neutral"
+            return {"status": curr_signal, "delta": None}
+
+       
 
         return {"status": curr_signal, "delta": delta}
-
 
     def get_northstar_signals(self, timeframe: str = "daily") -> list[dict]:
         """
@@ -1374,7 +1438,8 @@ class StockAnalyser:
     
     def get_northstar_status_and_strength(self, timeframe: str = "weekly") -> dict:
         """
-        Returns the latest status ('BUY' or 'SELL') and trend delta ('strengthening' / 'weakening' / 'crossed')
+        Returns the latest status ('BUY' or 'SELL') and trend delta
+        ('strengthening' / 'weakening' / 'crossed'), adjusted with Supertrend trend.
         """
         df = {
             "daily": self.df,
@@ -1403,18 +1468,13 @@ class StockAnalyser:
 
         # Determine current and previous signals
         def get_signal(price, ma12, ma36):
-            if price > ma12 and price > ma36:
-                return "BUY"
-            elif price < ma12:
-                return "SELL"
-            else:
-                return "HOLD"
+            return "BUY" if price > ma12 and price > ma36 else "SELL"
 
         curr_sig = get_signal(latest_price, latest_ma12, latest_ma36)
         prev_sig = get_signal(prev_price, prev_ma12, prev_ma36)
 
-        # Determine delta
-        if curr_sig != prev_sig:
+        # Base delta logic
+        if curr_sig != prev_sig and (prev_sig is not None):
             delta = "crossed"
         elif curr_sig == "BUY":
             delta = "strengthening" if latest_price - latest_ma12 > prev_price - prev_ma12 else "weakening"
@@ -1424,6 +1484,7 @@ class StockAnalyser:
             delta = "neutral"
 
         return {"status": curr_sig, "delta": delta}
+
 
 
     def get_stclairlongterm_signals(self, timeframe: str = "weekly") -> list[dict]:
@@ -1562,7 +1623,7 @@ class StockAnalyser:
             entry_score = 0
             exit_score = 0
 
-            # Supertrend
+            # Supertrend (equal weight now)
             st = st_signal.iloc[idx]
             if st == "Buy":
                 entry_score += 1
@@ -1599,21 +1660,23 @@ class StockAnalyser:
                 return "BUY"
             elif exit_score >= 2:
                 return "SELL"
-            else:
-                return "HOLD"
 
         curr = classify(e_now, x_now)
         prev = classify(e_prev, x_prev)
 
-        # Delta logic
-        if curr != prev:
+         # --- Handle undefined signal ---
+        if curr is None:
+            return {"status": None, "delta": None}
+
+        # --- Determine delta ---
+        if curr != prev and prev is not None:
             delta = "crossed"
         elif curr == "BUY":
             delta = "strengthening" if e_now > e_prev else "weakening"
         elif curr == "SELL":
             delta = "strengthening" if x_now > x_prev else "weakening"
         else:
-            delta = "neutral"
+            return {"status": curr, "delta": None}
 
         return {"status": curr, "delta": delta}
 
@@ -1737,7 +1800,8 @@ class StockAnalyser:
     
     def get_mace_40w_status_and_strength(self) -> dict:
         """
-        Returns the latest MACE+40W signal and whether it's strengthening, weakening, or crossed.
+        Returns the latest MACE+40W signal and whether it's strengthening or weakening 
+        based on combined MACE, 40W, and Supertrend ranking.
         """
         df = self.weekly_df
         if len(df) < 60:
@@ -1753,6 +1817,9 @@ class StockAnalyser:
         slope = ma_40.diff()
         fortyw_signals = classify_40w_status(close, ma_40, slope)
 
+        df_st = compute_supertrend_lines(df)
+        st_signal = df_st["Signal"]
+
         idx_now = -1
         idx_prev = -2
 
@@ -1760,57 +1827,57 @@ class StockAnalyser:
         mace_prev = mace_signals.iloc[idx_prev]
         status_now = fortyw_signals.iloc[idx_now]
         status_prev = fortyw_signals.iloc[idx_prev]
+        st_now = st_signal.iloc[idx_now]
+        st_prev = st_signal.iloc[idx_prev]
 
-        # --- Entry/Exit logic mirrors get_mace_40w_signals() ---
-        entry_now = (
-            (mace_now in ['U2', 'U3']) or (status_now == "Above Rising MA ++")
-        ) and (
-            mace_prev not in ['D2', 'D3'] and status_prev != "Below Falling MA --"
-        )
+        mace_rank = {"U3": 6, "U2": 5, "U1": 4, "D1": 3, "D2": 2, "D3": 1}
+        fortyw_rank = {
+            "Above Rising MA ++": 4,
+            "Above Falling MA +-": 3,
+            "Below Rising MA -+": 2,
+            "Below Falling MA --": 1,
+        }
+        st_rank = {"Buy": 2, "Sell": 1}
 
-        entry_prev = (
-            (mace_prev in ['U2', 'U3']) or (status_prev == "Above Rising MA ++")
-        ) and (
-            mace_prev not in ['D2', 'D3'] and status_prev != "Below Falling MA --"
-        )
+        # Use rank dictionaries
+        mace_now_rank = mace_rank.get(mace_now, 0)
+        mace_prev_rank = mace_rank.get(mace_prev, 0)
+        fw_now_rank = fortyw_rank.get(status_now, 0)
+        fw_prev_rank = fortyw_rank.get(status_prev, 0)
+        st_now_rank = st_rank.get(st_now, 0)
+        st_prev_rank = st_rank.get(st_prev, 0)
 
-        exit_now = (
-            (mace_now not in ['U2', 'U3']) or (status_now != "Above Rising MA ++")
-        )
+        # Determine signal direction
+        is_bullish = mace_now in ["U1", "U2", "U3"] or status_now in [
+            "Above Rising MA ++", "Above Falling MA +-"
+        ] or st_now == "Buy"
 
-        # --- Classify current and previous status ---
-        def classify(entry, exit):
-            if entry and not exit:
-                return "BUY"
-            elif exit:
-                return "SELL"
-            else:
-                return "HOLD"
+        is_bearish = mace_now in ["D1", "D2", "D3"] or status_now in [
+            "Below Rising MA -+", "Below Falling MA --"
+        ] or st_now == "Sell"
 
-        curr_sig = classify(entry_now, exit_now)
-        prev_sig = classify(entry_prev, False)  # Do not check prev_exit to avoid premature flips
+        if is_bullish:
+            status = "BUY"
+        elif is_bearish:
+            status = "SELL"
+        else:
+            return {"status": None, "delta": None}
 
-        # --- Determine delta ---
-        if curr_sig != prev_sig:
-            delta = "crossed"
-        elif curr_sig == "BUY":
-            # Strengthen if MACE moved from U2 → U3 or status remained ++
-            stronger = (
-                (mace_now == 'U3' and mace_prev in ['U1', 'U2']) or
-                (status_now == "Above Rising MA ++" and status_prev != "Above Rising MA ++")
-            )
-            delta = "strengthening" if stronger else "weakening"
-        elif curr_sig == "SELL":
-            # Strengthen if MACE moved from D2 → D3 or status worsened
-            stronger = (
-                (mace_now == 'D3' and mace_prev in ['D1', 'D2']) or
-                (status_now == "Below Falling MA --" and status_prev != "Below Falling MA --")
-            )
-            delta = "strengthening" if stronger else "weakening"
+        # Equal-weighted composite score
+        score_now = (mace_now_rank + fw_now_rank + st_now_rank) / 3
+        score_prev = (mace_prev_rank + fw_prev_rank + st_prev_rank) / 3
+
+        # Determine delta
+        if status == "BUY":
+            delta = "strengthening" if score_now > score_prev else "weakening"
+        elif status == "SELL":
+            delta = "strengthening" if score_now < score_prev else "weakening"
         else:
             delta = "neutral"
 
-        return {"status": curr_sig, "delta": delta}
+        return {"status": status, "delta": delta}
+
+
 
     
     
@@ -1903,23 +1970,141 @@ class StockAnalyser:
         dem_now = dem.iloc[idx_now]
         dem_prev = dem.iloc[idx_prev]
 
-        # Determine signal status
+        if pd.isna(dem_now) or pd.isna(dem_prev):
+            return {"status": None, "delta": None}
+
+         # Determine signal and delta
         if dem_prev < 0.3 and dem_now >= 0.3:
-            status = "BUY"
-            delta = "crossed"
+            return {"status": "BUY", "delta": "crossed"}
         elif dem_prev > 0.7 and dem_now <= 0.7:
-            status = "SELL"
-            delta = "crossed"
-        elif dem_now >= 0.3 and dem_now <= 0.7:
-            # Still in buy zone
-            status = "BUY"
+            return {"status": "SELL", "delta": "crossed"}
+        elif dem_now <= 0.7:  # Default to BUY zone (0.3 to 0.7)
             delta = "strengthening" if dem_now > dem_prev else "weakening"
-        elif dem_now > 0.7:
-            status = "SELL"
+            return {"status": "BUY", "delta": delta}
+        else:  # dem_now > 0.7
             delta = "strengthening" if dem_now < dem_prev else "weakening"
+            return {"status": "SELL", "delta": delta}
+
+
+    def get_generic_strength_status(self, timeframe: str = "weekly") -> dict:
+        """
+        Generic trend strength classification system:
+        - Near-term weakening: 12/36 period MA (from current timeframe)
+        - Long-term strengthening: 50/150 DMA (always from daily data)
+        - Detects "crossed" when status flips from previous period
+        """
+        if timeframe == "daily":
+            df = self.df
+        elif timeframe == "weekly":
+            df = self.weekly_df
+        elif timeframe == "monthly":
+            df = self.monthly_df
         else:
-            status = "HOLD"
-            delta = "neutral"
+            raise ValueError(f"Invalid timeframe: {timeframe}")
 
-        return {"status": status, "delta": delta}
+        if len(df) < 36:
+            return {"status": None, "strength": None}
 
+        daily_df = self.df
+        if len(daily_df) < 150:
+            return {"status": None, "strength": None}
+
+        close = df["Close"]
+        ma12 = close.rolling(12).mean()
+        ma36 = close.rolling(36).mean()
+
+        # Current and previous values
+        ma12_now, ma12_prev = ma12.iloc[-1], ma12.iloc[-2]
+        ma36_now, ma36_prev = ma36.iloc[-1], ma36.iloc[-2]
+        price_now, price_prev = close.iloc[-1], close.iloc[-2]
+
+        spread_short_now = ma12_now - ma36_now
+        spread_short_prev = ma12_prev - ma36_prev
+
+        # DAILY (long-term)
+        close_daily = daily_df["Close"]
+        ma50 = close_daily.rolling(50).mean()
+        ma150 = close_daily.rolling(150).mean()
+        ma50_now, ma50_prev = ma50.iloc[-1], ma50.iloc[-2]
+        ma150_now, ma150_prev = ma150.iloc[-1], ma150.iloc[-2]
+
+        spread_long_now = ma50_now - ma150_now
+        spread_long_prev = ma50_prev - ma150_prev
+        grad50 = ma50_now - ma50_prev
+        grad150 = ma150_now - ma150_prev
+
+        # === Signal logic ===
+        def get_signal(price, m12, m36, m50, m150):
+            return "BUY" if m12 > m36 and m50 > m150 else "SELL"
+
+        curr_status = get_signal(price_now, ma12_now, ma36_now, ma50_now, ma150_now)
+        prev_status = get_signal(price_prev, ma12_prev, ma36_prev, ma50_prev, ma150_prev)
+
+        # === Delta logic ===
+        if curr_status != prev_status:
+            # Status flipped from previous bar (e.g., BUY → SELL or vice versa)
+            # Indicates a new trend may be forming
+            strength = "crossed"
+        else:
+            # Default to neutral if no trend change
+            strength = "neutral"
+
+            if curr_status == "BUY":
+                # --- Weak BUY conditions ---
+                if ma12_now < ma36_now:
+                    # Short-term trend contradicts BUY signal — 12MA below 36MA
+                    strength = "very weak"
+                elif spread_short_now < spread_short_prev:
+                    # Spread between 12MA and 36MA is narrowing — momentum weakening
+                    strength = "weakening"
+                
+                # --- Strong BUY conditions ---
+                elif (
+                    ma50_now > ma150_now and
+                    (grad50 > 0 or grad150 < 0) and
+                    spread_long_now > spread_long_prev
+                ):
+                    # Long-term uptrend is accelerating: 50DMA > 150DMA, positive slope, widening spread
+                    strength = "strengthening"
+                
+                if ma50_prev < ma150_prev and ma50_now > ma150_now:
+                    # 50DMA just crossed above 150DMA → Golden Cross
+                    strength = "very strong"
+
+            elif curr_status == "SELL":
+                # --- Weak SELL conditions ---
+                if ma12_now > ma36_now:
+                    # Short-term trend contradicts SELL signal — 12MA above 36MA
+                    strength = "very weak"
+                elif spread_short_now > spread_short_prev:
+                    # Spread between 12MA and 36MA is narrowing against SELL direction
+                    strength = "weakening"
+                
+                # --- Strong SELL conditions ---
+                elif (
+                    ma50_now < ma150_now and
+                    (grad50 < 0 or grad150 > 0) and
+                    spread_long_now < spread_long_prev
+                ):
+                    # Long-term downtrend accelerating: 50DMA < 150DMA, negative slope, widening spread
+                    strength = "strengthening"
+                
+                if ma50_prev > ma150_prev and ma50_now < ma150_now:
+                    # 50DMA just crossed below 150DMA → Death Cross
+                    strength = "very strong"
+
+
+        return {
+            "status": curr_status,
+            "strength": strength,
+            "details": {
+                "ma12_now": ma12_now, "ma36_now": ma36_now,
+                "ma50_now": ma50_now, "ma150_now": ma150_now,
+                "spread_short_now": spread_short_now,
+                "spread_short_prev": spread_short_prev,
+                "spread_long_now": spread_long_now,
+                "spread_long_prev": spread_long_prev,
+                "grad50": grad50,
+                "grad150": grad150,
+            }
+        }
