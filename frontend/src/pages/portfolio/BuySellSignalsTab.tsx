@@ -496,7 +496,12 @@ export default function BuySellSignalsTab() {
                   displayedPortfolio.map((holding) => (
                     <tr key={holding.ticker}>
                       <td
-                        style={{ verticalAlign: "middle", padding: "6px 12px" }}
+                        style={{
+                          verticalAlign: "middle",
+                          padding: "4px 8px",
+                          maxWidth: "240px",
+                          whiteSpace: "nowrap",
+                        }}
                       >
                         <div
                           style={{
@@ -504,7 +509,7 @@ export default function BuySellSignalsTab() {
                             gridTemplateColumns: "auto 1fr auto",
                             alignItems: "center",
                             width: "100%",
-                            gap: 8,
+                            gap: 6,
                           }}
                         >
                           <div style={{ fontWeight: "bold", fontSize: "1rem" }}>
