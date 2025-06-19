@@ -377,13 +377,6 @@
       "sector": "Bitcoin"
     },
     {
-      "ticker": "GRNY",
-      "shares": 120000.0,
-      "invested_capital": 2484093.9,
-      "average_cost": 20.7007825,
-      "sector": "Index"
-    },
-    {
       "ticker": "PBR",
       "shares": 20000.0,
       "invested_capital": 270000.0,
