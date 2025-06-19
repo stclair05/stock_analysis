@@ -537,7 +537,11 @@ export default function BuySellSignalsTab() {
                               const shortArrowDirection =
                                 delta === "crossed"
                                   ? "cross"
-                                  : shortSpreadNow > shortSpreadPrev
+                                  : isShortBullish
+                                  ? shortSpreadNow > shortSpreadPrev
+                                    ? "up"
+                                    : "down"
+                                  : shortSpreadNow < shortSpreadPrev
                                   ? "up"
                                   : "down";
 
@@ -558,7 +562,11 @@ export default function BuySellSignalsTab() {
                               const longArrowDirection =
                                 delta === "crossed"
                                   ? "cross"
-                                  : longSpreadNow > longSpreadPrev
+                                  : isLongBullish
+                                  ? longSpreadNow > longSpreadPrev
+                                    ? "up"
+                                    : "down"
+                                  : longSpreadNow < longSpreadPrev
                                   ? "up"
                                   : "down";
 
@@ -589,16 +597,32 @@ export default function BuySellSignalsTab() {
                         const status = signalObj.status || "";
                         const delta = signalObj.delta || "";
 
-                        let color = "#bdbdbd";
-                        if (status === "BUY") color = "#009944";
-                        if (status === "SELL") color = "#e91e63";
+                        let color = "#bdbdbd"; // neutral gray by default
+
+                        if (status === "BUY") {
+                          if (delta === "very strong")
+                            color = "#007a33"; // dark green
+                          else if (delta === "strengthening")
+                            color = "#4caf50"; // green
+                          else if (delta === "weakening")
+                            color = "#ffa500"; // orange
+                          else if (delta === "very weak")
+                            color = "#ffcc80"; // light orange
+                          else color = "#4caf50"; // default green
+                        } else if (status === "SELL") {
+                          if (delta === "very strong")
+                            color = "#b22222"; // dark red
+                          else if (delta === "strengthening")
+                            color = "#f44336"; // red
+                          else if (delta === "weakening")
+                            color = "#ffa500"; // orange
+                          else if (delta === "very weak")
+                            color = "#ffcc80"; // light orange
+                          else color = "#f44336"; // default red
+                        }
 
                         let icon = "";
-                        if (delta === "very strong") icon = " ⬆️";
-                        else if (delta === "strengthening") icon = " ↑";
-                        else if (delta === "weakening") icon = " ↓";
-                        else if (delta === "very weak") icon = " ⬇️";
-                        else if (delta === "crossed") icon = " 🔁";
+                        if (delta === "crossed") icon = " 🔁";
 
                         const cellStyle: React.CSSProperties = {
                           color,
