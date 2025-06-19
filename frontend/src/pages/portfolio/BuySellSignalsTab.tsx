@@ -605,12 +605,67 @@ export default function BuySellSignalsTab() {
                                   ? "gap is closing"
                                   : "gap is widening";
 
-                              const shortText = `${
-                                isShortBullish ? "12w > 36w" : "36w > 12w"
-                              }, ${shortGapText}`;
-                              const longText = `${
-                                isLongBullish ? "50d > 150d" : "150d > 50d"
-                              }, ${longGapText}`;
+                              const shortText = (
+                                <>
+                                  <span
+                                    style={{
+                                      color: isShortBullish
+                                        ? "#00BCD4"
+                                        : "#4CAF50",
+                                    }}
+                                  >
+                                    {isShortBullish ? "12w" : "36w"}
+                                  </span>{" "}
+                                  &gt;{" "}
+                                  <span
+                                    style={{
+                                      color: isShortBullish
+                                        ? "#4CAF50"
+                                        : "#00BCD4",
+                                    }}
+                                  >
+                                    {isShortBullish ? "36w" : "12w"}
+                                  </span>
+                                  {`, ${shortGapText}`}
+                                </>
+                              );
+                              const longText = (
+                                <>
+                                  <span
+                                    style={{
+                                      color: isLongBullish
+                                        ? "#2962FF"
+                                        : "#FF9800",
+                                    }}
+                                  >
+                                    {isLongBullish ? "50d" : "150d"}
+                                  </span>{" "}
+                                  &gt;{" "}
+                                  <span
+                                    style={{
+                                      color: isLongBullish
+                                        ? "#FF9800"
+                                        : "#2962FF",
+                                    }}
+                                  >
+                                    {isLongBullish ? "150d" : "50d"}
+                                  </span>
+                                  {`, ${longGapText}`}
+                                </>
+                              );
+
+                              const shortTopLabel = isShortBullish
+                                ? "12w"
+                                : "36w";
+                              const shortBottomLabel = isShortBullish
+                                ? "36w"
+                                : "12w";
+                              const longTopLabel = isLongBullish
+                                ? "50d"
+                                : "150d";
+                              const longBottomLabel = isLongBullish
+                                ? "150d"
+                                : "50d";
 
                               return (
                                 <>
@@ -638,11 +693,15 @@ export default function BuySellSignalsTab() {
                                       topColor={shortTopColor}
                                       bottomColor={shortBottomColor}
                                       direction={shortArrowDirection}
+                                      topLabel={shortTopLabel}
+                                      bottomLabel={shortBottomLabel}
                                     />
                                     <BlockArrowBar
                                       topColor={longTopColor}
                                       bottomColor={longBottomColor}
                                       direction={longArrowDirection}
+                                      topLabel={longTopLabel}
+                                      bottomLabel={longBottomLabel}
                                     />
                                   </div>
                                 </>

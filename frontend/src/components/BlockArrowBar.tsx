@@ -5,6 +5,8 @@ type BlockArrowBarProps = {
   bottomColor: string;
   direction: "up" | "down" | "cross";
   size?: number;
+  topLabel?: string;
+  bottomLabel?: string;
 };
 
 export const BlockArrowBar: React.FC<BlockArrowBarProps> = ({
@@ -12,6 +14,8 @@ export const BlockArrowBar: React.FC<BlockArrowBarProps> = ({
   bottomColor,
   direction,
   size = 24,
+  topLabel,
+  bottomLabel,
 }) => {
   const arrowColor = direction === "up" ? "#4caf50" : "#e53935";
 
@@ -44,6 +48,30 @@ export const BlockArrowBar: React.FC<BlockArrowBarProps> = ({
           height={size / 2}
           fill={bottomColor}
         />
+        {topLabel && (
+          <text
+            x="50%"
+            y={size / 4}
+            dominantBaseline="middle"
+            textAnchor="middle"
+            fill="white"
+            style={{ fontSize: size / 5 }}
+          >
+            {topLabel}
+          </text>
+        )}
+        {bottomLabel && (
+          <text
+            x="50%"
+            y={(3 * size) / 4}
+            dominantBaseline="middle"
+            textAnchor="middle"
+            fill="white"
+            style={{ fontSize: size / 5 }}
+          >
+            {bottomLabel}
+          </text>
+        )}
       </svg>
     </div>
   );
