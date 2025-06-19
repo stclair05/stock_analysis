@@ -545,6 +545,13 @@
       "sector": "Technology"
     },
     {
+      "ticker": "TSLA",
+      "shares": 0.0,
+      "invested_capital": 0.0,
+      "average_cost": 0.0,
+      "sector": "Automotive"
+    },
+    {
       "ticker": "IAG",
       "shares": 0.0,
       "invested_capital": 0.0,

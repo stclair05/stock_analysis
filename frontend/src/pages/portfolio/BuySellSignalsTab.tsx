@@ -500,11 +500,11 @@ export default function BuySellSignalsTab() {
                       >
                         <div
                           style={{
-                            display: "flex",
+                            display: "grid",
+                            gridTemplateColumns: "auto 1fr auto",
                             alignItems: "center",
-                            justifyContent: "space-between",
                             width: "100%",
-                            gap: 10,
+                            gap: 8,
                           }}
                         >
                           <div style={{ fontWeight: "bold", fontSize: "1rem" }}>
@@ -570,19 +570,82 @@ export default function BuySellSignalsTab() {
                                   ? "up"
                                   : "down";
 
+                              const shortArrowColor =
+                                shortArrowDirection === "up"
+                                  ? "#4caf50"
+                                  : shortArrowDirection === "down"
+                                  ? "#e53935"
+                                  : "#2196f3";
+                              const longArrowColor =
+                                longArrowDirection === "up"
+                                  ? "#4caf50"
+                                  : longArrowDirection === "down"
+                                  ? "#e53935"
+                                  : "#2196f3";
+
+                              const shortGapText =
+                                shortArrowDirection === "cross"
+                                  ? "recently crossed"
+                                  : isShortBullish
+                                  ? shortArrowDirection === "up"
+                                    ? "gap is widening"
+                                    : "gap is closing"
+                                  : shortArrowDirection === "up"
+                                  ? "gap is closing"
+                                  : "gap is widening";
+
+                              const longGapText =
+                                longArrowDirection === "cross"
+                                  ? "recently crossed"
+                                  : isLongBullish
+                                  ? longArrowDirection === "up"
+                                    ? "gap is widening"
+                                    : "gap is closing"
+                                  : longArrowDirection === "up"
+                                  ? "gap is closing"
+                                  : "gap is widening";
+
+                              const shortText = `${
+                                isShortBullish ? "12w > 36w" : "36w > 12w"
+                              }, ${shortGapText}`;
+                              const longText = `${
+                                isLongBullish ? "50d > 150d" : "150d > 50d"
+                              }, ${longGapText}`;
+
                               return (
-                                <div style={{ display: "flex", gap: 4 }}>
-                                  <BlockArrowBar
-                                    topColor={shortTopColor}
-                                    bottomColor={shortBottomColor}
-                                    direction={shortArrowDirection}
-                                  />
-                                  <BlockArrowBar
-                                    topColor={longTopColor}
-                                    bottomColor={longBottomColor}
-                                    direction={longArrowDirection}
-                                  />
-                                </div>
+                                <>
+                                  <div
+                                    style={{
+                                      fontSize: "0.75rem",
+                                      lineHeight: 1.2,
+                                    }}
+                                  >
+                                    <div style={{ color: shortArrowColor }}>
+                                      {shortText}
+                                    </div>
+                                    <div style={{ color: longArrowColor }}>
+                                      {longText}
+                                    </div>
+                                  </div>
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      gap: 4,
+                                      marginLeft: "auto",
+                                    }}
+                                  >
+                                    <BlockArrowBar
+                                      topColor={shortTopColor}
+                                      bottomColor={shortBottomColor}
+                                      direction={shortArrowDirection}
+                                    />
+                                    <BlockArrowBar
+                                      topColor={longTopColor}
+                                      bottomColor={longBottomColor}
+                                      direction={longArrowDirection}
+                                    />
+                                  </div>
+                                </>
                               );
                             }
                             return null;
