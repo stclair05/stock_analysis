@@ -496,7 +496,12 @@ export default function BuySellSignalsTab() {
                   displayedPortfolio.map((holding) => (
                     <tr key={holding.ticker}>
                       <td
-                        style={{ verticalAlign: "middle", padding: "6px 12px" }}
+                        style={{
+                          verticalAlign: "middle",
+                          padding: "4px 8px",
+                          maxWidth: "240px",
+                          whiteSpace: "nowrap",
+                        }}
                       >
                         <div
                           style={{
@@ -504,7 +509,7 @@ export default function BuySellSignalsTab() {
                             gridTemplateColumns: "auto 1fr auto",
                             alignItems: "center",
                             width: "100%",
-                            gap: 8,
+                            gap: 6,
                           }}
                         >
                           <div style={{ fontWeight: "bold", fontSize: "1rem" }}>
@@ -530,9 +535,9 @@ export default function BuySellSignalsTab() {
                               );
                               const shortTopColor = isShortBullish
                                 ? "#00BCD4"
-                                : "#4CAF50";
+                                : "#9C27B0";
                               const shortBottomColor = isShortBullish
-                                ? "#4CAF50"
+                                ? "#9C27B0"
                                 : "#00BCD4";
                               const shortArrowDirection =
                                 delta === "crossed"
@@ -605,12 +610,67 @@ export default function BuySellSignalsTab() {
                                   ? "gap is closing"
                                   : "gap is widening";
 
-                              const shortText = `${
-                                isShortBullish ? "12w > 36w" : "36w > 12w"
-                              }, ${shortGapText}`;
-                              const longText = `${
-                                isLongBullish ? "50d > 150d" : "150d > 50d"
-                              }, ${longGapText}`;
+                              const shortText = (
+                                <>
+                                  <span
+                                    style={{
+                                      color: isShortBullish
+                                        ? "#00BCD4"
+                                        : "#9C27B0",
+                                    }}
+                                  >
+                                    {isShortBullish ? "12w" : "36w"}
+                                  </span>{" "}
+                                  &gt;{" "}
+                                  <span
+                                    style={{
+                                      color: isShortBullish
+                                        ? "#9C27B0"
+                                        : "#00BCD4",
+                                    }}
+                                  >
+                                    {isShortBullish ? "36w" : "12w"}
+                                  </span>
+                                  {`, ${shortGapText}`}
+                                </>
+                              );
+                              const longText = (
+                                <>
+                                  <span
+                                    style={{
+                                      color: isLongBullish
+                                        ? "#2962FF"
+                                        : "#FF9800",
+                                    }}
+                                  >
+                                    {isLongBullish ? "50d" : "150d"}
+                                  </span>{" "}
+                                  &gt;{" "}
+                                  <span
+                                    style={{
+                                      color: isLongBullish
+                                        ? "#FF9800"
+                                        : "#2962FF",
+                                    }}
+                                  >
+                                    {isLongBullish ? "150d" : "50d"}
+                                  </span>
+                                  {`, ${longGapText}`}
+                                </>
+                              );
+
+                              const shortTopLabel = isShortBullish
+                                ? "12w"
+                                : "36w";
+                              const shortBottomLabel = isShortBullish
+                                ? "36w"
+                                : "12w";
+                              const longTopLabel = isLongBullish
+                                ? "50d"
+                                : "150d";
+                              const longBottomLabel = isLongBullish
+                                ? "150d"
+                                : "50d";
 
                               return (
                                 <>
@@ -638,11 +698,15 @@ export default function BuySellSignalsTab() {
                                       topColor={shortTopColor}
                                       bottomColor={shortBottomColor}
                                       direction={shortArrowDirection}
+                                      topLabel={shortTopLabel}
+                                      bottomLabel={shortBottomLabel}
                                     />
                                     <BlockArrowBar
                                       topColor={longTopColor}
                                       bottomColor={longBottomColor}
                                       direction={longArrowDirection}
+                                      topLabel={longTopLabel}
+                                      bottomLabel={longBottomLabel}
                                     />
                                   </div>
                                 </>
@@ -656,33 +720,17 @@ export default function BuySellSignalsTab() {
                       {visibleAndOrderedStrategies.map((s) => {
                         const signalObj =
                           signalSummary[holding.ticker]?.[s] ?? {};
-                        const buySell = signalObj.signal || "";
-                        const status = signalObj.status || "";
-                        const delta = signalObj.delta || "";
+                        const buySell = signalObj.signal || ""; // used for text color
+                        const delta =
+                          signalSummary[holding.ticker]?._generic?.strength ||
+                          ""; // from generic, used for background class
 
-                        let color = "#bdbdbd"; // neutral gray by default
-
-                        if (status === "BUY") {
-                          if (delta === "very strong")
-                            color = "#007a33"; // dark green
-                          else if (delta === "strengthening")
-                            color = "#4caf50"; // green
-                          else if (delta === "weakening")
-                            color = "#ffa500"; // orange
-                          else if (delta === "very weak")
-                            color = "#ffcc80"; // light orange
-                          else color = "#4caf50"; // default green
-                        } else if (status === "SELL") {
-                          if (delta === "very strong")
-                            color = "#b22222"; // dark red
-                          else if (delta === "strengthening")
-                            color = "#f44336"; // red
-                          else if (delta === "weakening")
-                            color = "#ffa500"; // orange
-                          else if (delta === "very weak")
-                            color = "#ffcc80"; // light orange
-                          else color = "#f44336"; // default red
-                        }
+                        const color =
+                          buySell === "BUY"
+                            ? "#4caf50"
+                            : buySell === "SELL"
+                            ? "#f44336"
+                            : "#bdbdbd";
 
                         let icon = "";
                         if (delta === "crossed") icon = " 🔁";
@@ -694,7 +742,10 @@ export default function BuySellSignalsTab() {
                         };
 
                         let cellClass = "";
-                        if (status === "BUY") {
+                        const genericStatus =
+                          signalSummary[holding.ticker]?._generic?.status || "";
+
+                        if (genericStatus === "BUY") {
                           if (delta === "very strong")
                             cellClass = "signal-buy-very-strong";
                           else if (delta === "strengthening")
@@ -703,7 +754,7 @@ export default function BuySellSignalsTab() {
                             cellClass = "signal-buy-weakening";
                           else if (delta === "very weak")
                             cellClass = "signal-buy-very-weak";
-                        } else if (status === "SELL") {
+                        } else if (genericStatus === "SELL") {
                           if (delta === "very strong")
                             cellClass = "signal-sell-very-strong";
                           else if (delta === "strengthening")
