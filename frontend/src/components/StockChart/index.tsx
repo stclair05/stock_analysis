@@ -883,36 +883,32 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
     const colors = {
       mean_rev_50dma: "#3f51b5", // indigo
-      mean_rev_200dma: "#4caf50", // green
-      mean_rev_3yma: "#3f51b5", // indigo
-    };
+    } as const;
 
     // Clear old series if any
     meanRevLineRef.current && chart.removeSeries(meanRevLineRef.current);
     meanRevLineRef.current = null;
 
-    (["mean_rev_50dma", "mean_rev_200dma", "mean_rev_3yma"] as const).forEach(
-      (key, idx) => {
-        const data = overlayData[key];
-        if (!data) return;
+    (["mean_rev_50dma"] as const).forEach((key, idx) => {
+      const data = overlayData[key];
+      if (!data) return;
 
-        const series = chart.addSeries(LineSeries, {
-          color: colors[key],
-          ...lineOptions,
-        });
+      const series = chart.addSeries(LineSeries, {
+        color: colors[key],
+        ...lineOptions,
+      });
 
-        series.setData(
-          data.map((d) => ({
-            time: d.time as UTCTimestamp,
-            value: d.value,
-          }))
-        );
+      series.setData(
+        data.map((d) => ({
+          time: d.time as UTCTimestamp,
+          value: d.value,
+        }))
+      );
 
-        if (idx === 0) {
-          meanRevLineRef.current = series; // ✅ use the first one for syncing
-        }
+      if (idx === 0) {
+        meanRevLineRef.current = series; // ✅ use the first one for syncing
       }
-    );
+    });
   }, [
     overlayData.mean_rev_50dma,
     overlayData.mean_rev_200dma,

@@ -781,7 +781,7 @@ class StockAnalyser:
 
     
     def get_mean_reversion_deviation_lines(self) -> dict:
-        price = self.df["Close"]
+        price = self.weekly_df["Close"]
         ma50 = price.rolling(window=50).mean()
         dev_50 = (price - ma50) / ma50 * 100
 

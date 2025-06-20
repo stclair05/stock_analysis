@@ -7,14 +7,17 @@ export function useMainChartData(
   candleSeriesRef: React.MutableRefObject<ISeriesApi<"Candlestick"> | null>,
   timeframe: "daily" | "weekly" | "monthly",
   chartRef?: React.MutableRefObject<IChartApi | null>,
-  onData?: (candles: Candle[]) => void // <-- Add this!
+  onData?: (candles: Candle[]) => void,
+  includeFutureBars: boolean = false
 ) {
   useEffect(() => {
     if (!stockSymbol || !candleSeriesRef.current) return;
 
     async function fetchData() {
       try {
-        const res = await fetch(`http://localhost:8000/api/chart_data_${timeframe}/${stockSymbol.toUpperCase()}`);
+        const res = await fetch(
+          `http://localhost:8000/api/chart_data_${timeframe}/${stockSymbol.toUpperCase()}`
+        );
         const data = await res.json();
         const candleSeries = candleSeriesRef.current;
         if (!candleSeries) return;
@@ -28,10 +31,11 @@ export function useMainChartData(
             close: c.close,
           }));
 
-           // ====== ADD WHITESPACE BARS FOR FUTURE ======
-          if (formattedData.length > 0) {
+          // ====== ADD WHITESPACE BARS FOR FUTURE ======
+          if (includeFutureBars && formattedData.length > 0) {
             const FUTURE_BARS = 100; // extra 100 bars into the future!
-            let lastTime = formattedData[formattedData.length - 1].time as number;
+            let lastTime = formattedData[formattedData.length - 1]
+              .time as number;
 
             // Calculate interval based on your timeframe
             let interval = 0;
@@ -41,18 +45,20 @@ export function useMainChartData(
 
             const whitespace: { time: UTCTimestamp }[] = [];
             for (let i = 1; i <= FUTURE_BARS; ++i) {
-              whitespace.push({ time: (lastTime + i * interval) as UTCTimestamp });
+              whitespace.push({
+                time: (lastTime + i * interval) as UTCTimestamp,
+              });
             }
-            formattedData = [...formattedData, ...whitespace as any];
+            formattedData = [...formattedData, ...(whitespace as any)];
           }
           // ===========================================
           candleSeries.setData(formattedData);
 
-          if (onData) onData(formattedData); 
+          if (onData) onData(formattedData);
         }
       } catch (err) {
         // handle error if needed
-        console.log(err)
+        console.log(err);
       }
     }
 

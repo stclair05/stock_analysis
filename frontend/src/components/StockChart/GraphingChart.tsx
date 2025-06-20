@@ -590,7 +590,8 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
         from: mainSeriesData[0].time as UTCTimestamp,
         to: futureLimit as UTCTimestamp,
       });
-    }
+    },
+    true
   );
 
   /**
