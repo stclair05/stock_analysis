@@ -48,6 +48,11 @@ export default function BuySellSignalsTab() {
     "ALL" | "BUY" | "SELL" | "MIXED"
   >("ALL");
 
+  // Hold mean reversion and RSI info for each ticker
+  const [meanRevRsi, setMeanRevRsi] = useState<
+    Record<string, { meanRev: string | null; rsi: string | null }>
+  >({});
+
   const strategyApiMap: Record<string, string> = {
     trend_investor_pro: "trendinvestorpro",
     st_clair: "stclair",
@@ -55,6 +60,37 @@ export default function BuySellSignalsTab() {
     stclair_longterm: "stclairlongterm",
     mace_40w: "mace_40w",
     // demarker: "demarker",
+  };
+
+  const getSlopeArrow = (val: string | null) => {
+    if (!val) return "-";
+    const lower = val.toLowerCase();
+    if (lower.includes("sloping upward")) return "↗";
+    if (lower.includes("sloping downward")) return "↘";
+    return "-";
+  };
+
+  const getMeanRevColor = (val: string | null) => {
+    if (!val) return "#bdbdbd";
+    const lower = val.toLowerCase();
+    if (lower.includes("oversold") || lower.includes("over sold"))
+      return "#4caf50";
+    if (lower.includes("extended") || lower.includes("overbought"))
+      return "#f44336";
+    return "#bdbdbd";
+  };
+
+  const getRsiColor = (val: string | null) => {
+    if (!val) return "#bdbdbd";
+    const lower = val.toLowerCase();
+    // Prioritise extremes
+    if (lower.includes("extended") || lower.includes("overbought"))
+      return "#f44336";
+    if (lower.includes("over sold") || lower.includes("oversold"))
+      return "#4caf50";
+    if (lower.includes("above")) return "#4caf50";
+    if (lower.includes("below")) return "#f44336";
+    return "#bdbdbd";
   };
 
   const getVisibleAndOrderedStrategies = (timeframe: string) => {
@@ -167,6 +203,38 @@ export default function BuySellSignalsTab() {
 
     fetchTickers();
   }, [listType]); // Rerun this effect when listType changes
+
+  // Fetch mean reversion and RSI metrics for all tickers
+  useEffect(() => {
+    if (portfolio.length === 0) return;
+
+    const fetchMetrics = async () => {
+      try {
+        const res = await fetch("http://localhost:8000/analyse_batch", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(portfolio.map((p) => ({ symbol: p.ticker }))),
+        });
+        if (!res.ok) throw new Error("Failed metrics");
+        const data = await res.json();
+        const summary: Record<
+          string,
+          { meanRev: string | null; rsi: string | null }
+        > = {};
+        Object.entries(data).forEach(([sym, val]: any) => {
+          summary[sym] = {
+            meanRev: val?.mean_rev_weekly?.current ?? null,
+            rsi: val?.rsi_ma_weekly?.current ?? null,
+          };
+        });
+        setMeanRevRsi(summary);
+      } catch {
+        setMeanRevRsi({});
+      }
+    };
+
+    fetchMetrics();
+  }, [portfolio]);
 
   // Fetch signals for all stocks/strategies/timeframes
   useEffect(() => {
@@ -466,6 +534,7 @@ export default function BuySellSignalsTab() {
               <thead>
                 <tr>
                   <th>Stock</th>
+                  <th>Mean Rev / RSI</th>
                   {visibleAndOrderedStrategies.map((s) => (
                     <th
                       key={s}
@@ -486,7 +555,7 @@ export default function BuySellSignalsTab() {
                 {displayedPortfolio.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={visibleAndOrderedStrategies.length + 1}
+                      colSpan={visibleAndOrderedStrategies.length + 2}
                       className="text-center text-muted"
                     >
                       No signals found matching your filter.
@@ -715,6 +784,32 @@ export default function BuySellSignalsTab() {
                             return null;
                           })()}
                         </div>
+                      </td>
+
+                      <td style={{ textAlign: "center", fontWeight: 700 }}>
+                        <span
+                          style={{
+                            color: getMeanRevColor(
+                              meanRevRsi[holding.ticker]?.meanRev ?? null
+                            ),
+                          }}
+                        >
+                          {getSlopeArrow(
+                            meanRevRsi[holding.ticker]?.meanRev ?? null
+                          )}
+                        </span>
+                        {" | "}
+                        <span
+                          style={{
+                            color: getRsiColor(
+                              meanRevRsi[holding.ticker]?.rsi ?? null
+                            ),
+                          }}
+                        >
+                          {getSlopeArrow(
+                            meanRevRsi[holding.ticker]?.rsi ?? null
+                          )}
+                        </span>
                       </td>
 
                       {visibleAndOrderedStrategies.map((s) => {
