@@ -7,7 +7,7 @@ from functools import cached_property
 from .models import TimeSeriesMetric
 from aliases import SYMBOL_ALIASES
 from .utils import compute_demarker, safe_value, detect_rsi_divergence, find_pivots, compute_wilder_rsi, compute_bbwp, compute_ichimoku_lines, compute_supertrend_lines, to_series, classify_adx_trend, classify_mace_signal, classify_40w_status, classify_dma_trend, classify_bbwp_percentile, wilder_smooth, reindex_indicator
-from .pricetarget import get_price_targets
+from .pricetarget import get_price_targets, calculate_mean_reversion_50dma_target
 from threading import Lock
 
 _price_data_lock = Lock()
@@ -415,6 +415,39 @@ class StockAnalyser:
             fourteen_days_ago=classify(safe_value(deviation, -3)),
             twentyone_days_ago=classify(safe_value(deviation, -4)),
         )
+    
+    def mean_reversion_weekly(self) -> TimeSeriesMetric:
+        """Classify current weekly deviation vs 50-week mean reversion bands."""
+        if len(self.weekly_df) < 60:
+            return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
+
+        price = self.weekly_df["Close"]
+        ma_50 = price.rolling(window=50).mean()
+        deviation = (price - ma_50) / ma_50 * 100
+
+        bands = calculate_mean_reversion_50dma_target(self.df)
+        lower = bands.get("deviation_band_pct_lower")
+        upper = bands.get("deviation_band_pct_upper")
+        if not isinstance(lower, (int, float)) or not isinstance(upper, (int, float)):
+            return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
+
+        def classify(dev: float | None) -> str | None:
+            if dev is None or pd.isna(dev):
+                return None
+            if dev > upper:
+                return "Overbought"
+            elif dev < lower:
+                return "Oversold"
+            else:
+                return "Average"
+
+        return TimeSeriesMetric(
+            current=classify(safe_value(deviation, -1)),
+            seven_days_ago=classify(safe_value(deviation, -2)),
+            fourteen_days_ago=classify(safe_value(deviation, -3)),
+            twentyone_days_ago=classify(safe_value(deviation, -4)),
+        )
+
 
     
     def rsi_and_ma_daily(self) -> TimeSeriesMetric:

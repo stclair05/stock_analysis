@@ -105,8 +105,6 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     dma_50?: { time: number; value: number }[];
     mace?: { time: number; value: number }[];
     mean_rev_50dma?: { time: number; value: number }[];
-    mean_rev_200dma?: { time: number; value: number }[];
-    mean_rev_3yma?: { time: number; value: number }[];
     rsi?: { time: number; value: number }[];
     rsi_ma_14?: { time: number; value: number }[];
     rsi_upper_band?: { time: number; value: number }[];
@@ -909,11 +907,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         meanRevLineRef.current = series; // ✅ use the first one for syncing
       }
     });
-  }, [
-    overlayData.mean_rev_50dma,
-    overlayData.mean_rev_200dma,
-    overlayData.mean_rev_3yma,
-  ]);
+  }, [overlayData.mean_rev_50dma]);
 
   /*
     RSI CHART'S USEEFFECT 

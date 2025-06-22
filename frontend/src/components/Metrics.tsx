@@ -21,9 +21,7 @@ type MetricsType = {
   fifty_dma_and_150_dma: TimeSeriesMetric;
   twenty_dma: TimeSeriesMetric;
   fifty_dma: TimeSeriesMetric;
-  mean_rev_50dma: TimeSeriesMetric;
-  mean_rev_200dma: TimeSeriesMetric;
-  mean_rev_3yma: TimeSeriesMetric;
+  mean_rev_weekly: TimeSeriesMetric;
   rsi_and_ma_daily: TimeSeriesMetric;
   rsi_divergence_daily: TimeSeriesMetric;
   bollinger_band_width_percentile_daily: TimeSeriesMetric;
@@ -344,28 +342,15 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
                   {renderColoredCell(metrics.twenty_dma.fourteen_days_ago)}
                   {renderColoredCell(metrics.twenty_dma.twentyone_days_ago)}
                 </tr>
+
                 <tr>
-                  <td>↔️ Mean Reversion to 50DMA</td>
-                  {renderColoredCell(metrics.mean_rev_50dma.current)}
-                  {renderColoredCell(metrics.mean_rev_50dma.seven_days_ago)}
-                  {renderColoredCell(metrics.mean_rev_50dma.fourteen_days_ago)}
-                  {renderColoredCell(metrics.mean_rev_50dma.twentyone_days_ago)}
-                </tr>
-                <tr>
-                  <td>↔️ Mean Reversion to 200DMA</td>
-                  {renderColoredCell(metrics.mean_rev_200dma.current)}
-                  {renderColoredCell(metrics.mean_rev_200dma.seven_days_ago)}
-                  {renderColoredCell(metrics.mean_rev_200dma.fourteen_days_ago)}
+                  <td>↔️ Mean Reversion (Weekly)</td>
+                  {renderColoredCell(metrics.mean_rev_weekly.current)}
+                  {renderColoredCell(metrics.mean_rev_weekly.seven_days_ago)}
+                  {renderColoredCell(metrics.mean_rev_weekly.fourteen_days_ago)}
                   {renderColoredCell(
-                    metrics.mean_rev_200dma.twentyone_days_ago
+                    metrics.mean_rev_weekly.twentyone_days_ago
                   )}
-                </tr>
-                <tr>
-                  <td>↔️ Mean Reversion to 3YMA</td>
-                  {renderColoredCell(metrics.mean_rev_3yma.current)}
-                  {renderColoredCell(metrics.mean_rev_3yma.seven_days_ago)}
-                  {renderColoredCell(metrics.mean_rev_3yma.fourteen_days_ago)}
-                  {renderColoredCell(metrics.mean_rev_3yma.twentyone_days_ago)}
                 </tr>
                 <tr>
                   <td>📊 RSI & MA (Daily)</td>

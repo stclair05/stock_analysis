@@ -23,9 +23,7 @@ class StockAnalysisResponse(BaseModel):
     fifty_dma_and_150_dma: TimeSeriesMetric
     twenty_dma: TimeSeriesMetric
     fifty_dma: TimeSeriesMetric
-    mean_rev_50dma: TimeSeriesMetric
-    mean_rev_200dma: TimeSeriesMetric
-    mean_rev_3yma: TimeSeriesMetric
+    mean_rev_weekly: TimeSeriesMetric
     rsi_and_ma_daily: TimeSeriesMetric
     rsi_divergence_daily: TimeSeriesMetric
     bollinger_band_width_percentile_daily: TimeSeriesMetric
