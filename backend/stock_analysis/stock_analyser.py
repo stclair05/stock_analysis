@@ -417,13 +417,18 @@ class StockAnalyser:
         )
     
     def mean_reversion_weekly(self) -> TimeSeriesMetric:
-        """Classify current weekly deviation vs 50-week mean reversion bands."""
+        """Classify current weekly deviation vs 50-week mean reversion bands.
+
+        Adds direction of the deviation slope and notes when the deviation is
+        close to either band.
+        """
         if len(self.weekly_df) < 60:
             return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
 
         price = self.weekly_df["Close"]
         ma_50 = price.rolling(window=50).mean()
         deviation = (price - ma_50) / ma_50 * 100
+        slope = deviation.diff()
 
         bands = calculate_mean_reversion_50dma_target(self.df)
         lower = bands.get("deviation_band_pct_lower")
@@ -431,24 +436,42 @@ class StockAnalyser:
         if not isinstance(lower, (int, float)) or not isinstance(upper, (int, float)):
             return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
 
-        def classify(dev: float | None) -> str | None:
+        band_range = upper - lower
+        near_thresh = 0.3 * band_range
+
+        def classify(dev: float | str | None, slp: float | str | None) -> str | None:
             if dev is None or pd.isna(dev):
                 return None
+            if isinstance(dev, str):
+                return dev
+
             if dev > upper:
-                return "Overbought"
+                base = "Overbought"
             elif dev < lower:
-                return "Oversold"
+                base = "Oversold"
             else:
-                return "Average"
+                base = "Neutral"
+                if dev >= upper - near_thresh:
+                    base = "Neutral but slightly extended"
+                elif dev <= lower + near_thresh:
+                    base = "Neutral but slightly over sold"
+
+            direction = ""
+            if slp is not None and not pd.isna(slp) and not isinstance(slp, str):
+                if slp > 0:
+                    direction = "sloping upward"
+                elif slp < 0:
+                    direction = "sloping downward"
+                else:
+                    direction = "flat"
+            return f"{base} ({direction})" if direction else base
 
         return TimeSeriesMetric(
-            current=classify(safe_value(deviation, -1)),
-            seven_days_ago=classify(safe_value(deviation, -2)),
-            fourteen_days_ago=classify(safe_value(deviation, -3)),
-            twentyone_days_ago=classify(safe_value(deviation, -4)),
+            current=classify(safe_value(deviation, -1), safe_value(slope, -1)),
+            seven_days_ago=classify(safe_value(deviation, -2), safe_value(slope, -2)),
+            fourteen_days_ago=classify(safe_value(deviation, -3), safe_value(slope, -3)),
+            twentyone_days_ago=classify(safe_value(deviation, -4), safe_value(slope, -4)),
         )
-
-
     
     def rsi_and_ma_daily(self) -> TimeSeriesMetric:
         close = self.df['Close']
@@ -507,22 +530,68 @@ class StockAnalyser:
 
     
     def rsi_ma_weekly(self) -> TimeSeriesMetric:
-        df_weekly = self.weekly_df 
+        """Classify weekly RSI relative to its 14-week MA and 30/70 bands.
+
+        Includes the direction of the RSI slope and whether it is extended or
+        oversold. If the RSI is within 30% of either band, it is labeled as
+        "slightly" extended/over sold.
+        """
+
+        df_weekly = self.weekly_df
         if df_weekly.empty or len(df_weekly) < 30:
             return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
-        
+
         close = df_weekly["Close"]
         rsi = compute_wilder_rsi(close)
+        rsi_slope = rsi.diff()
 
-        # Compare RSI to its 14-period MA (or keep price MA if that's intended)
         rsi_ma = pd.Series(rsi, index=close.index).rolling(window=14).mean()
-        condition = (rsi > rsi_ma).replace({True: "Above", False: "Below"})
+
+        upper = 70
+        lower = 30
+        band_range = upper - lower
+        near_thresh = 0.3 * band_range
+
+        def classify(value: float | str | None, slp: float | str | None, ma_val: float | str | None) -> str | None:
+            if value is None or pd.isna(value):
+                return None
+            if isinstance(value, str):
+                return value
+            if isinstance(ma_val, str) or ma_val is None or pd.isna(ma_val):
+                return ma_val if isinstance(ma_val, str) else None
+
+            base = "Above 14MA" if value > ma_val else "Below 14MA"
+
+            status = ""
+            if value > upper:
+                status = "extended"
+            elif value < lower:
+                status = "oversold"
+            else:
+                if value >= upper - near_thresh:
+                    status = "slightly extended"
+                elif value <= lower + near_thresh:
+                    status = "slightly over sold"
+
+            if status:
+                base = f"{base} and {status}"
+
+            direction = ""
+            if slp is not None and not pd.isna(slp) and not isinstance(slp, str):
+                if slp > 0:
+                    direction = "sloping upward"
+                elif slp < 0:
+                    direction = "sloping downward"
+                else:
+                    direction = "flat"
+
+            return f"{base} ({direction})" if direction else base
 
         return TimeSeriesMetric(
-            current=safe_value(condition, -1),
-            seven_days_ago=safe_value(condition, -2),
-            fourteen_days_ago=safe_value(condition, -3),
-            twentyone_days_ago=safe_value(condition, -4),
+            current=classify(safe_value(rsi, -1), safe_value(rsi_slope, -1), safe_value(rsi_ma, -1)),
+            seven_days_ago=classify(safe_value(rsi, -2), safe_value(rsi_slope, -2), safe_value(rsi_ma, -2)),
+            fourteen_days_ago=classify(safe_value(rsi, -3), safe_value(rsi_slope, -3), safe_value(rsi_ma, -3)),
+            twentyone_days_ago=classify(safe_value(rsi, -4), safe_value(rsi_slope, -4), safe_value(rsi_ma, -4)),
         )
 
 

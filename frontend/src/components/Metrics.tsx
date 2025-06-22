@@ -145,10 +145,22 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
     if (lower.includes("below falling ma")) return "text-down-strong";
 
     // Mean Reversion / Conditions
-    if (lower.includes("oversold")) return "text-up-strong";
+    if (
+      lower.includes("slightly extended") ||
+      lower.includes("slightly over sold") ||
+      lower.includes("slightly oversold")
+    )
+      return "text-warning";
+    if (lower.includes("extended")) return "text-danger";
+    if (lower.includes("oversold") || lower.includes("over sold"))
+      return "text-danger";
     if (lower.includes("overbought")) return "text-down-strong";
-    if (lower.includes("extended")) return "text-neutral";
     if (lower.includes("normal")) return "text-secondary";
+
+    // Deviation slope direction
+    if (lower.includes("sloping upward")) return "text-up-weak";
+    if (lower.includes("sloping downward")) return "text-down-weak";
+    if (lower.includes("flat")) return "text-neutral";
 
     // 50DMA & 150DMA Composite Signal
     if (lower.includes("strong uptrend")) return "text-up-strong fw-bold";
