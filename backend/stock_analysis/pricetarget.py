@@ -3,14 +3,13 @@ import pandas as pd
 import numpy as np
 
 
-def calculate_mean_reversion_50dma_target(df: pd.DataFrame, lookback: int | None = None) -> dict:
+def calculate_mean_reversion_50dma_target(df: pd.DataFrame) -> dict:
     """
     Calculates a mean reversion target price based on deviation from the 50DMA.
 
-    - Computes historical % deviation from 50DMA over the entire available history
-      (or a specified lookback period when provided).
-    - Uses the 90th percentile of absolute deviation as the typical deviation band.
-    - Applies this to the latest 50DMA to compute a projected upper bound price.
+    - Computes historical % deviation from 50DMA over the entire available history.
+    - Uses the 97.5th and 2.5th percentiles of deviation as extreme bounds.
+    - Applies the upper bound to the latest 50DMA to compute a projected reversion target price.
 
     Returns a full diagnostic output, including percentiles and current price.
     """
@@ -20,29 +19,23 @@ def calculate_mean_reversion_50dma_target(df: pd.DataFrame, lookback: int | None
     price = df['Close']
     ma_50 = price.rolling(window=50).mean()
     deviation = (price - ma_50) / ma_50 * 100
-    recent_dev = (
-        deviation[-lookback:].dropna() if isinstance(lookback, int) else deviation.dropna()
-    )
+    recent_dev = deviation.dropna()  # Use full history
 
     if len(recent_dev) < 30:
         return {"mean_reversion_50dma_target": "in progress"}
 
-    # Calculate deviation metrics based on two standard deviations
-    dev_mean = recent_dev.mean()
-    dev_std = recent_dev.std()
-    typical_dev = round(2 * dev_std, 2)
-    deviation_band_pct_lower = round(dev_mean - 2 * dev_std, 2)
-    deviation_band_pct_upper = round(dev_mean + 2 * dev_std, 2)
+    # Calculate extreme percentile bands
+    typical_dev = round(recent_dev.abs().quantile(0.975), 2)
+    deviation_band_pct_lower = round(recent_dev.quantile(0.025), 2)
+    deviation_band_pct_upper = round(recent_dev.quantile(0.975), 2)
 
     current_price = price.iloc[-1]
     latest_ma_50 = ma_50.iloc[-1]
     if pd.isna(current_price) or pd.isna(latest_ma_50):
         return {"mean_reversion_50dma_target": "in progress"}
 
-    # Project target price based on the upper deviation band (two standard deviations)
-    # projected_target_price = round(latest_ma_50 * (1 + typical_dev / 100), 2)
-
-    projected_target_price = round(latest_ma_50 * (1 + deviation_band_pct_upper  / 100), 2)
+    # Project target price using 97.5th percentile deviation from the 50DMA
+    projected_target_price = round(latest_ma_50 * (1 + deviation_band_pct_upper / 100), 2)
 
     return {
         "typical_deviation_band_pct": typical_dev,
@@ -52,7 +45,6 @@ def calculate_mean_reversion_50dma_target(df: pd.DataFrame, lookback: int | None
         "current_price": round(current_price, 2),
         "latest_50dma": round(latest_ma_50, 2)
     }
-
 
 
 def calculate_fibonacci_volatility_target(df: pd.DataFrame, fib_ratios: list[float] = [1.618, 2.618]) -> dict:
