@@ -172,16 +172,9 @@ export default function WatchlistPage() {
     { key: "fifty_dma_and_150_dma", label: "50/150 DMA" },
     { key: "twenty_dma", label: "20 DMA" },
     { key: "fifty_dma", label: "50 DMA" },
-    { key: "mean_rev_50dma", label: "Mean Rev. 50DMA" },
-    { key: "mean_rev_200dma", label: "Mean Rev. 200DMA" },
-    { key: "mean_rev_3yma", label: "Mean Rev. 3YMA" },
-    { key: "rsi_and_ma_daily", label: "RSI & MA (Daily)" },
-    { key: "rsi_divergence_daily", label: "RSI Divergence (Daily)" },
+    { key: "mean_rev_weekly", label: "Mean Reversion (Weekly)" },
     { key: "bollinger_band_width_percentile_daily", label: "BBWP (Daily)" },
     { key: "rsi_ma_weekly", label: "RSI & MA (Weekly)" },
-    { key: "rsi_divergence_weekly", label: "RSI Divergence (Weekly)" },
-    { key: "rsi_ma_monthly", label: "RSI & MA (Monthly)" },
-    { key: "rsi_divergence_monthly", label: "RSI Divergence (Monthly)" },
     { key: "chaikin_money_flow", label: "Chaikin Money Flow" },
   ];
 

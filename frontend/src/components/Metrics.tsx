@@ -21,16 +21,9 @@ type MetricsType = {
   fifty_dma_and_150_dma: TimeSeriesMetric;
   twenty_dma: TimeSeriesMetric;
   fifty_dma: TimeSeriesMetric;
-  mean_rev_50dma: TimeSeriesMetric;
-  mean_rev_200dma: TimeSeriesMetric;
-  mean_rev_3yma: TimeSeriesMetric;
-  rsi_and_ma_daily: TimeSeriesMetric;
-  rsi_divergence_daily: TimeSeriesMetric;
+  mean_rev_weekly: TimeSeriesMetric;
   bollinger_band_width_percentile_daily: TimeSeriesMetric;
   rsi_ma_weekly: TimeSeriesMetric;
-  rsi_divergence_weekly: TimeSeriesMetric;
-  rsi_ma_monthly: TimeSeriesMetric;
-  rsi_divergence_monthly: TimeSeriesMetric;
   chaikin_money_flow: TimeSeriesMetric;
 };
 
@@ -120,6 +113,22 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
     if (typeof value !== "string") return "text-secondary";
     const lower = value.toLowerCase();
 
+    // Mean Reversion / Conditions should take precedence over
+    // simple positional checks so that extended/oversold states
+    // are highlighted correctly even if the text also includes
+    // words like "above" or "below".
+    if (
+      lower.includes("slightly extended") ||
+      lower.includes("slightly over sold") ||
+      lower.includes("slightly oversold")
+    )
+      return "text-warning";
+    if (lower.includes("extended")) return "text-danger";
+    if (lower.includes("oversold") || lower.includes("over sold"))
+      return "text-danger";
+    if (lower.includes("overbought")) return "text-down-strong";
+    if (lower.includes("normal")) return "text-secondary";
+
     // Positional / Relative Terms
     if (lower.includes("below")) return "text-down-strong";
     if (lower.includes("above")) return "text-up-strong";
@@ -151,11 +160,10 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
     if (lower.includes("below rising ma")) return "text-neutral";
     if (lower.includes("below falling ma")) return "text-down-strong";
 
-    // Mean Reversion / Conditions
-    if (lower.includes("oversold")) return "text-up-strong";
-    if (lower.includes("overbought")) return "text-down-strong";
-    if (lower.includes("extended")) return "text-neutral";
-    if (lower.includes("normal")) return "text-secondary";
+    // Deviation slope direction
+    if (lower.includes("sloping upward")) return "text-up-weak";
+    if (lower.includes("sloping downward")) return "text-down-weak";
+    if (lower.includes("flat")) return "text-neutral";
 
     // 50DMA & 150DMA Composite Signal
     if (lower.includes("strong uptrend")) return "text-up-strong fw-bold";
@@ -344,38 +352,14 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
                   {renderColoredCell(metrics.twenty_dma.fourteen_days_ago)}
                   {renderColoredCell(metrics.twenty_dma.twentyone_days_ago)}
                 </tr>
+
                 <tr>
-                  <td>↔️ Mean Reversion to 50DMA</td>
-                  {renderColoredCell(metrics.mean_rev_50dma.current)}
-                  {renderColoredCell(metrics.mean_rev_50dma.seven_days_ago)}
-                  {renderColoredCell(metrics.mean_rev_50dma.fourteen_days_ago)}
-                  {renderColoredCell(metrics.mean_rev_50dma.twentyone_days_ago)}
-                </tr>
-                <tr>
-                  <td>↔️ Mean Reversion to 200DMA</td>
-                  {renderColoredCell(metrics.mean_rev_200dma.current)}
-                  {renderColoredCell(metrics.mean_rev_200dma.seven_days_ago)}
-                  {renderColoredCell(metrics.mean_rev_200dma.fourteen_days_ago)}
+                  <td>↔️ Mean Reversion (Weekly)</td>
+                  {renderColoredCell(metrics.mean_rev_weekly.current)}
+                  {renderColoredCell(metrics.mean_rev_weekly.seven_days_ago)}
+                  {renderColoredCell(metrics.mean_rev_weekly.fourteen_days_ago)}
                   {renderColoredCell(
-                    metrics.mean_rev_200dma.twentyone_days_ago
-                  )}
-                </tr>
-                <tr>
-                  <td>↔️ Mean Reversion to 3YMA</td>
-                  {renderColoredCell(metrics.mean_rev_3yma.current)}
-                  {renderColoredCell(metrics.mean_rev_3yma.seven_days_ago)}
-                  {renderColoredCell(metrics.mean_rev_3yma.fourteen_days_ago)}
-                  {renderColoredCell(metrics.mean_rev_3yma.twentyone_days_ago)}
-                </tr>
-                <tr>
-                  <td>📊 RSI & MA (Daily)</td>
-                  {renderColoredCell(metrics.rsi_and_ma_daily.current)}
-                  {renderColoredCell(metrics.rsi_and_ma_daily.seven_days_ago)}
-                  {renderColoredCell(
-                    metrics.rsi_and_ma_daily.fourteen_days_ago
-                  )}
-                  {renderColoredCell(
-                    metrics.rsi_and_ma_daily.twentyone_days_ago
+                    metrics.mean_rev_weekly.twentyone_days_ago
                   )}
                 </tr>
                 <tr>
@@ -384,53 +368,6 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
                   {renderColoredCell(metrics.rsi_ma_weekly.seven_days_ago)}
                   {renderColoredCell(metrics.rsi_ma_weekly.fourteen_days_ago)}
                   {renderColoredCell(metrics.rsi_ma_weekly.twentyone_days_ago)}
-                </tr>
-
-                <tr>
-                  <td>📊 RSI & MA (Monthly)</td>
-                  {renderColoredCell(metrics.rsi_ma_monthly.current)}
-                  {renderColoredCell(metrics.rsi_ma_monthly.seven_days_ago)}
-                  {renderColoredCell(metrics.rsi_ma_monthly.fourteen_days_ago)}
-                  {renderColoredCell(metrics.rsi_ma_monthly.twentyone_days_ago)}
-                </tr>
-                <tr>
-                  <td>📉 RSI Divergence (Daily)</td>
-                  {renderColoredCell(metrics.rsi_divergence_daily.current)}
-                  {renderColoredCell(
-                    metrics.rsi_divergence_daily.seven_days_ago
-                  )}
-                  {renderColoredCell(
-                    metrics.rsi_divergence_daily.fourteen_days_ago
-                  )}
-                  {renderColoredCell(
-                    metrics.rsi_divergence_daily.twentyone_days_ago
-                  )}
-                </tr>
-                <tr>
-                  <td>📉 RSI Divergence (Weekly)</td>
-                  {renderColoredCell(metrics.rsi_divergence_weekly.current)}
-                  {renderColoredCell(
-                    metrics.rsi_divergence_weekly.seven_days_ago
-                  )}
-                  {renderColoredCell(
-                    metrics.rsi_divergence_weekly.fourteen_days_ago
-                  )}
-                  {renderColoredCell(
-                    metrics.rsi_divergence_weekly.twentyone_days_ago
-                  )}
-                </tr>
-                <tr>
-                  <td>📉 RSI Divergence (Monthly)</td>
-                  {renderColoredCell(metrics.rsi_divergence_monthly.current)}
-                  {renderColoredCell(
-                    metrics.rsi_divergence_monthly.seven_days_ago
-                  )}
-                  {renderColoredCell(
-                    metrics.rsi_divergence_monthly.fourteen_days_ago
-                  )}
-                  {renderColoredCell(
-                    metrics.rsi_divergence_monthly.twentyone_days_ago
-                  )}
                 </tr>
                 <tr>
                   <td>📈 Bollinger Band Width % (Daily)</td>
