@@ -16,7 +16,7 @@ class StockAnalyser:
     def __init__(self, symbol: str):
         raw_symbol = symbol.upper().strip()
         self.symbol = SYMBOL_ALIASES.get(raw_symbol, raw_symbol)
-        self.df = StockAnalyser.get_price_data(self.symbol)
+        self.df = StockAnalyser.get_price_data(self.symbol).copy()
 
     def _download_data(self) -> pd.DataFrame:
         df = yf.download(self.symbol, period='20y', interval='1d', auto_adjust=False)
@@ -53,6 +53,26 @@ class StockAnalyser:
             df = df.sort_index()
             df = df[~df.index.duplicated(keep='last')]
             df = df[df['Close'].notna()]
+            # If the dataset is unexpectedly short, try a second, longer
+            # download before giving up. This mitigates occasional truncated
+            # results from yfinance that can leave the cache with only a few
+            # weeks of data.
+            if len(df) < 126:
+                df_retry = yf.download(symbol, period="20y", interval="1d", auto_adjust=False)
+                if isinstance(df_retry.columns, pd.MultiIndex):
+                    df_retry.columns = df_retry.columns.droplevel(1)
+                df_retry = df_retry.sort_index()
+                df_retry = df_retry[~df_retry.index.duplicated(keep='last')]
+                df_retry = df_retry[df_retry['Close'].notna()]
+
+                if len(df_retry) >= 126:
+                    df = df_retry
+                else:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Not enough historical data for analysis."
+                    )
+
             return df
 
 
