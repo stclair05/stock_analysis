@@ -113,6 +113,22 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
     if (typeof value !== "string") return "text-secondary";
     const lower = value.toLowerCase();
 
+    // Mean Reversion / Conditions should take precedence over
+    // simple positional checks so that extended/oversold states
+    // are highlighted correctly even if the text also includes
+    // words like "above" or "below".
+    if (
+      lower.includes("slightly extended") ||
+      lower.includes("slightly over sold") ||
+      lower.includes("slightly oversold")
+    )
+      return "text-warning";
+    if (lower.includes("extended")) return "text-danger";
+    if (lower.includes("oversold") || lower.includes("over sold"))
+      return "text-danger";
+    if (lower.includes("overbought")) return "text-down-strong";
+    if (lower.includes("normal")) return "text-secondary";
+
     // Positional / Relative Terms
     if (lower.includes("below")) return "text-down-strong";
     if (lower.includes("above")) return "text-up-strong";
@@ -143,19 +159,6 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
     if (lower.includes("above falling ma")) return "text-up-strong";
     if (lower.includes("below rising ma")) return "text-neutral";
     if (lower.includes("below falling ma")) return "text-down-strong";
-
-    // Mean Reversion / Conditions
-    if (
-      lower.includes("slightly extended") ||
-      lower.includes("slightly over sold") ||
-      lower.includes("slightly oversold")
-    )
-      return "text-warning";
-    if (lower.includes("extended")) return "text-danger";
-    if (lower.includes("oversold") || lower.includes("over sold"))
-      return "text-danger";
-    if (lower.includes("overbought")) return "text-down-strong";
-    if (lower.includes("normal")) return "text-secondary";
 
     // Deviation slope direction
     if (lower.includes("sloping upward")) return "text-up-weak";
