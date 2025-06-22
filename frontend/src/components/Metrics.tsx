@@ -22,13 +22,8 @@ type MetricsType = {
   twenty_dma: TimeSeriesMetric;
   fifty_dma: TimeSeriesMetric;
   mean_rev_weekly: TimeSeriesMetric;
-  rsi_and_ma_daily: TimeSeriesMetric;
-  rsi_divergence_daily: TimeSeriesMetric;
   bollinger_band_width_percentile_daily: TimeSeriesMetric;
   rsi_ma_weekly: TimeSeriesMetric;
-  rsi_divergence_weekly: TimeSeriesMetric;
-  rsi_ma_monthly: TimeSeriesMetric;
-  rsi_divergence_monthly: TimeSeriesMetric;
   chaikin_money_flow: TimeSeriesMetric;
 };
 
@@ -353,69 +348,11 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
                   )}
                 </tr>
                 <tr>
-                  <td>📊 RSI & MA (Daily)</td>
-                  {renderColoredCell(metrics.rsi_and_ma_daily.current)}
-                  {renderColoredCell(metrics.rsi_and_ma_daily.seven_days_ago)}
-                  {renderColoredCell(
-                    metrics.rsi_and_ma_daily.fourteen_days_ago
-                  )}
-                  {renderColoredCell(
-                    metrics.rsi_and_ma_daily.twentyone_days_ago
-                  )}
-                </tr>
-                <tr>
                   <td>📊 RSI & MA (Weekly)</td>
                   {renderColoredCell(metrics.rsi_ma_weekly.current)}
                   {renderColoredCell(metrics.rsi_ma_weekly.seven_days_ago)}
                   {renderColoredCell(metrics.rsi_ma_weekly.fourteen_days_ago)}
                   {renderColoredCell(metrics.rsi_ma_weekly.twentyone_days_ago)}
-                </tr>
-
-                <tr>
-                  <td>📊 RSI & MA (Monthly)</td>
-                  {renderColoredCell(metrics.rsi_ma_monthly.current)}
-                  {renderColoredCell(metrics.rsi_ma_monthly.seven_days_ago)}
-                  {renderColoredCell(metrics.rsi_ma_monthly.fourteen_days_ago)}
-                  {renderColoredCell(metrics.rsi_ma_monthly.twentyone_days_ago)}
-                </tr>
-                <tr>
-                  <td>📉 RSI Divergence (Daily)</td>
-                  {renderColoredCell(metrics.rsi_divergence_daily.current)}
-                  {renderColoredCell(
-                    metrics.rsi_divergence_daily.seven_days_ago
-                  )}
-                  {renderColoredCell(
-                    metrics.rsi_divergence_daily.fourteen_days_ago
-                  )}
-                  {renderColoredCell(
-                    metrics.rsi_divergence_daily.twentyone_days_ago
-                  )}
-                </tr>
-                <tr>
-                  <td>📉 RSI Divergence (Weekly)</td>
-                  {renderColoredCell(metrics.rsi_divergence_weekly.current)}
-                  {renderColoredCell(
-                    metrics.rsi_divergence_weekly.seven_days_ago
-                  )}
-                  {renderColoredCell(
-                    metrics.rsi_divergence_weekly.fourteen_days_ago
-                  )}
-                  {renderColoredCell(
-                    metrics.rsi_divergence_weekly.twentyone_days_ago
-                  )}
-                </tr>
-                <tr>
-                  <td>📉 RSI Divergence (Monthly)</td>
-                  {renderColoredCell(metrics.rsi_divergence_monthly.current)}
-                  {renderColoredCell(
-                    metrics.rsi_divergence_monthly.seven_days_ago
-                  )}
-                  {renderColoredCell(
-                    metrics.rsi_divergence_monthly.fourteen_days_ago
-                  )}
-                  {renderColoredCell(
-                    metrics.rsi_divergence_monthly.twentyone_days_ago
-                  )}
                 </tr>
                 <tr>
                   <td>📈 Bollinger Band Width % (Daily)</td>

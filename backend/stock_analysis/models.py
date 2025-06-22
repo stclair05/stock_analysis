@@ -24,13 +24,8 @@ class StockAnalysisResponse(BaseModel):
     twenty_dma: TimeSeriesMetric
     fifty_dma: TimeSeriesMetric
     mean_rev_weekly: TimeSeriesMetric
-    rsi_and_ma_daily: TimeSeriesMetric
-    rsi_divergence_daily: TimeSeriesMetric
     bollinger_band_width_percentile_daily: TimeSeriesMetric
     rsi_ma_weekly: TimeSeriesMetric
-    rsi_divergence_weekly: TimeSeriesMetric
-    rsi_ma_monthly: TimeSeriesMetric
-    rsi_divergence_monthly: TimeSeriesMetric
     chaikin_money_flow: TimeSeriesMetric
 
 class WaveLabel(BaseModel):

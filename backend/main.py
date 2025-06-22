@@ -54,13 +54,8 @@ def analyse(stock_request: StockRequest):
         twenty_dma=analyser.calculate_20dma(),
         fifty_dma=analyser.calculate_50dma(),
         mean_rev_weekly=analyser.mean_reversion_weekly(),
-        rsi_and_ma_daily=analyser.rsi_and_ma_daily(),
-        rsi_divergence_daily=analyser.rsi_divergence_daily(),
         bollinger_band_width_percentile_daily=analyser.bollinger_band_width_percentile_daily(),
         rsi_ma_weekly=analyser.rsi_ma_weekly(),
-        rsi_divergence_weekly=analyser.rsi_divergence_weekly(),
-        rsi_ma_monthly=analyser.rsi_ma_monthly(),
-        rsi_divergence_monthly=analyser.rsi_divergence_monthly(),
         chaikin_money_flow=analyser.chaikin_money_flow(),
     )
 
