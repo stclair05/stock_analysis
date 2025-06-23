@@ -496,6 +496,12 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     const chart = initChart(chartContainerRef, 0, 400);
     chartRef.current = chart;
 
+    chart.timeScale().applyOptions({
+      barSpacing: 8, // Adjust as desired
+      minBarSpacing: 3,
+      maxBarSpacing: 15,
+    });
+
     const meanChart = initChart(
       meanRevChartRef,
       meanRevChartRef.current!.clientWidth,
@@ -781,7 +787,9 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
   }, [stockSymbol]);
 
   // useWebSocketData(stockSymbol, candleSeriesRef, timeframe);
-  useMainChartData(stockSymbol, candleSeriesRef, timeframe, chartRef);
+  useMainChartData(stockSymbol, candleSeriesRef, timeframe, chartRef, () => {
+    chartRef.current?.timeScale().fitContent();
+  });
 
   /*
     DRAWINGS
