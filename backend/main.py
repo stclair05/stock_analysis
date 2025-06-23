@@ -405,6 +405,22 @@ def get_etf_holdings(symbol: str):
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
 
+@app.get("/stock_peers/{symbol}")
+def get_stock_peers(symbol: str):
+    """Return a list of peer tickers for the given symbol using FMP."""
+    url = f"https://financialmodelingprep.com/stable/peers-bulk?apikey={FMP_API_KEY}"
+    try:
+        resp = requests.get(url, timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
+        target = symbol.upper()
+        for entry in data:
+            if entry.get("symbol", "").upper() == target:
+                peers = entry.get("peersList") or entry.get("peers") or []
+                return {"symbol": target, "peers": peers}
+        return JSONResponse(status_code=404, content={"error": f"No peers found for {symbol}"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 @app.get("/api/projection_arrows/{symbol}")
 def get_projection_arrows(symbol: str, timeframe: str = Query("weekly")):

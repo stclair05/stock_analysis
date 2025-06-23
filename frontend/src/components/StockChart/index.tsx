@@ -14,14 +14,7 @@ import {
   PriceScaleMode,
 } from "lightweight-charts";
 import { useEffect, useRef, useState } from "react";
-import {
-  Ruler,
-  Minus,
-  RotateCcw,
-  ArrowUpDown,
-  PlusCircle,
-  X,
-} from "lucide-react";
+import { Ruler, Minus, RotateCcw, ArrowUpDown } from "lucide-react";
 import { StockChartProps, Point, CopyTrendlineBuffer } from "./types";
 import { useWebSocketData } from "./useWebSocketData";
 import { useMainChartData } from "./useMainChartData";
@@ -84,11 +77,8 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
   const volChartInstance = useRef<IChartApi | null>(null);
   const volLineRef = useRef<ISeriesApi<"Line"> | null>(null);
 
-  // Secondary (Comparison) Chart
-  const [secondarySymbol, setSecondarySymbol] = useState<string | null>(null);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const secondaryChartRef = useRef<IChartApi | null>(null);
-  const secondarySeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+  // Peer comparison charts
+  const [peerSymbols, setPeerSymbols] = useState<string[]>([]);
 
   // Price targets displayed above the graph
   const [show50dmaTarget, setShow50dmaTarget] = useState(false);
@@ -617,8 +607,6 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       const rsiSeries = rsiLineRef.current;
       const volChart = volChartInstance.current;
       const volSeries = volLineRef.current;
-      const secondaryChart = secondaryChartRef.current;
-      const secondarySeries = secondarySeriesRef.current;
 
       if (meanChart && meanSeries) {
         const snappedTime = findClosestTime(meanSeries, time);
@@ -634,11 +622,6 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         const snappedTime = findClosestTime(volSeries, time);
         if (snappedTime)
           volChart.setCrosshairPosition(0, snappedTime, volSeries);
-      }
-      if (secondaryChart && secondarySeries) {
-        const snappedTime = findClosestTime(secondarySeries, time);
-        if (snappedTime)
-          secondaryChart.setCrosshairPosition(0, snappedTime, secondarySeries);
       }
     });
 
@@ -818,6 +801,26 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
     fetchOverlayData();
   }, [stockSymbol, timeframe]);
+
+  /*
+    FETCH PEERS FOR COMPARISON CHARTS
+  */
+  useEffect(() => {
+    if (!stockSymbol) return;
+    async function fetchPeers() {
+      try {
+        const res = await fetch(
+          `http://localhost:8000/stock_peers/${stockSymbol}`
+        );
+        const data = await res.json();
+        setPeerSymbols((data.peers || []).slice(0, 4));
+      } catch (err) {
+        console.error("Failed to fetch peers", err);
+        setPeerSymbols([]);
+      }
+    }
+    fetchPeers();
+  }, [stockSymbol]);
 
   /*
     CHECKBOX AND OVERLAY'S USEEFFECT 
@@ -1276,85 +1279,13 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       {/* === Main Chart === */}
       <div ref={chartContainerRef} style={{ width: "100%", height: "400px" }} />
 
-      {/* === Add Secondary Chart Button === */}
-      <div style={{ position: "relative", width: "100%", minHeight: "10px" }}>
-        <div style={{ position: "absolute", bottom: "0", right: "0" }}>
-          {secondarySymbol === null ? (
-            <>
-              <button
-                className="btn btn-sm btn-outline-primary"
-                onClick={() => setShowDropdown((prev) => !prev)}
-                title="Add Comparison Chart"
-                style={{ padding: "4px 6px", lineHeight: 1 }}
-              >
-                <PlusCircle size={16} />
-              </button>
-
-              {showDropdown && (
-                <div
-                  className="dropdown-menu show p-2 mt-2"
-                  style={{ minWidth: "200px" }}
-                >
-                  <div className="mb-2 fw-bold">Popular</div>
-                  {["GOLD", "SILVER", "USOIL", "BTC"].map((s) => (
-                    <div
-                      key={s}
-                      onClick={() => {
-                        setSecondarySymbol(s);
-                        setShowDropdown(false);
-                      }}
-                      className="dropdown-item cursor-pointer"
-                    >
-                      {s}
-                    </div>
-                  ))}
-                  <hr />
-                  <input
-                    className="form-control"
-                    placeholder="Search ticker..."
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        const val = (e.target as HTMLInputElement).value
-                          .toUpperCase()
-                          .trim();
-                        if (val) {
-                          setSecondarySymbol(val);
-                          setShowDropdown(false);
-                        }
-                      }
-                    }}
-                  />
-                </div>
-              )}
-            </>
-          ) : (
-            <button
-              className="btn btn-sm btn-outline-danger"
-              onClick={() => setSecondarySymbol(null)}
-              title="Remove Comparison Chart"
-              style={{ padding: "4px 6px", lineHeight: 1 }}
-            >
-              <X size={16} />
-            </button>
-          )}
+      {/* === Peer Charts === */}
+      {peerSymbols.concat("GOLD").map((sym) => (
+        <div key={sym} className="mt-4">
+          <div className="fw-bold text-muted mb-1">{sym} Price vs 36M MA</div>
+          <SecondaryChart comparisonSymbol={sym} />
         </div>
-      </div>
-
-      {secondarySymbol && (
-        <div className="mt-4">
-          <div className="d-flex justify-content-between align-items-center mb-1">
-            <div className="fw-bold text-muted">
-              {stockSymbol} / {secondarySymbol} Ratio
-            </div>
-          </div>
-          <SecondaryChart
-            primarySymbol={stockSymbol}
-            comparisonSymbol={secondarySymbol}
-            chartRef={secondaryChartRef}
-            seriesRef={secondarySeriesRef}
-          />
-        </div>
-      )}
+      ))}
 
       {/* === Mean Reversion Chart === */}
       <div className="mt-4">
