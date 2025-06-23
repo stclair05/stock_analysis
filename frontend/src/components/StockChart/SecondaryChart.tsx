@@ -39,12 +39,13 @@ const SecondaryChart = ({
     });
 
     const priceSeries = chart.addSeries(LineSeries, {
-      color: "#2962FF",
-      lineWidth: 2,
+      color: "#000000", // black
+      lineWidth: 3,
     });
+
     const maSeries = chart.addSeries(LineSeries, {
-      color: "#9C27B0",
-      lineWidth: 1,
+      color: "#00b8a9", // aqueous greenish-blue
+      lineWidth: 3,
     });
 
     chartRef.current = chart;
