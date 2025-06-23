@@ -13,12 +13,18 @@ interface SecondaryChartProps {
   baseSymbol: string;
   comparisonSymbol: string;
   chartRef?: React.MutableRefObject<IChartApi | null>;
+  onReady?: (chart: IChartApi, priceSeries: ISeriesApi<"Line">) => void;
+  onCrosshairMove?: (time: UTCTimestamp) => void;
+  seriesRef?: React.MutableRefObject<ISeriesApi<"Line"> | null>;
 }
 
 const SecondaryChart = ({
   baseSymbol,
   comparisonSymbol,
   chartRef: externalChartRef,
+  onReady,
+  onCrosshairMove,
+  seriesRef: externalSeriesRef,
 }: SecondaryChartProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -52,6 +58,15 @@ const SecondaryChart = ({
     priceSeriesRef.current = priceSeries;
     maSeriesRef.current = maSeries;
     externalChartRef && (externalChartRef.current = chart);
+    if (externalSeriesRef) externalSeriesRef.current = priceSeries;
+
+    onReady && onReady(chart, priceSeries);
+
+    chart.subscribeCrosshairMove((param) => {
+      if (param.time) {
+        onCrosshairMove && onCrosshairMove(param.time as UTCTimestamp);
+      }
+    });
     chart
       .priceScale("right")
       .applyOptions({ mode: PriceScaleMode.Logarithmic });
@@ -61,6 +76,8 @@ const SecondaryChart = ({
       chartRef.current = null;
       priceSeriesRef.current = null;
       maSeriesRef.current = null;
+      if (externalChartRef) externalChartRef.current = null;
+      if (externalSeriesRef) externalSeriesRef.current = null;
     };
   }, [comparisonSymbol]);
 

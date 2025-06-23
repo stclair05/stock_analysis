@@ -79,6 +79,9 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
   // Peer comparison charts
   const [peerSymbols, setPeerSymbols] = useState<string[]>([]);
+  // Ratio chart refs for crosshair sync
+  const ratioChartRefs = useRef<(IChartApi | null)[]>([]);
+  const ratioSeriesRefs = useRef<(ISeriesApi<"Line"> | null)[]>([]);
 
   // Price targets displayed above the graph
   const [show50dmaTarget, setShow50dmaTarget] = useState(false);
@@ -273,6 +276,17 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         chart.setCrosshairPosition(0, snapped, series);
       }
     }
+  }
+
+  function syncRatioCrosshair(sourceIndex: number, time: UTCTimestamp) {
+    ratioChartRefs.current.forEach((chart, idx) => {
+      const series = ratioSeriesRefs.current[idx];
+      if (!chart || !series || idx === sourceIndex) return;
+      const snapped = findClosestTime(series, time);
+      if (snapped != null) {
+        chart.setCrosshairPosition(0, snapped, series);
+      }
+    });
   }
 
   function drawInitialMeanRevLimits(lower: number, upper: number) {
@@ -821,6 +835,16 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     fetchPeers();
   }, [stockSymbol]);
 
+  useEffect(() => {
+    const allSymbols = peerSymbols.concat("XAUUSD");
+    ratioChartRefs.current = allSymbols.map(
+      (_, i) => ratioChartRefs.current[i] || null
+    );
+    ratioSeriesRefs.current = allSymbols.map(
+      (_, i) => ratioSeriesRefs.current[i] || null
+    );
+  }, [peerSymbols]);
+
   /*
     CHECKBOX AND OVERLAY'S USEEFFECT 
   */
@@ -1279,10 +1303,18 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       <div ref={chartContainerRef} style={{ width: "100%", height: "400px" }} />
 
       {/* === Peer Charts === */}
-      {peerSymbols.concat("XAUUSD").map((sym) => (
+      {peerSymbols.concat("XAUUSD").map((sym, idx) => (
         <div key={sym} className="mt-4">
           <div className="fw-bold text-muted mb-1">{sym} Ratio</div>
-          <SecondaryChart baseSymbol={stockSymbol} comparisonSymbol="XAUUSD" />
+          <SecondaryChart
+            baseSymbol={stockSymbol}
+            comparisonSymbol={sym}
+            onReady={(chart, series) => {
+              ratioChartRefs.current[idx] = chart;
+              ratioSeriesRefs.current[idx] = series;
+            }}
+            onCrosshairMove={(time) => syncRatioCrosshair(idx, time)}
+          />
         </div>
       ))}
 
