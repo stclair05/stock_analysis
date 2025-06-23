@@ -1090,7 +1090,7 @@ class StockAnalyser:
         # 4. For volume, just use first ticker’s (not meaningful, but for chart API shape)
         ratio_df["Volume"] = df1_ff["Volume"][mask] if "Volume" in df1_ff else 0
 
-        # 5. Format for frontend
+        # 5. Format for frontend (OHLC history)
         ratio_history = [
             {
                 "time": int(pd.Timestamp(idx).timestamp()),
@@ -1101,10 +1101,35 @@ class StockAnalyser:
                 "volume": round(float(v), 2) if pd.notna(v) else 0.0,
             }
             for idx, o, h, l, c, v in zip(
-                ratio_df.index, ratio_df["Open"], ratio_df["High"], ratio_df["Low"], ratio_df["Close"], ratio_df["Volume"]
+                ratio_df.index,
+                ratio_df["Open"],
+                ratio_df["High"],
+                ratio_df["Low"],
+                ratio_df["Close"],
+                ratio_df["Volume"],
             )
         ]
-        return {"history": ratio_history}
+        # === Close-only ratio series ===
+        close_series = ratio_df["Close"]
+        ma_36 = close_series.rolling(window=36).mean()
+
+        ratio_series = [
+            {"time": int(pd.Timestamp(t).timestamp()), "value": round(float(v), 4)}
+            for t, v in close_series.items()
+        ]
+        ratio_ma_36 = [
+            {
+                "time": int(pd.Timestamp(t).timestamp()),
+                "value": round(float(v), 4),
+            }
+            for t, v in ma_36.dropna().items()
+        ]
+
+        return {
+            "history": ratio_history,
+            "ratio": ratio_series,
+            "ratio_ma_36": ratio_ma_36,
+        }
 
     
 

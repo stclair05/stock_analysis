@@ -74,18 +74,46 @@ const SecondaryChart = ({
 
         const data = await res.json();
 
-        if (data.ratio) {
+        // Support legacy structure where only `history` is returned
+        const ratioData = data.ratio
+          ? data.ratio
+          : (data.history || []).map((p: any) => ({
+              time: p.time,
+              value: p.close,
+            }));
+
+        if (ratioData.length > 0) {
           priceSeriesRef.current.setData(
-            data.ratio.map((point: any) => ({
+            ratioData.map((point: any) => ({
               time: point.time as UTCTimestamp,
               value: point.value,
             }))
           );
         }
 
-        if (data.ratio_ma_36) {
+        const maData = data.ratio_ma_36
+          ? data.ratio_ma_36
+          : (() => {
+              // compute MA if not provided
+              const values = ratioData.map((d: any) => d.value);
+              const times = ratioData.map((d: any) => d.time);
+              const result: { time: number; value: number }[] = [];
+              const window = 36;
+              for (let i = 0; i < values.length; i++) {
+                if (i + 1 < window) continue;
+                const slice = values.slice(i + 1 - window, i + 1);
+                const sum = slice.reduce((a: number, b: number) => a + b, 0);
+                result.push({
+                  time: times[i],
+                  value: sum / window,
+                });
+              }
+              return result;
+            })();
+
+        if (maData.length > 0) {
           maSeriesRef.current.setData(
-            data.ratio_ma_36.map((point: any) => ({
+            maData.map((point: any) => ({
               time: point.time as UTCTimestamp,
               value: point.value,
             }))
