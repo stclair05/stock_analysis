@@ -48,9 +48,12 @@ export default function BuySellSignalsTab() {
     "ALL" | "BUY" | "SELL" | "MIXED"
   >("ALL");
 
-  // Hold mean reversion and RSI info for each ticker
+  // Hold mean reversion, RSI and Supertrend info for each ticker
   const [meanRevRsi, setMeanRevRsi] = useState<
-    Record<string, { meanRev: string | null; rsi: string | null }>
+    Record<
+      string,
+      { meanRev: string | null; rsi: string | null; supertrend: string | null }
+    >
   >({});
 
   const strategyApiMap: Record<string, string> = {
@@ -219,12 +222,17 @@ export default function BuySellSignalsTab() {
         const data = await res.json();
         const summary: Record<
           string,
-          { meanRev: string | null; rsi: string | null }
+          {
+            meanRev: string | null;
+            rsi: string | null;
+            supertrend: string | null;
+          }
         > = {};
         Object.entries(data).forEach(([sym, val]: any) => {
           summary[sym] = {
             meanRev: val?.mean_rev_weekly?.current ?? null,
             rsi: val?.rsi_ma_weekly?.current ?? null,
+            supertrend: val?.super_trend?.current ?? null,
           };
         });
         setMeanRevRsi(summary);
@@ -376,6 +384,18 @@ export default function BuySellSignalsTab() {
               hasContradictorySignal = true;
               break;
             }
+          }
+        }
+        // Include Supertrend in the same BUY/SELL logic
+        const stVal =
+          meanRevRsi[holding.ticker]?.supertrend?.toUpperCase() || "";
+        if (stVal === "BUY") hasBuySignal = true;
+        if (stVal === "SELL") hasSellSignal = true;
+        if (filterType === "BUY" || filterType === "SELL") {
+          if (stVal === filterType) {
+            hasMatchingSignal = true;
+          } else if (stVal && stVal !== "-") {
+            hasContradictorySignal = true;
           }
         }
 
@@ -533,8 +553,9 @@ export default function BuySellSignalsTab() {
             <table className="table table-bordered signal-summary-table">
               <thead>
                 <tr>
-                  <th>Stock</th>
-                  <th>Mean Rev / RSI</th>
+                  <th style={{ minWidth: "260px" }}>Stock</th>
+                  <th style={{ width: "120px" }}>Mean Rev | RSI</th>
+                  <th>Supertrend</th>
                   {visibleAndOrderedStrategies.map((s) => (
                     <th
                       key={s}
@@ -555,7 +576,7 @@ export default function BuySellSignalsTab() {
                 {displayedPortfolio.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={visibleAndOrderedStrategies.length + 2}
+                      colSpan={visibleAndOrderedStrategies.length + 3}
                       className="text-center text-muted"
                     >
                       No signals found matching your filter.
@@ -811,6 +832,71 @@ export default function BuySellSignalsTab() {
                           )}
                         </span>
                       </td>
+
+                      {(() => {
+                        const stVal =
+                          meanRevRsi[holding.ticker]?.supertrend ?? null;
+                        const buySell = stVal ? stVal.toUpperCase() : "";
+                        const delta =
+                          signalSummary[holding.ticker]?._generic?.strength ||
+                          "";
+                        const color =
+                          buySell === "BUY"
+                            ? "#4caf50"
+                            : buySell === "SELL"
+                            ? "#f44336"
+                            : "#bdbdbd";
+
+                        let cellClass = "";
+                        const genericStatus =
+                          signalSummary[holding.ticker]?._generic?.status || "";
+
+                        if (genericStatus === "BUY") {
+                          if (delta === "very strong")
+                            cellClass = "signal-buy-very-strong";
+                          else if (delta === "strengthening")
+                            cellClass = "signal-buy-strengthening";
+                          else if (delta === "weakening")
+                            cellClass = "signal-buy-weakening";
+                          else if (delta === "very weak")
+                            cellClass = "signal-buy-very-weak";
+                        } else if (genericStatus === "SELL") {
+                          if (delta === "very strong")
+                            cellClass = "signal-sell-very-strong";
+                          else if (delta === "strengthening")
+                            cellClass = "signal-sell-strengthening";
+                          else if (delta === "weakening")
+                            cellClass = "signal-sell-weakening";
+                          else if (delta === "very weak")
+                            cellClass = "signal-sell-very-weak";
+                        }
+
+                        if (delta === "crossed") {
+                          cellClass += " signal-crossed";
+                        }
+
+                        const cellStyle: React.CSSProperties = {
+                          color,
+                          textAlign: "center",
+                          fontWeight: 700,
+                        };
+
+                        return (
+                          <td style={cellStyle} className={cellClass}>
+                            <div
+                              style={{
+                                display: "flex",
+                                flexDirection: "row",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                gap: 8,
+                              }}
+                            >
+                              <span title={delta}>{buySell || "-"}</span>
+                            </div>
+                          </td>
+                        );
+                      })()}
 
                       {visibleAndOrderedStrategies.map((s) => {
                         const signalObj =
