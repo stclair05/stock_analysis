@@ -467,7 +467,7 @@ class StockAnalyser:
         lower = low_dev.quantile(0.02)
 
         band_range = upper - lower
-        near_thresh = 0.2 * band_range
+        near_thresh = 0.1 * band_range
 
         def classify(dev: float | str | None, slp: float | str | None) -> str | None:
             if dev is None or pd.isna(dev):
@@ -580,7 +580,7 @@ class StockAnalyser:
         upper = 70
         lower = 30
         band_range = upper - lower
-        near_thresh = 0.2 * band_range
+        near_thresh = 0.1 * band_range
 
         def classify(value: float | str | None, slp: float | str | None, ma_val: float | str | None) -> str | None:
             if value is None or pd.isna(value):
