@@ -388,7 +388,6 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     dotLabelSeriesRef.current.clear();
     setShow50dmaTarget(false);
     setShowFibTarget(false);
-    setSecondarySymbol(null);
     resetMeanRevLimits();
 
     // --- 2. Fetch price targets from backend ---

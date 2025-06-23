@@ -41,7 +41,7 @@ const SecondaryChart = ({
       lineWidth: 2,
     });
     const maSeries = chart.addSeries(LineSeries, {
-      color: "#ff1744",
+      color: "#9C27B0",
       lineWidth: 1,
     });
 
