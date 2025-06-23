@@ -1335,7 +1335,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
       {/* === Peer Charts === */}
       {peerSymbols.concat("XAUUSD", "SPX").map((sym, idx) => (
-        <div key={sym} className="mt-4">
+        <div key={`${sym}-${idx}`} className="mt-4">
           <div className="fw-bold text-muted mb-1">{sym} Ratio</div>
           <SecondaryChart
             baseSymbol={stockSymbol}
