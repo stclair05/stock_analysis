@@ -1,136 +1,162 @@
 import {
   createChart,
   CrosshairMode,
-  CandlestickSeries,
+  LineSeries,
   IChartApi,
   ISeriesApi,
   UTCTimestamp,
   PriceScaleMode,
 } from "lightweight-charts";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 interface SecondaryChartProps {
-  primarySymbol: string;
+  baseSymbol: string;
   comparisonSymbol: string;
   chartRef?: React.MutableRefObject<IChartApi | null>;
-  seriesRef?: React.MutableRefObject<ISeriesApi<"Candlestick"> | null>;
+  onReady?: (chart: IChartApi, priceSeries: ISeriesApi<"Line">) => void;
+  onCrosshairMove?: (time: UTCTimestamp) => void;
+  seriesRef?: React.MutableRefObject<ISeriesApi<"Line"> | null>;
 }
 
 const SecondaryChart = ({
-  primarySymbol,
+  baseSymbol,
   comparisonSymbol,
   chartRef: externalChartRef,
+  onReady,
+  onCrosshairMove,
   seriesRef: externalSeriesRef,
 }: SecondaryChartProps) => {
-  const chartRef = useRef<HTMLDivElement>(null);
-  const chartInstanceRef = useRef<IChartApi | null>(null);
-  const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
-
-  const [timeframe, setTimeframe] = useState<"daily" | "weekly" | "monthly">(
-    "weekly"
-  );
+  const containerRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<IChartApi | null>(null);
+  const priceSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
+  const maSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
 
   useEffect(() => {
-    if (!chartRef.current || chartRef.current.clientWidth === 0) return;
+    if (!containerRef.current || containerRef.current.clientWidth === 0) return;
 
-    // Clear previous chart if any
-    chartRef.current.innerHTML = "";
+    containerRef.current.innerHTML = "";
 
-    const chart = createChart(chartRef.current, {
-      height: 400,
-      layout: {
-        background: { color: "#ffffff" },
-        textColor: "#000000",
-      },
-      crosshair: {
-        mode: CrosshairMode.Normal,
-      },
-      grid: {
-        vertLines: { color: "#eee" },
-        horzLines: { color: "#eee" },
-      },
-      timeScale: {
-        timeVisible: true,
-        secondsVisible: false,
-      },
+    const chart = createChart(containerRef.current, {
+      height: 200,
+      layout: { background: { color: "#ffffff" }, textColor: "#000000" },
+      crosshair: { mode: CrosshairMode.Normal },
+      grid: { vertLines: { color: "#eee" }, horzLines: { color: "#eee" } },
+      timeScale: { timeVisible: true, secondsVisible: false },
     });
 
-    const series = chart.addSeries(CandlestickSeries, {
-      upColor: "#42a5f5",
-      downColor: "#ef5350",
-      borderVisible: false,
-      wickUpColor: "#42a5f5",
-      wickDownColor: "#ef5350",
+    const priceSeries = chart.addSeries(LineSeries, {
+      color: "#000000", // black
+      lineWidth: 3,
     });
 
-    chartInstanceRef.current = chart;
-    candleSeriesRef.current = series;
+    const maSeries = chart.addSeries(LineSeries, {
+      color: "#00b8a9", // aqueous greenish-blue
+      lineWidth: 3,
+    });
+
+    chartRef.current = chart;
+    priceSeriesRef.current = priceSeries;
+    maSeriesRef.current = maSeries;
     externalChartRef && (externalChartRef.current = chart);
-    externalSeriesRef && (externalSeriesRef.current = series);
+    if (externalSeriesRef) externalSeriesRef.current = priceSeries;
+
+    onReady && onReady(chart, priceSeries);
+
+    chart.subscribeCrosshairMove((param) => {
+      if (param.time) {
+        onCrosshairMove && onCrosshairMove(param.time as UTCTimestamp);
+      }
+    });
     chart
       .priceScale("right")
       .applyOptions({ mode: PriceScaleMode.Logarithmic });
 
     return () => {
       chart.remove();
-      chartInstanceRef.current = null;
-      candleSeriesRef.current = null;
+      chartRef.current = null;
+      priceSeriesRef.current = null;
+      maSeriesRef.current = null;
+      if (externalChartRef) externalChartRef.current = null;
+      if (externalSeriesRef) externalSeriesRef.current = null;
     };
-  }, [primarySymbol, comparisonSymbol, timeframe]);
+  }, [baseSymbol, comparisonSymbol]);
 
   // Fetch ratio chart data and update chart
   useEffect(() => {
-    if (!primarySymbol || !comparisonSymbol) return;
-    if (!candleSeriesRef.current) return;
+    async function fetchData() {
+      if (!priceSeriesRef.current || !maSeriesRef.current) return;
+      try {
+        const res = await fetch(
+          `http://localhost:8000/compare_ratio?symbol1=${baseSymbol}&symbol2=${comparisonSymbol}&timeframe=monthly`
+        );
 
-    fetch(
-      `http://localhost:8000/compare_ratio?symbol1=${primarySymbol}&symbol2=${comparisonSymbol}&timeframe=${timeframe}`
-    )
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.history) {
-          candleSeriesRef.current?.setData(
-            data.history.map((bar: any) => ({
-              time: bar.time,
-              open: bar.open,
-              high: bar.high,
-              low: bar.low,
-              close: bar.close,
-              // volume: bar.volume, // (optional, only if your chart uses it)
+        const data = await res.json();
+
+        // Support legacy structure where only `history` is returned
+        const ratioData = data.ratio
+          ? data.ratio
+          : (data.history || []).map((p: any) => ({
+              time: p.time,
+              value: p.close,
+            }));
+
+        if (ratioData.length > 0) {
+          priceSeriesRef.current.setData(
+            ratioData.map((point: any) => ({
+              time: point.time as UTCTimestamp,
+              value: point.value,
             }))
           );
-          chartInstanceRef.current?.timeScale().fitContent();
         }
-      });
-  }, [primarySymbol, comparisonSymbol, timeframe]);
+
+        const maData = data.ratio_ma_36
+          ? data.ratio_ma_36
+          : (() => {
+              // compute MA if not provided
+              const values = ratioData.map((d: any) => d.value);
+              const times = ratioData.map((d: any) => d.time);
+              const result: { time: number; value: number }[] = [];
+              const window = 36;
+              for (let i = 0; i < values.length; i++) {
+                if (i + 1 < window) continue;
+                const slice = values.slice(i + 1 - window, i + 1);
+                const sum = slice.reduce((a: number, b: number) => a + b, 0);
+                result.push({
+                  time: times[i],
+                  value: sum / window,
+                });
+              }
+              return result;
+            })();
+
+        if (maData.length > 0) {
+          maSeriesRef.current.setData(
+            maData.map((point: any) => ({
+              time: point.time as UTCTimestamp,
+              value: point.value,
+            }))
+          );
+        }
+
+        chartRef.current?.timeScale().fitContent();
+      } catch (err) {
+        console.error("❌ Failed to fetch ratio chart data", err);
+      }
+    }
+
+    fetchData();
+  }, [baseSymbol, comparisonSymbol]);
 
   return (
-    <div>
-      {/* Timeframe Toggle Buttons */}
-      <div className="btn-group mb-2">
-        {["daily", "weekly", "monthly"].map((tf) => (
-          <button
-            key={tf}
-            onClick={() => setTimeframe(tf as "daily" | "weekly" | "monthly")}
-            className={`btn btn-sm ${
-              timeframe === tf ? "btn-primary" : "btn-outline-secondary"
-            }`}
-          >
-            {tf.toUpperCase()}
-          </button>
-        ))}
-      </div>
-
-      <div
-        ref={chartRef}
-        style={{
-          width: "100%",
-          height: "400px",
-          border: "1px solid #ddd",
-          borderRadius: "6px",
-        }}
-      />
-    </div>
+    <div
+      ref={containerRef}
+      style={{
+        width: "100%",
+        height: "200px",
+        border: "1px solid #ddd",
+        borderRadius: "6px",
+      }}
+    />
   );
 };
 

@@ -1,4 +1,6 @@
+import csv
 from datetime import datetime
+import io
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import requests
@@ -111,6 +113,28 @@ async def get_fmp_financials(symbol: str):
         return JSONResponse(metrics_dict)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+# One-time script to download and cache
+def cache_peers_bulk():
+    url = f"https://financialmodelingprep.com/stable/peers-bulk?apikey={FMP_API_KEY}"
+    resp = requests.get(url, timeout=10)
+    resp.raise_for_status()
+    decoded = resp.content.decode("utf-8")
+
+    csv_reader = csv.DictReader(io.StringIO(decoded))
+    result = []
+    for row in csv_reader:
+        peers = [p.strip() for p in row.get("peers", "").split(",") if p.strip()]
+        result.append({"symbol": row["symbol"], "peers": peers})
+
+    with open("peers_bulk.json", "w") as f:
+        json.dump(result, f, indent=2)
+
+@app.on_event("startup")
+def ensure_peers_cache():
+    if not Path("peers_bulk.json").exists():
+        print("Generating peers_bulk.json on startup...")
+        cache_peers_bulk()
 
 
 @app.get("/12data_financials/{symbol}", response_model=FinancialMetrics)
@@ -404,6 +428,37 @@ def get_etf_holdings(symbol: str):
         }
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
+
+@app.get("/stock_peers/{symbol}")
+def get_stock_peers(symbol: str):
+    target = symbol.upper()
+    try:
+        with open("peers_bulk.json", "r") as f:
+            data = json.load(f)  # ← this is a list, not a dict
+
+        for entry in data:
+            if entry["symbol"].upper() == target:
+                return {"symbol": target, "peers": entry["peers"]}
+
+        # Optional: Fallback to online fetch
+        return fetch_peers_from_csv_online(target)
+
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+def fetch_peers_from_csv_online(target: str):
+    url = f"https://financialmodelingprep.com/stable/peers-bulk?apikey={FMP_API_KEY}"
+    resp = requests.get(url, timeout=10)
+    resp.raise_for_status()
+    csv_reader = csv.DictReader(io.StringIO(resp.content.decode("utf-8")))
+
+    for row in csv_reader:
+        if row.get("symbol", "").upper() == target:
+            peers = [p.strip() for p in row.get("peers", "").split(",") if p.strip()]
+            return {"symbol": target, "peers": peers}
+
+    return JSONResponse(status_code=404, content={"error": f"No peers found for {target}"})
 
 
 @app.get("/api/projection_arrows/{symbol}")

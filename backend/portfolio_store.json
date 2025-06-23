@@ -573,6 +573,34 @@
       "sector": "Copper"
     },
     {
+      "ticker": "KTOS",
+      "shares": 0.0,
+      "invested_capital": 0.0,
+      "average_cost": 0.0,
+      "sector": "Aerospace & Defense"
+    },
+    {
+      "ticker": "AVAV",
+      "shares": 0.0,
+      "invested_capital": 0.0,
+      "average_cost": 0.0,
+      "sector": "Aerospace & Defense"
+    },
+    {
+      "ticker": "PLTR",
+      "shares": 0.0,
+      "invested_capital": 0.0,
+      "average_cost": 0.0,
+      "sector": "Technology"
+    },
+    {
+      "ticker": "IPI",
+      "shares": 0.0,
+      "invested_capital": 0.0,
+      "average_cost": 0.0,
+      "sector": "Fertilizer"
+    },
+    {
       "ticker": "0020.HK",
       "shares": 430000.0,
       "invested_capital": 104987.01298701297,
