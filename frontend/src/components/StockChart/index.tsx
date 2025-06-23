@@ -1279,10 +1279,12 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       <div ref={chartContainerRef} style={{ width: "100%", height: "400px" }} />
 
       {/* === Peer Charts === */}
-      {peerSymbols.concat("GOLD").map((sym) => (
+      {peerSymbols.concat("XAUUSD").map((sym) => (
         <div key={sym} className="mt-4">
-          <div className="fw-bold text-muted mb-1">{sym} Price vs 36M MA</div>
-          <SecondaryChart comparisonSymbol={sym} />
+          <div className="fw-bold text-muted mb-1">
+            {stockSymbol}/{sym} Ratio vs 36M MA
+          </div>
+          <SecondaryChart baseSymbol={stockSymbol} comparisonSymbol="XAUUSD" />
         </div>
       ))}
 

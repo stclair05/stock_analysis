@@ -10,11 +10,13 @@ import {
 import { useEffect, useRef } from "react";
 
 interface SecondaryChartProps {
+  baseSymbol: string;
   comparisonSymbol: string;
   chartRef?: React.MutableRefObject<IChartApi | null>;
 }
 
 const SecondaryChart = ({
+  baseSymbol,
   comparisonSymbol,
   chartRef: externalChartRef,
 }: SecondaryChartProps) => {
@@ -66,38 +68,38 @@ const SecondaryChart = ({
     async function fetchData() {
       if (!priceSeriesRef.current || !maSeriesRef.current) return;
       try {
-        const resPrice = await fetch(
-          `http://localhost:8000/api/chart_data_monthly/${comparisonSymbol}`
+        const res = await fetch(
+          `http://localhost:8000/compare_ratio?symbol1=${baseSymbol}&symbol2=${comparisonSymbol}&timeframe=monthly`
         );
-        const priceData = await resPrice.json();
-        if (priceData.history) {
+
+        const data = await res.json();
+
+        if (data.ratio) {
           priceSeriesRef.current.setData(
-            priceData.history.map((b: any) => ({
-              time: b.time as UTCTimestamp,
-              value: b.close,
+            data.ratio.map((point: any) => ({
+              time: point.time as UTCTimestamp,
+              value: point.value,
             }))
           );
         }
-        const resMa = await fetch(
-          `http://localhost:8000/overlay_data/${comparisonSymbol}?timeframe=monthly`
-        );
-        const maData = await resMa.json();
-        if (maData.ma_36) {
+
+        if (data.ratio_ma_36) {
           maSeriesRef.current.setData(
-            maData.ma_36.map((d: any) => ({
-              time: d.time as UTCTimestamp,
-              value: d.value,
+            data.ratio_ma_36.map((point: any) => ({
+              time: point.time as UTCTimestamp,
+              value: point.value,
             }))
           );
         }
+
         chartRef.current?.timeScale().fitContent();
       } catch (err) {
-        console.error("Failed to fetch secondary chart data", err);
+        console.error("❌ Failed to fetch ratio chart data", err);
       }
     }
 
     fetchData();
-  }, [comparisonSymbol]);
+  }, [baseSymbol, comparisonSymbol]);
 
   return (
     <div
