@@ -437,10 +437,13 @@ class StockAnalyser:
         )
     
     def mean_reversion_weekly(self) -> TimeSeriesMetric:
-        """Classify current weekly deviation vs 50-week mean reversion bands.
+        """Classify the weekly deviation from its 50-week average using
+        historical extremes.
 
-        Adds direction of the deviation slope and notes when the deviation is
-        close to either band.
+        The bands are derived from pivot highs and lows of the deviation series
+        so that the thresholds correspond to actual peak/valley behaviour.  The
+        label also includes the deviation slope direction and a notice when the
+        value is near either extreme band.
         """
         if len(self.weekly_df) < 60:
             return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
@@ -450,14 +453,21 @@ class StockAnalyser:
         deviation = (price - ma_50) / ma_50 * 100
         slope = deviation.diff()
 
-        bands = calculate_mean_reversion_50dma_target(self.df)
-        lower = bands.get("deviation_band_pct_lower")
-        upper = bands.get("deviation_band_pct_upper")
-        if not isinstance(lower, (int, float)) or not isinstance(upper, (int, float)):
+        # Identify historical extreme deviations using pivot highs/lows rather
+        # than simple percentiles so that the bands reflect actual peaks and
+        # bottoms.
+        highs, lows = find_pivots(deviation.values, window=3)
+        high_dev = deviation.iloc[highs]
+        low_dev = deviation.iloc[lows]
+
+        if high_dev.empty or low_dev.empty:
             return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
 
+        upper = high_dev.quantile(0.98)
+        lower = low_dev.quantile(0.02)
+
         band_range = upper - lower
-        near_thresh = 0.3 * band_range
+        near_thresh = 0.1 * band_range
 
         def classify(dev: float | str | None, slp: float | str | None) -> str | None:
             if dev is None or pd.isna(dev):
@@ -570,7 +580,7 @@ class StockAnalyser:
         upper = 70
         lower = 30
         band_range = upper - lower
-        near_thresh = 0.3 * band_range
+        near_thresh = 0.1 * band_range
 
         def classify(value: float | str | None, slp: float | str | None, ma_val: float | str | None) -> str | None:
             if value is None or pd.isna(value):
