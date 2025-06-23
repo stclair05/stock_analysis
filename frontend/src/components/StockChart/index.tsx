@@ -82,6 +82,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
   // Ratio chart refs for crosshair sync
   const ratioChartRefs = useRef<(IChartApi | null)[]>([]);
   const ratioSeriesRefs = useRef<(ISeriesApi<"Line"> | null)[]>([]);
+  const ratioRangeUnsubs = useRef<(() => void)[]>([]);
 
   // Price targets displayed above the graph
   const [show50dmaTarget, setShow50dmaTarget] = useState(false);
@@ -287,6 +288,28 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         chart.setCrosshairPosition(0, snapped, series);
       }
     });
+  }
+
+  function safeSetVisibleRange(chart: IChartApi | null, range: any) {
+    if (!chart || !range || range.from == null || range.to == null) return;
+    try {
+      chart.timeScale().setVisibleRange(range);
+    } catch (err) {
+      if (!(err instanceof Error && err.message === "Value is null")) {
+        console.warn("⛔ safeSetVisibleRange failed", err);
+      }
+    }
+  }
+
+  function registerRatioRangeSync(chart: IChartApi, index: number) {
+    const handler = (range: any) => {
+      ratioChartRefs.current.forEach((c, idx) => {
+        if (c && idx !== index) safeSetVisibleRange(c, range);
+      });
+    };
+    chart.timeScale().subscribeVisibleTimeRangeChange(handler);
+    ratioRangeUnsubs.current[index] = () =>
+      chart.timeScale().unsubscribeVisibleTimeRangeChange(handler);
   }
 
   function drawInitialMeanRevLimits(lower: number, upper: number) {
@@ -779,6 +802,10 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       volLineRef.current = null;
       meanRevLineRef.current = null;
       candleSeriesRef.current = null;
+      ratioRangeUnsubs.current.forEach((fn) => fn());
+      ratioRangeUnsubs.current = [];
+      ratioChartRefs.current = [];
+      ratioSeriesRefs.current = [];
     };
   }, [stockSymbol]);
 
@@ -826,7 +853,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           `http://localhost:8000/stock_peers/${stockSymbol}`
         );
         const data = await res.json();
-        setPeerSymbols((data.peers || []).slice(0, 4));
+        setPeerSymbols((data.peers || []).slice(0, 3));
       } catch (err) {
         console.error("Failed to fetch peers", err);
         setPeerSymbols([]);
@@ -836,13 +863,17 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
   }, [stockSymbol]);
 
   useEffect(() => {
-    const allSymbols = peerSymbols.concat("XAUUSD");
+    const allSymbols = peerSymbols.concat("XAUUSD", "SPX");
     ratioChartRefs.current = allSymbols.map(
       (_, i) => ratioChartRefs.current[i] || null
     );
     ratioSeriesRefs.current = allSymbols.map(
       (_, i) => ratioSeriesRefs.current[i] || null
     );
+    return () => {
+      ratioRangeUnsubs.current.forEach((fn) => fn());
+      ratioRangeUnsubs.current = [];
+    };
   }, [peerSymbols]);
 
   /*
@@ -1303,7 +1334,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       <div ref={chartContainerRef} style={{ width: "100%", height: "400px" }} />
 
       {/* === Peer Charts === */}
-      {peerSymbols.concat("XAUUSD").map((sym, idx) => (
+      {peerSymbols.concat("XAUUSD", "SPX").map((sym, idx) => (
         <div key={sym} className="mt-4">
           <div className="fw-bold text-muted mb-1">{sym} Ratio</div>
           <SecondaryChart
@@ -1312,6 +1343,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
             onReady={(chart, series) => {
               ratioChartRefs.current[idx] = chart;
               ratioSeriesRefs.current[idx] = series;
+              registerRatioRangeSync(chart, idx);
             }}
             onCrosshairMove={(time) => syncRatioCrosshair(idx, time)}
           />

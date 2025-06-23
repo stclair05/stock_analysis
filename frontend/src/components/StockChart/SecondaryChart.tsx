@@ -79,7 +79,7 @@ const SecondaryChart = ({
       if (externalChartRef) externalChartRef.current = null;
       if (externalSeriesRef) externalSeriesRef.current = null;
     };
-  }, [comparisonSymbol]);
+  }, [baseSymbol, comparisonSymbol]);
 
   // Fetch ratio chart data and update chart
   useEffect(() => {
