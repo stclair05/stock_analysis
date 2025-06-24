@@ -92,7 +92,7 @@
       "invested_capital": 296758.0,
       "average_cost": 31.57,
       "sector": "Energy",
-      "target": 22.5
+      "target": 31
     },
     {
       "ticker": "COP",
@@ -180,7 +180,7 @@
       "invested_capital": 961000.0,
       "average_cost": 13.728571428571428,
       "sector": "Energy",
-      "target": 8.31
+      "target": 11
     },
     {
       "ticker": "VTLE",
@@ -188,7 +188,7 @@
       "invested_capital": 985040.0,
       "average_cost": 54.724444444444444,
       "sector": "Energy",
-      "target": 20.25
+      "target": 30
     },
     {
       "ticker": "CVI",
@@ -252,7 +252,7 @@
       "invested_capital": 1050045.072,
       "average_cost": 28.364264505672608,
       "sector": "Energy",
-      "target": 28
+      "target": 32
     },
     {
       "ticker": "CIVI",
@@ -292,7 +292,7 @@
       "invested_capital": 57651.74999999999,
       "average_cost": 4.270499999999999,
       "sector": "Energy",
-      "target": 810
+      "target": 11
     },
     {
       "ticker": "YGR.TO",
@@ -300,7 +300,7 @@
       "invested_capital": 89764.815,
       "average_cost": 0.89764815,
       "sector": "Energy",
-      "target": 379
+      "target": 3.79
     },
     {
       "ticker": "BNE.TO",
@@ -332,7 +332,7 @@
       "invested_capital": 2682888.0,
       "average_cost": 37.159113573407204,
       "sector": "Fertilizer",
-      "target": 37.36
+      "target": 57
     },
     {
       "ticker": "MP",
@@ -348,7 +348,7 @@
       "invested_capital": 1646200.0,
       "average_cost": 56.765517241379314,
       "sector": "Fertilizer",
-      "target": 65
+      "target": 73
     },
     {
       "ticker": "SPY",
@@ -356,7 +356,7 @@
       "invested_capital": 1885894.0,
       "average_cost": 589.341875,
       "sector": "Index",
-      "target": 592
+      "target": 665
     },
     {
       "ticker": "IWM",
@@ -364,7 +364,7 @@
       "invested_capital": 948400.0,
       "average_cost": 237.1,
       "sector": "Energy",
-      "target": 214.46
+      "target": 233
     },
     {
       "ticker": "0P0000RU80.L",
@@ -532,7 +532,7 @@
       "invested_capital": 127214.68000000001,
       "average_cost": 3.97,
       "sector": "Precious Metals",
-      "target": 29.43
+      "target": 15
     },
     {
       "ticker": "EQX",
@@ -564,7 +564,7 @@
       "invested_capital": 485149.99999999994,
       "average_cost": 4.8515,
       "sector": "Precious Metals",
-      "target": 7.39
+      "target": 10
     },
     {
       "ticker": "SMG",
@@ -620,7 +620,7 @@
       "invested_capital": 0.0,
       "average_cost": 0.0,
       "sector": "Automotive",
-      "target": 470
+      "target": 414
     },
     {
       "ticker": "IAG",

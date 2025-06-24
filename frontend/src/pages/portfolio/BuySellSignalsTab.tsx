@@ -428,15 +428,21 @@ export default function BuySellSignalsTab() {
           const priceB = meanRevRsi[b.ticker]?.currentPrice;
           const targetB = b.target;
 
-          const diffA =
-            typeof priceA === "number" && typeof targetA === "number"
-              ? ((priceA - targetA) / targetA) * 100
-              : Number.NEGATIVE_INFINITY;
+          const isValidA =
+            typeof priceA === "number" &&
+            typeof targetA === "number" &&
+            !isNaN(targetA);
+          const isValidB =
+            typeof priceB === "number" &&
+            typeof targetB === "number" &&
+            !isNaN(targetB);
 
-          const diffB =
-            typeof priceB === "number" && typeof targetB === "number"
-              ? ((priceB - targetB) / targetB) * 100
-              : Number.NEGATIVE_INFINITY;
+          if (!isValidA && !isValidB) return 0;
+          if (!isValidA) return 1; // push A to bottom
+          if (!isValidB) return -1; // push B to bottom
+
+          const diffA = ((priceA - targetA) / targetA) * 100;
+          const diffB = ((priceB - targetB) / targetB) * 100;
 
           return sortDirection === "asc" ? diffA - diffB : diffB - diffA;
         } else {
