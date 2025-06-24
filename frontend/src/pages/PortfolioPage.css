@@ -78,3 +78,12 @@
   outline-offset: -3px; /* Pulls the outline into the cell */
   border-radius: 4px; /* Optional for rounded look */
 }
+
+/* Price vs Target cell backgrounds */
+.price-target-positive {
+  background-color: #e5fbe5 !important; /* soft green */
+}
+
+.price-target-negative {
+  background-color: #ffe5e5 !important; /* soft red */
+}

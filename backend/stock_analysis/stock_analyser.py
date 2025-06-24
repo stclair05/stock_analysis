@@ -1,3 +1,5 @@
+import os
+import requests
 import yfinance as yf
 import pandas as pd
 import numpy as np
@@ -12,6 +14,56 @@ from threading import Lock
 
 _price_data_lock = Lock()
 
+def _download_from_fmp(symbol: str) -> pd.DataFrame:
+    """Fetch historical price data from Financial Modeling Prep, matching yfinance format."""
+    api_key = os.getenv("FMP_API_KEY")
+    base_url = os.getenv("FMP_BASE_URL", "https://financialmodelingprep.com/api/v3")
+    if not api_key:
+        return pd.DataFrame()
+
+    url = f"{base_url}/historical-price-full/{symbol.upper()}?serietype=bar&timeseries=5000&apikey={api_key}"
+    try:
+        resp = requests.get(url, timeout=8)
+        resp.raise_for_status()
+        data = resp.json()
+        history = data.get("historical", [])
+        if not history:
+            return pd.DataFrame()
+
+        # Convert to DataFrame
+        df = pd.DataFrame(history)
+
+        # Rename to match yfinance style
+        df.rename(columns={
+            "open": "Open",
+            "high": "High",
+            "low": "Low",
+            "close": "Close",
+            "adjClose": "Adj Close",
+            "volume": "Volume"
+        }, inplace=True)
+
+        # Fill missing expected columns with NaN
+        for col in ["Open", "High", "Low", "Close", "Adj Close", "Volume"]:
+            if col not in df.columns:
+                df[col] = np.nan
+
+        # Parse and set datetime index
+        df["date"] = pd.to_datetime(df["date"])
+        df.set_index("date", inplace=True)
+
+        # Reorder columns to match yfinance output
+        df = df[["Open", "High", "Low", "Close", "Adj Close", "Volume"]]
+        df = df.sort_index()
+        df = df[~df.index.duplicated(keep="last")]
+        df = df[df["Close"].notna()]
+
+        return df
+
+    except Exception as e:
+        print(f"[DEBUG] FMP download failed for {symbol}: {e}")
+        return pd.DataFrame()
+    
 class StockAnalyser:
     def __init__(self, symbol: str):
         raw_symbol = symbol.upper().strip()
@@ -36,7 +88,9 @@ class StockAnalyser:
         with _price_data_lock: 
             df = yf.download(symbol, period="12y", interval="1d", auto_adjust=False)
             if df.empty:
-                raise HTTPException(status_code=400, detail="Stock symbol not found or data unavailable.")  # <--- raise here
+                df = _download_from_fmp(symbol)
+                if df.empty or len(df) < 126:
+                    raise HTTPException(status_code=400, detail="Stock symbol not found or data unavailable.")
             # Patch with today’s close (1D)
             try:
                 live_df = yf.download(symbol, period="1d", interval="1d")
@@ -68,10 +122,14 @@ class StockAnalyser:
                 if len(df_retry) >= 126:
                     df = df_retry
                 else:
-                    raise HTTPException(
-                        status_code=400,
-                        detail="Not enough historical data for analysis."
-                    )
+                    fmp_df = _download_from_fmp(symbol)
+                    if len(fmp_df) >= 126:
+                        df = fmp_df
+                    else:
+                        raise HTTPException(
+                            status_code=400,
+                            detail="Not enough historical data for analysis.",
+                        )
 
             return df
 

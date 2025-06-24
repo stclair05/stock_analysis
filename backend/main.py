@@ -91,10 +91,13 @@ def get_portfolio_tickers():
     with open(json_path, "r") as f:
         data = json.load(f)
         equities = data.get("equities", [])
-        # MODIFIED: Return ticker and sector for each equity
-        # If 'sector' is not present, default it to "N/A"
+        # Return ticker, sector, and optional target for each equity
         return [
-            {"ticker": item["ticker"], "sector": item.get("sector", "N/A")}
+            {
+                "ticker": item["ticker"],
+                "sector": item.get("sector", "N/A"),
+                "target": item.get("target"),
+            }
             for item in equities
             if "ticker" in item
         ]

@@ -16,7 +16,7 @@ const allStrategies = [
 export default function BuySellSignalsTab() {
   // MODIFIED: portfolio state now includes sector
   const [portfolio, setPortfolio] = useState<
-    { ticker: string; sector?: string }[]
+    { ticker: string; sector?: string; target?: number }[]
   >([]);
   const [signalSummary, setSignalSummary] = useState<any>({});
   const [selectedTimeframe, setSelectedTimeframe] = useState("weekly");
@@ -30,8 +30,8 @@ export default function BuySellSignalsTab() {
   // NEW: Cache for the portfolio/watchlist ticker lists themselves
   // MODIFIED: portfolioDataCache now includes sector
   const portfolioDataCache = useRef<{
-    portfolio?: { ticker: string; sector?: string }[];
-    watchlist?: { ticker: string; sector?: string }[];
+    portfolio?: { ticker: string; sector?: string; target?: number }[];
+    watchlist?: { ticker: string; sector?: string; target?: number }[];
   }>({});
 
   // State for list type selection
@@ -48,11 +48,16 @@ export default function BuySellSignalsTab() {
     "ALL" | "BUY" | "SELL" | "MIXED"
   >("ALL");
 
-  // Hold mean reversion, RSI and Supertrend info for each ticker
+  // Hold mean reversion, RSI, Supertrend, and current price info for each ticker
   const [meanRevRsi, setMeanRevRsi] = useState<
     Record<
       string,
-      { meanRev: string | null; rsi: string | null; supertrend: string | null }
+      {
+        meanRev: string | null;
+        rsi: string | null;
+        supertrend: string | null;
+        currentPrice: number | null;
+      }
     >
   >({});
 
@@ -160,27 +165,32 @@ export default function BuySellSignalsTab() {
         const data = await res.json();
 
         // MODIFIED: Safely format tickers, expecting { ticker, sector } objects
-        const formattedTickers: { ticker: string; sector?: string }[] =
-          Array.isArray(data)
-            ? data
-                .map((item: any) => {
-                  // Handle both string (old backend) and object (new backend) formats
-                  if (typeof item === "string") {
-                    return { ticker: item, sector: "N/A" }; // Default sector if only ticker string is returned
-                  } else if (
-                    item &&
-                    typeof item === "object" &&
-                    "ticker" in item
-                  ) {
-                    return {
-                      ticker: item.ticker,
-                      sector: item.sector || "N/A",
-                    }; // Use provided sector or default
-                  }
-                  return { ticker: "", sector: "N/A" }; // Fallback for malformed data
-                })
-                .filter((item) => item.ticker !== "") // Filter out any empty tickers resulting from malformed data
-            : [];
+        const formattedTickers: {
+          ticker: string;
+          sector?: string;
+          target?: number;
+        }[] = Array.isArray(data)
+          ? data
+              .map((item: any) => {
+                // Handle both string (old backend) and object (new backend) formats
+                if (typeof item === "string") {
+                  return { ticker: item, sector: "N/A" }; // Default sector if only ticker string is returned
+                } else if (
+                  item &&
+                  typeof item === "object" &&
+                  "ticker" in item
+                ) {
+                  return {
+                    ticker: item.ticker,
+                    sector: item.sector || "N/A",
+                    target:
+                      typeof item.target === "number" ? item.target : undefined,
+                  }; // Use provided sector or default
+                }
+                return { ticker: "", sector: "N/A" }; // Fallback for malformed data
+              })
+              .filter((item) => item.ticker !== "") // Filter out any empty tickers resulting from malformed data
+          : [];
 
         // Store in cache
         portfolioDataCache.current[listType] = formattedTickers;
@@ -226,6 +236,7 @@ export default function BuySellSignalsTab() {
             meanRev: string | null;
             rsi: string | null;
             supertrend: string | null;
+            currentPrice: number | null;
           }
         > = {};
         Object.entries(data).forEach(([sym, val]: any) => {
@@ -233,6 +244,8 @@ export default function BuySellSignalsTab() {
             meanRev: val?.mean_rev_weekly?.current ?? null,
             rsi: val?.rsi_ma_weekly?.current ?? null,
             supertrend: val?.super_trend?.current ?? null,
+            currentPrice:
+              typeof val?.current_price === "number" ? val.current_price : null,
           };
         });
         setMeanRevRsi(summary);
@@ -408,19 +421,37 @@ export default function BuySellSignalsTab() {
     }
 
     if (sortColumn && Object.keys(signalSummary).length > 0) {
-      const sortOrder = { BUY: 1, SELL: 2, "": 3, "-": 4 };
-
       currentPortfolio.sort((a, b) => {
-        const signalA = signalSummary[a.ticker]?.[sortColumn]?.status || "-";
-        const signalB = signalSummary[b.ticker]?.[sortColumn]?.status || "-";
+        if (sortColumn === "price_target") {
+          const priceA = meanRevRsi[a.ticker]?.currentPrice;
+          const targetA = a.target;
+          const priceB = meanRevRsi[b.ticker]?.currentPrice;
+          const targetB = b.target;
 
-        const valA = sortOrder[signalA as keyof typeof sortOrder] || 4;
-        const valB = sortOrder[signalB as keyof typeof sortOrder] || 4;
+          const diffA =
+            typeof priceA === "number" && typeof targetA === "number"
+              ? ((priceA - targetA) / targetA) * 100
+              : Number.NEGATIVE_INFINITY;
 
-        if (valA < valB) return sortDirection === "asc" ? -1 : 1;
-        if (valA > valB) return sortDirection === "asc" ? 1 : -1;
+          const diffB =
+            typeof priceB === "number" && typeof targetB === "number"
+              ? ((priceB - targetB) / targetB) * 100
+              : Number.NEGATIVE_INFINITY;
 
-        return a.ticker.localeCompare(b.ticker);
+          return sortDirection === "asc" ? diffA - diffB : diffB - diffA;
+        } else {
+          const sortOrder = { BUY: 1, SELL: 2, "": 3, "-": 4 };
+          const signalA = signalSummary[a.ticker]?.[sortColumn]?.status || "-";
+          const signalB = signalSummary[b.ticker]?.[sortColumn]?.status || "-";
+
+          const valA = sortOrder[signalA as keyof typeof sortOrder] || 4;
+          const valB = sortOrder[signalB as keyof typeof sortOrder] || 4;
+
+          if (valA < valB) return sortDirection === "asc" ? -1 : 1;
+          if (valA > valB) return sortDirection === "asc" ? 1 : -1;
+
+          return a.ticker.localeCompare(b.ticker);
+        }
       });
     }
 
@@ -555,6 +586,18 @@ export default function BuySellSignalsTab() {
                 <tr>
                   <th style={{ minWidth: "260px" }}>Stock</th>
                   <th style={{ width: "120px" }}>Mean Rev | RSI</th>
+                  <th
+                    style={{ cursor: "pointer" }}
+                    onClick={() => handleHeaderClick("price_target")}
+                  >
+                    Price vs Target
+                    {sortColumn === "price_target" && (
+                      <span className="ms-1">
+                        {sortDirection === "asc" ? " ▲" : " ▼"}
+                      </span>
+                    )}
+                  </th>
+
                   <th>Supertrend</th>
                   {visibleAndOrderedStrategies.map((s) => (
                     <th
@@ -576,7 +619,7 @@ export default function BuySellSignalsTab() {
                 {displayedPortfolio.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={visibleAndOrderedStrategies.length + 3}
+                      colSpan={visibleAndOrderedStrategies.length + 4}
                       className="text-center text-muted"
                     >
                       No signals found matching your filter.
@@ -832,7 +875,39 @@ export default function BuySellSignalsTab() {
                           )}
                         </span>
                       </td>
-
+                      {(() => {
+                        const price = meanRevRsi[holding.ticker]?.currentPrice;
+                        const target = holding.target;
+                        if (
+                          typeof price === "number" &&
+                          typeof target === "number"
+                        ) {
+                          const diff = ((price - target) / target) * 100;
+                          const diffStr =
+                            diff >= 0
+                              ? `+${diff.toFixed(2)}%`
+                              : `${diff.toFixed(2)}%`;
+                          const cellClass =
+                            diff >= 0
+                              ? "price-target-positive"
+                              : "price-target-negative";
+                          return (
+                            <td
+                              className={cellClass}
+                              style={{ textAlign: "center" }}
+                            >
+                              {`${price.toFixed(2)} | ${target.toFixed(
+                                2
+                              )} (${diffStr})`}
+                            </td>
+                          );
+                        }
+                        return (
+                          <td style={{ textAlign: "center" }}>
+                            {price != null ? price.toFixed(2) : "-"}
+                          </td>
+                        );
+                      })()}
                       {(() => {
                         const stVal =
                           meanRevRsi[holding.ticker]?.supertrend ?? null;
