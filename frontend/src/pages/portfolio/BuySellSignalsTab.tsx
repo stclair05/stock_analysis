@@ -553,7 +553,7 @@ export default function BuySellSignalsTab() {
           const diffB = ((priceB - targetB) / targetB) * 100;
 
           return sortDirection === "asc" ? diffA - diffB : diffB - diffA;
-        } else if (sortColumn === "pnl") {
+        } else if (sortColumn === "pnl" && listType === "portfolio") {
           const pnlA = getPnlForTicker(a.ticker);
           const pnlB = getPnlForTicker(b.ticker);
           const valA = pnlA ? pnlA.percent : -Infinity;
@@ -707,28 +707,32 @@ export default function BuySellSignalsTab() {
                 <tr>
                   <th style={{ minWidth: "260px" }}>Stock</th>
                   <th style={{ width: "120px" }}>Mean Rev | RSI</th>
-                  <th
-                    style={{ cursor: "pointer" }}
-                    onClick={() => handleHeaderClick("pnl")}
-                  >
-                    P/L
-                    {sortColumn === "pnl" && (
-                      <span className="ms-1">
-                        {sortDirection === "asc" ? " ▲" : " ▼"}
-                      </span>
-                    )}
-                  </th>
-                  <th
-                    style={{ cursor: "pointer" }}
-                    onClick={() => handleHeaderClick("price_target")}
-                  >
-                    Price vs Target
-                    {sortColumn === "price_target" && (
-                      <span className="ms-1">
-                        {sortDirection === "asc" ? " ▲" : " ▼"}
-                      </span>
-                    )}
-                  </th>
+                  {listType === "portfolio" && (
+                    <th
+                      style={{ cursor: "pointer" }}
+                      onClick={() => handleHeaderClick("pnl")}
+                    >
+                      P/L
+                      {sortColumn === "pnl" && (
+                        <span className="ms-1">
+                          {sortDirection === "asc" ? " ▲" : " ▼"}
+                        </span>
+                      )}
+                    </th>
+                  )}
+                  {listType === "portfolio" && (
+                    <th
+                      style={{ cursor: "pointer" }}
+                      onClick={() => handleHeaderClick("price_target")}
+                    >
+                      Price vs Target
+                      {sortColumn === "price_target" && (
+                        <span className="ms-1">
+                          {sortDirection === "asc" ? " ▲" : " ▼"}
+                        </span>
+                      )}
+                    </th>
+                  )}
 
                   <th>Supertrend</th>
                   {visibleAndOrderedStrategies.map((s) => (
@@ -751,7 +755,10 @@ export default function BuySellSignalsTab() {
                 {displayedPortfolio.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={visibleAndOrderedStrategies.length + 5}
+                      colSpan={
+                        visibleAndOrderedStrategies.length +
+                        (listType === "portfolio" ? 5 : 3)
+                      }
                       className="text-center text-muted"
                     >
                       No signals found matching your filter.
@@ -1007,73 +1014,76 @@ export default function BuySellSignalsTab() {
                           )}
                         </span>
                       </td>
-                      {(() => {
-                        const pnl = getPnlForTicker(holding.ticker);
-                        if (!pnl)
-                          return <td style={{ textAlign: "center" }}>-</td>;
-                        const color =
-                          pnl.amount > 0
-                            ? "#4caf50"
-                            : pnl.amount < 0
-                            ? "#f44336"
-                            : "#bdbdbd";
-                        const sign = pnl.amount > 0 ? "+" : "";
-                        return (
-                          <td
-                            style={{
-                              textAlign: "center",
-                              color,
-                              fontWeight: 700,
-                            }}
-                          >
-                            {`${sign}${pnl.percent.toFixed(2)}%`}
-                            <div
-                              style={{
-                                fontSize: "0.8em",
-                                fontStyle: "italic",
-                                marginTop: 2,
-                              }}
-                            >
-                              {`(${sign}${formatCurrency(pnl.amount)} ${
-                                pnl.currency
-                              })`}
-                            </div>
-                          </td>
-                        );
-                      })()}
-                      {(() => {
-                        const price = meanRevRsi[holding.ticker]?.currentPrice;
-                        const target = holding.target;
-                        if (
-                          typeof price === "number" &&
-                          typeof target === "number"
-                        ) {
-                          const diff = ((price - target) / target) * 100;
-                          const diffStr =
-                            diff >= 0
-                              ? `+${diff.toFixed(2)}%`
-                              : `${diff.toFixed(2)}%`;
-                          const cellClass =
-                            diff >= 0
-                              ? "price-target-positive"
-                              : "price-target-negative";
+                      {listType === "portfolio" &&
+                        (() => {
+                          const pnl = getPnlForTicker(holding.ticker);
+                          if (!pnl)
+                            return <td style={{ textAlign: "center" }}>-</td>;
+                          const color =
+                            pnl.amount > 0
+                              ? "#4caf50"
+                              : pnl.amount < 0
+                              ? "#f44336"
+                              : "#bdbdbd";
+                          const sign = pnl.amount > 0 ? "+" : "";
                           return (
                             <td
-                              className={cellClass}
-                              style={{ textAlign: "center" }}
+                              style={{
+                                textAlign: "center",
+                                color,
+                                fontWeight: 700,
+                              }}
                             >
-                              {`${price.toFixed(2)} | ${target.toFixed(
-                                2
-                              )} (${diffStr})`}
+                              {`${sign}${pnl.percent.toFixed(2)}%`}
+                              <div
+                                style={{
+                                  fontSize: "0.8em",
+                                  fontStyle: "italic",
+                                  marginTop: 2,
+                                }}
+                              >
+                                {`(${sign}${formatCurrency(pnl.amount)} ${
+                                  pnl.currency
+                                })`}
+                              </div>
                             </td>
                           );
-                        }
-                        return (
-                          <td style={{ textAlign: "center" }}>
-                            {price != null ? price.toFixed(2) : "-"}
-                          </td>
-                        );
-                      })()}
+                        })()}
+                      {listType === "portfolio" &&
+                        (() => {
+                          const price =
+                            meanRevRsi[holding.ticker]?.currentPrice;
+                          const target = holding.target;
+                          if (
+                            typeof price === "number" &&
+                            typeof target === "number"
+                          ) {
+                            const diff = ((price - target) / target) * 100;
+                            const diffStr =
+                              diff >= 0
+                                ? `+${diff.toFixed(2)}%`
+                                : `${diff.toFixed(2)}%`;
+                            const cellClass =
+                              diff >= 0
+                                ? "price-target-positive"
+                                : "price-target-negative";
+                            return (
+                              <td
+                                className={cellClass}
+                                style={{ textAlign: "center" }}
+                              >
+                                {`${price.toFixed(2)} | ${target.toFixed(
+                                  2
+                                )} (${diffStr})`}
+                              </td>
+                            );
+                          }
+                          return (
+                            <td style={{ textAlign: "center" }}>
+                              {price != null ? price.toFixed(2) : "-"}
+                            </td>
+                          );
+                        })()}
                       {(() => {
                         const stVal =
                           meanRevRsi[holding.ticker]?.supertrend ?? null;
