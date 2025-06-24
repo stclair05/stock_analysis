@@ -30,7 +30,10 @@ function PortfolioPage() {
   }, [activeTab]);
 
   return (
-    <div className="container mt-4">
+    <div
+      className="container-fluid mt-4"
+      style={{ maxWidth: "70%", margin: "0 auto" }}
+    >
       <h1 className="fw-bold text-dark mb-4">Portfolio</h1>
 
       {/* Tab bar */}

@@ -452,7 +452,8 @@ export default function BuySellSignalsTab() {
     const avgCost = info.average_cost; // Already in USD
     const diff = currentPriceInUSD - avgCost;
     const amount = diff * info.shares;
-    const percent = (diff / avgCost) * 100;
+    // Avoid Infinity when avgCost is zero
+    const percent = avgCost === 0 ? 100 : (diff / avgCost) * 100;
     return { amount, percent, currency: "USD" };
   };
 
@@ -1025,17 +1026,18 @@ export default function BuySellSignalsTab() {
                               fontWeight: 700,
                             }}
                           >
-                            {`${sign}${pnl.percent.toFixed(2)}% `}
-                            <span
+                            {`${sign}${pnl.percent.toFixed(2)}%`}
+                            <div
                               style={{
-                                fontSize: "0.85em",
+                                fontSize: "0.8em",
                                 fontStyle: "italic",
+                                marginTop: 2,
                               }}
                             >
                               {`(${sign}${formatCurrency(pnl.amount)} ${
                                 pnl.currency
                               })`}
-                            </span>
+                            </div>
                           </td>
                         );
                       })()}
