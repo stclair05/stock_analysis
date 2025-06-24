@@ -2198,7 +2198,11 @@ class StockAnalyser:
         prev_status = get_signal(price_prev, ma12_prev, ma36_prev, ma50_prev, ma150_prev)
 
         # === Delta logic ===
-        if curr_status != prev_status:
+        if (
+            curr_status == "BUY" and prev_status == "SELL" and
+            ma12_prev < ma36_prev and ma12_now > ma36_now and
+            ma50_prev < ma150_prev and ma50_now > ma150_now
+        ):
             # Status flipped from previous bar (e.g., BUY → SELL or vice versa)
             # Indicates a new trend may be forming
             strength = "crossed"
