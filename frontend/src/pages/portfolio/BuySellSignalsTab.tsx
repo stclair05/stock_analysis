@@ -152,6 +152,7 @@ export default function BuySellSignalsTab() {
     if (ticker.endsWith(".AX")) return "AUD";
     if (ticker.endsWith(".TO")) return "CAD";
     if (ticker.endsWith(".HK")) return "HKD";
+    if (ticker.endsWith(".AS")) return "EUR";
     return "USD";
   };
 
@@ -431,27 +432,28 @@ export default function BuySellSignalsTab() {
     setSignalSummary({}); // Clear signals when portfolio is being reloaded (e.g., initial load or manual portfolio refresh)
   }, [portfolio]);
 
-  // Calculate P/L in local currency for a given ticker
+  // Calculate P/L in USD currency for a given ticker
+  // Return P/L in USD
   const getPnlForTicker = (
     ticker: string
   ): { amount: number; percent: number; currency: string } | null => {
     const info = holdingInfo[ticker];
     const price = meanRevRsi[ticker]?.currentPrice;
     if (!info || price == null) return null;
-    const currency = getCurrencyForTicker(ticker);
-    let avgLocal = info.average_cost;
+
+    const currency = getCurrencyForTicker(ticker); // e.g., "EUR"
+    const rate = getUsdToCurrencyRate(currency); // e.g., USD to EUR
+
+    let currentPriceInUSD = price;
     if (currency !== "USD") {
-      const rate = getUsdToCurrencyRate(currency);
-      avgLocal = info.average_cost * rate;
+      currentPriceInUSD = price / rate; // Convert local price to USD
     }
-    if (avgLocal === 0) {
-      const amount = price * info.shares;
-      return { amount, percent: 100, currency };
-    }
-    const diff = price - avgLocal;
+
+    const avgCost = info.average_cost; // Already in USD
+    const diff = currentPriceInUSD - avgCost;
     const amount = diff * info.shares;
-    const percent = (diff / avgLocal) * 100;
-    return { amount, percent, currency };
+    const percent = (diff / avgCost) * 100;
+    return { amount, percent, currency: "USD" };
   };
 
   const isUnavailable = (strategy: string, tf: string) => {
