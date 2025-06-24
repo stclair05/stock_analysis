@@ -3,751 +3,780 @@
     {
       "ticker": "ARKK",
       "shares": 28397.0,
-      "invested_capital": 2832316.78,
       "average_cost": 99.74,
       "sector": "Index",
-      "target": 77.23
+      "target": 77.23,
+      "player": 1
     },
     {
       "ticker": "ARKG",
       "shares": 20520.0,
-      "invested_capital": 1395360.0,
       "average_cost": 68.0,
       "sector": "Index",
-      "target": 33.6
+      "target": 33.6,
+      "player": 1
     },
     {
       "ticker": "AI",
       "shares": 27000.0,
-      "invested_capital": 928170.0,
-      "average_cost": 34.376666666666665,
+      "average_cost": 34.38,
       "sector": "Technology",
-      "target": 55.42
+      "target": 55.42,
+      "player": 1
     },
     {
       "ticker": "SNPS",
-      "shares": 2200.0,
-      "invested_capital": 1225910.0,
-      "average_cost": 557.2318181818182,
-      "target": 585.73
+      "shares": 1000.0,
+      "average_cost": 557.23,
+      "target": 585.73,
+      "player": 1
     },
     {
       "ticker": "SHOP",
       "shares": 4000.0,
-      "invested_capital": 424440.0,
       "average_cost": 106.11,
       "sector": "Technology",
-      "target": 121.37
+      "target": 121.37,
+      "player": 1
     },
     {
       "ticker": "ASML.AS",
       "shares": 240.0,
-      "invested_capital": 221248.8,
       "average_cost": 921.87,
-      "target": 701.8
+      "target": 701.8,
+      "player": 1
     },
     {
       "ticker": "XOM",
       "shares": 8000.0,
-      "invested_capital": 816000.0,
       "average_cost": 102.0,
       "sector": "Energy",
-      "target": 131.08
+      "target": 131.08,
+      "player": 2
     },
     {
       "ticker": "STO.AX",
       "shares": 65000.0,
-      "invested_capital": 339300.0,
       "average_cost": 5.22,
       "sector": "Energy",
-      "target": 11.36
+      "target": 11.36,
+      "player": 2
     },
     {
       "ticker": "MPC",
       "shares": 9116.0,
-      "invested_capital": 1614625.92,
       "average_cost": 177.12,
       "sector": "Energy",
-      "target": 218.4
+      "target": 218.4,
+      "player": 2
     },
     {
       "ticker": "VLO",
       "shares": 12386.0,
-      "invested_capital": 1772006.7,
-      "average_cost": 143.06529145809785,
+      "average_cost": 143.07,
       "sector": "Energy",
-      "target": 195.34
+      "target": 195.34,
+      "player": 2
     },
     {
       "ticker": "AR",
-      "shares": 58084.0,
-      "invested_capital": 1931514.72,
-      "average_cost": 33.2538172302183,
+      "shares": 72084.0,
+      "average_cost": 34.19,
       "sector": "Energy",
-      "target": 50
+      "target": 50,
+      "player": 2
+    },
+    {
+      "ticker": "RRC",
+      "shares": 8000.0,
+      "average_cost": 39.72,
+      "sector": "Energy",
+      "target": 51,
+      "player": 2
     },
     {
       "ticker": "DK",
       "shares": 9400.0,
-      "invested_capital": 296758.0,
       "average_cost": 31.57,
       "sector": "Energy",
-      "target": 31
+      "target": 31,
+      "player": 2
     },
     {
       "ticker": "COP",
-      "shares": 23267.0,
-      "invested_capital": 2591437.18,
-      "average_cost": 111.37822581338376,
+      "shares": 36595.0,
+      "average_cost": 106.84,
       "sector": "Energy",
-      "target": 115
+      "target": 115,
+      "player": 2
     },
     {
       "ticker": "XOP",
       "shares": 655.0,
-      "invested_capital": 99933.34999999999,
       "average_cost": 152.57,
       "sector": "Energy",
-      "target": 188
+      "target": 188,
+      "player": 2
     },
     {
       "ticker": "TALO",
       "shares": 14000.0,
-      "invested_capital": 308494.31200000003,
-      "average_cost": 22.035308000000004,
+      "average_cost": 22.04,
       "sector": "Energy",
-      "target": 19
+      "target": 19,
+      "player": 2
     },
     {
       "ticker": "OVV",
       "shares": 22760.0,
-      "invested_capital": 1135781.6,
-      "average_cost": 49.90253075571178,
+      "average_cost": 49.9,
       "sector": "Energy",
-      "target": 46
+      "target": 46,
+      "player": 2
     },
     {
       "ticker": "DINO",
       "shares": 4748.0,
-      "invested_capital": 303555.08999999997,
-      "average_cost": 63.933254001684915,
+      "average_cost": 63.93,
       "sector": "Energy",
-      "target": 49.44
+      "target": 49.44,
+      "player": 2
     },
     {
       "ticker": "OXY",
-      "shares": 31035.0,
-      "invested_capital": 2061970.0,
-      "average_cost": 66.44014821975189,
+      "shares": 4305.0,
+      "average_cost": 71.0,
       "sector": "Energy",
-      "target": 53
+      "target": 53,
+      "player": 2
     },
     {
       "ticker": "FCG",
       "shares": 29510.0,
-      "invested_capital": 770334.3,
-      "average_cost": 26.104178244662826,
+      "average_cost": 26.1,
       "sector": "Energy",
-      "target": ""
+      "target": "",
+      "player": 2
     },
     {
       "ticker": "XLE",
-      "shares": 14607.0,
-      "invested_capital": 1201084.24,
-      "average_cost": 82.22662011364415,
+      "shares": 1107.0,
+      "average_cost": 90.56,
       "sector": "Energy",
-      "target": 92
+      "target": 92,
+      "player": 2
     },
     {
       "ticker": "APA",
       "shares": 59968.0,
-      "invested_capital": 2275575.9634000002,
-      "average_cost": 37.946504192235864,
+      "average_cost": 37.95,
       "sector": "Energy",
-      "target": 26
+      "target": 26,
+      "player": 2
     },
     {
       "ticker": "SM",
       "shares": 47000.0,
-      "invested_capital": 1795438.0,
-      "average_cost": 38.200808510638296,
+      "average_cost": 38.2,
       "sector": "Energy",
-      "target": 33
+      "target": 33,
+      "player": 2
     },
     {
       "ticker": "VET",
       "shares": 70000.0,
-      "invested_capital": 961000.0,
-      "average_cost": 13.728571428571428,
+      "average_cost": 13.73,
       "sector": "Energy",
-      "target": 11
+      "target": 11,
+      "player": 2
     },
     {
       "ticker": "VTLE",
       "shares": 18000.0,
-      "invested_capital": 985040.0,
-      "average_cost": 54.724444444444444,
+      "average_cost": 54.72,
       "sector": "Energy",
-      "target": 30
+      "target": 30,
+      "player": 2
     },
     {
       "ticker": "CVI",
       "shares": 19000.0,
-      "invested_capital": 637040.0,
-      "average_cost": 33.52842105263158,
+      "average_cost": 33.53,
       "sector": "Energy",
-      "target": 32.13
+      "target": 32.13,
+      "player": 2
     },
     {
       "ticker": "MTDR",
       "shares": 25000.0,
-      "invested_capital": 1537440.0,
-      "average_cost": 61.4976,
+      "average_cost": 61.5,
       "sector": "Energy",
-      "target": 57.13
+      "target": 57.13,
+      "player": 2
     },
     {
       "ticker": "PR",
       "shares": 126000.0,
-      "invested_capital": 1844700.0,
-      "average_cost": 14.64047619047619,
+      "average_cost": 14.64,
       "sector": "Energy",
-      "target": 20.92
+      "target": 20.92,
+      "player": 2
     },
     {
       "ticker": "BTE",
       "shares": 277000.0,
-      "invested_capital": 1087908.01,
-      "average_cost": 3.9274657400722024,
+      "average_cost": 3.93,
       "sector": "Energy",
       "target": 2.62
     },
     {
       "ticker": "CRGY",
       "shares": 36250.0,
-      "invested_capital": 594950.0,
-      "average_cost": 16.412413793103447,
+      "average_cost": 16.41,
       "sector": "Energy",
-      "target": 10.49
+      "target": 10.49,
+      "player": 2
     },
     {
       "ticker": "NNRG.NE",
-      "shares": 10000.0,
-      "invested_capital": 369900.0,
-      "average_cost": 36.99,
+      "shares": 19500.0,
+      "average_cost": 37.27,
       "sector": "Energy",
-      "target": ""
+      "target": "",
+      "player": 2
     },
     {
-      "ticker": "ROK.V",
+      "ticker": "ROKRF",
       "shares": 120000.0,
-      "invested_capital": 48000.0,
       "average_cost": 0.4,
       "sector": "Energy",
-      "target": 0.339
+      "target": 0.339,
+      "player": 2
     },
     {
       "ticker": "EQNR",
       "shares": 37020.0,
-      "invested_capital": 1050045.072,
-      "average_cost": 28.364264505672608,
+      "average_cost": 28.36,
       "sector": "Energy",
-      "target": 32
+      "target": 32,
+      "player": 2
     },
     {
       "ticker": "CIVI",
       "shares": 11000.0,
-      "invested_capital": 796520.0,
-      "average_cost": 72.41090909090909,
+      "average_cost": 72.41,
       "sector": "Energy",
-      "target": ""
+      "target": "",
+      "player": 2
     },
     {
       "ticker": "IGE",
       "shares": 10000.0,
-      "invested_capital": 440663.0,
-      "average_cost": 44.0663,
+      "average_cost": 44.07,
       "sector": "Index",
-      "target": ""
+      "target": "",
+      "player": 2
     },
     {
       "ticker": "XEG.TO",
       "shares": 41000.0,
-      "invested_capital": 570260.0,
-      "average_cost": 13.908780487804878,
+      "average_cost": 13.91,
       "sector": "Energy",
-      "target": 23.72
+      "target": 23.72,
+      "player": 2
     },
     {
       "ticker": "TXP.TO",
       "shares": 180000.0,
-      "invested_capital": 91463.46660000001,
-      "average_cost": 0.50813037,
+      "average_cost": 0.51,
       "sector": "Energy",
-      "target": 0.7
+      "target": 0.7,
+      "player": 2
     },
     {
       "ticker": "BIR.TO",
-      "shares": 13500.0,
-      "invested_capital": 57651.74999999999,
-      "average_cost": 4.270499999999999,
+      "shares": 33500.0,
+      "average_cost": 4.59,
       "sector": "Energy",
-      "target": 11
+      "target": 11,
+      "player": 2
     },
     {
       "ticker": "YGR.TO",
       "shares": 100000.0,
-      "invested_capital": 89764.815,
-      "average_cost": 0.89764815,
+      "average_cost": 0.9,
       "sector": "Energy",
-      "target": 3.79
+      "target": 3.79,
+      "player": 2
     },
     {
       "ticker": "BNE.TO",
       "shares": 20000.0,
-      "invested_capital": 85409.99999999999,
-      "average_cost": 4.270499999999999,
+      "average_cost": 4.27,
       "sector": "Energy",
-      "target": 13.8
+      "target": 13.8,
+      "player": 2
     },
     {
       "ticker": "FCX",
       "shares": 119543.0,
-      "invested_capital": 4596613.9,
-      "average_cost": 38.451552161147035,
+      "average_cost": 38.45,
       "sector": "Precious Metals",
-      "target": 49.16
+      "target": 49.16,
+      "player": 3
     },
     {
       "ticker": "CF",
       "shares": 10000.0,
-      "invested_capital": 899000.0,
       "average_cost": 89.9,
       "sector": "Fertilizer",
-      "target": 99.71
+      "target": 99.71,
+      "player": 3
     },
     {
       "ticker": "MOS",
       "shares": 72200.0,
-      "invested_capital": 2682888.0,
-      "average_cost": 37.159113573407204,
+      "average_cost": 37.16,
       "sector": "Fertilizer",
-      "target": 57
+      "target": 57,
+      "player": 3
     },
     {
       "ticker": "MP",
-      "shares": 5000.0,
-      "invested_capital": 129900.0,
-      "average_cost": 25.98,
+      "shares": 20000.0,
+      "average_cost": 25.05,
       "sector": "Precious Metals",
-      "target": 59
+      "target": 59,
+      "player": 3
     },
     {
       "ticker": "NTR",
       "shares": 29000.0,
-      "invested_capital": 1646200.0,
-      "average_cost": 56.765517241379314,
+      "average_cost": 56.77,
       "sector": "Fertilizer",
-      "target": 73
+      "target": 73,
+      "player": 3
     },
     {
       "ticker": "SPY",
       "shares": 3200.0,
-      "invested_capital": 1885894.0,
-      "average_cost": 589.341875,
+      "average_cost": 589.34,
       "sector": "Index",
-      "target": 665
+      "target": 665,
+      "player": 4
     },
     {
       "ticker": "IWM",
       "shares": 4000.0,
-      "invested_capital": 948400.0,
       "average_cost": 237.1,
       "sector": "Energy",
-      "target": 233
+      "target": 233,
+      "player": 4
     },
     {
       "ticker": "0P0000RU80.L",
       "shares": 41700.0,
-      "invested_capital": 181112.8161,
-      "average_cost": 4.343233,
+      "average_cost": 4.34,
       "sector": "Funds",
-      "target": ""
+      "target": "",
+      "player": 4
     },
     {
       "ticker": "U-UN.TO",
       "shares": 19000.0,
-      "invested_capital": 407890.0,
-      "average_cost": 21.467894736842105,
+      "average_cost": 21.47,
       "sector": "Uranium",
-      "target": 37.5
+      "target": 37.5,
+      "player": 5
     },
     {
       "ticker": "UEC",
       "shares": 22500.0,
-      "invested_capital": 181581.00749999998,
-      "average_cost": 8.070267,
+      "average_cost": 8.07,
       "sector": "Uranium",
-      "target": 13
+      "target": 13,
+      "player": 5
     },
     {
       "ticker": "IBIT",
-      "shares": 109000.0,
-      "invested_capital": 4752790.000000001,
-      "average_cost": 43.603577981651384,
+      "shares": 74000.0,
+      "average_cost": 47.41,
       "sector": "Bitcoin",
-      "target": 76.71
+      "target": 76.71,
+      "player": 5
     },
     {
       "ticker": "ETHA",
-      "shares": 0.0,
-      "invested_capital": 0.0,
-      "average_cost": 0.0,
+      "shares": 15000.0,
+      "average_cost": 21.33,
       "sector": "Bitcoin",
-      "target": 25
+      "target": 25,
+      "player": 5
     },
     {
       "ticker": "RIOT",
       "shares": 110000.0,
-      "invested_capital": 1339800.0,
       "average_cost": 12.18,
       "sector": "Bitcoin",
-      "target": 12.87
+      "target": 12.87,
+      "player": 5
     },
     {
       "ticker": "MARA",
       "shares": 20000.0,
-      "invested_capital": 542000.0,
       "average_cost": 27.1,
       "sector": "Bitcoin",
-      "target": 21
+      "target": 21,
+      "player": 5
     },
     {
       "ticker": "COIN",
       "shares": 31000.0,
-      "invested_capital": 8137150.0,
-      "average_cost": 262.48870967741937,
+      "average_cost": 262.49,
       "sector": "Bitcoin",
-      "target": 441
+      "target": 441,
+      "player": 5
+    },
+    {
+      "ticker": "GRNY",
+      "shares": 120000.0,
+      "average_cost": 20.7,
+      "sector": "Index",
+      "target": "",
+      "player": 5
     },
     {
       "ticker": "PBR",
       "shares": 20000.0,
-      "invested_capital": 270000.0,
       "average_cost": 13.5,
       "sector": "Energy",
-      "target": 24.5
+      "target": 24.5,
+      "player": 7
     },
     {
       "ticker": "SGY.TO",
       "shares": 70000.0,
-      "invested_capital": 420600.0,
-      "average_cost": 6.008571428571429,
+      "average_cost": 6.01,
       "sector": "Energy",
-      "target": 18.67
+      "target": 18.67,
+      "player": 7
     },
     {
       "ticker": "FANG",
       "shares": 631.0,
-      "invested_capital": 100032.43000000001,
       "average_cost": 158.53,
       "sector": "Energy",
-      "target": 227
+      "target": 227,
+      "player": 7
     },
     {
       "ticker": "DVN",
       "shares": 39078.0,
-      "invested_capital": 2330922.16,
-      "average_cost": 59.64793899380726,
+      "average_cost": 59.65,
       "sector": "Energy",
-      "target": 42.55
+      "target": 42.55,
+      "player": 7
     },
     {
       "ticker": "IPOOF",
       "shares": 30000.0,
-      "invested_capital": 66000.0,
       "average_cost": 2.2,
       "sector": "Energy",
-      "target": ""
+      "target": "",
+      "player": 7
     },
     {
       "ticker": "GLD",
       "shares": 546.0,
-      "invested_capital": 80966.34,
       "average_cost": 148.29,
       "sector": "Precious Metals",
-      "target": 374
+      "target": 374,
+      "player": 8
     },
     {
       "ticker": "XAGUSD",
-      "shares": 492217.0,
-      "invested_capital": 13653175.864400001,
-      "average_cost": 27.738123356974672,
+      "shares": 566809.0,
+      "average_cost": 29.42,
       "sector": "Precious Metals",
-      "target": 41
+      "target": 41,
+      "player": 8
     },
     {
       "ticker": "XAUUSD",
-      "shares": 0,
-      "invested_capital": 0,
-      "average_cost": 0,
+      "shares": 95,
+      "average_cost": 3052.48,
       "sector": "Precious Metals",
-      "target": 3959
+      "target": 3959,
+      "player": 8
+    },
+    {
+      "ticker": "XPTUSD",
+      "shares": 234,
+      "average_cost": 1281.0,
+      "sector": "Precious Metals",
+      "target": "",
+      "player": 8
     },
     {
       "ticker": "PAAS",
       "shares": 20000.0,
-      "invested_capital": 508000.0,
       "average_cost": 25.4,
       "sector": "Precious Metals",
-      "target": 32.2
+      "target": 32.2,
+      "player": 8
     },
     {
       "ticker": "HL",
       "shares": 42000.0,
-      "invested_capital": 308532.0,
-      "average_cost": 7.346,
+      "average_cost": 7.35,
       "sector": "Precious Metals",
-      "target": 17
+      "target": 17,
+      "player": 8
     },
     {
       "ticker": "SIL",
       "shares": 9089.0,
-      "invested_capital": 404642.28,
       "average_cost": 44.52,
       "sector": "Precious Metals",
-      "target": 58.79
+      "target": 58.79,
+      "player": 8
     },
     {
       "ticker": "SILJ",
       "shares": 197000.0,
-      "invested_capital": 3063462.0,
-      "average_cost": 15.55056852791878,
+      "average_cost": 15.55,
       "sector": "Precious Metals",
-      "target": 16.27
+      "target": 16.27,
+      "player": 8
+    },
+    {
+      "ticker": "GDXJ",
+      "shares": 5500.0,
+      "average_cost": 60.26,
+      "sector": "Precious Metals",
+      "target": "",
+      "player": 8
     },
     {
       "ticker": "CDE",
-      "shares": 32044.0,
-      "invested_capital": 127214.68000000001,
-      "average_cost": 3.97,
+      "shares": 82044.0,
+      "average_cost": 7.36,
       "sector": "Precious Metals",
-      "target": 15
+      "target": 15,
+      "player": 8
     },
     {
       "ticker": "EQX",
       "shares": 45000.0,
-      "invested_capital": 267750.0,
       "average_cost": 5.95,
       "sector": "Precious Metals",
-      "target": 9.58
+      "target": 9.58,
+      "player": 8
     },
     {
       "ticker": "GFI",
       "shares": 30000.0,
-      "invested_capital": 587400.0,
       "average_cost": 19.58,
       "sector": "Precious Metals",
-      "target": 35
+      "target": 35,
+      "player": 8
     },
     {
       "ticker": "AYA.TO",
       "shares": 100000.0,
-      "invested_capital": 828500.0,
-      "average_cost": 8.285,
+      "average_cost": 8.29,
       "sector": "Precious Metals",
-      "target": 26.7
+      "target": 26.7,
+      "player": 8
     },
     {
       "ticker": "SBSW",
       "shares": 100000.0,
-      "invested_capital": 485149.99999999994,
-      "average_cost": 4.8515,
+      "average_cost": 4.85,
       "sector": "Precious Metals",
-      "target": 10
+      "target": 10,
+      "player": 8
     },
     {
       "ticker": "SMG",
       "shares": 10470.0,
-      "invested_capital": 1277340.0,
       "average_cost": 122.0,
       "sector": "Fertilizer",
-      "target": 69.8
+      "target": 69.8,
+      "player": 10
     },
     {
       "ticker": "PYPL",
       "shares": 10068.0,
-      "invested_capital": 1633533.0,
       "average_cost": 162.25,
       "sector": "Technology",
-      "target": 81.45
+      "target": 81.45,
+      "player": 10
     },
     {
       "ticker": "BIDU",
       "shares": 25054.0,
-      "invested_capital": 3877681.6,
-      "average_cost": 154.77295441845615,
+      "average_cost": 154.77,
       "sector": "Technology",
-      "target": 214
+      "target": 214,
+      "player": 10
     },
     {
       "ticker": "UUUU",
-      "shares": 0.0,
-      "invested_capital": 0.0,
-      "average_cost": 0.0,
+      "shares": 35000.0,
+      "average_cost": 5.74,
       "sector": "Energy",
-      "target": 7.74
+      "target": 7.74,
+      "player": 5
     },
     {
       "ticker": "TEM",
-      "shares": 0.0,
-      "invested_capital": 0.0,
-      "average_cost": 0.0,
+      "shares": 12000.0,
+      "average_cost": 62.7,
       "sector": "Technology",
-      "target": 118
+      "target": 118,
+      "player": 1
     },
     {
       "ticker": "HOOD",
-      "shares": 0.0,
-      "invested_capital": 0.0,
-      "average_cost": 0.0,
+      "shares": 3000.0,
+      "average_cost": 72.54,
       "sector": "Technology",
-      "target": 100
+      "target": 100,
+      "player": 1
     },
     {
       "ticker": "TSLA",
-      "shares": 0.0,
-      "invested_capital": 0.0,
-      "average_cost": 0.0,
+      "shares": 600.0,
+      "average_cost": 331.18,
       "sector": "Automotive",
-      "target": 414
+      "target": 414,
+      "player": 1
     },
     {
       "ticker": "IAG",
-      "shares": 0.0,
-      "invested_capital": 0.0,
-      "average_cost": 0.0,
+      "shares": 60000.0,
+      "average_cost": 7.07,
       "sector": "Precious Metals",
-      "target": 8.84
+      "target": 8.84,
+      "player": 8
     },
     {
       "ticker": "RING",
-      "shares": 0.0,
-      "invested_capital": 0.0,
-      "average_cost": 0.0,
+      "shares": 12000.0,
+      "average_cost": 43.7,
       "sector": "Index",
-      "target": 64
+      "target": 64,
+      "player": 8
     },
     {
       "ticker": "LLY",
-      "shares": 0.0,
-      "invested_capital": 0.0,
-      "average_cost": 0.0,
+      "shares": 550.0,
+      "average_cost": 767.98,
       "sector": "HealthCare",
-      "target": 931
+      "target": 931,
+      "player": 10
     },
     {
       "ticker": "HBM",
       "shares": 0.0,
-      "invested_capital": 0.0,
       "average_cost": 0.0,
       "sector": "Copper",
       "target": 13.1
     },
     {
       "ticker": "KTOS",
-      "shares": 0.0,
-      "invested_capital": 0.0,
-      "average_cost": 0.0,
+      "shares": 500.0,
+      "average_cost": 42.46,
       "sector": "Aerospace & Defense",
-      "target": 58
+      "target": 58,
+      "player": 10
     },
     {
       "ticker": "AVAV",
-      "shares": 0.0,
-      "invested_capital": 0.0,
-      "average_cost": 0.0,
+      "shares": 1000.0,
+      "average_cost": 190.99,
       "sector": "Aerospace & Defense",
-      "target": 248.41
+      "target": 248.41,
+      "player": 10
     },
     {
       "ticker": "PLTR",
-      "shares": 0.0,
-      "invested_capital": 0.0,
-      "average_cost": 0.0,
+      "shares": 1500.0,
+      "average_cost": 140.76,
       "sector": "Technology",
-      "target": 204.6
+      "target": 204.6,
+      "player": 1
     },
     {
       "ticker": "IPI",
-      "shares": 0.0,
-      "invested_capital": 0.0,
-      "average_cost": 0.0,
+      "shares": 7000.0,
+      "average_cost": 37.4,
       "sector": "Fertilizer",
-      "target": 56.9
+      "target": 56.9,
+      "player": 3
     },
     {
       "ticker": "0020.HK",
       "shares": 430000.0,
-      "invested_capital": 104987.01298701297,
-      "average_cost": 0.24415584415584413,
+      "average_cost": 0.24,
       "sector": "Hong Kong and China",
-      "target": 2.86
+      "target": 2.86,
+      "player": 10
     },
     {
       "ticker": "2318.HK",
       "shares": 333894.0,
-      "invested_capital": 3350115.302906325,
-      "average_cost": 10.033469612830196,
+      "average_cost": 10.03,
       "sector": "Hong Kong and China",
-      "target": 66
+      "target": 66,
+      "player": 10
     },
     {
       "ticker": "KWEB",
       "shares": 14256.0,
-      "invested_capital": 364072.5792,
-      "average_cost": 25.5382,
+      "average_cost": 25.54,
       "sector": "Index",
-      "target": 40.35
+      "target": 40.35,
+      "player": 10
     },
     {
       "ticker": "0700.HK",
       "shares": 88515.0,
-      "invested_capital": 4657451.31768576,
-      "average_cost": 52.617650315604806,
+      "average_cost": 52.62,
       "sector": "Hong Kong and China",
-      "target": 590
+      "target": 590,
+      "player": 10
     },
     {
       "ticker": "9988.HK",
       "shares": 441137.0,
-      "invested_capital": 11991066.281427097,
-      "average_cost": 27.182182137129953,
+      "average_cost": 27.18,
       "sector": "Hong Kong and China",
-      "target": 176
+      "target": 176,
+      "player": 10
     },
     {
       "ticker": "9618.HK",
       "shares": 6411.0,
-      "invested_capital": 0.0,
       "average_cost": 0.0,
       "sector": "Hong Kong and China",
-      "target": 240
+      "target": 240,
+      "player": 10
     },
     {
       "ticker": "3690.HK",
       "shares": 11022.0,
-      "invested_capital": 0.0,
       "average_cost": 0.0,
       "sector": "Hong Kong and China",
-      "target": 234
+      "target": 234,
+      "player": 10
     }
   ],
   "fixed_income": [
     {
       "ticker": "FIXED INCOME",
       "shares": 5056590.0,
-      "invested_capital": 5056590.0,
       "average_cost": 1.0
     }
   ],
@@ -755,19 +784,16 @@
     {
       "ticker": "RE DEBT STRAT 1",
       "shares": 50.0,
-      "invested_capital": 235500.0,
       "average_cost": 4710.0
     },
     {
       "ticker": "RE DEBT STRAT 2",
       "shares": 5.0,
-      "invested_capital": 3565.0,
       "average_cost": 713.0
     },
     {
       "ticker": "SAFRA",
       "shares": 51124.75,
-      "invested_capital": 51124.75,
       "average_cost": 1.0
     }
   ],
@@ -775,19 +801,16 @@
     {
       "ticker": "PTE EQTY",
       "shares": 1.0,
-      "invested_capital": 2740000.0,
       "average_cost": 2740000.0
     },
     {
       "ticker": "DEEP BLUE FISH",
       "shares": 250.0,
-      "invested_capital": 253000.0,
       "average_cost": 1012.0
     },
     {
       "ticker": "JSS PRIVATE INV",
       "shares": 949.0,
-      "invested_capital": 949000.0,
       "average_cost": 1000.0
     }
   ]
