@@ -417,7 +417,32 @@ def get_forex_rates():
     try:
         resp = requests.get(url, timeout=8)
         resp.raise_for_status()
-        return resp.json()
+        data = resp.json()
+
+        # FMP returns {"forexList": [{"ticker": "EUR/USD", "bid": ..., "ask": ...}, ...]}
+        # Convert to a simpler array [{"ticker": "EURUSD", "price": 1.07}, ...]
+        if isinstance(data, dict) and "forexList" in data:
+            results = []
+            for item in data["forexList"]:
+                ticker = item.get("ticker")
+                bid = item.get("bid")
+                ask = item.get("ask")
+                price = None
+                try:
+                    if bid is not None and ask is not None:
+                        price = (float(bid) + float(ask)) / 2
+                    elif bid is not None:
+                        price = float(bid)
+                    elif ask is not None:
+                        price = float(ask)
+                except (ValueError, TypeError):
+                    price = None
+
+                if ticker and price is not None:
+                    results.append({"ticker": ticker.replace("/", ""), "price": price})
+            return results
+
+        return data
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
 
