@@ -91,10 +91,13 @@ def get_portfolio_tickers():
     with open(json_path, "r") as f:
         data = json.load(f)
         equities = data.get("equities", [])
-        # MODIFIED: Return ticker and sector for each equity
-        # If 'sector' is not present, default it to "N/A"
+        # Return ticker, sector, and optional target for each equity
         return [
-            {"ticker": item["ticker"], "sector": item.get("sector", "N/A")}
+            {
+                "ticker": item["ticker"],
+                "sector": item.get("sector", "N/A"),
+                "target": item.get("target"),
+            }
             for item in equities
             if "ticker" in item
         ]
@@ -408,6 +411,40 @@ def get_signal_lines(
 FMP_API_KEY = os.getenv("FMP_API_KEY")
 FMP_BASE_URL = os.getenv("FMP_BASE_URL")
 
+@app.get("/forex_rates")
+def get_forex_rates():
+    url = f"{FMP_BASE_URL}/forex?apikey={FMP_API_KEY}"
+    try:
+        resp = requests.get(url, timeout=8)
+        resp.raise_for_status()
+        data = resp.json()
+
+        # FMP returns {"forexList": [{"ticker": "EUR/USD", "bid": ..., "ask": ...}, ...]}
+        # Convert to a simpler array [{"ticker": "EURUSD", "price": 1.07}, ...]
+        if isinstance(data, dict) and "forexList" in data:
+            results = []
+            for item in data["forexList"]:
+                ticker = item.get("ticker")
+                bid = item.get("bid")
+                ask = item.get("ask")
+                price = None
+                try:
+                    if bid is not None and ask is not None:
+                        price = (float(bid) + float(ask)) / 2
+                    elif bid is not None:
+                        price = float(bid)
+                    elif ask is not None:
+                        price = float(ask)
+                except (ValueError, TypeError):
+                    price = None
+
+                if ticker and price is not None:
+                    results.append({"ticker": ticker.replace("/", ""), "price": price})
+            return results
+
+        return data
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 @app.get("/etf_holdings/{symbol}")
 def get_etf_holdings(symbol: str):

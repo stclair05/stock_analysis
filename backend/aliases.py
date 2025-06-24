@@ -32,6 +32,7 @@ SYMBOL_ALIASES = {
 
     # Precious Metals
     "PLATINUM": "PL=F",
+    "XPTUSD": "PL=F",
     "PL": "PL=F",
     "PL=F": "PL=F",
     "ALUMINIUM": "ALI=F",

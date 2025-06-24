@@ -49,8 +49,8 @@ class PortfolioAnalyser:
         try:
             ticker = item["ticker"]
             shares = item["shares"]
-            invested_capital = item["invested_capital"]
             average_cost = item["average_cost"]
+            invested_capital = shares * average_cost
             category = item.get("category", "Other") 
 
             current_price = self._get_price(ticker)
