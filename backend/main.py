@@ -411,6 +411,15 @@ def get_signal_lines(
 FMP_API_KEY = os.getenv("FMP_API_KEY")
 FMP_BASE_URL = os.getenv("FMP_BASE_URL")
 
+@app.get("/forex_rates")
+def get_forex_rates():
+    url = f"{FMP_BASE_URL}/forex?apikey={FMP_API_KEY}"
+    try:
+        resp = requests.get(url, timeout=8)
+        resp.raise_for_status()
+        return resp.json()
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 @app.get("/etf_holdings/{symbol}")
 def get_etf_holdings(symbol: str):

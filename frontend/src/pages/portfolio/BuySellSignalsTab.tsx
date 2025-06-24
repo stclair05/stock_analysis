@@ -61,6 +61,13 @@ export default function BuySellSignalsTab() {
     >
   >({});
 
+  // Hold shares and average cost info for P/L calculation
+  const [holdingInfo, setHoldingInfo] = useState<
+    Record<string, { shares: number; average_cost: number }>
+  >({});
+  // Store forex rates for currency conversion
+  const [forexRates, setForexRates] = useState<Record<string, number>>({});
+
   const strategyApiMap: Record<string, string> = {
     trend_investor_pro: "trendinvestorpro",
     st_clair: "stclair",
@@ -140,6 +147,24 @@ export default function BuySellSignalsTab() {
     return filteredStrategies;
   };
 
+  // Determine local currency from ticker suffix
+  const getCurrencyForTicker = (ticker: string): string => {
+    if (ticker.endsWith(".AX")) return "AUD";
+    if (ticker.endsWith(".TO")) return "CAD";
+    if (ticker.endsWith(".HK")) return "HKD";
+    return "USD";
+  };
+
+  // Get conversion rate from USD to target currency using fetched forex rates
+  const getUsdToCurrencyRate = (currency: string): number => {
+    if (currency === "USD") return 1;
+    const pair1 = `USD${currency}`;
+    const pair2 = `${currency}USD`;
+    if (forexRates[pair1]) return forexRates[pair1];
+    if (forexRates[pair2]) return 1 / forexRates[pair2];
+    return 1;
+  };
+
   // MODIFIED: Fetch tickers from selected list type, with caching
   // This useEffect now handles the new backend response format
   useEffect(() => {
@@ -216,6 +241,57 @@ export default function BuySellSignalsTab() {
 
     fetchTickers();
   }, [listType]); // Rerun this effect when listType changes
+
+  // Fetch live portfolio data (shares and average cost) for P/L
+  useEffect(() => {
+    if (listType !== "portfolio") {
+      setHoldingInfo({});
+      return;
+    }
+    const fetchLive = async () => {
+      try {
+        const res = await fetch("http://localhost:8000/portfolio_live_data");
+        const data = await res.json();
+        const map: Record<string, { shares: number; average_cost: number }> =
+          {};
+        if (Array.isArray(data)) {
+          data.forEach((item: any) => {
+            if (item && item.ticker)
+              map[item.ticker] = {
+                shares: item.shares,
+                average_cost: item.average_cost,
+              };
+          });
+        }
+        setHoldingInfo(map);
+      } catch {
+        setHoldingInfo({});
+      }
+    };
+    fetchLive();
+  }, [listType]);
+
+  // Fetch forex rates once for currency conversion
+  useEffect(() => {
+    const fetchFx = async () => {
+      try {
+        const res = await fetch("http://localhost:8000/forex_rates");
+        const data = await res.json();
+        const fx: Record<string, number> = {};
+        if (Array.isArray(data)) {
+          data.forEach((d: any) => {
+            const symbol = d.ticker || d.symbol;
+            const price = parseFloat(d.price);
+            if (symbol && !isNaN(price)) fx[symbol] = price;
+          });
+        }
+        setForexRates(fx);
+      } catch {
+        setForexRates({});
+      }
+    };
+    fetchFx();
+  }, []);
 
   // Fetch mean reversion and RSI metrics for all tickers
   useEffect(() => {
@@ -349,6 +425,25 @@ export default function BuySellSignalsTab() {
     setSignalSummary({}); // Clear signals when portfolio is being reloaded (e.g., initial load or manual portfolio refresh)
   }, [portfolio]);
 
+  // Calculate P/L in local currency for a given ticker
+  const getPnlForTicker = (
+    ticker: string
+  ): { amount: number; percent: number; currency: string } | null => {
+    const info = holdingInfo[ticker];
+    const price = meanRevRsi[ticker]?.currentPrice;
+    if (!info || price == null) return null;
+    const currency = getCurrencyForTicker(ticker);
+    let avgLocal = info.average_cost;
+    if (currency !== "USD") {
+      const rate = getUsdToCurrencyRate(currency);
+      avgLocal = info.average_cost * rate;
+    }
+    const diff = price - avgLocal;
+    const amount = diff * info.shares;
+    const percent = (diff / avgLocal) * 100;
+    return { amount, percent, currency };
+  };
+
   const isUnavailable = (strategy: string, tf: string) => {
     if (
       strategy === "trend_investor_pro" &&
@@ -445,6 +540,13 @@ export default function BuySellSignalsTab() {
           const diffB = ((priceB - targetB) / targetB) * 100;
 
           return sortDirection === "asc" ? diffA - diffB : diffB - diffA;
+        } else if (sortColumn === "pnl") {
+          const pnlA = getPnlForTicker(a.ticker);
+          const pnlB = getPnlForTicker(b.ticker);
+          const valA = pnlA ? pnlA.percent : -Infinity;
+          const valB = pnlB ? pnlB.percent : -Infinity;
+          if (valA === valB) return a.ticker.localeCompare(b.ticker);
+          return sortDirection === "asc" ? valA - valB : valB - valA;
         } else {
           const sortOrder = { BUY: 1, SELL: 2, "": 3, "-": 4 };
           const signalA = signalSummary[a.ticker]?.[sortColumn]?.status || "-";
@@ -594,6 +696,17 @@ export default function BuySellSignalsTab() {
                   <th style={{ width: "120px" }}>Mean Rev | RSI</th>
                   <th
                     style={{ cursor: "pointer" }}
+                    onClick={() => handleHeaderClick("pnl")}
+                  >
+                    P/L
+                    {sortColumn === "pnl" && (
+                      <span className="ms-1">
+                        {sortDirection === "asc" ? " ▲" : " ▼"}
+                      </span>
+                    )}
+                  </th>
+                  <th
+                    style={{ cursor: "pointer" }}
                     onClick={() => handleHeaderClick("price_target")}
                   >
                     Price vs Target
@@ -625,7 +738,7 @@ export default function BuySellSignalsTab() {
                 {displayedPortfolio.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={visibleAndOrderedStrategies.length + 4}
+                      colSpan={visibleAndOrderedStrategies.length + 5}
                       className="text-center text-muted"
                     >
                       No signals found matching your filter.
@@ -881,6 +994,33 @@ export default function BuySellSignalsTab() {
                           )}
                         </span>
                       </td>
+                      {(() => {
+                        const pnl = getPnlForTicker(holding.ticker);
+                        if (!pnl)
+                          return <td style={{ textAlign: "center" }}>-</td>;
+                        const color =
+                          pnl.amount > 0
+                            ? "#4caf50"
+                            : pnl.amount < 0
+                            ? "#f44336"
+                            : "#bdbdbd";
+                        const sign = pnl.amount > 0 ? "+" : "";
+                        return (
+                          <td
+                            style={{
+                              textAlign: "center",
+                              color,
+                              fontWeight: 700,
+                            }}
+                          >
+                            {`${sign}${pnl.percent.toFixed(
+                              2
+                            )}% (${sign}${pnl.amount.toFixed(2)} ${
+                              pnl.currency
+                            })`}
+                          </td>
+                        );
+                      })()}
                       {(() => {
                         const price = meanRevRsi[holding.ticker]?.currentPrice;
                         const target = holding.target;
