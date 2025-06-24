@@ -678,13 +678,6 @@
       "player": 10
     },
     {
-      "ticker": "HBM",
-      "shares": 0.0,
-      "average_cost": 0.0,
-      "sector": "Copper",
-      "target": 13.1
-    },
-    {
       "ticker": "KTOS",
       "shares": 500.0,
       "average_cost": 42.46,

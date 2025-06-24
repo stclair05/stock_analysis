@@ -165,6 +165,12 @@ export default function BuySellSignalsTab() {
     return 1;
   };
 
+  const formatCurrency = (value: number): string =>
+    value.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+
   // MODIFIED: Fetch tickers from selected list type, with caching
   // This useEffect now handles the new backend response format
   useEffect(() => {
@@ -437,6 +443,10 @@ export default function BuySellSignalsTab() {
     if (currency !== "USD") {
       const rate = getUsdToCurrencyRate(currency);
       avgLocal = info.average_cost * rate;
+    }
+    if (avgLocal === 0) {
+      const amount = price * info.shares;
+      return { amount, percent: 100, currency };
     }
     const diff = price - avgLocal;
     const amount = diff * info.shares;
@@ -1013,11 +1023,17 @@ export default function BuySellSignalsTab() {
                               fontWeight: 700,
                             }}
                           >
-                            {`${sign}${pnl.percent.toFixed(
-                              2
-                            )}% (${sign}${pnl.amount.toFixed(2)} ${
-                              pnl.currency
-                            })`}
+                            {`${sign}${pnl.percent.toFixed(2)}% `}
+                            <span
+                              style={{
+                                fontSize: "0.85em",
+                                fontStyle: "italic",
+                              }}
+                            >
+                              {`(${sign}${formatCurrency(pnl.amount)} ${
+                                pnl.currency
+                              })`}
+                            </span>
                           </td>
                         );
                       })()}
