@@ -446,6 +446,109 @@ def get_forex_rates():
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
 
+@app.get("/portfolio_performance")
+def get_portfolio_performance():
+    """Return YTD and daily % change for the entire portfolio using average cost."""
+    json_path = Path("portfolio_store.json")
+    if not json_path.exists():
+        return {"ytd_percent": 0.0, "daily_percent": 0.0}
+
+    def currency_from_ticker(ticker: str) -> str:
+        ticker = ticker.upper()
+        if ticker.endswith(".AX"):
+            return "AUD"
+        if ticker.endswith(".TO"):
+            return "CAD"
+        if ticker.endswith(".HK"):
+            return "HKD"
+        if ticker.endswith(".AS"):
+            return "EUR"
+        if ticker.endswith(".L"):
+            return "GBP"
+        return "USD"
+
+    def fx_rate(currency: str) -> float:
+        if currency == "USD":
+            return 1.0
+        pair = f"{currency}USD=X"
+        try:
+            hist = yf.Ticker(pair).history(period="1d")
+            if not hist.empty:
+                return float(hist["Close"].iloc[-1])
+        except Exception:
+            pass
+        return 1.0
+
+    try:
+        with open(json_path, "r") as f:
+            data = json.load(f)
+        positions = []
+        for category, items in data.items():
+            if isinstance(items, list):
+                for itm in items:
+                    ticker = itm.get("ticker")
+                    shares = itm.get("shares", 0)
+                    avg_cost = itm.get("average_cost", 0)
+                    if ticker and shares:
+                        positions.append({
+                            "ticker": ticker,
+                            "shares": shares,
+                            "average_cost": avg_cost,
+                        })
+
+        if not positions:
+            return {"ytd_percent": 0.0, "daily_percent": 0.0}
+
+        today = datetime.utcnow().date()
+        start_of_year = datetime(today.year, 1, 1).date()
+
+        cost_total = 0.0
+        pnl_today = 0.0
+        pnl_prev = 0.0
+        pnl_start = 0.0
+
+        for pos in positions:
+            ticker = pos["ticker"]
+            shares = pos["shares"]
+            avg_cost = pos["average_cost"]
+            currency = currency_from_ticker(ticker)
+            rate = fx_rate(currency)
+            try:
+                hist = yf.Ticker(ticker).history(period="1y")
+                if hist.empty:
+                    continue
+                hist = hist.dropna(subset=["Close"]).sort_index()
+                current_price = hist["Close"].iloc[-1]
+                prev_close = hist["Close"].iloc[-2] if len(hist) >= 2 else current_price
+                start_row = hist[hist.index.date >= start_of_year]
+                start_price = (
+                    start_row["Close"].iloc[0] if not start_row.empty else hist["Close"].iloc[0]
+                )
+                if currency != "USD":
+                    current_price *= rate
+                    prev_close *= rate
+                    start_price *= rate
+            except Exception:
+                continue
+
+            cost_total += shares * avg_cost
+            pnl_today += (current_price - avg_cost) * shares
+            pnl_prev += (prev_close - avg_cost) * shares
+            pnl_start += (start_price - avg_cost) * shares
+
+        if cost_total == 0:
+            return {"ytd_percent": 0.0, "daily_percent": 0.0}
+
+        ytd_percent = ((pnl_today - pnl_start) / cost_total) * 100
+        daily_percent = ((pnl_today - pnl_prev) / cost_total) * 100
+
+        return {
+            "ytd_percent": round(ytd_percent, 2),
+            "daily_percent": round(daily_percent, 2),
+        }
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
 @app.get("/etf_holdings/{symbol}")
 def get_etf_holdings(symbol: str):
     url = f"https://financialmodelingprep.com/stable/etf/holdings?symbol={symbol.upper()}&apikey={FMP_API_KEY}"
