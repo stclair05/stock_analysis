@@ -68,6 +68,12 @@ export default function BuySellSignalsTab() {
   // Store forex rates for currency conversion
   const [forexRates, setForexRates] = useState<Record<string, number>>({});
 
+  // Overall portfolio performance (YTD and daily %)
+  const [portfolioPerf, setPortfolioPerf] = useState<{
+    ytd: number;
+    daily: number;
+  } | null>(null);
+
   const strategyApiMap: Record<string, string> = {
     trend_investor_pro: "trendinvestorpro",
     st_clair: "stclair",
@@ -299,6 +305,31 @@ export default function BuySellSignalsTab() {
     };
     fetchFx();
   }, []);
+
+  // Fetch overall portfolio performance (YTD and daily)
+  useEffect(() => {
+    if (listType !== "portfolio") {
+      setPortfolioPerf(null);
+      return;
+    }
+    const fetchPerf = async () => {
+      try {
+        const res = await fetch("http://localhost:8000/portfolio_performance");
+        const data = await res.json();
+        if (typeof data === "object" && data) {
+          setPortfolioPerf({
+            ytd: data.ytd_percent,
+            daily: data.daily_percent,
+          });
+        } else {
+          setPortfolioPerf(null);
+        }
+      } catch {
+        setPortfolioPerf(null);
+      }
+    };
+    fetchPerf();
+  }, [listType]);
 
   // Fetch mean reversion and RSI metrics for all tickers
   useEffect(() => {
@@ -688,6 +719,26 @@ export default function BuySellSignalsTab() {
             <option value="SELL">SELL Only</option>
             <option value="MIXED">Mixed</option>
           </select>
+          {listType === "portfolio" && portfolioPerf && (
+            <div className="ms-4 text-end" style={{ lineHeight: 1.2 }}>
+              <div
+                style={{
+                  color: portfolioPerf.ytd >= 0 ? "#4caf50" : "#f44336",
+                  fontWeight: 600,
+                }}
+              >
+                YTD: {portfolioPerf.ytd.toFixed(2)}%
+              </div>
+              <div
+                style={{
+                  color: portfolioPerf.daily >= 0 ? "#4caf50" : "#f44336",
+                  fontWeight: 600,
+                }}
+              >
+                Daily: {portfolioPerf.daily.toFixed(2)}%
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
