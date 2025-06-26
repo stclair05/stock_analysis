@@ -687,10 +687,18 @@
     },
     {
       "ticker": "AVAV",
-      "shares": 1000.0,
-      "average_cost": 190.99,
+      "shares": 2500.0,
+      "average_cost": 210.7,
       "sector": "Aerospace & Defense",
-      "target": 248.41,
+      "target": 334,
+      "player": 10
+    },
+    {
+      "ticker": "CHWY",
+      "shares": 10000.0,
+      "average_cost": 43.5,
+      "sector": "Pets",
+      "target": 334,
       "player": 10
     },
     {

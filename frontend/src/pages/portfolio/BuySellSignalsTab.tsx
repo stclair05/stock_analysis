@@ -39,9 +39,16 @@ export default function BuySellSignalsTab() {
     "portfolio"
   ); // Default to 'portfolio'
 
-  // State for sorting
+  // State for sorting (primary and optional secondary)
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+
+  const [secondarySortColumn, setSecondarySortColumn] = useState<string | null>(
+    null
+  );
+  const [secondarySortDirection, setSecondarySortDirection] = useState<
+    "asc" | "desc"
+  >("asc");
 
   // State for global signal filtering
   const [filterType, setFilterType] = useState<
@@ -83,6 +90,32 @@ export default function BuySellSignalsTab() {
     if (lower.includes("sloping upward")) return "↗";
     if (lower.includes("sloping downward")) return "↘";
     return "-";
+  };
+
+  const getSlopeDirection = (val: string | null) => {
+    if (!val) return null;
+    const lower = val.toLowerCase();
+    if (lower.includes("sloping upward")) return "up";
+    if (lower.includes("sloping downward")) return "down";
+    return null;
+  };
+
+  const getMeanRevRsiScore = (ticker: string): number | null => {
+    const meanDir = getSlopeDirection(meanRevRsi[ticker]?.meanRev ?? null);
+    const rsiDir = getSlopeDirection(meanRevRsi[ticker]?.rsi ?? null);
+
+    if (!meanDir || !rsiDir) return null;
+
+    if (meanDir === "up" && rsiDir === "up") return 1;
+    if (meanDir === "down" && rsiDir === "down") return 3;
+    if (
+      (meanDir === "up" && rsiDir === "down") ||
+      (meanDir === "down" && rsiDir === "up")
+    ) {
+      return 2;
+    }
+
+    return null;
   };
 
   const getMeanRevColor = (val: string | null) => {
@@ -181,6 +214,7 @@ export default function BuySellSignalsTab() {
         setPortfolio(portfolioDataCache.current[listType]!);
         setSignalSummary({}); // Clear signals to indicate potential change
         setSortColumn(null);
+        setSecondarySortColumn(null);
         setFilterType("ALL");
         return;
       }
@@ -232,6 +266,7 @@ export default function BuySellSignalsTab() {
         signalsCache.current = {}; // Clear signals cache as the underlying tickers changed
         setSignalSummary({});
         setSortColumn(null);
+        setSecondarySortColumn(null);
         setFilterType("ALL");
       } catch (error) {
         console.error(`Error fetching ${listType} tickers:`, error);
@@ -240,6 +275,7 @@ export default function BuySellSignalsTab() {
         signalsCache.current = {};
         setSignalSummary({});
         setSortColumn(null);
+        setSecondarySortColumn(null);
         setFilterType("ALL");
       } finally {
         setSignalsLoading(false); // End loading indicator
@@ -473,9 +509,19 @@ export default function BuySellSignalsTab() {
   const handleHeaderClick = (column: string) => {
     if (sortColumn === column) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else if (sortColumn === "mean_rev_rsi" && column === "price_target") {
+      if (secondarySortColumn === column) {
+        setSecondarySortDirection(
+          secondarySortDirection === "asc" ? "desc" : "asc"
+        );
+      } else {
+        setSecondarySortColumn(column);
+        setSecondarySortDirection("asc");
+      }
     } else {
       setSortColumn(column);
-      setSortDirection("asc"); // Default to ascending when changing column
+      setSortDirection("asc");
+      setSecondarySortColumn(null);
     }
   };
 
@@ -529,8 +575,13 @@ export default function BuySellSignalsTab() {
     }
 
     if (sortColumn && Object.keys(signalSummary).length > 0) {
-      currentPortfolio.sort((a, b) => {
-        if (sortColumn === "price_target") {
+      const compareByColumn = (
+        col: string,
+        dir: "asc" | "desc",
+        a: { ticker: string; target?: number },
+        b: { ticker: string; target?: number }
+      ) => {
+        if (col === "price_target") {
           const priceA = meanRevRsi[a.ticker]?.currentPrice;
           const targetA = a.target;
           const priceB = meanRevRsi[b.ticker]?.currentPrice;
@@ -552,27 +603,47 @@ export default function BuySellSignalsTab() {
           const diffA = ((priceA - targetA) / targetA) * 100;
           const diffB = ((priceB - targetB) / targetB) * 100;
 
-          return sortDirection === "asc" ? diffA - diffB : diffB - diffA;
-        } else if (sortColumn === "pnl" && listType === "portfolio") {
+          return dir === "asc" ? diffA - diffB : diffB - diffA;
+        } else if (col === "pnl" && listType === "portfolio") {
           const pnlA = getPnlForTicker(a.ticker);
           const pnlB = getPnlForTicker(b.ticker);
           const valA = pnlA ? pnlA.percent : -Infinity;
           const valB = pnlB ? pnlB.percent : -Infinity;
           if (valA === valB) return a.ticker.localeCompare(b.ticker);
-          return sortDirection === "asc" ? valA - valB : valB - valA;
+          return dir === "asc" ? valA - valB : valB - valA;
+        } else if (col === "mean_rev_rsi") {
+          const valA = getMeanRevRsiScore(a.ticker);
+          const valB = getMeanRevRsiScore(b.ticker);
+          if (valA !== valB) return dir === "asc" ? valA - valB : valB - valA;
+          return 0;
         } else {
           const sortOrder = { BUY: 1, SELL: 2, "": 3, "-": 4 };
-          const signalA = signalSummary[a.ticker]?.[sortColumn]?.status || "-";
-          const signalB = signalSummary[b.ticker]?.[sortColumn]?.status || "-";
+          const signalA = signalSummary[a.ticker]?.[col]?.status || "-";
+          const signalB = signalSummary[b.ticker]?.[col]?.status || "-";
 
           const valA = sortOrder[signalA as keyof typeof sortOrder] || 4;
           const valB = sortOrder[signalB as keyof typeof sortOrder] || 4;
 
-          if (valA < valB) return sortDirection === "asc" ? -1 : 1;
-          if (valA > valB) return sortDirection === "asc" ? 1 : -1;
+          if (valA < valB) return dir === "asc" ? -1 : 1;
+          if (valA > valB) return dir === "asc" ? 1 : -1;
 
           return a.ticker.localeCompare(b.ticker);
         }
+      };
+      currentPortfolio.sort((a, b) => {
+        let result = compareByColumn(sortColumn, sortDirection, a, b);
+        if (result === 0 && secondarySortColumn) {
+          result = compareByColumn(
+            secondarySortColumn,
+            secondarySortDirection,
+            a,
+            b
+          );
+        }
+        if (result === 0) {
+          return a.ticker.localeCompare(b.ticker);
+        }
+        return result;
       });
     }
 
@@ -582,6 +653,8 @@ export default function BuySellSignalsTab() {
     signalSummary,
     sortColumn,
     sortDirection,
+    secondarySortColumn,
+    secondarySortDirection,
     filterType,
     selectedTimeframe,
   ]);
@@ -664,6 +737,7 @@ export default function BuySellSignalsTab() {
             onChange={(e) => {
               setSelectedTimeframe(e.target.value);
               setSortColumn(null);
+              setSecondarySortColumn(null);
               setFilterType("ALL");
             }}
           >
@@ -681,6 +755,7 @@ export default function BuySellSignalsTab() {
             onChange={(e) => {
               setFilterType(e.target.value as "ALL" | "BUY" | "SELL" | "MIXED");
               setSortColumn(null);
+              setSecondarySortColumn(null);
             }}
           >
             <option value="ALL">All Signals</option>
@@ -706,7 +781,22 @@ export default function BuySellSignalsTab() {
               <thead>
                 <tr>
                   <th style={{ minWidth: "260px" }}>Stock</th>
-                  <th style={{ width: "120px" }}>Mean Rev | RSI</th>
+                  <th
+                    style={{ width: "120px", cursor: "pointer" }}
+                    onClick={() => handleHeaderClick("mean_rev_rsi")}
+                  >
+                    Mean Rev | RSI
+                    {(sortColumn === "mean_rev_rsi" ||
+                      secondarySortColumn === "mean_rev_rsi") && (
+                      <span className="ms-1">
+                        {(sortColumn === "mean_rev_rsi"
+                          ? sortDirection
+                          : secondarySortDirection) === "asc"
+                          ? " ▲"
+                          : " ▼"}
+                      </span>
+                    )}
+                  </th>
                   {listType === "portfolio" && (
                     <th
                       style={{ cursor: "pointer" }}
@@ -726,9 +816,14 @@ export default function BuySellSignalsTab() {
                       onClick={() => handleHeaderClick("price_target")}
                     >
                       Price vs Target
-                      {sortColumn === "price_target" && (
+                      {(sortColumn === "price_target" ||
+                        secondarySortColumn === "price_target") && (
                         <span className="ms-1">
-                          {sortDirection === "asc" ? " ▲" : " ▼"}
+                          {(sortColumn === "price_target"
+                            ? sortDirection
+                            : secondarySortDirection) === "asc"
+                            ? " ▲"
+                            : " ▼"}
                         </span>
                       )}
                     </th>
