@@ -52,7 +52,9 @@
     "AIR.PA",
     "SAF.PA",
     "BA.L",
-    "AM.PA"
+    "AM.PA",
+    "CDI",
+    "MC"
   ],
   "portfolio": []
 }
