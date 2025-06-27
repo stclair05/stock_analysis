@@ -334,6 +334,84 @@ def analyse_batch(stock_requests: List[StockRequest]):
                 results[symbol] = {"error": str(exc)}
     return results
 
+@app.get("/quadrant_data")
+def get_quadrant_data(list_type: str = Query("portfolio", enum=["portfolio", "watchlist"])):
+    """Return MACE x 40-week status table for portfolio or watchlist."""
+    if list_type == "portfolio":
+        json_path = Path("portfolio_store.json")
+        if not json_path.exists():
+            tickers = []
+        else:
+            with open(json_path, "r") as f:
+                data = json.load(f)
+            tickers = [item["ticker"] for item in data.get("equities", []) if "ticker" in item]
+    else:
+        data = load_data()
+        tickers = data.get("watchlist", [])
+
+    status_keys = ["U1", "U2", "U3", "D1", "D2", "D3"]
+    forty_keys = ["++", "+-", "-+", "--"]
+
+    # initialise table with ticker info objects
+    table = {
+        fw: {m: {"tickers": []} for m in status_keys} for fw in forty_keys
+    }
+
+    mace_rank = {"U3": 6, "U2": 5, "U1": 4, "D1": 3, "D2": 2, "D3": 1}
+
+    def is_above(status: str | None) -> bool:
+        return isinstance(status, str) and status.startswith("Above")
+
+    def is_below(status: str | None) -> bool:
+        return isinstance(status, str) and status.startswith("Below")
+
+    for symbol in tickers:
+        try:
+            analyser = StockAnalyser(symbol)
+            mace_metric = analyser.mace()
+            fw_metric = analyser.forty_week_status()
+
+            mace_now = mace_metric.current
+            mace_prev = mace_metric.seven_days_ago
+            fw_now = fw_metric.current
+            fw_prev = fw_metric.seven_days_ago
+
+            mace_key = mace_now if mace_now in status_keys else None
+            fw_key = None
+            if isinstance(fw_now, str):
+                if "++" in fw_now:
+                    fw_key = "++"
+                elif "+-" in fw_now:
+                    fw_key = "+-"
+                elif "-+" in fw_now:
+                    fw_key = "-+"
+                elif "--" in fw_now:
+                    fw_key = "--"
+            arrow = None
+            if is_above(fw_now) and is_below(fw_prev):
+                arrow = "up"
+            elif is_below(fw_now) and is_above(fw_prev):
+                arrow = "down"
+            elif (
+                isinstance(mace_now, str)
+                and isinstance(mace_prev, str)
+                and mace_now in mace_rank
+                and mace_prev in mace_rank
+            ):
+                if mace_rank[mace_now] > mace_rank[mace_prev]:
+                    arrow = "right"
+                elif mace_rank[mace_now] < mace_rank[mace_prev]:
+                    arrow = "left"
+
+            if mace_key and fw_key:
+                table[fw_key][mace_key]["tickers"].append(
+                    {"symbol": symbol, "arrow": arrow}
+                )
+        except Exception as e:
+            print(f"Quadrant analysis error for {symbol}: {e}")
+
+    return table
+
 @app.get("/s3-images")
 def list_s3_images(prefix: str = "natgas/"):
     s3 = boto3.client(

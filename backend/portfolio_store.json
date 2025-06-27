@@ -36,14 +36,14 @@
       "shares": 4000.0,
       "average_cost": 106.11,
       "sector": "Technology",
-      "target": 121.37,
+      "target": 127,
       "player": 1
     },
     {
       "ticker": "ASML.AS",
       "shares": 240.0,
       "average_cost": 921.87,
-      "target": 701.8,
+      "target": 800,
       "player": 1
     },
     {
@@ -687,10 +687,18 @@
     },
     {
       "ticker": "AVAV",
-      "shares": 1000.0,
-      "average_cost": 190.99,
+      "shares": 2500.0,
+      "average_cost": 210.7,
       "sector": "Aerospace & Defense",
-      "target": 248.41,
+      "target": 334,
+      "player": 10
+    },
+    {
+      "ticker": "CHWY",
+      "shares": 10000.0,
+      "average_cost": 43.5,
+      "sector": "Pets",
+      "target": 334,
       "player": 10
     },
     {

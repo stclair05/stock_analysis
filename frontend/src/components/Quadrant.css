@@ -1,0 +1,138 @@
+.quadrant-table-wrapper {
+  overflow-x: auto;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.quadrant-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: center;
+  font-family: "Segoe UI", sans-serif;
+  font-size: 14px;
+}
+
+.quadrant-table th,
+.quadrant-table td {
+  border: 1px solid #ccc;
+  padding: 10px 8px;
+  vertical-align: top;
+  min-width: 120px;
+}
+
+.quadrant-table th {
+  background-color: #f9f9f9;
+  font-weight: 600;
+}
+
+.quadrant-table td {
+  background-color: #fafafa;
+}
+
+.corner-cell {
+  background-color: #f0f0f0;
+  font-weight: bold;
+}
+
+.fw-label {
+  font-weight: 600;
+  text-align: left;
+  background-color: #f0f8ff;
+}
+
+.fw-label span {
+  display: block;
+  font-size: 11px;
+  font-weight: normal;
+  color: #555;
+}
+
+.ticker-tag {
+  display: inline-block;
+  background-color: #e1ecf4;
+  color: #0366d6;
+  padding: 2px 6px;
+  margin: 2px 2px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.ticker-arrow {
+  margin-left: 2px;
+  font-size: 12px;
+}
+
+.arrow-legend {
+  margin-top: 8px;
+  font-family: "Segoe UI", sans-serif;
+}
+
+.quadrant-table-container {
+  position: relative;
+  display: inline-block;
+  margin-top: 40px;
+  margin-left: 60px;
+}
+
+.label-uptrend,
+.label-downtrend,
+.label-40w {
+  position: absolute;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.label-uptrend,
+.label-downtrend {
+  top: -30px;
+  transform: translateX(-50%);
+}
+.label-uptrend {
+  color: #2e7d32; /* Green (Material UI green[800]) */
+}
+
+.label-downtrend {
+  color: #c62828; /* Red (Material UI red[800]) */
+}
+
+.label-40w {
+  top: 50%;
+  left: -40px;
+  writing-mode: vertical-rl;
+  transform: translateY(-50%) rotate(180deg);
+}
+
+.quadrant-highlight {
+  position: absolute;
+  border: 4px solid;
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
+.quadrant-highlight.bullish {
+  border-color: #00e676; /* bright green */
+}
+
+.quadrant-highlight.bearish {
+  border-color: #ff1744; /* bright red */
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.skeleton-cell {
+  height: 24px;
+  width: 100%;
+  border-radius: 4px;
+  background: linear-gradient(to right, #f0f0f0 8%, #e0e0e0 18%, #f0f0f0 33%);
+  background-size: 1000px 100%;
+  animation: shimmer 1.5s infinite linear;
+}
