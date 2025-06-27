@@ -28,6 +28,14 @@ export default function Navbar() {
         >
           Watchlist
         </Link>
+        <Link
+          to="/quadrant"
+          className={`nav-link ${
+            location.pathname === "/quadrant" ? "active" : ""
+          }`}
+        >
+          Quadrant
+        </Link>
       </div>
     </nav>
   );

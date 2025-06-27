@@ -334,6 +334,51 @@ def analyse_batch(stock_requests: List[StockRequest]):
                 results[symbol] = {"error": str(exc)}
     return results
 
+@app.get("/quadrant_data")
+def get_quadrant_data(list_type: str = Query("portfolio", enum=["portfolio", "watchlist"])):
+    """Return MACE x 40-week status table for portfolio or watchlist."""
+    if list_type == "portfolio":
+        json_path = Path("portfolio_store.json")
+        if not json_path.exists():
+            tickers = []
+        else:
+            with open(json_path, "r") as f:
+                data = json.load(f)
+            tickers = [item["ticker"] for item in data.get("equities", []) if "ticker" in item]
+    else:
+        data = load_data()
+        tickers = data.get("watchlist", [])
+
+    status_keys = ["U1", "U2", "U3", "D1", "D2", "D3"]
+    forty_keys = ["++", "+-", "-+", "--"]
+
+    table = {fw: {m: {"tickers": []} for m in status_keys} for fw in forty_keys}
+
+    for symbol in tickers:
+        try:
+            analyser = StockAnalyser(symbol)
+            mace_val = analyser.mace().current
+            fw_status = analyser.forty_week_status().current
+
+            mace_key = mace_val if mace_val in status_keys else None
+            fw_key = None
+            if isinstance(fw_status, str):
+                if "++" in fw_status:
+                    fw_key = "++"
+                elif "+-" in fw_status:
+                    fw_key = "+-"
+                elif "-+" in fw_status:
+                    fw_key = "-+"
+                elif "--" in fw_status:
+                    fw_key = "--"
+
+            if mace_key and fw_key:
+                table[fw_key][mace_key]["tickers"].append(symbol)
+        except Exception as e:
+            print(f"Quadrant analysis error for {symbol}: {e}")
+
+    return table
+
 @app.get("/s3-images")
 def list_s3_images(prefix: str = "natgas/"):
     s3 = boto3.client(
