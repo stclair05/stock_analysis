@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import Quadrant, { TableData } from "../components/Quadrant";
+import QuadrantSkeleton from "../components/QuadrantSkeleton";
 
 export default function QuadrantPage() {
   const [listType, setListType] = useState<"portfolio" | "watchlist">(
@@ -40,7 +41,7 @@ export default function QuadrantPage() {
           Watchlist
         </button>
       </div>
-      {loading && <p>Loading...</p>}
+      {loading && <QuadrantSkeleton />}
       {data && !loading && <Quadrant data={data} />}
     </div>
   );
