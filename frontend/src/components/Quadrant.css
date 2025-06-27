@@ -59,6 +59,16 @@
   font-weight: 500;
 }
 
+.ticker-arrow {
+  margin-left: 2px;
+  font-size: 12px;
+}
+
+.arrow-legend {
+  margin-top: 8px;
+  font-family: "Segoe UI", sans-serif;
+}
+
 .quadrant-table-container {
   position: relative;
   display: inline-block;

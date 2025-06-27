@@ -4,16 +4,35 @@ import "./Quadrant.css";
 export type StatusKey = "U1" | "U2" | "U3" | "D1" | "D2" | "D3";
 export type FortyWeekKey = "++" | "+-" | "-+" | "--";
 
+export type TickerInfo = {
+  symbol: string;
+  arrow?: "up" | "down" | "left" | "right" | null;
+};
+
 export type TableData = {
   [forty in FortyWeekKey]: {
     [mace in StatusKey]: {
-      tickers: string[];
+      tickers: TickerInfo[];
     };
   };
 };
 
 const statusLabels: StatusKey[] = ["U1", "U2", "U3", "D1", "D2", "D3"];
 const fortyLabels: FortyWeekKey[] = ["++", "+-", "-+", "--"];
+
+const arrowSymbols: Record<string, string> = {
+  up: "\u2191",
+  down: "\u2193",
+  left: "\u2190",
+  right: "\u2192",
+};
+
+const arrowColors: Record<string, string> = {
+  up: "green",
+  down: "red",
+  left: "red",
+  right: "green",
+};
 
 export default function Quadrant({ data }: { data: TableData }) {
   const d1Ref = useRef<HTMLTableCellElement>(null);
@@ -141,8 +160,16 @@ export default function Quadrant({ data }: { data: TableData }) {
                   }
                 >
                   {data[fw][s].tickers.map((t) => (
-                    <div className="ticker-tag" key={t}>
-                      {t}
+                    <div className="ticker-tag" key={t.symbol}>
+                      {t.symbol}
+                      {t.arrow && (
+                        <span
+                          className="ticker-arrow"
+                          style={{ color: arrowColors[t.arrow] }}
+                        >
+                          {arrowSymbols[t.arrow]}
+                        </span>
+                      )}
                     </div>
                   ))}
                 </td>
@@ -151,6 +178,24 @@ export default function Quadrant({ data }: { data: TableData }) {
           ))}
         </tbody>
       </table>
+      <div className="arrow-legend">
+        <div>
+          <strong>40WK Status:</strong>{" "}
+          <span style={{ color: arrowColors.up }}>{arrowSymbols.up}</span>
+          <span style={{ color: arrowColors.down }}>
+            {arrowSymbols.down}
+          </span>{" "}
+          Risen Above / Fallen Below 40 Week MA This Week
+        </div>
+        <div>
+          <strong>MACE:</strong>{" "}
+          <span style={{ color: arrowColors.right }}>{arrowSymbols.right}</span>
+          <span style={{ color: arrowColors.left }}>
+            {arrowSymbols.left}
+          </span>{" "}
+          Progression / Regression
+        </div>
+      </div>
     </div>
   );
 }

@@ -352,28 +352,61 @@ def get_quadrant_data(list_type: str = Query("portfolio", enum=["portfolio", "wa
     status_keys = ["U1", "U2", "U3", "D1", "D2", "D3"]
     forty_keys = ["++", "+-", "-+", "--"]
 
-    table = {fw: {m: {"tickers": []} for m in status_keys} for fw in forty_keys}
+    # initialise table with ticker info objects
+    table = {
+        fw: {m: {"tickers": []} for m in status_keys} for fw in forty_keys
+    }
+
+    mace_rank = {"U3": 6, "U2": 5, "U1": 4, "D1": 3, "D2": 2, "D3": 1}
+
+    def is_above(status: str | None) -> bool:
+        return isinstance(status, str) and status.startswith("Above")
+
+    def is_below(status: str | None) -> bool:
+        return isinstance(status, str) and status.startswith("Below")
 
     for symbol in tickers:
         try:
             analyser = StockAnalyser(symbol)
-            mace_val = analyser.mace().current
-            fw_status = analyser.forty_week_status().current
+            mace_metric = analyser.mace()
+            fw_metric = analyser.forty_week_status()
 
-            mace_key = mace_val if mace_val in status_keys else None
+            mace_now = mace_metric.current
+            mace_prev = mace_metric.seven_days_ago
+            fw_now = fw_metric.current
+            fw_prev = fw_metric.seven_days_ago
+
+            mace_key = mace_now if mace_now in status_keys else None
             fw_key = None
-            if isinstance(fw_status, str):
-                if "++" in fw_status:
+            if isinstance(fw_now, str):
+                if "++" in fw_now:
                     fw_key = "++"
-                elif "+-" in fw_status:
+                elif "+-" in fw_now:
                     fw_key = "+-"
-                elif "-+" in fw_status:
+                elif "-+" in fw_now:
                     fw_key = "-+"
-                elif "--" in fw_status:
+                elif "--" in fw_now:
                     fw_key = "--"
+            arrow = None
+            if is_above(fw_now) and is_below(fw_prev):
+                arrow = "up"
+            elif is_below(fw_now) and is_above(fw_prev):
+                arrow = "down"
+            elif (
+                isinstance(mace_now, str)
+                and isinstance(mace_prev, str)
+                and mace_now in mace_rank
+                and mace_prev in mace_rank
+            ):
+                if mace_rank[mace_now] > mace_rank[mace_prev]:
+                    arrow = "right"
+                elif mace_rank[mace_now] < mace_rank[mace_prev]:
+                    arrow = "left"
 
             if mace_key and fw_key:
-                table[fw_key][mace_key]["tickers"].append(symbol)
+                table[fw_key][mace_key]["tickers"].append(
+                    {"symbol": symbol, "arrow": arrow}
+                )
         except Exception as e:
             print(f"Quadrant analysis error for {symbol}: {e}")
 
