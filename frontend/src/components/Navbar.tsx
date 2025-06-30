@@ -18,7 +18,7 @@ export default function Navbar() {
           Search
         </Link>
         <Link
-          to="/portfolio"
+          to="/portfolio/buy_sell_signals/portfolio"
           className={`nav-link ${
             location.pathname.startsWith("/portfolio") ? "active" : ""
           }`}
@@ -34,7 +34,7 @@ export default function Navbar() {
           Watchlist
         </Link>
         <Link
-          to="/quadrant"
+          to="/quadrant/portfolio"
           className={`nav-link ${
             location.pathname.startsWith("/quadrant") ? "active" : ""
           }`}
