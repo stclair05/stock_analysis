@@ -1213,7 +1213,7 @@ export default function BuySellSignalsTab({
                             meanRevRsi[holding.ticker]?.cmf ?? null
                           ),
                           textAlign: "center",
-                          fontWeight: 700,
+                          fontWeight: 550,
                         }}
                       >
                         {meanRevRsi[holding.ticker]?.cmf ?? "-"}
