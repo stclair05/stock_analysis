@@ -518,6 +518,38 @@
       "player": 8
     },
     {
+      "ticker": "XPDUSD",
+      "shares": 264.55,
+      "average_cost": 1135,
+      "sector": "Precious Metals",
+      "target": "",
+      "player": 8
+    },
+    {
+      "ticker": "1810.HK",
+      "shares": 30000,
+      "average_cost": 60.4647,
+      "sector": "Technology",
+      "target": "",
+      "player": 0
+    },
+    {
+      "ticker": "AIR.PA",
+      "shares": 1500,
+      "average_cost": 178.115,
+      "sector": "Aerospace",
+      "target": "",
+      "player": 0
+    },
+    {
+      "ticker": "CRCL",
+      "shares": 1000,
+      "average_cost": 223.36,
+      "sector": "Technology",
+      "target": "",
+      "player": 0
+    },
+    {
       "ticker": "PAAS",
       "shares": 20000.0,
       "average_cost": 25.4,
