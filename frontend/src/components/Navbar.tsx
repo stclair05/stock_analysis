@@ -8,14 +8,19 @@ export default function Navbar() {
       <div className="d-flex align-items-center gap-4">
         <Link
           to="/"
-          className={`nav-link ${location.pathname === "/" ? "active" : ""}`}
+          className={`nav-link ${
+            location.pathname === "/" ||
+            location.pathname.startsWith("/analyse")
+              ? "active"
+              : ""
+          }`}
         >
           Search
         </Link>
         <Link
           to="/portfolio"
           className={`nav-link ${
-            location.pathname === "/portfolio" ? "active" : ""
+            location.pathname.startsWith("/portfolio") ? "active" : ""
           }`}
         >
           Portfolio
@@ -31,7 +36,7 @@ export default function Navbar() {
         <Link
           to="/quadrant"
           className={`nav-link ${
-            location.pathname === "/quadrant" ? "active" : ""
+            location.pathname.startsWith("/quadrant") ? "active" : ""
           }`}
         >
           Quadrant

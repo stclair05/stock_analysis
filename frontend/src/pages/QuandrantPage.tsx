@@ -1,13 +1,24 @@
 import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import Quadrant, { TableData } from "../components/Quadrant";
 import QuadrantSkeleton from "../components/QuadrantSkeleton";
 
 export default function QuadrantPage() {
+  const navigate = useNavigate();
+  const { listType: listParam } = useParams<{ listType?: string }>();
+
   const [listType, setListType] = useState<"portfolio" | "watchlist">(
-    "portfolio"
+    listParam === "watchlist" ? "watchlist" : "portfolio"
   );
   const [data, setData] = useState<TableData | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Update state when URL param changes
+  useEffect(() => {
+    if (listParam === "watchlist" || listParam === "portfolio") {
+      setListType(listParam);
+    }
+  }, [listParam]);
 
   useEffect(() => {
     setLoading(true);
@@ -28,7 +39,7 @@ export default function QuadrantPage() {
           className={`btn btn-sm me-2 ${
             listType === "portfolio" ? "btn-primary" : "btn-outline-primary"
           }`}
-          onClick={() => setListType("portfolio")}
+          onClick={() => navigate("/quadrant/portfolio")}
         >
           Portfolio
         </button>
@@ -36,7 +47,7 @@ export default function QuadrantPage() {
           className={`btn btn-sm ${
             listType === "watchlist" ? "btn-primary" : "btn-outline-primary"
           }`}
-          onClick={() => setListType("watchlist")}
+          onClick={() => navigate("/quadrant/watchlist")}
         >
           Watchlist
         </button>

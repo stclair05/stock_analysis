@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import OverviewTab from "./portfolio/OverviewTab";
 import MarketPositionsTab from "./portfolio/MarketPositionsTab";
 import RecentTradesTab from "./portfolio/RecentTradesTab";
@@ -7,7 +8,35 @@ import BuySellSignalsTab from "./portfolio/BuySellSignalsTab";
 import "./PortfolioPage.css";
 
 function PortfolioPage() {
-  const [activeTab, setActiveTab] = useState("Buy/Sell Signals");
+  const navigate = useNavigate();
+  const { tab, listType } = useParams<{
+    tab?: string;
+    listType?: string;
+  }>();
+
+  const pathToTab: Record<string, string> = {
+    overview: "Overview",
+    marketpositions: "Market Positions",
+    recenttrades: "Recent Trades",
+    whatifanalysis: "What-If Analysis",
+    buy_sell_signals: "Buy/Sell Signals",
+  };
+
+  const tabToPath: Record<string, string> = {
+    Overview: "overview",
+    "Market Positions": "marketpositions",
+    "Recent Trades": "recenttrades",
+    "What-If Analysis": "whatifanalysis",
+    "Buy/Sell Signals": "buy_sell_signals",
+  };
+
+  const [activeTab, setActiveTab] = useState(
+    pathToTab[tab ?? ""] || "Buy/Sell Signals"
+  );
+  const [signalListType, setSignalListType] = useState<
+    "portfolio" | "watchlist"
+  >(listType === "watchlist" ? "watchlist" : "portfolio");
+
   const underlineRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
@@ -29,6 +58,16 @@ function PortfolioPage() {
     }
   }, [activeTab]);
 
+  // Update state when route params change
+  useEffect(() => {
+    if (tab && pathToTab[tab]) {
+      setActiveTab(pathToTab[tab]);
+    }
+    if (listType === "watchlist" || listType === "portfolio") {
+      setSignalListType(listType);
+    }
+  }, [tab, listType]);
+
   return (
     <div
       className="container-fluid mt-4"
@@ -45,7 +84,13 @@ function PortfolioPage() {
               if (el) tabRefs.current[index] = el;
             }}
             className={`custom-tab-button ${activeTab === tab ? "active" : ""}`}
-            onClick={() => setActiveTab(tab)}
+            onClick={() => {
+              if (tab === "Buy/Sell Signals") {
+                navigate(`/portfolio/buy_sell_signals/${signalListType}`);
+              } else {
+                navigate(`/portfolio/${tabToPath[tab]}`);
+              }
+            }}
           >
             {tab}
           </button>
@@ -82,7 +127,13 @@ function PortfolioPage() {
             display: activeTab === "Buy/Sell Signals" ? "block" : "none",
           }}
         >
-          <BuySellSignalsTab />
+          <BuySellSignalsTab
+            initialListType={signalListType}
+            onListTypeChange={(lt) => {
+              setSignalListType(lt);
+              navigate(`/portfolio/buy_sell_signals/${lt}`);
+            }}
+          />
         </div>
       </div>
     </div>

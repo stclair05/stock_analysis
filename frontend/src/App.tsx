@@ -13,9 +13,21 @@ function App() {
       <Navbar />
       <Routes>
         <Route path="/" element={<HomePage />} />
+        <Route path="/analyse/:symbol" element={<HomePage />} />
+
         <Route path="/portfolio" element={<PortfolioPage />} />
+        <Route path="/portfolio/overview" element={<PortfolioPage />} />
+        <Route path="/portfolio/marketpositions" element={<PortfolioPage />} />
+        <Route path="/portfolio/recenttrades" element={<PortfolioPage />} />
+        <Route path="/portfolio/whatifanalysis" element={<PortfolioPage />} />
+        <Route
+          path="/portfolio/buy_sell_signals/:listType"
+          element={<PortfolioPage />}
+        />
+
         <Route path="/watchlist" element={<WatchlistPage />} />
         <Route path="/quadrant" element={<QuadrantPage />} />
+        <Route path="/quadrant/:listType" element={<QuadrantPage />} />
         <Route path="/ratios" element={<RatioPage />} />
       </Routes>
     </Router>
