@@ -64,6 +64,11 @@
   color: #fff;
 }
 
+.ticker-tag.near-target {
+  background-color: #2e7d32;
+  color: #fff;
+}
+
 .ticker-arrow {
   margin-left: 2px;
   font-size: 12px;

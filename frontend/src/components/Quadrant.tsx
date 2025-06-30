@@ -8,6 +8,7 @@ export type TickerInfo = {
   symbol: string;
   arrow?: "up" | "down" | "left" | "right" | null;
   below20dma?: boolean;
+  nearTarget?: boolean;
 };
 
 export type TableData = {
@@ -164,7 +165,7 @@ export default function Quadrant({ data }: { data: TableData }) {
                     <div
                       className={`ticker-tag${
                         t.below20dma ? " below-ma20" : ""
-                      }`}
+                      }${t.nearTarget ? " near-target" : ""}`}
                       key={t.symbol}
                     >
                       {t.symbol}
