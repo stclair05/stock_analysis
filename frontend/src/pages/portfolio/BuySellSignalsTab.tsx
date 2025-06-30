@@ -13,7 +13,13 @@ const allStrategies = [
   // Add other strategies if needed
 ];
 
-export default function BuySellSignalsTab() {
+export default function BuySellSignalsTab({
+  initialListType = "portfolio",
+  onListTypeChange,
+}: {
+  initialListType?: "portfolio" | "watchlist";
+  onListTypeChange?: (lt: "portfolio" | "watchlist") => void;
+}) {
   // MODIFIED: portfolio state now includes sector
   const [portfolio, setPortfolio] = useState<
     { ticker: string; sector?: string; target?: number }[]
@@ -36,8 +42,8 @@ export default function BuySellSignalsTab() {
 
   // State for list type selection
   const [listType, setListType] = useState<"portfolio" | "watchlist">(
-    "portfolio"
-  ); // Default to 'portfolio'
+    initialListType
+  );
 
   // State for sorting (primary and optional secondary)
   const [sortColumn, setSortColumn] = useState<string | null>(null);
@@ -741,9 +747,11 @@ export default function BuySellSignalsTab() {
           <label className="fw-semibold me-2">List:</label>
           <select
             value={listType}
-            onChange={(e) =>
-              setListType(e.target.value as "portfolio" | "watchlist")
-            }
+            onChange={(e) => {
+              const val = e.target.value as "portfolio" | "watchlist";
+              setListType(val);
+              onListTypeChange?.(val);
+            }}
             className="me-4"
           >
             <option value="portfolio">Portfolio</option>
@@ -1205,7 +1213,7 @@ export default function BuySellSignalsTab() {
                             meanRevRsi[holding.ticker]?.cmf ?? null
                           ),
                           textAlign: "center",
-                          fontWeight: 700,
+                          fontWeight: 550,
                         }}
                       >
                         {meanRevRsi[holding.ticker]?.cmf ?? "-"}

@@ -3,16 +3,29 @@ import Metrics from "../components/Metrics";
 import Fundamentals from "../components/Fundamentals";
 import StockChart from "../components/StockChart";
 import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import ETFHoldings from "../components/ETFHoldings";
 import etfList from "../utils/etfs.json";
 
 function HomePage() {
-  const [inputValue, setInputValue] = useState("");
-  const [stockSymbol, setStockSymbol] = useState("");
+  const navigate = useNavigate();
+  const { symbol } = useParams<{ symbol?: string }>();
+
+  const [inputValue, setInputValue] = useState(symbol?.toUpperCase() ?? "");
+  const [stockSymbol, setStockSymbol] = useState(symbol?.toUpperCase() ?? "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [isETF, setIsETF] = useState<boolean | null>(null);
+
+  // Sync state with URL param
+  useEffect(() => {
+    if (symbol) {
+      const upper = symbol.toUpperCase();
+      setInputValue(upper);
+      setStockSymbol(upper);
+    }
+  }, [symbol]);
 
   const isValidSymbol = (symbol: string) => true;
 
@@ -32,6 +45,7 @@ function HomePage() {
     }
 
     setError(null);
+    navigate(`/analyse/${inputValue}`);
     setStockSymbol(inputValue);
     setLoading(true); // Metrics will handle turning this off
   };
