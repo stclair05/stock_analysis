@@ -202,6 +202,13 @@ export default function Quadrant({ data }: { data: TableData }) {
           </span>{" "}
           Progression / Regression
         </div>
+        <div>
+          <span className="ticker-tag below-ma20">ABC</span> Below 20 Day MA
+        </div>
+        <div>
+          <span className="ticker-tag near-target">XYZ</span> 5% Away From
+          Target / Hit Target
+        </div>
       </div>
     </div>
   );
