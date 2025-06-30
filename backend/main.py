@@ -370,6 +370,8 @@ def get_quadrant_data(list_type: str = Query("portfolio", enum=["portfolio", "wa
             analyser = StockAnalyser(symbol)
             mace_metric = analyser.mace()
             fw_metric = analyser.forty_week_status()
+            dma20 = analyser.calculate_20dma().current
+            price_now = analyser.get_current_price()
 
             mace_now = mace_metric.current
             mace_prev = mace_metric.seven_days_ago
@@ -405,7 +407,11 @@ def get_quadrant_data(list_type: str = Query("portfolio", enum=["portfolio", "wa
 
             if mace_key and fw_key:
                 table[fw_key][mace_key]["tickers"].append(
-                    {"symbol": symbol, "arrow": arrow}
+                    {
+                        "symbol": symbol,
+                        "arrow": arrow,
+                        "below20dma": (price_now is not None and dma20 is not None and price_now < dma20),
+                    }
                 )
         except Exception as e:
             print(f"Quadrant analysis error for {symbol}: {e}")

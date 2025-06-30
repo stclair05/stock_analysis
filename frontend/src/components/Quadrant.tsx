@@ -7,6 +7,7 @@ export type FortyWeekKey = "++" | "+-" | "-+" | "--";
 export type TickerInfo = {
   symbol: string;
   arrow?: "up" | "down" | "left" | "right" | null;
+  below20dma?: boolean;
 };
 
 export type TableData = {
@@ -160,7 +161,12 @@ export default function Quadrant({ data }: { data: TableData }) {
                   }
                 >
                   {data[fw][s].tickers.map((t) => (
-                    <div className="ticker-tag" key={t.symbol}>
+                    <div
+                      className={`ticker-tag${
+                        t.below20dma ? " below-ma20" : ""
+                      }`}
+                      key={t.symbol}
+                    >
                       {t.symbol}
                       {t.arrow && (
                         <span

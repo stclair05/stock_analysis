@@ -59,6 +59,11 @@
   font-weight: 500;
 }
 
+.ticker-tag.below-ma20 {
+  background-color: #ff9800;
+  color: #fff;
+}
+
 .ticker-arrow {
   margin-left: 2px;
   font-size: 12px;
