@@ -7,6 +7,7 @@ export default function RatioPage() {
   const [baseSymbol, setBaseSymbol] = useState("");
   const [compareInput, setCompareInput] = useState("");
   const [compareSymbols, setCompareSymbols] = useState<string[]>([]);
+  const [baseFirst, setBaseFirst] = useState(false);
 
   const ratioChartRefs = useRef<(IChartApi | null)[]>([]);
   const ratioSeriesRefs = useRef<(ISeriesApi<"Line"> | null)[]>([]);
@@ -127,6 +128,18 @@ export default function RatioPage() {
             Set Base
           </button>
         </div>
+        <div className="form-check form-switch mb-2">
+          <input
+            className="form-check-input"
+            type="checkbox"
+            id="baseFirstSwitch"
+            checked={baseFirst}
+            onChange={() => setBaseFirst(!baseFirst)}
+          />
+          <label className="form-check-label" htmlFor="baseFirstSwitch">
+            {baseFirst ? "Base / Compare" : "Compare / Base"}
+          </label>
+        </div>
         <div className="input-group">
           <input
             type="text"
@@ -159,26 +172,30 @@ export default function RatioPage() {
         )}
       </div>
       {baseSymbol &&
-        compareSymbols.map((sym, idx) => (
-          <div key={`${sym}-${idx}`} className="mt-4">
-            <div className="fw-bold text-muted mb-1">
-              {sym}/{baseSymbol} Ratio
+        compareSymbols.map((sym, idx) => {
+          const first = baseFirst ? baseSymbol : sym;
+          const second = baseFirst ? sym : baseSymbol;
+          return (
+            <div key={`${sym}-${idx}`} className="mt-4">
+              <div className="fw-bold text-muted mb-1">
+                {first}/{second} Ratio
+              </div>
+              <SecondaryChart
+                baseSymbol={first}
+                comparisonSymbol={second}
+                onReady={(chart, series) => {
+                  ratioChartRefs.current[idx] = chart;
+                  ratioSeriesRefs.current[idx] = series;
+                  registerRatioRangeSync(chart, idx);
+                  (series as any).applyOptions?.({
+                    autoscaleInfoProvider: autoscaleProvider.current,
+                  });
+                }}
+                onCrosshairMove={(time) => syncRatioCrosshair(idx, time)}
+              />
             </div>
-            <SecondaryChart
-              baseSymbol={sym}
-              comparisonSymbol={baseSymbol}
-              onReady={(chart, series) => {
-                ratioChartRefs.current[idx] = chart;
-                ratioSeriesRefs.current[idx] = series;
-                registerRatioRangeSync(chart, idx);
-                (series as any).applyOptions?.({
-                  autoscaleInfoProvider: autoscaleProvider.current,
-                });
-              }}
-              onCrosshairMove={(time) => syncRatioCrosshair(idx, time)}
-            />
-          </div>
-        ))}
+          );
+        })}
     </div>
   );
 }

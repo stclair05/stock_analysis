@@ -337,6 +337,7 @@ def analyse_batch(stock_requests: List[StockRequest]):
 @app.get("/quadrant_data")
 def get_quadrant_data(list_type: str = Query("portfolio", enum=["portfolio", "watchlist"])):
     """Return MACE x 40-week status table for portfolio or watchlist."""
+    targets: dict[str, float] = {}
     if list_type == "portfolio":
         json_path = Path("portfolio_store.json")
         if not json_path.exists():
@@ -344,7 +345,13 @@ def get_quadrant_data(list_type: str = Query("portfolio", enum=["portfolio", "wa
         else:
             with open(json_path, "r") as f:
                 data = json.load(f)
-            tickers = [item["ticker"] for item in data.get("equities", []) if "ticker" in item]
+            tickers = []
+            for item in data.get("equities", []):
+                if "ticker" in item:
+                    tickers.append(item["ticker"])
+                    t_val = item.get("target")
+                    if isinstance(t_val, (int, float)):
+                        targets[item["ticker"]] = float(t_val)
     else:
         data = load_data()
         tickers = data.get("watchlist", [])
@@ -370,6 +377,8 @@ def get_quadrant_data(list_type: str = Query("portfolio", enum=["portfolio", "wa
             analyser = StockAnalyser(symbol)
             mace_metric = analyser.mace()
             fw_metric = analyser.forty_week_status()
+            dma20 = analyser.calculate_20dma().current
+            price_now = analyser.get_current_price()
 
             mace_now = mace_metric.current
             mace_prev = mace_metric.seven_days_ago
@@ -404,8 +413,32 @@ def get_quadrant_data(list_type: str = Query("portfolio", enum=["portfolio", "wa
                     arrow = "left"
 
             if mace_key and fw_key:
+                near_target = False
+                if list_type == "portfolio":
+                    target_price = targets.get(symbol)
+                    if (
+                        target_price is not None
+                        and isinstance(target_price, (int, float))
+                        and price_now is not None
+                        and target_price != 0
+                    ):
+                        within_range = (
+                            abs(price_now - target_price) / target_price <= 0.05
+                        )
+                        if price_now >= target_price or within_range:
+                            near_target = True
+
                 table[fw_key][mace_key]["tickers"].append(
-                    {"symbol": symbol, "arrow": arrow}
+                    {
+                        "symbol": symbol,
+                        "arrow": arrow,
+                        "below20dma": (
+                            price_now is not None
+                            and dma20 is not None
+                            and price_now < dma20
+                        ),
+                        "nearTarget": near_target,
+                    }
                 )
         except Exception as e:
             print(f"Quadrant analysis error for {symbol}: {e}")
