@@ -55,7 +55,7 @@ export default function BuySellSignalsTab() {
     "ALL" | "BUY" | "SELL" | "MIXED"
   >("ALL");
 
-  // Hold mean reversion, RSI, Supertrend, and current price info for each ticker
+  // Hold mean reversion, RSI, Chaikin Money Flow, Supertrend, and current price info for each ticker
   const [meanRevRsi, setMeanRevRsi] = useState<
     Record<
       string,
@@ -63,6 +63,7 @@ export default function BuySellSignalsTab() {
         meanRev: string | null;
         rsi: string | null;
         supertrend: string | null;
+        cmf: string | null;
         currentPrice: number | null;
       }
     >
@@ -139,6 +140,23 @@ export default function BuySellSignalsTab() {
     if (lower.includes("above")) return "#4caf50";
     if (lower.includes("below")) return "#f44336";
     return "#bdbdbd";
+  };
+
+  const getCmfColor = (val: string | null) => {
+    if (!val) return "#9e9e9e"; // darker neutral for better visibility
+
+    const lower = val.toLowerCase();
+    const weakening = lower.includes("weakening");
+
+    if (lower.includes("money inflow")) {
+      return weakening ? "#a5d6a7" : "#2e7d32"; // light green / dark green
+    }
+
+    if (lower.includes("money outflow")) {
+      return weakening ? "#ef9a9a" : "#c62828"; // light red / dark red
+    }
+
+    return "#9e9e9e"; // fallback neutral
   };
 
   const getVisibleAndOrderedStrategies = (timeframe: string) => {
@@ -355,6 +373,7 @@ export default function BuySellSignalsTab() {
             meanRev: string | null;
             rsi: string | null;
             supertrend: string | null;
+            cmf: string | null;
             currentPrice: number | null;
           }
         > = {};
@@ -363,6 +382,7 @@ export default function BuySellSignalsTab() {
             meanRev: val?.mean_rev_weekly?.current ?? null,
             rsi: val?.rsi_ma_weekly?.current ?? null,
             supertrend: val?.super_trend?.current ?? null,
+            cmf: val?.chaikin_money_flow?.current ?? null,
             currentPrice:
               typeof val?.current_price === "number" ? val.current_price : null,
           };
@@ -828,7 +848,7 @@ export default function BuySellSignalsTab() {
                       )}
                     </th>
                   )}
-
+                  <th>Chaikin MF</th>
                   <th>Supertrend</th>
                   {visibleAndOrderedStrategies.map((s) => (
                     <th
@@ -852,7 +872,7 @@ export default function BuySellSignalsTab() {
                     <td
                       colSpan={
                         visibleAndOrderedStrategies.length +
-                        (listType === "portfolio" ? 5 : 3)
+                        (listType === "portfolio" ? 6 : 4)
                       }
                       className="text-center text-muted"
                     >
@@ -1179,6 +1199,17 @@ export default function BuySellSignalsTab() {
                             </td>
                           );
                         })()}
+                      <td
+                        style={{
+                          color: getCmfColor(
+                            meanRevRsi[holding.ticker]?.cmf ?? null
+                          ),
+                          textAlign: "center",
+                          fontWeight: 700,
+                        }}
+                      >
+                        {meanRevRsi[holding.ticker]?.cmf ?? "-"}
+                      </td>
                       {(() => {
                         const stVal =
                           meanRevRsi[holding.ticker]?.supertrend ?? null;
