@@ -40,6 +40,7 @@ SYMBOL_ALIASES = {
     "ALI": "ALI=F",
     "ALI=F": "ALI=F",
     "PALLADIUM": "PA=F",
+    "XPDUSD": "PA=F",
 
     # Energy
     "NATGAS": "NG=F",

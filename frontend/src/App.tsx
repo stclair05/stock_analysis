@@ -4,6 +4,7 @@ import HomePage from "./pages/HomePage.tsx";
 import PortfolioPage from "./pages/PortfolioPage.tsx";
 import WatchlistPage from "./pages/WatchlistPage.tsx";
 import QuadrantPage from "./pages/QuandrantPage.tsx";
+import RatioPage from "./pages/RatioPage";
 import Navbar from "./components/Navbar";
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
         <Route path="/portfolio" element={<PortfolioPage />} />
         <Route path="/watchlist" element={<WatchlistPage />} />
         <Route path="/quadrant" element={<QuadrantPage />} />
+        <Route path="/ratios" element={<RatioPage />} />
       </Routes>
     </Router>
   );

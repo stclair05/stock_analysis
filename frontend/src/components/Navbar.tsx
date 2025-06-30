@@ -36,6 +36,14 @@ export default function Navbar() {
         >
           Quadrant
         </Link>
+        <Link
+          to="/ratios"
+          className={`nav-link ${
+            location.pathname === "/ratios" ? "active" : ""
+          }`}
+        >
+          Ratios
+        </Link>
       </div>
     </nav>
   );
