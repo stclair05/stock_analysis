@@ -68,23 +68,21 @@ class StockAnalyser:
     def __init__(self, symbol: str):
         raw_symbol = symbol.upper().strip()
         self.symbol = SYMBOL_ALIASES.get(raw_symbol, raw_symbol)
-        self.df = StockAnalyser.get_price_data(self.symbol).copy()
+        self.df = StockAnalyser.get_price_data(self.symbol)
 
     def _download_data(self) -> pd.DataFrame:
         df = yf.download(self.symbol, period='20y', interval='1d', auto_adjust=False)
-        print(df.tail())
         if df.empty:
             raise HTTPException(status_code=400, detail="Stock symbol not found or data unavailable.")
         if isinstance(df.columns, pd.MultiIndex):
             df.columns = df.columns.droplevel(1)
-        print(df)
         return df
     
     
 
     @staticmethod
     @lru_cache(maxsize=100)
-    def get_price_data(symbol: str) -> pd.DataFrame:
+    def _get_price_data_cached(symbol: str) -> pd.DataFrame:
         with _price_data_lock: 
             df = yf.download(symbol, period="12y", interval="1d", auto_adjust=False)
             if df.empty:
@@ -132,8 +130,12 @@ class StockAnalyser:
                         )
 
             return df
-
-
+        
+    @staticmethod
+    def get_price_data(symbol: str) -> pd.DataFrame:
+        """Return a copy of cached price data for the given symbol."""
+        return StockAnalyser._get_price_data_cached(symbol).copy()
+    
     
     @cached_property
     def weekly_df(self) -> pd.DataFrame:
