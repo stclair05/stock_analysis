@@ -316,6 +316,11 @@
       "ticker": "MT",
       "sector": "",
       "technigrade": [6, 7, 6, 6, 4]
+    },
+    {
+      "ticker": "GRRR",
+      "sector": "",
+      "technigrade": [6, 7, 6, 6, 4]
     }
   ],
   "portfolio": []
