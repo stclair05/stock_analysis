@@ -65,8 +65,8 @@
 }
 
 .ticker-tag.near-target {
-  background-color: #2e7d32;
-  color: #fff;
+  background-color: #d1f7d6; /* pale mint green */
+  color: #205522; /* deep forest green */
 }
 
 .ticker-arrow {
