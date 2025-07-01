@@ -194,6 +194,7 @@ export default function Quadrant({ data }: { data: TableData }) {
                           </span>
                         )}
                         <span className="ticker-symbol">{t.symbol}</span>
+                        {/* Technigrade score beside the ticker */}
                         {t.technigrade && t.technigrade.length > 0 && (
                           <>
                             <span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
