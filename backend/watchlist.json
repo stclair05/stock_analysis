@@ -49,7 +49,6 @@
     "SAF.PA",
     "BA.L",
     "AM.PA",
-    "CDI",
     "MC",
     "XYL",
     "BBAI",
@@ -60,7 +59,12 @@
     "EVO.ST",
     "EDV",
     "ARKQ",
-    "META"
+    "META",
+    "HBM",
+    "FCX",
+    "SCCO",
+    "COPX",
+    "CPER"
   ],
   "portfolio": []
 }
