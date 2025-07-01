@@ -53,13 +53,14 @@
     "MC",
     "XYL",
     "BBAI",
-    "CDI",
+    "CDI.PA",
     "AMR",
     "HCC",
     "DOCU",
     "EVO.ST",
     "EDV",
-    "ARKQ"
+    "ARKQ",
+    "META"
   ],
   "portfolio": []
 }
