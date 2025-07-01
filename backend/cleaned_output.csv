@@ -1,0 +1,44 @@
+Name,Val1,Val2,Val3,Val4,Val5
+100 Energy (Unwtd),7,6,14,16,15
+100 Energy (Wid),7,6,14,14,13
+"101 Oil, Integrated",4,4,13,13,12
+"102 Oil & Gas, Independent, Pri.",5,4,13,16,14
+"103 Oil & Gas, Independent, Sec.",7,6,17,17,14
+"104 Oil & Gas, Independent, Emrg.",6,5,17,19,18
+"105 Oil & Gas, Independent, Micro Cap",9,9,19,19,19
+106 Oil Drilling,13,7,19,20,20
+"107 Oil Equipment & Services, Pri.",9,7,17,19,18
+"108 Oil Equipment & Services, Sec.",13,12,17,19,20
+"109 Oil Equipment & Services, Emerg.",4,4,12,16,15
+111 ComputerAided Exploration,1,15,14,19,16
+"112 Oil Refining & Marketing, Pri.",2,3,8,6,5
+"113 Oil Refining & Marketing, Sec.",1,2,7,4,2
+"114 Pipelines, Pri.",12,10,12,12,10
+"115 Pipelines, Sec.",9,6,12,11,10
+"116 Pipelines, Micro Cap",3,2,2,2,3
+117 Natural Gas Integrated/Dvsfd.,16,15,18,18,17
+"118 Gas Gathering & Marketing, Pri.",2,2,310,9,141314147
+"119 Gas Gathering & Marketing, Sec.",19,19,20,20,19
+"120 Propane, Marketing/Distribution",4,7,14,12,13
+121 Coal Mining,15,12,15,14,12
+"122 Oil & Gas Royalty Trusts, Pri.",15,12,15,17,14
+"123 Oil & Gas Royalty Trusts, Sec.",8,611,8,610,7
+"125 Oil & Gas, South America",10,7,17,17,13
+"126 Oil & Gas, Europe & Asia",1165,411,6,8,6
+200 Basic Materials (Unwtd),6,4,5,8,7
+200 Basic Materials (Wtd),7,5,7,8,6
+201 Aluminum,8,3,5,12,11
+"202 Steel, Domestic",8,8,8,14,13
+"204 Steel, Specialty",1144,14,7,4,4
+"205 Chemicals, Diversified",19,18,20,20,20
+"206 Specialty Chemicals, Pri.",18,17,17,17,16
+100 Energy (Unwid) U1 4.,7,6,14,16,15
+100 Energy (Wid) U1,2,4,7,6,14
+"101 Oil, Integrated U22",4,4,13,13,12
+"102 Oil & Gas, Independent, Pri. U21",5,4,13,16,14
+"103 Oil & Gas, Independent, Sec. U1",4,7,6,17,17
+"104 Oil & Gas, Independent, Emrg. Ui 3.",6,5,17,19,18
+"105 Oil & Gas, Independent, Micro Cap U1",3,9,9,19,19
+106 Oil Drilling U1,2,13,7,19,20
+"107 Oil Equipment & Services, Pri. U1",2,9,7,17,19
+"108 Oil Equipment & Services, Sec. U1",2,13,12,17,19
