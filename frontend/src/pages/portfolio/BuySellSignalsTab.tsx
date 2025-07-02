@@ -74,6 +74,8 @@ export default function BuySellSignalsTab({
         supertrend: string | null;
         cmf: string | null;
         currentPrice: number | null;
+        dailyChange: number | null;
+        dailyChangePercent: number | null;
       }
     >
   >({});
@@ -97,6 +99,7 @@ export default function BuySellSignalsTab({
   const COLUMN_LABELS: Record<string, string> = {
     mean_rev_rsi: "Mean Rev | RSI",
     pnl: "P/L",
+    daily_change: "Daily Δ",
     price_target: "Price vs Target",
     cmf: "Chaikin MF",
     supertrend: "Supertrend",
@@ -106,7 +109,11 @@ export default function BuySellSignalsTab({
 
   const allColumns = useMemo(() => {
     const base = ["mean_rev_rsi"] as string[];
-    if (listType === "portfolio") base.push("pnl", "price_target");
+    if (listType === "portfolio") {
+      base.push("pnl", "daily_change", "price_target");
+    } else {
+      base.push("daily_change");
+    }
     base.push("cmf", "supertrend");
     return [...base, ...getVisibleAndOrderedStrategies(selectedTimeframe)];
   }, [selectedTimeframe, listType]);
@@ -116,7 +123,7 @@ export default function BuySellSignalsTab({
       if (prev.length === 0) return allColumns;
       const kept = prev.filter((c) => allColumns.includes(c));
       const added = allColumns.filter((c) => !kept.includes(c));
-      return [...kept, ...added];
+      return Array.from(new Set([...kept, ...added]));
     });
   }, [allColumns]);
 
@@ -425,6 +432,8 @@ export default function BuySellSignalsTab({
             supertrend: string | null;
             cmf: string | null;
             currentPrice: number | null;
+            dailyChange: number | null;
+            dailyChangePercent: number | null;
           }
         > = {};
         Object.entries(data).forEach(([sym, val]: any) => {
@@ -435,6 +444,12 @@ export default function BuySellSignalsTab({
             cmf: val?.chaikin_money_flow?.current ?? null,
             currentPrice:
               typeof val?.current_price === "number" ? val.current_price : null,
+            dailyChange:
+              typeof val?.daily_change === "number" ? val.daily_change : null,
+            dailyChangePercent:
+              typeof val?.daily_change_percent === "number"
+                ? val.daily_change_percent
+                : null,
           };
         });
         setMeanRevRsi(summary);
@@ -686,6 +701,13 @@ export default function BuySellSignalsTab({
           const valB = getMeanRevRsiScore(b.ticker);
           if (valA !== valB) return dir === "asc" ? valA - valB : valB - valA;
           return 0;
+        } else if (col === "daily_change") {
+          const chA = meanRevRsi[a.ticker]?.dailyChangePercent;
+          const chB = meanRevRsi[b.ticker]?.dailyChangePercent;
+          const valA = typeof chA === "number" ? chA : -Infinity;
+          const valB = typeof chB === "number" ? chB : -Infinity;
+          if (valA === valB) return a.ticker.localeCompare(b.ticker);
+          return dir === "asc" ? valA - valB : valB - valA;
         } else {
           const sortOrder = { BUY: 1, SELL: 2, "": 3, "-": 4 };
           const signalA = signalSummary[a.ticker]?.[col]?.status || "-";
@@ -820,6 +842,21 @@ export default function BuySellSignalsTab({
           )}
         </th>
       );
+    } else if (col === "daily_change") {
+      return (
+        <th
+          key={col}
+          style={{ cursor: "pointer" }}
+          onClick={() => handleHeaderClick(col)}
+        >
+          {label}
+          {sortColumn === col && (
+            <span className="ms-1">
+              {sortDirection === "asc" ? " ▲" : " ▼"}
+            </span>
+          )}
+        </th>
+      );
     } else if (col === "price_target") {
       return (
         <th
@@ -896,6 +933,19 @@ export default function BuySellSignalsTab({
           <div style={{ fontSize: "0.8em", fontStyle: "italic", marginTop: 2 }}>
             {`(${sign}${formatCurrency(pnl.amount)} ${pnl.currency})`}
           </div>
+        </td>
+      );
+    } else if (col === "daily_change") {
+      const ch = meanRevRsi[holding.ticker];
+      const amount = ch?.dailyChange;
+      const pct = ch?.dailyChangePercent;
+      if (amount == null || pct == null)
+        return <td style={{ textAlign: "center" }}>-</td>;
+      const color = amount > 0 ? "#4caf50" : amount < 0 ? "#f44336" : "#bdbdbd";
+      const sign = amount > 0 ? "+" : "";
+      return (
+        <td style={{ textAlign: "center", color, fontWeight: 700 }}>
+          {`${sign}${formatCurrency(amount)}`} ({`${sign}${pct.toFixed(2)}%`})
         </td>
       );
     } else if (col === "price_target") {

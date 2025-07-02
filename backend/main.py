@@ -43,8 +43,11 @@ _fundamentals_cache = {}
 @app.post("/analyse", response_model=StockAnalysisResponse)
 def analyse(stock_request: StockRequest):
     analyser = StockAnalyser(stock_request.symbol)
+    change_amt, change_pct = analyser.get_daily_change()
     return StockAnalysisResponse(
         current_price=analyser.get_current_price(),
+        daily_change=change_amt,
+        daily_change_percent=change_pct,
         three_year_ma=analyser.calculate_3year_ma(),
         two_hundred_dma=analyser.calculate_200dma(),
         weekly_ichimoku=analyser.ichimoku_cloud(),
