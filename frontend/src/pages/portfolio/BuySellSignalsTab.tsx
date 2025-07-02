@@ -199,7 +199,7 @@ export default function BuySellSignalsTab({
     return "#9e9e9e"; // fallback neutral
   };
 
-  const getVisibleAndOrderedStrategies = (timeframe: string) => {
+  function getVisibleAndOrderedStrategies(timeframe: string) {
     let currentVisibleStrategies: string[] = [];
 
     switch (timeframe) {
@@ -236,7 +236,7 @@ export default function BuySellSignalsTab({
     });
 
     return filteredStrategies;
-  };
+  }
 
   // Determine local currency from ticker suffix
   const getCurrencyForTicker = (ticker: string): string => {
@@ -590,7 +590,7 @@ export default function BuySellSignalsTab({
     return { amount, percent, currency: "USD" };
   };
 
-  const isUnavailable = (strategy: string, tf: string) => {
+  function isUnavailable(strategy: string, tf: string) {
     if (
       strategy === "trend_investor_pro" &&
       (tf === "weekly" || tf === "monthly")
@@ -601,7 +601,7 @@ export default function BuySellSignalsTab({
     if (strategy === "stclair_longterm" && tf !== "weekly") return true;
     if (strategy === "mace_40w" && tf !== "weekly") return true;
     return false;
-  };
+  }
 
   const handleHeaderClick = (column: string) => {
     if (sortColumn === column) {

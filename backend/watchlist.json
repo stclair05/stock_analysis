@@ -6,11 +6,6 @@
       "technigrade": [4, 3, 2, 5, 3]
     },
     {
-      "ticker": "SOUN",
-      "sector": "",
-      "technigrade": [16, 16, 19, 16, 15]
-    },
-    {
       "ticker": "GEV",
       "sector": "",
       "technigrade": [1, 2, 2, 1, 1]
@@ -19,11 +14,6 @@
       "ticker": "DE",
       "sector": "",
       "technigrade": [8, 5, 6, 5, 5]
-    },
-    {
-      "ticker": "AXON",
-      "sector": "",
-      "technigrade": [2, 2, 2, 2, 2]
     },
     {
       "ticker": "NTRA",
@@ -186,11 +176,6 @@
       "sector": ""
     },
     {
-      "ticker": "SAP",
-      "sector": "",
-      "technigrade": [7, 8, 7, 4, 4]
-    },
-    {
       "ticker": "SYK",
       "sector": "",
       "technigrade": [9, 11, 11, 10, 9]
@@ -277,18 +262,9 @@
       "technigrade": [3, 2, 1, 2, 1]
     },
     {
-      "ticker": "ARKQ",
-      "sector": ""
-    },
-    {
       "ticker": "META",
       "sector": "",
       "technigrade": [4, 5, 5, 4, 6]
-    },
-    {
-      "ticker": "HBM",
-      "sector": "",
-      "technigrade": [2, 3, 2, 3, 3]
     },
     {
       "ticker": "FCX",
@@ -306,10 +282,6 @@
     },
     {
       "ticker": "CPER",
-      "sector": ""
-    },
-    {
-      "ticker": "URA",
       "sector": ""
     },
     {
