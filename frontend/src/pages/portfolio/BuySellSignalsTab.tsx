@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import "../PortfolioPage.css";
 import { BlockArrowBar } from "../../components/BlockArrowBar";
-import { SlidersHorizontal } from "lucide-react";
 
 const timeframes = ["daily", "weekly", "monthly"];
 const allStrategies = [
@@ -28,8 +27,6 @@ export default function BuySellSignalsTab({
   const [signalSummary, setSignalSummary] = useState<any>({});
   const [selectedTimeframe, setSelectedTimeframe] = useState("weekly");
   const [signalsLoading, setSignalsLoading] = useState(false);
-  const [showColumnsDropdown, setShowColumnsDropdown] = useState(false);
-  const columnsDropdownRef = useRef<HTMLDivElement | null>(null);
 
   // Cache for the actual BUY/SELL signals (based on timeframe and listType)
   const signalsCache = useRef<{
@@ -84,9 +81,6 @@ export default function BuySellSignalsTab({
   >({});
   // Store forex rates for currency conversion
   const [forexRates, setForexRates] = useState<Record<string, number>>({});
-  const [dailyChange, setDailyChange] = useState<
-    Record<string, { amount: number; percent: number } | null>
-  >({});
 
   const strategyApiMap: Record<string, string> = {
     trend_investor_pro: "trendinvestorpro",
@@ -96,34 +90,6 @@ export default function BuySellSignalsTab({
     mace_40w: "mace_40w",
     // demarker: "demarker",
   };
-
-  const COLUMN_LABELS: Record<string, string> = {
-    mean_rev_rsi: "Mean Rev | RSI",
-    pnl: "P/L",
-    daily_change: "Daily Chg",
-    price_target: "Price vs Target",
-    cmf: "Chaikin MF",
-    supertrend: "Supertrend",
-  };
-
-  const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
-
-  const allColumns = useMemo(() => {
-    const base = ["mean_rev_rsi"] as string[];
-    if (listType === "portfolio")
-      base.push("pnl", "daily_change", "price_target");
-    base.push("cmf", "supertrend");
-    return [...base, ...getVisibleAndOrderedStrategies(selectedTimeframe)];
-  }, [selectedTimeframe, listType]);
-
-  useEffect(() => {
-    setSelectedColumns((prev) => {
-      if (prev.length === 0) return allColumns;
-      const kept = prev.filter((c) => allColumns.includes(c));
-      const added = allColumns.filter((c) => !kept.includes(c));
-      return [...kept, ...added];
-    });
-  }, [allColumns]);
 
   const getSlopeArrow = (val: string | null) => {
     if (!val) return "-";
@@ -199,7 +165,7 @@ export default function BuySellSignalsTab({
     return "#9e9e9e"; // fallback neutral
   };
 
-  function getVisibleAndOrderedStrategies(timeframe: string) {
+  const getVisibleAndOrderedStrategies = (timeframe: string) => {
     let currentVisibleStrategies: string[] = [];
 
     switch (timeframe) {
@@ -236,7 +202,7 @@ export default function BuySellSignalsTab({
     });
 
     return filteredStrategies;
-  }
+  };
 
   // Determine local currency from ticker suffix
   const getCurrencyForTicker = (ticker: string): string => {
@@ -343,21 +309,6 @@ export default function BuySellSignalsTab({
     fetchTickers();
   }, [listType]); // Rerun this effect when listType changes
 
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        columnsDropdownRef.current &&
-        !columnsDropdownRef.current.contains(event.target as Node)
-      ) {
-        setShowColumnsDropdown(false);
-      }
-    }
-    if (showColumnsDropdown) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [showColumnsDropdown]);
-
   // Fetch live portfolio data (shares and average cost) for P/L
   useEffect(() => {
     if (listType !== "portfolio") {
@@ -449,28 +400,6 @@ export default function BuySellSignalsTab({
     };
 
     fetchMetrics();
-  }, [portfolio]);
-
-  useEffect(() => {
-    if (portfolio.length === 0) {
-      setDailyChange({});
-      return;
-    }
-    const fetchDaily = async () => {
-      try {
-        const params = new URLSearchParams();
-        portfolio.forEach((p) => params.append("symbols", p.ticker));
-        const res = await fetch(
-          `http://localhost:8000/daily_change?${params.toString()}`
-        );
-        if (!res.ok) throw new Error("daily");
-        const data = await res.json();
-        setDailyChange(data);
-      } catch {
-        setDailyChange({});
-      }
-    };
-    fetchDaily();
   }, [portfolio]);
 
   // Fetch signals for all stocks/strategies/timeframes
@@ -590,7 +519,7 @@ export default function BuySellSignalsTab({
     return { amount, percent, currency: "USD" };
   };
 
-  function isUnavailable(strategy: string, tf: string) {
+  const isUnavailable = (strategy: string, tf: string) => {
     if (
       strategy === "trend_investor_pro" &&
       (tf === "weekly" || tf === "monthly")
@@ -601,7 +530,7 @@ export default function BuySellSignalsTab({
     if (strategy === "stclair_longterm" && tf !== "weekly") return true;
     if (strategy === "mace_40w" && tf !== "weekly") return true;
     return false;
-  }
+  };
 
   const handleHeaderClick = (column: string) => {
     if (sortColumn === column) {
@@ -708,13 +637,6 @@ export default function BuySellSignalsTab({
           const valB = pnlB ? pnlB.percent : -Infinity;
           if (valA === valB) return a.ticker.localeCompare(b.ticker);
           return dir === "asc" ? valA - valB : valB - valA;
-        } else if (col === "daily_change") {
-          const chA = dailyChange[a.ticker];
-          const chB = dailyChange[b.ticker];
-          const valA = chA ? chA.percent : -Infinity;
-          const valB = chB ? chB.percent : -Infinity;
-          if (valA === valB) return a.ticker.localeCompare(b.ticker);
-          return dir === "asc" ? valA - valB : valB - valA;
         } else if (col === "mean_rev_rsi") {
           const valA = getMeanRevRsiScore(a.ticker);
           const valB = getMeanRevRsiScore(b.ticker);
@@ -817,276 +739,6 @@ export default function BuySellSignalsTab({
     return Object.values(sectorSummary).reduce((sum, count) => sum + count, 0);
   }, [sectorSummary]);
 
-  const renderHeader = (col: string) => {
-    const label =
-      COLUMN_LABELS[col] ||
-      col.replace(/_/g, " ").replace("longterm", " LongTerm");
-    if (col === "mean_rev_rsi") {
-      return (
-        <th
-          key={col}
-          style={{ width: "120px", cursor: "pointer" }}
-          onClick={() => handleHeaderClick(col)}
-        >
-          {label}
-          {(sortColumn === col || secondarySortColumn === col) && (
-            <span className="ms-1">
-              {(sortColumn === col ? sortDirection : secondarySortDirection) ===
-              "asc"
-                ? " ▲"
-                : " ▼"}
-            </span>
-          )}
-        </th>
-      );
-    } else if (col === "pnl" || col === "daily_change") {
-      return (
-        <th
-          key={col}
-          style={{ cursor: "pointer" }}
-          onClick={() => handleHeaderClick(col)}
-        >
-          {label}
-          {sortColumn === col && (
-            <span className="ms-1">
-              {sortDirection === "asc" ? " ▲" : " ▼"}
-            </span>
-          )}
-        </th>
-      );
-    } else if (col === "price_target") {
-      return (
-        <th
-          key={col}
-          style={{ cursor: "pointer" }}
-          onClick={() => handleHeaderClick(col)}
-        >
-          {label}
-          {(sortColumn === col || secondarySortColumn === col) && (
-            <span className="ms-1">
-              {(sortColumn === col ? sortDirection : secondarySortDirection) ===
-              "asc"
-                ? " ▲"
-                : " ▼"}
-            </span>
-          )}
-        </th>
-      );
-    } else if (col === "cmf" || col === "supertrend") {
-      return <th key={col}>{label}</th>;
-    } else {
-      return (
-        <th
-          key={col}
-          onClick={() => handleHeaderClick(col)}
-          style={{ cursor: "pointer" }}
-        >
-          {label}
-          {sortColumn === col && (
-            <span className="ms-1">
-              {sortDirection === "asc" ? " ▲" : " ▼"}
-            </span>
-          )}
-        </th>
-      );
-    }
-  };
-
-  const renderCell = (
-    col: string,
-    holding: { ticker: string; sector?: string; target?: number }
-  ) => {
-    if (col === "mean_rev_rsi") {
-      return (
-        <td style={{ textAlign: "center" }}>
-          <span
-            style={{
-              color: getMeanRevColor(
-                meanRevRsi[holding.ticker]?.meanRev ?? null
-              ),
-            }}
-          >
-            {getSlopeArrow(meanRevRsi[holding.ticker]?.meanRev ?? null)}
-          </span>{" "}
-          |{" "}
-          <span
-            style={{
-              color: getRsiColor(meanRevRsi[holding.ticker]?.rsi ?? null),
-            }}
-          >
-            {getSlopeArrow(meanRevRsi[holding.ticker]?.rsi ?? null)}
-          </span>
-        </td>
-      );
-    } else if (col === "pnl") {
-      const pnl = getPnlForTicker(holding.ticker);
-      if (!pnl) return <td style={{ textAlign: "center" }}>-</td>;
-      const color =
-        pnl.amount > 0 ? "#4caf50" : pnl.amount < 0 ? "#f44336" : "#bdbdbd";
-      const sign = pnl.amount > 0 ? "+" : "";
-      return (
-        <td style={{ textAlign: "center", color, fontWeight: 700 }}>
-          {`${sign}${pnl.percent.toFixed(2)}%`}
-          <div style={{ fontSize: "0.8em", fontStyle: "italic", marginTop: 2 }}>
-            {`(${sign}${formatCurrency(pnl.amount)} ${pnl.currency})`}
-          </div>
-        </td>
-      );
-    } else if (col === "price_target") {
-      const price = meanRevRsi[holding.ticker]?.currentPrice;
-      const target = holding.target;
-      if (typeof price === "number" && typeof target === "number") {
-        const diff = ((price - target) / target) * 100;
-        const diffStr =
-          diff >= 0 ? `+${diff.toFixed(2)}%` : `${diff.toFixed(2)}%`;
-        const cellClass =
-          diff >= 0 ? "price-target-positive" : "price-target-negative";
-        return (
-          <td className={cellClass} style={{ textAlign: "center" }}>
-            {`${price.toFixed(2)} | ${target.toFixed(2)} (${diffStr})`}
-          </td>
-        );
-      }
-      return (
-        <td style={{ textAlign: "center" }}>
-          {price != null ? price.toFixed(2) : "-"}
-        </td>
-      );
-    } else if (col === "daily_change") {
-      const chg = dailyChange[holding.ticker];
-      if (!chg) return <td style={{ textAlign: "center" }}>-</td>;
-      const color =
-        chg.amount > 0 ? "#4caf50" : chg.amount < 0 ? "#f44336" : "#bdbdbd";
-      const sign = chg.amount > 0 ? "+" : "";
-      return (
-        <td style={{ textAlign: "center", color, fontWeight: 700 }}>
-          {`${sign}${chg.amount.toFixed(2)} (${sign}${chg.percent.toFixed(
-            2
-          )}%)`}
-        </td>
-      );
-    } else if (col === "cmf") {
-      return (
-        <td
-          style={{
-            color: getCmfColor(meanRevRsi[holding.ticker]?.cmf ?? null),
-            textAlign: "center",
-            fontWeight: 550,
-          }}
-        >
-          {meanRevRsi[holding.ticker]?.cmf ?? "-"}
-        </td>
-      );
-    } else if (col === "supertrend") {
-      const stVal = meanRevRsi[holding.ticker]?.supertrend ?? null;
-      const buySell = stVal ? stVal.toUpperCase() : "";
-      const delta = signalSummary[holding.ticker]?._generic?.strength || "";
-      const color =
-        buySell === "BUY"
-          ? "#4caf50"
-          : buySell === "SELL"
-          ? "#f44336"
-          : "#bdbdbd";
-
-      let cellClass = "";
-      const genericStatus =
-        signalSummary[holding.ticker]?._generic?.status || "";
-
-      if (genericStatus === "BUY") {
-        if (delta === "very strong") cellClass = "signal-buy-very-strong";
-        else if (delta === "strengthening")
-          cellClass = "signal-buy-strengthening";
-        else if (delta === "weakening") cellClass = "signal-buy-weakening";
-        else if (delta === "very weak") cellClass = "signal-buy-very-weak";
-      } else if (genericStatus === "SELL") {
-        if (delta === "very strong") cellClass = "signal-sell-very-strong";
-        else if (delta === "strengthening")
-          cellClass = "signal-sell-strengthening";
-        else if (delta === "weakening") cellClass = "signal-sell-weakening";
-        else if (delta === "very weak") cellClass = "signal-sell-very-weak";
-      }
-
-      if (delta === "crossed") {
-        cellClass += " signal-crossed";
-      }
-
-      const cellStyle: React.CSSProperties = {
-        color,
-        textAlign: "center",
-        fontWeight: 700,
-      };
-
-      return (
-        <td style={cellStyle} className={cellClass}>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-            }}
-          >
-            <span title={delta}>{buySell || "-"}</span>
-          </div>
-        </td>
-      );
-    }
-    // strategy columns
-    const signalObj = signalSummary[holding.ticker]?.[col] ?? {};
-    const buySell = signalObj.signal || "";
-    const delta = signalSummary[holding.ticker]?._generic?.strength || "";
-    const color =
-      buySell === "BUY"
-        ? "#4caf50"
-        : buySell === "SELL"
-        ? "#f44336"
-        : "#bdbdbd";
-    let icon = "";
-    if (delta === "crossed") icon = " 🔁";
-    const cellStyle: React.CSSProperties = {
-      color,
-      textAlign: "center",
-      fontWeight: 700,
-    };
-    let cellClass = "";
-    const genericStatus = signalSummary[holding.ticker]?._generic?.status || "";
-    if (genericStatus === "BUY") {
-      if (delta === "very strong") cellClass = "signal-buy-very-strong";
-      else if (delta === "strengthening")
-        cellClass = "signal-buy-strengthening";
-      else if (delta === "weakening") cellClass = "signal-buy-weakening";
-      else if (delta === "very weak") cellClass = "signal-buy-very-weak";
-    } else if (genericStatus === "SELL") {
-      if (delta === "very strong") cellClass = "signal-sell-very-strong";
-      else if (delta === "strengthening")
-        cellClass = "signal-sell-strengthening";
-      else if (delta === "weakening") cellClass = "signal-sell-weakening";
-      else if (delta === "very weak") cellClass = "signal-sell-very-weak";
-    }
-    if (delta === "crossed") {
-      cellClass += " signal-crossed";
-    }
-    return (
-      <td key={col} style={cellStyle} className={cellClass}>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-          }}
-        >
-          <span title={delta}>
-            {buySell || "-"}
-            {icon}
-          </span>
-        </div>
-      </td>
-    );
-  };
-
   return (
     <div>
       <div className="mb-3 d-flex align-items-center justify-content-between">
@@ -1121,59 +773,6 @@ export default function BuySellSignalsTab({
             <option value="daily">Daily</option>
             <option value="monthly">Monthly</option>
           </select>
-
-          <div
-            className="dropdown ms-3"
-            ref={columnsDropdownRef}
-            style={{ position: "relative" }}
-          >
-            <button
-              className="btn btn-outline-primary d-flex align-items-center gap-2"
-              type="button"
-              onClick={() => setShowColumnsDropdown((v) => !v)}
-            >
-              <SlidersHorizontal size={18} /> Columns
-            </button>
-            {showColumnsDropdown && (
-              <div
-                className="dropdown-menu show p-2 mt-2 shadow rounded-3"
-                style={{
-                  display: "block",
-                  position: "absolute",
-                  left: 0,
-                  top: "110%",
-                  minWidth: 200,
-                  maxHeight: 320,
-                  overflowY: "auto",
-                  zIndex: 30,
-                }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                {allColumns.map((col) => (
-                  <label
-                    key={col}
-                    className="dropdown-item d-flex align-items-center"
-                    style={{ userSelect: "none" }}
-                  >
-                    <input
-                      type="checkbox"
-                      className="form-check-input me-2"
-                      checked={selectedColumns.includes(col)}
-                      onChange={() => {
-                        setSelectedColumns((prev) =>
-                          prev.includes(col)
-                            ? prev.filter((c) => c !== col)
-                            : [...prev, col]
-                        );
-                      }}
-                    />
-                    {COLUMN_LABELS[col] ||
-                      col.replace(/_/g, " ").replace("longterm", " LongTerm")}
-                  </label>
-                ))}
-              </div>
-            )}
-          </div>
         </div>
 
         {/* Global Signal Filter Dropdown */}
@@ -1210,14 +809,79 @@ export default function BuySellSignalsTab({
               <thead>
                 <tr>
                   <th style={{ minWidth: "260px" }}>Stock</th>
-                  {selectedColumns.map((c) => renderHeader(c))}
+                  <th
+                    style={{ width: "120px", cursor: "pointer" }}
+                    onClick={() => handleHeaderClick("mean_rev_rsi")}
+                  >
+                    Mean Rev | RSI
+                    {(sortColumn === "mean_rev_rsi" ||
+                      secondarySortColumn === "mean_rev_rsi") && (
+                      <span className="ms-1">
+                        {(sortColumn === "mean_rev_rsi"
+                          ? sortDirection
+                          : secondarySortDirection) === "asc"
+                          ? " ▲"
+                          : " ▼"}
+                      </span>
+                    )}
+                  </th>
+                  {listType === "portfolio" && (
+                    <th
+                      style={{ cursor: "pointer" }}
+                      onClick={() => handleHeaderClick("pnl")}
+                    >
+                      P/L
+                      {sortColumn === "pnl" && (
+                        <span className="ms-1">
+                          {sortDirection === "asc" ? " ▲" : " ▼"}
+                        </span>
+                      )}
+                    </th>
+                  )}
+                  {listType === "portfolio" && (
+                    <th
+                      style={{ cursor: "pointer" }}
+                      onClick={() => handleHeaderClick("price_target")}
+                    >
+                      Price vs Target
+                      {(sortColumn === "price_target" ||
+                        secondarySortColumn === "price_target") && (
+                        <span className="ms-1">
+                          {(sortColumn === "price_target"
+                            ? sortDirection
+                            : secondarySortDirection) === "asc"
+                            ? " ▲"
+                            : " ▼"}
+                        </span>
+                      )}
+                    </th>
+                  )}
+                  <th>Chaikin MF</th>
+                  <th>Supertrend</th>
+                  {visibleAndOrderedStrategies.map((s) => (
+                    <th
+                      key={s}
+                      onClick={() => handleHeaderClick(s)}
+                      style={{ cursor: "pointer" }}
+                    >
+                      {s.replace(/_/g, " ").replace("longterm", " LongTerm")}
+                      {sortColumn === s && (
+                        <span className="ms-1">
+                          {sortDirection === "asc" ? " ▲" : " ▼"}
+                        </span>
+                      )}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {displayedPortfolio.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={selectedColumns.length + 1}
+                      colSpan={
+                        visibleAndOrderedStrategies.length +
+                        (listType === "portfolio" ? 6 : 4)
+                      }
                       className="text-center text-muted"
                     >
                       No signals found matching your filter.
@@ -1447,7 +1111,249 @@ export default function BuySellSignalsTab({
                           })()}
                         </div>
                       </td>
-                      {selectedColumns.map((c) => renderCell(c, holding))}
+
+                      <td style={{ textAlign: "center", fontWeight: 700 }}>
+                        <span
+                          style={{
+                            color: getMeanRevColor(
+                              meanRevRsi[holding.ticker]?.meanRev ?? null
+                            ),
+                          }}
+                        >
+                          {getSlopeArrow(
+                            meanRevRsi[holding.ticker]?.meanRev ?? null
+                          )}
+                        </span>
+                        {" | "}
+                        <span
+                          style={{
+                            color: getRsiColor(
+                              meanRevRsi[holding.ticker]?.rsi ?? null
+                            ),
+                          }}
+                        >
+                          {getSlopeArrow(
+                            meanRevRsi[holding.ticker]?.rsi ?? null
+                          )}
+                        </span>
+                      </td>
+                      {listType === "portfolio" &&
+                        (() => {
+                          const pnl = getPnlForTicker(holding.ticker);
+                          if (!pnl)
+                            return <td style={{ textAlign: "center" }}>-</td>;
+                          const color =
+                            pnl.amount > 0
+                              ? "#4caf50"
+                              : pnl.amount < 0
+                              ? "#f44336"
+                              : "#bdbdbd";
+                          const sign = pnl.amount > 0 ? "+" : "";
+                          return (
+                            <td
+                              style={{
+                                textAlign: "center",
+                                color,
+                                fontWeight: 700,
+                              }}
+                            >
+                              {`${sign}${pnl.percent.toFixed(2)}%`}
+                              <div
+                                style={{
+                                  fontSize: "0.8em",
+                                  fontStyle: "italic",
+                                  marginTop: 2,
+                                }}
+                              >
+                                {`(${sign}${formatCurrency(pnl.amount)} ${
+                                  pnl.currency
+                                })`}
+                              </div>
+                            </td>
+                          );
+                        })()}
+                      {listType === "portfolio" &&
+                        (() => {
+                          const price =
+                            meanRevRsi[holding.ticker]?.currentPrice;
+                          const target = holding.target;
+                          if (
+                            typeof price === "number" &&
+                            typeof target === "number"
+                          ) {
+                            const diff = ((price - target) / target) * 100;
+                            const diffStr =
+                              diff >= 0
+                                ? `+${diff.toFixed(2)}%`
+                                : `${diff.toFixed(2)}%`;
+                            const cellClass =
+                              diff >= 0
+                                ? "price-target-positive"
+                                : "price-target-negative";
+                            return (
+                              <td
+                                className={cellClass}
+                                style={{ textAlign: "center" }}
+                              >
+                                {`${price.toFixed(2)} | ${target.toFixed(
+                                  2
+                                )} (${diffStr})`}
+                              </td>
+                            );
+                          }
+                          return (
+                            <td style={{ textAlign: "center" }}>
+                              {price != null ? price.toFixed(2) : "-"}
+                            </td>
+                          );
+                        })()}
+                      <td
+                        style={{
+                          color: getCmfColor(
+                            meanRevRsi[holding.ticker]?.cmf ?? null
+                          ),
+                          textAlign: "center",
+                          fontWeight: 550,
+                        }}
+                      >
+                        {meanRevRsi[holding.ticker]?.cmf ?? "-"}
+                      </td>
+                      {(() => {
+                        const stVal =
+                          meanRevRsi[holding.ticker]?.supertrend ?? null;
+                        const buySell = stVal ? stVal.toUpperCase() : "";
+                        const delta =
+                          signalSummary[holding.ticker]?._generic?.strength ||
+                          "";
+                        const color =
+                          buySell === "BUY"
+                            ? "#4caf50"
+                            : buySell === "SELL"
+                            ? "#f44336"
+                            : "#bdbdbd";
+
+                        let cellClass = "";
+                        const genericStatus =
+                          signalSummary[holding.ticker]?._generic?.status || "";
+
+                        if (genericStatus === "BUY") {
+                          if (delta === "very strong")
+                            cellClass = "signal-buy-very-strong";
+                          else if (delta === "strengthening")
+                            cellClass = "signal-buy-strengthening";
+                          else if (delta === "weakening")
+                            cellClass = "signal-buy-weakening";
+                          else if (delta === "very weak")
+                            cellClass = "signal-buy-very-weak";
+                        } else if (genericStatus === "SELL") {
+                          if (delta === "very strong")
+                            cellClass = "signal-sell-very-strong";
+                          else if (delta === "strengthening")
+                            cellClass = "signal-sell-strengthening";
+                          else if (delta === "weakening")
+                            cellClass = "signal-sell-weakening";
+                          else if (delta === "very weak")
+                            cellClass = "signal-sell-very-weak";
+                        }
+
+                        if (delta === "crossed") {
+                          cellClass += " signal-crossed";
+                        }
+
+                        const cellStyle: React.CSSProperties = {
+                          color,
+                          textAlign: "center",
+                          fontWeight: 700,
+                        };
+
+                        return (
+                          <td style={cellStyle} className={cellClass}>
+                            <div
+                              style={{
+                                display: "flex",
+                                flexDirection: "row",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                gap: 8,
+                              }}
+                            >
+                              <span title={delta}>{buySell || "-"}</span>
+                            </div>
+                          </td>
+                        );
+                      })()}
+
+                      {visibleAndOrderedStrategies.map((s) => {
+                        const signalObj =
+                          signalSummary[holding.ticker]?.[s] ?? {};
+                        const buySell = signalObj.signal || ""; // used for text color
+                        const delta =
+                          signalSummary[holding.ticker]?._generic?.strength ||
+                          ""; // from generic, used for background class
+
+                        const color =
+                          buySell === "BUY"
+                            ? "#4caf50"
+                            : buySell === "SELL"
+                            ? "#f44336"
+                            : "#bdbdbd";
+
+                        let icon = "";
+                        if (delta === "crossed") icon = " 🔁";
+
+                        const cellStyle: React.CSSProperties = {
+                          color,
+                          textAlign: "center",
+                          fontWeight: 700,
+                        };
+
+                        let cellClass = "";
+                        const genericStatus =
+                          signalSummary[holding.ticker]?._generic?.status || "";
+
+                        if (genericStatus === "BUY") {
+                          if (delta === "very strong")
+                            cellClass = "signal-buy-very-strong";
+                          else if (delta === "strengthening")
+                            cellClass = "signal-buy-strengthening";
+                          else if (delta === "weakening")
+                            cellClass = "signal-buy-weakening";
+                          else if (delta === "very weak")
+                            cellClass = "signal-buy-very-weak";
+                        } else if (genericStatus === "SELL") {
+                          if (delta === "very strong")
+                            cellClass = "signal-sell-very-strong";
+                          else if (delta === "strengthening")
+                            cellClass = "signal-sell-strengthening";
+                          else if (delta === "weakening")
+                            cellClass = "signal-sell-weakening";
+                          else if (delta === "very weak")
+                            cellClass = "signal-sell-very-weak";
+                        }
+
+                        if (delta === "crossed") {
+                          cellClass += " signal-crossed";
+                        }
+
+                        return (
+                          <td key={s} style={cellStyle} className={cellClass}>
+                            <div
+                              style={{
+                                display: "flex",
+                                flexDirection: "row",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                gap: 8,
+                              }}
+                            >
+                              <span title={delta}>
+                                {buySell || "-"}
+                                {icon}
+                              </span>
+                            </div>
+                          </td>
+                        );
+                      })}
                     </tr>
                   ))
                 )}

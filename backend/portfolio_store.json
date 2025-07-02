@@ -439,7 +439,7 @@
       "player": 5
     },
     {
-      "ticker": "DYL",
+      "ticker": "DYL.AX",
       "shares": 200000,
       "average_cost": 1.13,
       "sector": "Uranium",
@@ -836,6 +836,15 @@
       "technigrade": [15, 15, 9, 15, 16]
     },
     {
+      "ticker": "EL",
+      "shares": 1000.0,
+      "average_cost": 79.65,
+      "sector": "Package Goods/Cosmetics",
+      "target": "",
+      "player": "",
+      "technigrade": [3, 4, 10, 9, 10]
+    },
+    {
       "ticker": "KTOS",
       "shares": 500.0,
       "average_cost": 42.46,
@@ -937,6 +946,14 @@
       "average_cost": 0.0,
       "sector": "Hong Kong and China",
       "target": 234,
+      "player": 10
+    },
+    {
+      "ticker": "6181.HK",
+      "shares": 1500,
+      "average_cost": 131.43,
+      "sector": "Hong Kong and China",
+      "target": "",
       "player": 10
     }
   ],
