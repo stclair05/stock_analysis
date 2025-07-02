@@ -358,6 +358,46 @@ def analyse_batch(stock_requests: List[StockRequest]):
                 results[symbol] = {"error": str(exc)}
     return results
 
+@app.post("/api/batch_signals")
+def batch_signals(
+    tickers: List[str] = Query(...),
+    timeframe: str = Query("weekly"),
+    strategies: List[str] = Query(...)
+):
+    results = {}
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        futures = {}
+
+        for symbol in tickers:
+            futures[symbol] = executor.submit(_get_signals_for_symbol, symbol, timeframe, strategies)
+
+        for symbol, future in futures.items():
+            try:
+                results[symbol] = future.result()
+            except Exception as e:
+                results[symbol] = {"error": str(e)}
+
+    return results
+
+
+def _get_signals_for_symbol(symbol: str, timeframe: str, strategies: List[str]):
+    analyser = StockAnalyser(symbol)
+    result = {}
+    for strat in strategies:
+        if strat == "trendinvestorpro":
+            result[strat] = {"markers": analyser.get_trendinvestorpro_signals(timeframe)}
+        elif strat == "northstar":
+            result[strat] = {"markers": analyser.get_northstar_signals(timeframe)}
+        elif strat == "stclair":
+            result[strat] = {"markers": analyser.get_stclair_signals(timeframe)}
+        elif strat == "stclairlongterm":
+            result[strat] = {"markers": analyser.get_stclairlongterm_signals(timeframe)}
+        elif strat == "mace_40w":
+            result[strat] = {"markers": analyser.get_mace_40w_signals()}
+    result["_generic"] = analyser.get_generic_strength_status(timeframe)
+    return result
+
+
 @app.get("/quadrant_data")
 def get_quadrant_data(list_type: str = Query("portfolio", enum=["portfolio", "watchlist"])):
     """Return MACE x 40-week status table for portfolio or watchlist."""
