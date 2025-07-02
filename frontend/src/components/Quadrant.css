@@ -60,13 +60,13 @@
 }
 
 .ticker-tag.below-ma20 {
-  background-color: #ff9800;
-  color: #fff;
+  background-color: #f8be67; /* lighter orange background */
+  color: #6a1b09; /* dark reddish-brown text */
 }
 
 .ticker-tag.near-target {
-  background-color: #2e7d32;
-  color: #fff;
+  background-color: #d1f7d6; /* pale mint green */
+  color: #205522; /* deep forest green */
 }
 
 .ticker-arrow {

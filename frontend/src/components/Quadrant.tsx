@@ -9,6 +9,7 @@ export type TickerInfo = {
   arrow?: "up" | "down" | "left" | "right" | null;
   below20dma?: boolean;
   nearTarget?: boolean;
+  technigrade?: number[];
 };
 
 export type TableData = {
@@ -161,24 +162,49 @@ export default function Quadrant({ data }: { data: TableData }) {
                       : undefined
                   }
                 >
-                  {data[fw][s].tickers.map((t) => (
-                    <div
-                      className={`ticker-tag${
-                        t.below20dma ? " below-ma20" : ""
-                      }${t.nearTarget ? " near-target" : ""}`}
-                      key={t.symbol}
-                    >
-                      {t.symbol}
-                      {t.arrow && (
-                        <span
-                          className="ticker-arrow"
-                          style={{ color: arrowColors[t.arrow] }}
-                        >
-                          {arrowSymbols[t.arrow]}
-                        </span>
-                      )}
-                    </div>
-                  ))}
+                  {[...data[fw][s].tickers]
+                    .sort((a, b) => {
+                      const aHasGrade =
+                        a.technigrade && a.technigrade.length > 0;
+                      const bHasGrade =
+                        b.technigrade && b.technigrade.length > 0;
+
+                      if (aHasGrade && bHasGrade) {
+                        return (
+                          (a.technigrade![0] ?? 0) - (b.technigrade![0] ?? 0)
+                        ); // ascending
+                      }
+                      if (aHasGrade) return -1; // a has grade, b doesn't → a first
+                      if (bHasGrade) return 1; // b has grade, a doesn't → b first
+                      return 0;
+                    })
+                    .map((t) => (
+                      <div
+                        className={`ticker-tag${
+                          t.below20dma ? " below-ma20" : ""
+                        }${t.nearTarget ? " near-target" : ""}`}
+                        key={t.symbol}
+                      >
+                        {t.arrow && (
+                          <span
+                            className="ticker-arrow"
+                            style={{ color: arrowColors[t.arrow] }}
+                          >
+                            {arrowSymbols[t.arrow]}{" "}
+                          </span>
+                        )}
+                        <span className="ticker-symbol">{t.symbol}</span>
+                        {/* Technigrade score beside the ticker */}
+                        {t.technigrade && t.technigrade.length > 0 && (
+                          <>
+                            <span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                            <span className="technigrade-value">
+                              {t.technigrade[0]}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    ))}
                 </td>
               ))}
             </tr>

@@ -14,6 +14,8 @@ from threading import Lock
 
 _price_data_lock = Lock()
 
+MIN_HISTORY_POINTS = 5
+
 def _download_from_fmp(symbol: str) -> pd.DataFrame:
     """Fetch historical price data from Financial Modeling Prep, matching yfinance format."""
     api_key = os.getenv("FMP_API_KEY")
@@ -68,29 +70,30 @@ class StockAnalyser:
     def __init__(self, symbol: str):
         raw_symbol = symbol.upper().strip()
         self.symbol = SYMBOL_ALIASES.get(raw_symbol, raw_symbol)
-        self.df = StockAnalyser.get_price_data(self.symbol).copy()
+        self.df = StockAnalyser.get_price_data(self.symbol)
 
     def _download_data(self) -> pd.DataFrame:
         df = yf.download(self.symbol, period='20y', interval='1d', auto_adjust=False)
-        print(df.tail())
         if df.empty:
             raise HTTPException(status_code=400, detail="Stock symbol not found or data unavailable.")
         if isinstance(df.columns, pd.MultiIndex):
             df.columns = df.columns.droplevel(1)
-        print(df)
         return df
     
     
 
     @staticmethod
     @lru_cache(maxsize=100)
-    def get_price_data(symbol: str) -> pd.DataFrame:
+    def _get_price_data_cached(symbol: str) -> pd.DataFrame:
         with _price_data_lock: 
             df = yf.download(symbol, period="12y", interval="1d", auto_adjust=False)
             if df.empty:
                 df = _download_from_fmp(symbol)
-                if df.empty or len(df) < 126:
-                    raise HTTPException(status_code=400, detail="Stock symbol not found or data unavailable.")
+                if df.empty or len(df) < MIN_HISTORY_POINTS:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Stock symbol not found or data unavailable.",
+                    )
             # Patch with today’s close (1D)
             try:
                 live_df = yf.download(symbol, period="1d", interval="1d")
@@ -111,7 +114,7 @@ class StockAnalyser:
             # download before giving up. This mitigates occasional truncated
             # results from yfinance that can leave the cache with only a few
             # weeks of data.
-            if len(df) < 126:
+            if len(df) < MIN_HISTORY_POINTS:
                 df_retry = yf.download(symbol, period="20y", interval="1d", auto_adjust=False)
                 if isinstance(df_retry.columns, pd.MultiIndex):
                     df_retry.columns = df_retry.columns.droplevel(1)
@@ -119,11 +122,11 @@ class StockAnalyser:
                 df_retry = df_retry[~df_retry.index.duplicated(keep='last')]
                 df_retry = df_retry[df_retry['Close'].notna()]
 
-                if len(df_retry) >= 126:
+                if len(df_retry) >= MIN_HISTORY_POINTS:
                     df = df_retry
                 else:
                     fmp_df = _download_from_fmp(symbol)
-                    if len(fmp_df) >= 126:
+                    if len(fmp_df) >= MIN_HISTORY_POINTS:
                         df = fmp_df
                     else:
                         raise HTTPException(
@@ -132,8 +135,12 @@ class StockAnalyser:
                         )
 
             return df
-
-
+        
+    @staticmethod
+    def get_price_data(symbol: str) -> pd.DataFrame:
+        """Return a copy of cached price data for the given symbol."""
+        return StockAnalyser._get_price_data_cached(symbol).copy()
+    
     
     @cached_property
     def weekly_df(self) -> pd.DataFrame:

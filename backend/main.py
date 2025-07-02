@@ -297,27 +297,51 @@ def save_data(data):
 @app.get("/watchlist")
 def get_watchlist():
     data = load_data()
-    return data["watchlist"]
+    tickers = []
+    for item in data["watchlist"]:
+        if isinstance(item, dict):
+            t = item.get("ticker")
+            if t:
+                tickers.append(t)
+        else:
+            tickers.append(item)
+    return tickers
 
 @app.post("/watchlist/{symbol}")
 def add_to_watchlist(symbol: str):
     data = load_data()
     symbol = symbol.upper()
-    if symbol in data["watchlist"]:
-        raise HTTPException(status_code=409, detail="Already in watchlist")
-    data["watchlist"].append(symbol)
+    for item in data["watchlist"]:
+        if (
+            (isinstance(item, dict) and item.get("ticker") == symbol)
+            or item == symbol
+        ):
+            raise HTTPException(status_code=409, detail="Already in watchlist")
+    data["watchlist"].append({"ticker": symbol, "sector": "", "technigrade": []})
     save_data(data)
-    return {"watchlist": data["watchlist"]}
+    tickers = [i.get("ticker") if isinstance(i, dict) else i for i in data["watchlist"]]
+    return {"watchlist": tickers}
 
 @app.delete("/watchlist/{symbol}")
 def remove_from_watchlist(symbol: str):
     data = load_data()
     symbol = symbol.upper()
-    if symbol not in data["watchlist"]:
+    found = False
+    new_list = []
+    for item in data["watchlist"]:
+        if (
+            (isinstance(item, dict) and item.get("ticker") == symbol)
+            or item == symbol
+        ):
+            found = True
+            continue
+        new_list.append(item)
+    if not found:
         raise HTTPException(status_code=404, detail="Not in watchlist")
-    data["watchlist"].remove(symbol)
+    data["watchlist"] = new_list
     save_data(data)
-    return {"watchlist": data["watchlist"]}
+    tickers = [i.get("ticker") if isinstance(i, dict) else i for i in data["watchlist"]]
+    return {"watchlist": tickers}
 
 @app.post("/analyse_batch")
 def analyse_batch(stock_requests: List[StockRequest]):
@@ -338,6 +362,7 @@ def analyse_batch(stock_requests: List[StockRequest]):
 def get_quadrant_data(list_type: str = Query("portfolio", enum=["portfolio", "watchlist"])):
     """Return MACE x 40-week status table for portfolio or watchlist."""
     targets: dict[str, float] = {}
+    technigrades: dict[str, list] = {}
     if list_type == "portfolio":
         json_path = Path("portfolio_store.json")
         if not json_path.exists():
@@ -352,9 +377,20 @@ def get_quadrant_data(list_type: str = Query("portfolio", enum=["portfolio", "wa
                     t_val = item.get("target")
                     if isinstance(t_val, (int, float)):
                         targets[item["ticker"]] = float(t_val)
+                    if isinstance(item.get("technigrade"), list):
+                        technigrades[item["ticker"]] = item["technigrade"]
     else:
         data = load_data()
-        tickers = data.get("watchlist", [])
+        tickers = []
+        for item in data.get("watchlist", []):
+            if isinstance(item, dict):
+                ticker = item.get("ticker")
+                if ticker:
+                    tickers.append(ticker)
+                    if isinstance(item.get("technigrade"), list):
+                        technigrades[ticker] = item["technigrade"]
+            else:
+                tickers.append(item)
 
     status_keys = ["U1", "U2", "U3", "D1", "D2", "D3"]
     forty_keys = ["++", "+-", "-+", "--"]
@@ -438,6 +474,7 @@ def get_quadrant_data(list_type: str = Query("portfolio", enum=["portfolio", "wa
                             and price_now < dma20
                         ),
                         "nearTarget": near_target,
+                        "technigrade": technigrades.get(symbol, []),
                     }
                 )
         except Exception as e:
