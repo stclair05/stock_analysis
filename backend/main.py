@@ -139,6 +139,54 @@ def ensure_peers_cache():
         print("Generating peers_bulk.json on startup...")
         cache_peers_bulk()
 
+'''
+Downloads and loads price data upon starting up server
+'''
+@app.on_event("startup")
+def preload_price_history():
+    """Warm up price history cache for portfolio and watchlist tickers."""
+    tickers: set[str] = set()
+
+    # Load portfolio tickers
+    try:
+        with open("portfolio_store.json", "r") as f:
+            data = json.load(f)
+            for item in data.get("equities", []):
+                t = item.get("ticker")
+                if t:
+                    tickers.add(t)
+    except Exception as e:
+        print(f"[warmup] Failed to read portfolio_store.json: {e}")
+
+    # Load watchlist tickers
+    try:
+        with open(WATCHLIST_FILE, "r") as f:
+            wdata = json.load(f)
+            for entry in wdata.get("watchlist", []):
+                if isinstance(entry, dict):
+                    t = entry.get("ticker")
+                else:
+                    t = entry
+                if t:
+                    tickers.add(t)
+    except Exception as e:
+        print(f"[warmup] Failed to read {WATCHLIST_FILE}: {e}")
+
+    if not tickers:
+        return
+
+    print(f"[warmup] Preloading price data for {len(tickers)} tickers...")
+
+    def _load(sym: str):
+        try:
+            StockAnalyser.get_price_data(sym)
+        except Exception as exc:
+            print(f"[warmup] Failed for {sym}: {exc}")
+
+    with ThreadPoolExecutor(max_workers=6) as executor:
+        list(executor.map(_load, tickers))
+
+    print("[warmup] Price data warmup complete")
 
 @app.get("/12data_financials/{symbol}", response_model=FinancialMetrics)
 async def get_financials(symbol: str):
