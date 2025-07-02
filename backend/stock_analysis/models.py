@@ -13,6 +13,8 @@ class StockRequest(BaseModel):
 
 class StockAnalysisResponse(BaseModel):
     current_price: float | None
+    daily_change: float | None = None
+    daily_change_percent: float | None = None
     three_year_ma: TimeSeriesMetric
     two_hundred_dma: TimeSeriesMetric
     weekly_ichimoku: TimeSeriesMetric

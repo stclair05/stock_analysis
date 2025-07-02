@@ -43,8 +43,11 @@ _fundamentals_cache = {}
 @app.post("/analyse", response_model=StockAnalysisResponse)
 def analyse(stock_request: StockRequest):
     analyser = StockAnalyser(stock_request.symbol)
+    change_amt, change_pct = analyser.get_daily_change()
     return StockAnalysisResponse(
         current_price=analyser.get_current_price(),
+        daily_change=change_amt,
+        daily_change_percent=change_pct,
         three_year_ma=analyser.calculate_3year_ma(),
         two_hundred_dma=analyser.calculate_200dma(),
         weekly_ichimoku=analyser.ichimoku_cloud(),
@@ -139,6 +142,54 @@ def ensure_peers_cache():
         print("Generating peers_bulk.json on startup...")
         cache_peers_bulk()
 
+'''
+Downloads and loads price data upon starting up server
+'''
+@app.on_event("startup")
+def preload_price_history():
+    """Warm up price history cache for portfolio and watchlist tickers."""
+    tickers: set[str] = set()
+
+    # Load portfolio tickers
+    try:
+        with open("portfolio_store.json", "r") as f:
+            data = json.load(f)
+            for item in data.get("equities", []):
+                t = item.get("ticker")
+                if t:
+                    tickers.add(t)
+    except Exception as e:
+        print(f"[warmup] Failed to read portfolio_store.json: {e}")
+
+    # Load watchlist tickers
+    try:
+        with open(WATCHLIST_FILE, "r") as f:
+            wdata = json.load(f)
+            for entry in wdata.get("watchlist", []):
+                if isinstance(entry, dict):
+                    t = entry.get("ticker")
+                else:
+                    t = entry
+                if t:
+                    tickers.add(t)
+    except Exception as e:
+        print(f"[warmup] Failed to read {WATCHLIST_FILE}: {e}")
+
+    if not tickers:
+        return
+
+    print(f"[warmup] Preloading price data for {len(tickers)} tickers...")
+
+    def _load(sym: str):
+        try:
+            StockAnalyser.get_price_data(sym)
+        except Exception as exc:
+            print(f"[warmup] Failed for {sym}: {exc}")
+
+    with ThreadPoolExecutor(max_workers=6) as executor:
+        list(executor.map(_load, tickers))
+
+    print("[warmup] Price data warmup complete")
 
 @app.get("/12data_financials/{symbol}", response_model=FinancialMetrics)
 async def get_financials(symbol: str):
@@ -357,6 +408,46 @@ def analyse_batch(stock_requests: List[StockRequest]):
             except Exception as exc:
                 results[symbol] = {"error": str(exc)}
     return results
+
+@app.post("/api/batch_signals")
+def batch_signals(
+    tickers: List[str] = Query(...),
+    timeframe: str = Query("weekly"),
+    strategies: List[str] = Query(...)
+):
+    results = {}
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        futures = {}
+
+        for symbol in tickers:
+            futures[symbol] = executor.submit(_get_signals_for_symbol, symbol, timeframe, strategies)
+
+        for symbol, future in futures.items():
+            try:
+                results[symbol] = future.result()
+            except Exception as e:
+                results[symbol] = {"error": str(e)}
+
+    return results
+
+
+def _get_signals_for_symbol(symbol: str, timeframe: str, strategies: List[str]):
+    analyser = StockAnalyser(symbol)
+    result = {}
+    for strat in strategies:
+        if strat == "trendinvestorpro":
+            result[strat] = {"markers": analyser.get_trendinvestorpro_signals(timeframe)}
+        elif strat == "northstar":
+            result[strat] = {"markers": analyser.get_northstar_signals(timeframe)}
+        elif strat == "stclair":
+            result[strat] = {"markers": analyser.get_stclair_signals(timeframe)}
+        elif strat == "stclairlongterm":
+            result[strat] = {"markers": analyser.get_stclairlongterm_signals(timeframe)}
+        elif strat == "mace_40w":
+            result[strat] = {"markers": analyser.get_mace_40w_signals()}
+    result["_generic"] = analyser.get_generic_strength_status(timeframe)
+    return result
+
 
 @app.get("/quadrant_data")
 def get_quadrant_data(list_type: str = Query("portfolio", enum=["portfolio", "watchlist"])):

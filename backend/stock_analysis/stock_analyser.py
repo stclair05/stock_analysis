@@ -163,6 +163,18 @@ class StockAnalyser:
 
     def get_current_price(self) -> float | None:
         return safe_value(self.df['Close'], -1)
+    
+    def get_daily_change(self) -> tuple[float | None, float | None]:
+        """Return absolute and percentage daily change based on the last two closes."""
+        if len(self.df) < 2:
+            return None, None
+        close_today = self.df['Close'].iloc[-1]
+        close_prev = self.df['Close'].iloc[-2]
+        if pd.isna(close_today) or pd.isna(close_prev):
+            return None, None
+        diff = float(close_today) - float(close_prev)
+        pct = (diff / float(close_prev)) * 100 if close_prev else 0
+        return round(diff, 2), round(pct, 2)
 
     def calculate_3year_ma(self) -> TimeSeriesMetric:
         # 3 years of weekly closes = 156 weeks
