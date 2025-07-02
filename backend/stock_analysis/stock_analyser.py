@@ -14,6 +14,8 @@ from threading import Lock
 
 _price_data_lock = Lock()
 
+MIN_HISTORY_POINTS = 5
+
 def _download_from_fmp(symbol: str) -> pd.DataFrame:
     """Fetch historical price data from Financial Modeling Prep, matching yfinance format."""
     api_key = os.getenv("FMP_API_KEY")
@@ -87,8 +89,11 @@ class StockAnalyser:
             df = yf.download(symbol, period="12y", interval="1d", auto_adjust=False)
             if df.empty:
                 df = _download_from_fmp(symbol)
-                if df.empty or len(df) < 126:
-                    raise HTTPException(status_code=400, detail="Stock symbol not found or data unavailable.")
+                if df.empty or len(df) < MIN_HISTORY_POINTS:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Stock symbol not found or data unavailable.",
+                    )
             # Patch with today’s close (1D)
             try:
                 live_df = yf.download(symbol, period="1d", interval="1d")
@@ -109,7 +114,7 @@ class StockAnalyser:
             # download before giving up. This mitigates occasional truncated
             # results from yfinance that can leave the cache with only a few
             # weeks of data.
-            if len(df) < 126:
+            if len(df) < MIN_HISTORY_POINTS:
                 df_retry = yf.download(symbol, period="20y", interval="1d", auto_adjust=False)
                 if isinstance(df_retry.columns, pd.MultiIndex):
                     df_retry.columns = df_retry.columns.droplevel(1)
@@ -117,11 +122,11 @@ class StockAnalyser:
                 df_retry = df_retry[~df_retry.index.duplicated(keep='last')]
                 df_retry = df_retry[df_retry['Close'].notna()]
 
-                if len(df_retry) >= 126:
+                if len(df_retry) >= MIN_HISTORY_POINTS:
                     df = df_retry
                 else:
                     fmp_df = _download_from_fmp(symbol)
-                    if len(fmp_df) >= 126:
+                    if len(fmp_df) >= MIN_HISTORY_POINTS:
                         df = fmp_df
                     else:
                         raise HTTPException(
