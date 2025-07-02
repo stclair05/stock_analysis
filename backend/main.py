@@ -358,6 +358,25 @@ def analyse_batch(stock_requests: List[StockRequest]):
                 results[symbol] = {"error": str(exc)}
     return results
 
+@app.get("/daily_change")
+def get_daily_change(symbols: List[str] = Query(...)):
+    """Return last daily price change amount and percent for given symbols."""
+    results: dict[str, dict[str, float] | None] = {}
+    for sym in symbols:
+        try:
+            data = yf.Ticker(sym).history(period="2d")
+            if data is None or data.empty or len(data["Close"]) < 2:
+                results[sym] = None
+                continue
+            latest = float(data["Close"].iloc[-1])
+            prev = float(data["Close"].iloc[-2])
+            change = latest - prev
+            percent = (change / prev) * 100 if prev else 0.0
+            results[sym] = {"amount": round(change, 2), "percent": round(percent, 2)}
+        except Exception:
+            results[sym] = None
+    return results
+
 @app.get("/quadrant_data")
 def get_quadrant_data(list_type: str = Query("portfolio", enum=["portfolio", "watchlist"])):
     """Return MACE x 40-week status table for portfolio or watchlist."""
