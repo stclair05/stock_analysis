@@ -604,8 +604,8 @@
       "shares": 1500,
       "average_cost": 178.115,
       "sector": "Aerospace & Defense",
-      "target": 10,
-      "player": 0
+      "target": "",
+      "player": 10
     },
     {
       "ticker": "RR.L",
