@@ -288,6 +288,64 @@
       "ticker": "GRRR",
       "sector": "",
       "technigrade": [6, 7, 6, 6, 4]
+    },
+    {
+      "ticker": "URA",
+      "sector": "",
+      "technigrade": [6, 7, 6, 6, 4]
+    },
+    {
+      "ticker": "CDE",
+      "sector": "",
+      "technigrade": [2, 1, 1, 1, 1]
+    },
+    {
+      "ticker": "DRD",
+      "sector": "",
+      "technigrade": [13, 6, 4, 5, 2]
+    },
+    {
+      "ticker": "ARG.TO",
+      "sector": ""
+    },
+    {
+      "ticker": "FNV",
+      "sector": "",
+      "technigrade": [9, 5, 4, 4, 3]
+    },
+    {
+      "ticker": "GFI",
+      "sector": "",
+      "technigrade": [6, 3, 2, 2, 2]
+    },
+    {
+      "ticker": "RRC",
+      "sector": "",
+      "technigrade": [7, 4, 5, 9, 8]
+    },
+    {
+      "ticker": "WDO.TO",
+      "sector": "",
+      "technigrade": [4, 2, 2, 2, 2]
+    },
+    {
+      "ticker": "AR",
+      "sector": "",
+      "technigrade": [7, 3, 4, 8, 9]
+    },
+    {
+      "ticker": "GEL",
+      "sector": "",
+      "technigrade": [2, 2, 2, 2, 2]
+    },
+    {
+      "ticker": "KNT.TO",
+      "sector": "",
+      "technigrade": [2, 1, 1, 1, 1]
+    },
+    {
+      "ticker": "HG=F",
+      "sector": ""
     }
   ],
   "portfolio": []
