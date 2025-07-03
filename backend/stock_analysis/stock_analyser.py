@@ -804,15 +804,18 @@ class StockAnalyser:
         def classify_osc(val: float, prev: float) -> str:
             if pd.isna(val) or pd.isna(prev):
                 return "in progress"
-            if val > 0 and val > prev:
-                return "Money Inflow (increasing)"
-            elif val > 0 and val <= prev:
-                return "Money Inflow (weakening)"
-            elif val < 0 and val < prev:
-                return "Money Outflow (increasing)"
-            elif val < 0 and val >= prev:
-                return "Money Outflow (weakening)"
-            return "Neutral"
+
+            if val >= 0:
+                if val > prev:
+                    return "Money Inflow (increasing)"
+                else:
+                    return "Money Inflow (weakening)"
+            else:
+                if val < prev:
+                    return "Money Outflow (increasing)"
+                else:
+                    return "Money Outflow (weakening)"
+
 
         labels = []
         for i in range(len(osc)):
