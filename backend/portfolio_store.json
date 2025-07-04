@@ -13,7 +13,7 @@
       "shares": 2500,
       "average_cost": 88.08,
       "sector": "Index",
-      "target": "",
+      "target": 104,
       "player": 1,
       "technigrade": []
     },
@@ -595,7 +595,7 @@
       "shares": 30000,
       "average_cost": 60.4647,
       "sector": "Technology",
-      "target": 7.7,
+      "target": 66,
       "player": 0,
       "technigrade": [2, 4, 4, 3, 4]
     },
