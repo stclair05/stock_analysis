@@ -84,7 +84,13 @@ export default function BuySellSignalsTab({
   const [holdingInfo, setHoldingInfo] = useState<
     Record<
       string,
-      { shares: number; average_cost: number; current_price?: number }
+      {
+        shares: number;
+        average_cost: number;
+        current_price?: number;
+        daily_change?: number;
+        daily_change_percent?: number;
+      }
     >
   >({});
   // Store forex rates for currency conversion
@@ -375,7 +381,13 @@ export default function BuySellSignalsTab({
         const data = await res.json();
         const map: Record<
           string,
-          { shares: number; average_cost: number; current_price?: number }
+          {
+            shares: number;
+            average_cost: number;
+            current_price?: number;
+            daily_change?: number;
+            daily_change_percent?: number;
+          }
         > = {};
         if (Array.isArray(data)) {
           data.forEach((item: any) => {
@@ -386,6 +398,14 @@ export default function BuySellSignalsTab({
                 current_price:
                   typeof item.current_price === "number"
                     ? item.current_price
+                    : undefined,
+                daily_change:
+                  typeof item.daily_change === "number"
+                    ? item.daily_change
+                    : undefined,
+                daily_change_percent:
+                  typeof item.daily_change_percent === "number"
+                    ? item.daily_change_percent
                     : undefined,
               };
           });
@@ -491,64 +511,53 @@ export default function BuySellSignalsTab({
       const strategiesToFetch =
         getVisibleAndOrderedStrategies(selectedTimeframe);
 
-      await Promise.all(
-        portfolio.map(async (holding) => {
-          const row: any = {};
-          // Fetch the generic signal strength once per ticker
-          let genericStrength: any = null;
-          try {
-            const resStrength = await fetch(
-              `http://localhost:8000/api/signal_strength/${holding.ticker}?strategy=generic&timeframe=${selectedTimeframe}`
-            );
-            genericStrength = resStrength.ok ? await resStrength.json() : null;
-          } catch (e) {
-            genericStrength = null;
-          }
-          await Promise.all(
-            strategiesToFetch.map(async (strategy) => {
-              try {
-                const apiStrategy = strategyApiMap[strategy] || strategy;
-                const resSignals = await fetch(
-                  `http://localhost:8000/api/signals_${selectedTimeframe}/${holding.ticker}?strategy=${apiStrategy}`
-                );
-
-                const signalData = resSignals.ok
-                  ? await resSignals.json()
-                  : null;
-
-                const latestSignal =
-                  Array.isArray(signalData?.markers) &&
-                  signalData.markers.length > 0
-                    ? signalData.markers[
-                        signalData.markers.length - 1
-                      ].side.toUpperCase()
-                    : "";
-
-                const status = genericStrength?.status || "";
-                const delta = genericStrength?.strength || "";
-                const details = genericStrength?.details;
-
-                row[strategy] = {
-                  signal: latestSignal,
-                  status,
-                  delta,
-                  details,
-                };
-              } catch (e) {
-                row[strategy] = {
-                  signal: "",
-                  status: "",
-                  delta: "",
-                  details: null,
-                };
-              }
-            })
-          );
-          // store generic strength separately for easy access
-          row["_generic"] = genericStrength;
-          summary[holding.ticker] = row;
-        })
+      const params = new URLSearchParams();
+      portfolio.forEach((h) => params.append("tickers", h.ticker));
+      strategiesToFetch.forEach((s) =>
+        params.append("strategies", strategyApiMap[s] || s)
       );
+      params.append("timeframe", selectedTimeframe);
+
+      try {
+        const res = await fetch(
+          `http://localhost:8000/api/batch_signals?${params.toString()}`,
+          { method: "POST" }
+        );
+        const data = res.ok ? await res.json() : {};
+
+        portfolio.forEach((holding) => {
+          const row: any = {};
+          const tickerData = (data as any)[holding.ticker] || {};
+
+          strategiesToFetch.forEach((strategy) => {
+            const apiStrategy = strategyApiMap[strategy] || strategy;
+            const signalData = tickerData[apiStrategy];
+            const markers = signalData?.markers;
+            const latestSignal =
+              Array.isArray(markers) && markers.length > 0
+                ? markers[markers.length - 1].side.toUpperCase()
+                : "";
+            const status = tickerData._generic?.status || "";
+            const delta = tickerData._generic?.strength || "";
+            const details = tickerData._generic?.details;
+
+            row[strategy] = {
+              signal: latestSignal,
+              status,
+              delta,
+              details,
+            };
+          });
+
+          row["_generic"] = tickerData._generic || null;
+          summary[holding.ticker] = row;
+        });
+      } catch {
+        portfolio.forEach((h) => {
+          summary[h.ticker] = {};
+        });
+      }
+
       signalsCache.current[cacheKey] = summary;
       setSignalSummary(summary);
       setSignalsLoading(false);
@@ -716,8 +725,12 @@ export default function BuySellSignalsTab({
           if (valA !== valB) return dir === "asc" ? valA - valB : valB - valA;
           return 0;
         } else if (col === "daily_change") {
-          const chA = meanRevRsi[a.ticker]?.dailyChangePercent;
-          const chB = meanRevRsi[b.ticker]?.dailyChangePercent;
+          const chA =
+            meanRevRsi[a.ticker]?.dailyChangePercent ??
+            holdingInfo[a.ticker]?.daily_change_percent;
+          const chB =
+            meanRevRsi[b.ticker]?.dailyChangePercent ??
+            holdingInfo[b.ticker]?.daily_change_percent;
           const valA = typeof chA === "number" ? chA : -Infinity;
           const valB = typeof chB === "number" ? chB : -Infinity;
           if (valA === valB) return a.ticker.localeCompare(b.ticker);
@@ -951,8 +964,11 @@ export default function BuySellSignalsTab({
       );
     } else if (col === "daily_change") {
       const ch = meanRevRsi[holding.ticker];
-      const amount = ch?.dailyChange;
-      const pct = ch?.dailyChangePercent;
+      const amount =
+        ch?.dailyChange ?? holdingInfo[holding.ticker]?.daily_change;
+      const pct =
+        ch?.dailyChangePercent ??
+        holdingInfo[holding.ticker]?.daily_change_percent;
       if (amount == null || pct == null)
         return <td style={{ textAlign: "center" }}>-</td>;
       const color = amount > 0 ? "#4caf50" : amount < 0 ? "#f44336" : "#bdbdbd";

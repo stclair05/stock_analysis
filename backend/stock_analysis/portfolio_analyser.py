@@ -34,16 +34,45 @@ class PortfolioAnalyser:
         except Exception:
             self.fx_rate = 1.0
 
-    def _get_price(self, ticker: str) -> Optional[float]:
+    def _get_price_and_change(
+        self, ticker: str
+    ) -> tuple[Optional[float], Optional[float], Optional[float]]:
+        """Return current price, daily change and percent."""
         try:
             yf_ticker = yf.Ticker(ticker)
-            hist = yf_ticker.history(period="1d")
+            hist = yf_ticker.history(period="2d")
             if not hist.empty:
-                return hist["Close"].iloc[-1]
-            else:
-                return yf_ticker.info.get("previousClose")
+                close_today = hist["Close"].iloc[-1]
+                prev_close = (
+                    hist["Close"].iloc[-2]
+                    if len(hist) >= 2
+                    else yf_ticker.info.get("previousClose")
+                )
+                price = float(close_today)
+                if prev_close is not None:
+                    diff = price - float(prev_close)
+                    pct = (diff / float(prev_close)) * 100 if prev_close else 0
+                    return price, round(diff, 2), round(pct, 2)
+                return price, None, None
+            # Fallback to info if history is empty
+            info = yf_ticker.info
+            price = info.get("regularMarketPrice") or info.get("previousClose")
+            prev = info.get("regularMarketPreviousClose") or info.get(
+                "previousClose"
+            )
+            if price is None:
+                return None, None, None
+            if prev is None:
+                return float(price), None, None
+            diff = float(price) - float(prev)
+            pct = (diff / float(prev)) * 100 if prev else 0
+            return float(price), round(diff, 2), round(pct, 2)
         except Exception:
-            return None
+            return None, None, None
+
+    def _get_price(self, ticker: str) -> Optional[float]:
+        price, _, _ = self._get_price_and_change(ticker)
+        return price
 
     def _process_single_item(self, item: dict) -> Optional[dict]:
         try:
@@ -53,7 +82,9 @@ class PortfolioAnalyser:
             invested_capital = shares * average_cost
             category = item.get("category", "Other") 
 
-            current_price = self._get_price(ticker)
+            current_price, change_amt, change_pct = self._get_price_and_change(
+                ticker
+            )
 
             if ticker.endswith(".L") and current_price and self.fx_rate:
                 current_price *= self.fx_rate
@@ -69,7 +100,9 @@ class PortfolioAnalyser:
                     "pnl": 0.0,
                     "pnl_percent": 0.0,
                     "static_asset": True,
-                    "category": category, 
+                    "category": category,
+                    "daily_change": None,
+                    "daily_change_percent": None,
                 }
 
             market_value = shares * current_price
