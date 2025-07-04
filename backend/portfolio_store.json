@@ -721,15 +721,6 @@
       "technigrade": [7, 4, 2, 2, 5]
     },
     {
-      "ticker": "SBSW",
-      "shares": 100000.0,
-      "average_cost": 4.85,
-      "sector": "Precious Metals",
-      "target": 10,
-      "player": 8,
-      "technigrade": [1, 1, 1, 1, 1]
-    },
-    {
       "ticker": "SMG",
       "shares": 10470.0,
       "average_cost": 122.0,
@@ -852,15 +843,6 @@
       "target": 575,
       "player": 10,
       "technigrade": [10, 16, 17, 16, 16]
-    },
-    {
-      "ticker": "KTOS",
-      "shares": 500.0,
-      "average_cost": 42.46,
-      "sector": "Aerospace & Defense",
-      "target": 70,
-      "player": 10,
-      "technigrade": [1, 2, 2, 2, 2]
     },
     {
       "ticker": "AVAV",

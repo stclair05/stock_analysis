@@ -336,6 +336,30 @@
     {
       "ticker": "HG=F",
       "sector": ""
+    },
+    {
+      "ticker": "SBSW",
+      "sector": "",
+      "technigrade": [1, 1, 1, 1, 1]
+    },
+    {
+      "ticker": "KTOS",
+      "sector": "",
+      "technigrade": [1, 2, 2, 2, 2]
+    },
+    {
+      "ticker": "SPOT",
+      "sector": "",
+      "technigrade": [2, 3, 2, 2, 3]
+    },
+    {
+      "ticker": "AMPX",
+      "sector": ""
+    },
+    {
+      "ticker": "IONQ",
+      "sector": "",
+      "technigrade": [2, 2, 3, 2, 1]
     }
   ],
   "portfolio": []
