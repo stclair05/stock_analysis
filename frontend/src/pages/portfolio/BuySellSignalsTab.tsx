@@ -82,7 +82,10 @@ export default function BuySellSignalsTab({
 
   // Hold shares and average cost info for P/L calculation
   const [holdingInfo, setHoldingInfo] = useState<
-    Record<string, { shares: number; average_cost: number }>
+    Record<
+      string,
+      { shares: number; average_cost: number; current_price?: number }
+    >
   >({});
   // Store forex rates for currency conversion
   const [forexRates, setForexRates] = useState<Record<string, number>>({});
@@ -370,14 +373,20 @@ export default function BuySellSignalsTab({
       try {
         const res = await fetch("http://localhost:8000/portfolio_live_data");
         const data = await res.json();
-        const map: Record<string, { shares: number; average_cost: number }> =
-          {};
+        const map: Record<
+          string,
+          { shares: number; average_cost: number; current_price?: number }
+        > = {};
         if (Array.isArray(data)) {
           data.forEach((item: any) => {
             if (item && item.ticker)
               map[item.ticker] = {
                 shares: item.shares,
                 average_cost: item.average_cost,
+                current_price:
+                  typeof item.current_price === "number"
+                    ? item.current_price
+                    : undefined,
               };
           });
         }
@@ -559,7 +568,8 @@ export default function BuySellSignalsTab({
     ticker: string
   ): { amount: number; percent: number; currency: string } | null => {
     const info = holdingInfo[ticker];
-    const price = meanRevRsi[ticker]?.currentPrice;
+    const price =
+      meanRevRsi[ticker]?.currentPrice ?? holdingInfo[ticker]?.current_price;
     if (!info || price == null) return null;
 
     const currency = getCurrencyForTicker(ticker); // e.g., "EUR"
@@ -667,9 +677,13 @@ export default function BuySellSignalsTab({
         b: { ticker: string; target?: number }
       ) => {
         if (col === "price_target") {
-          const priceA = meanRevRsi[a.ticker]?.currentPrice;
+          const priceA =
+            meanRevRsi[a.ticker]?.currentPrice ??
+            holdingInfo[a.ticker]?.current_price;
           const targetA = a.target;
-          const priceB = meanRevRsi[b.ticker]?.currentPrice;
+          const priceB =
+            meanRevRsi[b.ticker]?.currentPrice ??
+            holdingInfo[b.ticker]?.current_price;
           const targetB = b.target;
 
           const isValidA =
@@ -949,7 +963,9 @@ export default function BuySellSignalsTab({
         </td>
       );
     } else if (col === "price_target") {
-      const price = meanRevRsi[holding.ticker]?.currentPrice;
+      const price =
+        meanRevRsi[holding.ticker]?.currentPrice ??
+        holdingInfo[holding.ticker]?.current_price;
       const target = holding.target;
       if (typeof price === "number" && typeof target === "number") {
         const diff = ((price - target) / target) * 100;
