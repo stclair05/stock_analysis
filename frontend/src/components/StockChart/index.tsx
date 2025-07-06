@@ -860,9 +860,26 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     volChart.subscribeCrosshairMove((p) =>
       handleCrosshairMove(p, volChart, volLineRef)
     );
-    momentumChart.subscribeCrosshairMove((p) =>
-      handleCrosshairMove(p, momentumChart, momentumPriceSeriesRef)
-    );
+    momentumChart.subscribeCrosshairMove((p) => {
+      if (!p.time || !p.point) return;
+      const series = momentumPriceSeriesRef.current;
+      if (!series) return;
+      const price = series.coordinateToPrice(p.point.y);
+      if (price == null) return;
+      const time = p.time as UTCTimestamp;
+
+      // ----- Drawing/preview mode logic -----
+      if (momentumDrawingModeRef.current) {
+        setMomentumHoverPoint((prev) => {
+          if (!prev || prev.time !== time || prev.value !== price) {
+            return { time, value: price };
+          }
+          return prev;
+        });
+      }
+
+      handleCrosshairMove(p, momentumChart, momentumPriceSeriesRef);
+    });
 
     // --- 12. Chart click handlers ---
     // deletion of trendline
