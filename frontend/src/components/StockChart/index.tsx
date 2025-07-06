@@ -597,7 +597,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     const momentumChart = initChart(
       momentumChartRef,
       momentumChartRef.current!.clientWidth,
-      150
+      450
     );
 
     // Show left axis
@@ -633,7 +633,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           meanChart.resize(w, 200);
           rsiChart.resize(w, 150);
           volChart.resize(w, 150);
-          momentumChart.resize(w, 150);
+          momentumChart.resize(w, 450);
         }
       }
     });
@@ -1531,10 +1531,71 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
       {/* === Oliver's Momentum === */}
       <div className="mt-4">
-        <div className="fw-bold text-muted mb-1">📉 Oliver's Momentum</div>
+        <div className="d-flex justify-content-between align-items-center mb-1">
+          <div className="fw-bold text-muted">📉 Oliver's Momentum</div>
+          <div className="toolbar d-flex gap-2">
+            <button
+              onClick={() => toggleMode("trendline")}
+              className={`tool-button ${
+                drawingModeRef.current === "trendline" ? "active" : ""
+              }`}
+              title="Trendline"
+            >
+              <Ruler size={16} />
+            </button>
+
+            <button
+              onClick={() => toggleMode("horizontal")}
+              className={`tool-button ${
+                drawingModeRef.current === "horizontal" ? "active" : ""
+              }`}
+              title="Horizontal Line"
+            >
+              <Minus size={16} />
+            </button>
+
+            <button
+              onClick={() => toggleMode("sixpoint")}
+              className={`tool-button ${
+                drawingModeRef.current === "sixpoint" ? "active" : ""
+              }`}
+              title="6 Point Tool"
+            >
+              1→5
+            </button>
+            {selectedDrawingIndex !== null && (
+              <button
+                className="btn btn-sm btn-danger"
+                onClick={handleDeleteDrawing}
+                title="Delete Selected Drawing"
+              >
+                🗑️ Delete
+              </button>
+            )}
+
+            {selectedDrawingIndex !== null &&
+              drawings[selectedDrawingIndex]?.type === "line" && (
+                <button
+                  className="btn btn-sm btn-info"
+                  onClick={handleCopyDrawing}
+                  title="Copy Selected Trendline"
+                >
+                  📋 Copy
+                </button>
+              )}
+
+            <button
+              onClick={resetChart}
+              className="tool-button"
+              title="Reload Chart"
+            >
+              <RotateCcw size={16} />
+            </button>
+          </div>
+        </div>
         <div
           ref={momentumChartRef}
-          style={{ width: "100%", height: "150px" }}
+          style={{ width: "100%", height: "450px" }}
         />
         <div className="d-flex flex-wrap mt-1">
           {[
