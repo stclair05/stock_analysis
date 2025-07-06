@@ -853,7 +853,18 @@ class StockAnalyser:
         close = self.weekly_df["Close"]
         ma = close.rolling(200).mean()
         return to_series(reindex_indicator(close, ma))
+    
+    def get_90dma_series(self):
+        close = self.df["Close"]
+        ma = close.rolling(90).mean()
+        return to_series(reindex_indicator(close, ma))
 
+    def get_momentum_90_series(self):
+        close = self.df["Close"]
+        ma90 = close.rolling(90).mean()
+        momentum = close / ma90 - 1
+        print(momentum.tail(20))
+        return to_series(reindex_indicator(close, momentum))
 
     def get_150dma_series(self):
         close = self.weekly_df["Close"]
@@ -1060,6 +1071,8 @@ class StockAnalyser:
             # Fourth Chart
             "dma_50": self.get_50dma_series(),
             "dma_150": self.get_150dma_series(),
+            "dma_90": self.get_90dma_series(),
+            "momentum_90": self.get_momentum_90_series(),
 
             # Others
             **self.get_rsi_lines(timeframe=timeframe), #3rd chart from price
