@@ -360,6 +360,16 @@
       "ticker": "IONQ",
       "sector": "",
       "technigrade": [2, 2, 3, 2, 1]
+    },
+    {
+      "ticker": "CRK",
+      "sector": "",
+      "technigrade": []
+    },
+    {
+      "ticker": "GDS",
+      "sector": "",
+      "technigrade": []
     }
   ],
   "portfolio": []
