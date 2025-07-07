@@ -729,7 +729,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     // Price line (close) on right
     const momentumPriceLine = momentumChart.addSeries(LineSeries, {
       color: "#000080",
-      lineWidth: 1,
+      lineWidth: 3,
       priceScaleId: "right", // 🟢 Important!
     });
     momentumPriceSeriesRef.current = momentumPriceLine;
@@ -737,7 +737,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     // Momentum on left
     const momentumLine = momentumChart.addSeries(LineSeries, {
       color: "#ff9800",
-      lineWidth: 2,
+      lineWidth: 4,
       priceScaleId: "left", // 🟢 Important!
     });
     momentumSeriesRef.current = momentumLine;

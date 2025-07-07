@@ -31,6 +31,10 @@ export function useDrawingRenderer(
         }
         // Always update data!
         series.setData(drawing.points);
+        series.applyOptions({
+          priceLineVisible: false,
+          lastValueVisible: false,
+        });
       } else if (drawing.type === "horizontal") {
         const t = drawing.time;
         const lineStart = (t - 86400 * 365 * 10) as UTCTimestamp;
@@ -44,6 +48,10 @@ export function useDrawingRenderer(
           { time: lineStart, value: drawing.price },
           { time: lineEnd, value: drawing.price },
         ]);
+        series.applyOptions({
+          priceLineVisible: false,
+          lastValueVisible: false,
+        });
         drawnSeriesRef.current.set(i, series);
       } else if (drawing.type === "sixpoint") {
         if (drawing.points.length !== 6) return;
