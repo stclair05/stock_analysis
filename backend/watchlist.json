@@ -3,67 +3,67 @@
     {
       "ticker": "NEM",
       "sector": "",
-      "technigrade": [4, 3, 2, 5, 3]
+      "technigrade": [4, 4, 3, 2, 5, 3]
     },
     {
       "ticker": "GEV",
       "sector": "",
-      "technigrade": [1, 2, 2, 1, 1]
+      "technigrade": [2, 1, 2, 2, 1, 1]
     },
     {
       "ticker": "DE",
       "sector": "",
-      "technigrade": [8, 5, 6, 5, 5]
+      "technigrade": [10, 8, 5, 6, 5, 5]
     },
     {
       "ticker": "NTRA",
       "sector": "",
-      "technigrade": [8, 5, 7, 8, 10]
+      "technigrade": [13, 8, 5, 7, 8, 10]
     },
     {
       "ticker": "IQV",
       "sector": "",
-      "technigrade": [16, 16, 16, 18, 19]
+      "technigrade": [15, 16, 16, 16, 18, 19]
     },
     {
       "ticker": "MRNA",
       "sector": "",
-      "technigrade": [18, 18, 18, 18, 18]
+      "technigrade": [11, 18, 18, 18, 18, 18]
     },
     {
       "ticker": "AEM",
       "sector": "",
-      "technigrade": [7, 4, 3, 4, 3]
+      "technigrade": [7, 7, 4, 3, 4, 3]
     },
     {
       "ticker": "ORLA",
       "sector": "",
-      "technigrade": [6, 2, 1, 1, 1]
+      "technigrade": [5, 6, 2, 1, 1, 1]
     },
     {
       "ticker": "WPM",
       "sector": "",
-      "technigrade": [4, 3, 2, 2, 2]
+      "technigrade": [4, 4, 3, 2, 2, 2]
     },
     {
       "ticker": "RGLD",
       "sector": "",
-      "technigrade": [7, 5, 4, 5, 3]
+      "technigrade": [9, 7, 5, 4, 5, 3]
     },
     {
       "ticker": "AGI",
       "sector": "",
-      "technigrade": [10, 6, 4, 5, 4]
+      "technigrade": [9, 10, 6, 4, 5, 4]
     },
     {
       "ticker": "SAND",
       "sector": "",
-      "technigrade": [3, 2, 2, 2, 1]
+      "technigrade": [2, 3, 2, 2, 2, 1]
     },
     {
       "ticker": "HMY",
       "sector": "",
-      "technigrade": [11, 5, 3, 3, 2]
+      "technigrade": [9, 11, 5, 3, 3, 2]
     },
     {
       "ticker": "GDX",
@@ -76,32 +76,32 @@
     {
       "ticker": "ISRG",
       "sector": "",
-      "technigrade": [13, 15, 14, 8, 8]
+      "technigrade": [13, 13, 15, 14, 8, 8]
     },
     {
       "ticker": "APD",
       "sector": "",
-      "technigrade": [14, 16, 13, 15, 14]
+      "technigrade": [14, 14, 16, 13, 15, 14]
     },
     {
       "ticker": "DECK",
       "sector": "",
-      "technigrade": [19, 20, 20, 20, 20]
+      "technigrade": [20, 19, 20, 20, 20, 20]
     },
     {
       "ticker": "ACHR",
       "sector": "",
-      "technigrade": [4, 5, 5, 4, 3]
+      "technigrade": [7, 4, 5, 5, 4, 3]
     },
     {
       "ticker": "MDT",
       "sector": "",
-      "technigrade": [14, 11, 10, 10, 13]
+      "technigrade": [13, 14, 11, 10, 10, 13]
     },
     {
       "ticker": "FIX",
       "sector": "",
-      "technigrade": [2, 2, 2, 2, 2]
+      "technigrade": [2, 2, 2, 2, 2, 2]
     },
     {
       "ticker": "XLK",
@@ -110,37 +110,37 @@
     {
       "ticker": "NVDA",
       "sector": "",
-      "technigrade": [2, 4, 4, 4, 4]
+      "technigrade": [3, 2, 4, 4, 4, 4]
     },
     {
       "ticker": "BA",
       "sector": "",
-      "technigrade": [3, 5, 4, 3, 3]
+      "technigrade": [4, 3, 5, 4, 3, 3]
     },
     {
       "ticker": "CW",
       "sector": "",
-      "technigrade": [2, 2, 1, 2, 2]
+      "technigrade": [2, 2, 2, 1, 2, 2]
     },
     {
       "ticker": "ATI",
       "sector": "",
-      "technigrade": [1, 1, 1, 1, 1]
+      "technigrade": [2, 1, 1, 1, 1, 1]
     },
     {
       "ticker": "ORCL",
       "sector": "",
-      "technigrade": [2, 2, 1, 5, 6]
+      "technigrade": [1, 2, 2, 1, 5, 6]
     },
     {
       "ticker": "WMB",
       "sector": "",
-      "technigrade": [8, 8, 9, 8, 7]
+      "technigrade": [15, 8, 8, 9, 8, 7]
     },
     {
       "ticker": "ADM",
       "sector": "",
-      "technigrade": [8, 5, 6, 14, 11]
+      "technigrade": [6, 8, 5, 6, 14, 11]
     },
     {
       "ticker": "ARQQ",
@@ -149,17 +149,17 @@
     {
       "ticker": "SNOW",
       "sector": "",
-      "technigrade": [2, 2, 2, 2, 2]
+      "technigrade": [3, 2, 2, 2, 2, 2]
     },
     {
       "ticker": "CRM",
       "sector": "",
-      "technigrade": [15, 17, 17, 16, 16]
+      "technigrade": [17, 15, 17, 17, 16, 16]
     },
     {
       "ticker": "TRMB",
       "sector": "",
-      "technigrade": [6, 8, 8, 8, 7]
+      "technigrade": [6, 6, 8, 8, 8, 7]
     },
     {
       "ticker": "9992.HK",
@@ -168,7 +168,7 @@
     {
       "ticker": "SYK",
       "sector": "",
-      "technigrade": [9, 11, 11, 10, 9]
+      "technigrade": [11, 9, 11, 11, 10, 9]
     },
     {
       "ticker": "300673.SZ",
@@ -181,7 +181,7 @@
     {
       "ticker": "FN",
       "sector": "",
-      "technigrade": [2, 2, 4, 5, 5]
+      "technigrade": [2, 2, 2, 4, 5, 5]
     },
     {
       "ticker": "300750.SZ",
@@ -202,7 +202,7 @@
     {
       "ticker": "BA.L",
       "sector": "",
-      "technigrade": [2, 2, 1, 1, 1]
+      "technigrade": [3, 2, 2, 1, 1, 1]
     },
     {
       "ticker": "AM.PA",
@@ -211,7 +211,7 @@
     {
       "ticker": "XYL",
       "sector": "",
-      "technigrade": [9, 9, 8, 8, 7]
+      "technigrade": [9, 9, 9, 8, 8, 7]
     },
     {
       "ticker": "BBAI",
@@ -220,22 +220,22 @@
     {
       "ticker": "CDI.PA",
       "sector": "",
-      "technigrade": [19, 19, 19, 19, 18]
+      "technigrade": [16, 19, 19, 19, 19, 18]
     },
     {
       "ticker": "AMR",
       "sector": "",
-      "technigrade": [20, 20, 19, 20, 20]
+      "technigrade": [19, 20, 20, 19, 20, 20]
     },
     {
       "ticker": "HCC",
       "sector": "",
-      "technigrade": [18, 18, 14, 14, 16]
+      "technigrade": [11, 18, 18, 14, 14, 16]
     },
     {
       "ticker": "DOCU",
       "sector": "",
-      "technigrade": [18, 18, 18, 18, 8]
+      "technigrade": [17, 18, 18, 18, 18, 8]
     },
     {
       "ticker": "EVO.ST",
@@ -244,22 +244,22 @@
     {
       "ticker": "EDV.TO",
       "sector": "",
-      "technigrade": [3, 2, 1, 2, 1]
+      "technigrade": [3, 3, 2, 1, 2, 1]
     },
     {
       "ticker": "META",
       "sector": "",
-      "technigrade": [4, 5, 5, 4, 6]
+      "technigrade": [5, 4, 5, 5, 4, 6]
     },
     {
       "ticker": "FCX",
       "sector": "",
-      "technigrade": [4, 6, 6, 5, 8]
+      "technigrade": [4, 4, 6, 6, 5, 8]
     },
     {
       "ticker": "SCCO",
       "sector": "",
-      "technigrade": [5, 9, 8, 8, 11]
+      "technigrade": [6, 5, 9, 8, 8, 11]
     },
     {
       "ticker": "COPX",
@@ -272,27 +272,22 @@
     {
       "ticker": "MT",
       "sector": "",
-      "technigrade": [6, 7, 6, 6, 4]
+      "technigrade": [6, 6, 7, 6, 6, 4]
     },
     {
       "ticker": "GRRR",
       "sector": "",
-      "technigrade": [6, 7, 6, 6, 4]
-    },
-    {
-      "ticker": "URA",
-      "sector": "",
-      "technigrade": [6, 7, 6, 6, 4]
+      "technigrade": [10, 6, 7, 6, 6, 4]
     },
     {
       "ticker": "CDE",
       "sector": "",
-      "technigrade": [2, 1, 1, 1, 1]
+      "technigrade": [2, 2, 1, 1, 1, 1]
     },
     {
       "ticker": "DRD",
       "sector": "",
-      "technigrade": [13, 6, 4, 5, 2]
+      "technigrade": [11, 13, 6, 4, 5, 2]
     },
     {
       "ticker": "ARG.TO",
@@ -301,37 +296,27 @@
     {
       "ticker": "FNV",
       "sector": "",
-      "technigrade": [9, 5, 4, 4, 3]
+      "technigrade": [10, 9, 5, 4, 4, 3]
     },
     {
       "ticker": "GFI",
       "sector": "",
-      "technigrade": [6, 3, 2, 2, 2]
-    },
-    {
-      "ticker": "RRC",
-      "sector": "",
-      "technigrade": [7, 4, 5, 9, 8]
+      "technigrade": [5, 6, 3, 2, 2, 2]
     },
     {
       "ticker": "WDO.TO",
       "sector": "",
-      "technigrade": [4, 2, 2, 2, 2]
-    },
-    {
-      "ticker": "AR",
-      "sector": "",
-      "technigrade": [7, 3, 4, 8, 9]
+      "technigrade": [5, 4, 2, 2, 2, 2]
     },
     {
       "ticker": "GEL",
       "sector": "",
-      "technigrade": [2, 2, 2, 2, 2]
+      "technigrade": [3, 2, 2, 2, 2, 2]
     },
     {
       "ticker": "KNT.TO",
       "sector": "",
-      "technigrade": [2, 1, 1, 1, 1]
+      "technigrade": [2, 2, 1, 1, 1, 1]
     },
     {
       "ticker": "HG=F",
@@ -340,17 +325,17 @@
     {
       "ticker": "SBSW",
       "sector": "",
-      "technigrade": [1, 1, 1, 1, 1]
+      "technigrade": [1, 1, 1, 1, 1, 1]
     },
     {
       "ticker": "KTOS",
       "sector": "",
-      "technigrade": [1, 2, 2, 2, 2]
+      "technigrade": [2, 1, 2, 2, 2, 2]
     },
     {
       "ticker": "SPOT",
       "sector": "",
-      "technigrade": [2, 3, 2, 2, 3]
+      "technigrade": [4, 2, 3, 2, 2, 3]
     },
     {
       "ticker": "AMPX",
@@ -359,17 +344,27 @@
     {
       "ticker": "IONQ",
       "sector": "",
-      "technigrade": [2, 2, 3, 2, 1]
+      "technigrade": [2, 2, 2, 3, 2, 1]
     },
     {
       "ticker": "CRK",
       "sector": "",
-      "technigrade": []
+      "technigrade": [6, 1, 1, 2, 2]
     },
     {
       "ticker": "GDS",
       "sector": "",
       "technigrade": []
+    },
+    {
+      "ticker": "SOFI",
+      "sector": "",
+      "technigrade": [2, 2, 4, 7, 7]
+    },
+    {
+      "ticker": "B",
+      "sector": "",
+      "technigrade": [6, 6, 4, 3, 6]
     }
   ],
   "portfolio": []
