@@ -367,7 +367,7 @@
       "shares": 10000.0,
       "average_cost": 89.9,
       "sector": "Fertilizer",
-      "target": 99.71,
+      "target": 115,
       "player": 3,
       "technigrade": [7, 7, 3, 3, 5, 4]
     },
@@ -563,7 +563,7 @@
       "shares": 566809.0,
       "average_cost": 29.42,
       "sector": "Precious Metals",
-      "target": 41,
+      "target": 39,
       "player": 8
     },
     {
@@ -628,9 +628,9 @@
     {
       "ticker": "CRCL",
       "shares": 1000,
-      "average_cost": 223.36,
+      "average_cost": 223.92,
       "sector": "Technology",
-      "target": 415,
+      "target": 387,
       "player": 0
     },
     {
