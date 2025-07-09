@@ -205,7 +205,7 @@
       "shares": 47000.0,
       "average_cost": 38.2,
       "sector": "Energy",
-      "target": 33,
+      "target": 36,
       "player": 2,
       "technigrade": [18, 18, 12, 10, 19, 19]
     },
@@ -397,14 +397,6 @@
       "target": 73,
       "player": 3,
       "technigrade": [8, 8, 4, 3, 4, 3]
-    },
-    {
-      "ticker": "SPY",
-      "shares": 3200.0,
-      "average_cost": 589.34,
-      "sector": "Index",
-      "target": 665,
-      "player": 4
     },
     {
       "ticker": "IWM",
@@ -704,8 +696,8 @@
     },
     {
       "ticker": "GFI",
-      "shares": 30000.0,
-      "average_cost": 19.58,
+      "shares": 46000,
+      "average_cost": 21.3,
       "sector": "Precious Metals",
       "target": 35,
       "player": 8,
@@ -881,6 +873,14 @@
       "technigrade": [4, 4, 2, 2, 2, 1]
     },
     {
+      "ticker": "GDS",
+      "shares": 45000,
+      "average_cost": 32.35,
+      "sector": "Technology",
+      "target": 59,
+      "player": null
+    },
+    {
       "ticker": "0020.HK",
       "shares": 430000.0,
       "average_cost": 0.24,
@@ -941,11 +941,19 @@
     },
     {
       "ticker": "6181.HK",
-      "shares": 1500,
-      "average_cost": 131.43,
+      "shares": 4000,
+      "average_cost": 138.08,
       "sector": "Hong Kong and China",
       "target": 1392,
       "player": 10
+    },
+    {
+      "ticker": "9992.HK",
+      "shares": 1200,
+      "average_cost": 268.8,
+      "sector": "Hong Kong and China",
+      "target": 330,
+      "player": null
     }
   ],
   "fixed_income": [
