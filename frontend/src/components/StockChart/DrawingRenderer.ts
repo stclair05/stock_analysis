@@ -24,16 +24,18 @@ export function useDrawingRenderer(
         // Create if doesn't exist
         if (!series) {
           series = chart.addSeries(LineSeries, {
-            color: "#FF9800",
+            color: "#ff0000",
             lineWidth: 2,
           });
           drawnSeriesRef.current.set(i, series);
         }
         // Always update data!
         series.setData(drawing.points);
-      }
-
-      else if (drawing.type === "horizontal") {
+        series.applyOptions({
+          priceLineVisible: false,
+          lastValueVisible: false,
+        });
+      } else if (drawing.type === "horizontal") {
         const t = drawing.time;
         const lineStart = (t - 86400 * 365 * 10) as UTCTimestamp;
         const lineEnd = (t + 86400 * 365 * 10) as UTCTimestamp;
@@ -46,13 +48,17 @@ export function useDrawingRenderer(
           { time: lineStart, value: drawing.price },
           { time: lineEnd, value: drawing.price },
         ]);
+        series.applyOptions({
+          priceLineVisible: false,
+          lastValueVisible: false,
+        });
         drawnSeriesRef.current.set(i, series);
-      }
-
-      else if (drawing.type === "sixpoint") {
+      } else if (drawing.type === "sixpoint") {
         if (drawing.points.length !== 6) return;
 
-        const sortedPoints = [...drawing.points].sort((a, b) => a.time - b.time);
+        const sortedPoints = [...drawing.points].sort(
+          (a, b) => a.time - b.time
+        );
 
         const series = chart.addSeries(LineSeries, {
           color: "#2a2a2a",
@@ -65,8 +71,8 @@ export function useDrawingRenderer(
         });
         drawnSeriesRef.current.set(i, series);
 
-        const pointLabels = ['A', 'B', 'C', 'D', 'E', 'X'];
-        const dotColor = '#1f77b4';
+        const pointLabels = ["A", "B", "C", "D", "E", "X"];
+        const dotColor = "#1f77b4";
         const dotLabels: ISeriesApi<"Line">[] = [];
 
         sortedPoints.forEach((pt, idx) => {

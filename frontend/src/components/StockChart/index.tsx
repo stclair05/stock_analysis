@@ -77,6 +77,32 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
   const volChartInstance = useRef<IChartApi | null>(null);
   const volLineRef = useRef<ISeriesApi<"Line"> | null>(null);
 
+  // Momentum Chart (Oliver's Momentum)
+  const momentumChartRef = useRef<HTMLDivElement>(null);
+  const momentumChartInstance = useRef<IChartApi | null>(null);
+  const momentumPriceSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
+  const momentumSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
+
+  // Momentum chart drawings
+  const [momentumSelectedDrawingIndex, setMomentumSelectedDrawingIndex] =
+    useState<number | null>(null);
+  const [momentumDraggedEndpoint, setMomentumDraggedEndpoint] = useState<
+    "start" | "end" | null
+  >(null);
+  const momentumMoveEndpointFixedRef = useRef<Point | null>(null);
+
+  const momentumDrawnSeriesRef = useRef<Map<number, ISeriesApi<"Line">>>(
+    new Map()
+  );
+  const momentumPreviewSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
+  const momentumDotLabelSeriesRef = useRef<Map<number, ISeriesApi<"Line">[]>>(
+    new Map()
+  );
+  const momentumSixPointPreviewRef = useRef<ISeriesApi<"Line"> | null>(null);
+  const momentumSixPointDotPreviewRef = useRef<ISeriesApi<"Line"> | null>(null);
+  const momentumSixPointHoverLineRef = useRef<ISeriesApi<"Line"> | null>(null);
+  const momentumCopyBufferRef = useRef<CopyTrendlineBuffer | null>(null);
+
   // Peer comparison charts
   const [peerSymbols, setPeerSymbols] = useState<string[]>([]);
   // Ratio chart refs for crosshair sync
@@ -109,7 +135,16 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     bb_middle?: { time: number; value: number }[];
     bb_upper?: { time: number; value: number }[];
     bb_lower?: { time: number; value: number }[];
+    price_line?: { time: number; value: number }[];
+    momentum_90?: { time: number; value: number }[];
   }>({});
+
+  const [momentumData, setMomentumData] = useState<
+    {
+      time: number;
+      value: number;
+    }[]
+  >([]);
 
   // Checkboxes to add for overlay
   const [showBollingerBand, setShowBollingerBand] = useState(false);
@@ -218,6 +253,66 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     copyBufferRef
   );
 
+  const {
+    drawingModeRef: momentumDrawingModeRef,
+    lineBufferRef: momentumLineBufferRef,
+    drawings: momentumDrawings,
+    setDrawings: setMomentumDrawings,
+    hoverPoint: momentumHoverPoint,
+    setHoverPoint: setMomentumHoverPoint,
+    toggleMode: momentumToggleMode,
+    resetChart: momentumResetChart,
+    clearDrawings: momentumClearDrawings,
+  } = useDrawingManager(
+    momentumChartInstance,
+    momentumPreviewSeriesRef,
+    momentumSixPointPreviewRef,
+    momentumSixPointHoverLineRef,
+    momentumDotLabelSeriesRef,
+    momentumDrawnSeriesRef
+  );
+  const momentumDrawingsRef = useRef(momentumDrawings);
+
+  usePreviewManager(
+    momentumChartInstance,
+    momentumDrawingModeRef,
+    momentumLineBufferRef,
+    momentumHoverPoint,
+    momentumPreviewSeriesRef,
+    momentumSixPointHoverLineRef,
+    momentumMoveEndpointFixedRef,
+    momentumCopyBufferRef
+  );
+
+  useDrawingRenderer(
+    momentumChartInstance,
+    momentumDrawings,
+    momentumDrawnSeriesRef,
+    momentumDotLabelSeriesRef
+  );
+
+  useClickHandler(
+    momentumChartInstance,
+    momentumPriceSeriesRef,
+    momentumChartRef,
+    momentumDrawingModeRef,
+    momentumLineBufferRef,
+    setMomentumDrawings,
+    setMomentumHoverPoint,
+    momentumHoverPoint,
+    momentumPreviewSeriesRef,
+    momentumSixPointDotPreviewRef,
+    momentumSixPointPreviewRef,
+    momentumSixPointHoverLineRef,
+    momentumDrawings,
+    momentumSelectedDrawingIndex,
+    setMomentumSelectedDrawingIndex,
+    momentumDraggedEndpoint,
+    setMomentumDraggedEndpoint,
+    momentumMoveEndpointFixedRef,
+    momentumCopyBufferRef
+  );
+
   const resetMeanRevLimits = () => {
     const chart = meanRevChartInstance.current;
     if (chart) {
@@ -268,6 +363,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       [meanRevChartInstance.current, meanRevLineRef.current],
       [rsiChartInstance.current, rsiLineRef.current],
       [volChartInstance.current, volLineRef.current],
+      [momentumChartInstance.current, momentumPriceSeriesRef.current],
     ];
 
     for (const [chart, series] of allCharts) {
@@ -413,6 +509,39 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       copyBufferRef.current
     );
   }
+
+  function handleMomentumDeleteDrawing() {
+    if (momentumSelectedDrawingIndex === null) return;
+
+    setMomentumDrawings((prev) =>
+      prev.filter((_, idx) => idx !== momentumSelectedDrawingIndex)
+    );
+
+    const series = momentumDrawnSeriesRef.current.get(
+      momentumSelectedDrawingIndex
+    );
+    if (series) {
+      momentumChartInstance.current?.removeSeries(series);
+      momentumDrawnSeriesRef.current.delete(momentumSelectedDrawingIndex);
+    }
+
+    momentumDotLabelSeriesRef.current.delete(momentumSelectedDrawingIndex);
+
+    setMomentumSelectedDrawingIndex(null);
+  }
+
+  function handleMomentumCopyDrawing() {
+    if (momentumSelectedDrawingIndex == null) return;
+    const drawing = momentumDrawings[momentumSelectedDrawingIndex];
+    if (!drawing || drawing.type !== "line") return;
+    const [p1, p2] = drawing.points;
+    momentumCopyBufferRef.current = {
+      dx: p2.time - p1.time,
+      dy: p2.value - p1.value,
+    };
+    momentumDrawingModeRef.current = "copy-trendline";
+    setMomentumHoverPoint((prev) => prev ?? p1);
+  }
   /*
     CREATE CHARTS
   */
@@ -423,6 +552,11 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     setDrawings([]);
     drawnSeriesRef.current.clear();
     dotLabelSeriesRef.current.clear();
+    momentumDrawingModeRef.current = null;
+    momentumLineBufferRef.current = [];
+    setMomentumDrawings([]);
+    momentumDrawnSeriesRef.current.clear();
+    momentumDotLabelSeriesRef.current.clear();
     setShow50dmaTarget(false);
     setShowFibTarget(false);
     resetMeanRevLimits();
@@ -469,16 +603,21 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       !chartContainerRef.current ||
       !meanRevChartRef.current ||
       !rsiChartRef.current ||
-      !volChartRef.current
+      !volChartRef.current ||
+      !momentumChartRef.current
     )
       return;
 
     // --- 4. Clear all chart containers ---
-    [chartContainerRef, meanRevChartRef, rsiChartRef, volChartRef].forEach(
-      (ref) => {
-        if (ref.current) ref.current.innerHTML = "";
-      }
-    );
+    [
+      chartContainerRef,
+      meanRevChartRef,
+      rsiChartRef,
+      volChartRef,
+      momentumChartRef,
+    ].forEach((ref) => {
+      if (ref.current) ref.current.innerHTML = "";
+    });
 
     // --- 5. Helper: Create chart with shared options ---
     function initChart(
@@ -573,6 +712,36 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     volLine.setData([{ time: (Date.now() / 1000) as UTCTimestamp, value: 0 }]);
     volLineRef.current = volLine;
 
+    const momentumChart = initChart(
+      momentumChartRef,
+      momentumChartRef.current!.clientWidth,
+      450
+    );
+
+    // Show left axis
+    momentumChart.applyOptions({
+      leftPriceScale: { visible: true },
+      rightPriceScale: { visible: true }, // Optional
+    });
+
+    momentumChartInstance.current = momentumChart;
+
+    // Price line (close) on right
+    const momentumPriceLine = momentumChart.addSeries(LineSeries, {
+      color: "#000080",
+      lineWidth: 3,
+      priceScaleId: "right", // 🟢 Important!
+    });
+    momentumPriceSeriesRef.current = momentumPriceLine;
+
+    // Momentum on left
+    const momentumLine = momentumChart.addSeries(LineSeries, {
+      color: "#ff9800",
+      lineWidth: 4,
+      priceScaleId: "left", // 🟢 Important!
+    });
+    momentumSeriesRef.current = momentumLine;
+
     // --- 7. Resize Observer: keep all charts width-synced ---
     const resizeObserver = new ResizeObserver((entries) => {
       for (let entry of entries) {
@@ -582,6 +751,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           meanChart.resize(w, 200);
           rsiChart.resize(w, 150);
           volChart.resize(w, 150);
+          momentumChart.resize(w, 450);
         }
       }
     });
@@ -614,10 +784,13 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           meanRevChartInstance.current,
           rsiChartInstance.current,
           volChartInstance.current,
+          momentumChartInstance.current,
         ].forEach((c) => c !== sourceChart && safeSetVisibleRange(c, range));
       });
     }
-    [chart, meanChart, rsiChart, volChart].forEach(syncVisibleRangeToAll);
+    [chart, meanChart, rsiChart, volChart, momentumChart].forEach(
+      syncVisibleRangeToAll
+    );
 
     // --- 10. Main chart crosshair handler: drawing/preview logic + sync ---
     chart.subscribeCrosshairMove((param) => {
@@ -643,6 +816,8 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       const rsiSeries = rsiLineRef.current;
       const volChart = volChartInstance.current;
       const volSeries = volLineRef.current;
+      const momentumChartInst = momentumChartInstance.current;
+      const momentumSeries = momentumPriceSeriesRef.current;
 
       if (meanChart && meanSeries) {
         const snappedTime = findClosestTime(meanSeries, time);
@@ -658,6 +833,15 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
         const snappedTime = findClosestTime(volSeries, time);
         if (snappedTime)
           volChart.setCrosshairPosition(0, snappedTime, volSeries);
+      }
+      if (momentumChartInst && momentumSeries) {
+        const snappedTime = findClosestTime(momentumSeries, time);
+        if (snappedTime)
+          momentumChartInst.setCrosshairPosition(
+            0,
+            snappedTime,
+            momentumSeries
+          );
       }
     });
 
@@ -676,6 +860,26 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     volChart.subscribeCrosshairMove((p) =>
       handleCrosshairMove(p, volChart, volLineRef)
     );
+    momentumChart.subscribeCrosshairMove((p) => {
+      if (!p.time || !p.point) return;
+      const series = momentumPriceSeriesRef.current;
+      if (!series) return;
+      const price = series.coordinateToPrice(p.point.y);
+      if (price == null) return;
+      const time = p.time as UTCTimestamp;
+
+      // ----- Drawing/preview mode logic -----
+      if (momentumDrawingModeRef.current) {
+        setMomentumHoverPoint((prev) => {
+          if (!prev || prev.time !== time || prev.value !== price) {
+            return { time, value: price };
+          }
+          return prev;
+        });
+      }
+
+      handleCrosshairMove(p, momentumChart, momentumPriceSeriesRef);
+    });
 
     // --- 12. Chart click handlers ---
     // deletion of trendline
@@ -792,7 +996,9 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
     // --- 13. Cleanup ---
     return () => {
-      [chart, meanChart, rsiChart, volChart].forEach((c) => c.remove());
+      [chart, meanChart, rsiChart, volChart, momentumChart].forEach((c) =>
+        c.remove()
+      );
       resizeObserver.disconnect();
       chartRef.current = null;
       meanRevChartInstance.current = null;
@@ -800,8 +1006,17 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       rsiLineRef.current = null;
       volChartInstance.current = null;
       volLineRef.current = null;
+      momentumChartInstance.current = null;
+      momentumPriceSeriesRef.current = null;
+      momentumSeriesRef.current = null;
       meanRevLineRef.current = null;
       candleSeriesRef.current = null;
+      momentumDrawnSeriesRef.current.clear();
+      momentumDotLabelSeriesRef.current.clear();
+      momentumPreviewSeriesRef.current = null;
+      momentumSixPointPreviewRef.current = null;
+      momentumSixPointDotPreviewRef.current = null;
+      momentumSixPointHoverLineRef.current = null;
       ratioRangeUnsubs.current.forEach((fn) => fn());
       ratioRangeUnsubs.current = [];
       ratioChartRefs.current = [];
@@ -822,6 +1037,12 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     if (!chart) return;
     drawingsRef.current = drawings;
   }, [drawings, selectedDrawingIndex]);
+
+  useEffect(() => {
+    const chart = momentumChartInstance.current;
+    if (!chart) return;
+    momentumDrawingsRef.current = momentumDrawings;
+  }, [momentumDrawings, momentumSelectedDrawingIndex]);
 
   /*
     CALLING BACKEND FOR OVERLAY DATA 
@@ -1151,6 +1372,47 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     };
   }, [overlayData.volatility, overlayData.volatility_ma_5]);
 
+  /*
+    MOMENTUM CHART'S USEEFFECT
+  */
+  useEffect(() => {
+    const chart = momentumChartInstance.current;
+    if (!chart) return;
+    if (!overlayData.price_line) return;
+
+    const priceSeries = momentumPriceSeriesRef.current;
+    const momSeries = momentumSeriesRef.current;
+    if (!priceSeries || !momSeries) return;
+
+    const priceData = overlayData.price_line.map((d) => ({
+      time: d.time as UTCTimestamp,
+      value: d.value,
+    }));
+    priceSeries.setData(priceData);
+
+    let mom: { time: number; value: number }[];
+    if (overlayData.momentum_90) {
+      mom = overlayData.momentum_90;
+    } else {
+      const window = 90;
+      mom = [];
+      for (let i = window - 1; i < overlayData.price_line.length; i++) {
+        const slice = overlayData.price_line.slice(i + 1 - window, i + 1);
+        const sum = slice.reduce((s, p) => s + p.value, 0);
+        const ma = sum / window;
+        const close = overlayData.price_line[i].value;
+        mom.push({
+          time: overlayData.price_line[i].time,
+          value: close / ma - 1,
+        });
+      }
+    }
+    setMomentumData(mom);
+    momSeries.setData(
+      mom.map((d) => ({ time: d.time as UTCTimestamp, value: d.value }))
+    );
+  }, [overlayData.price_line, overlayData.momentum_90]);
+
   return (
     <div className="position-relative bg-white p-3 shadow-sm rounded border">
       <div className="d-flex justify-content-between align-items-center mb-3">
@@ -1412,6 +1674,97 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       <div className="mt-4">
         <div className="fw-bold text-muted mb-1">📈 Volatility (BBWP)</div>
         <div ref={volChartRef} style={{ width: "100%", height: "150px" }} />
+      </div>
+
+      {/* === Oliver's Momentum === */}
+      <div className="mt-4">
+        <div className="d-flex justify-content-between align-items-center mb-1">
+          <div className="fw-bold text-muted">📉 Oliver's Momentum</div>
+          <div className="toolbar d-flex gap-2">
+            <button
+              onClick={() => momentumToggleMode("trendline")}
+              className={`tool-button ${
+                momentumDrawingModeRef.current === "trendline" ? "active" : ""
+              }`}
+              title="Trendline"
+            >
+              <Ruler size={16} />
+            </button>
+
+            <button
+              onClick={() => momentumToggleMode("horizontal")}
+              className={`tool-button ${
+                momentumDrawingModeRef.current === "horizontal" ? "active" : ""
+              }`}
+              title="Horizontal Line"
+            >
+              <Minus size={16} />
+            </button>
+
+            <button
+              onClick={() => momentumToggleMode("sixpoint")}
+              className={`tool-button ${
+                momentumDrawingModeRef.current === "sixpoint" ? "active" : ""
+              }`}
+              title="6 Point Tool"
+            >
+              1→5
+            </button>
+            {momentumSelectedDrawingIndex !== null && (
+              <button
+                className="btn btn-sm btn-danger"
+                onClick={handleMomentumDeleteDrawing}
+                title="Delete Selected Drawing"
+              >
+                🗑️ Delete
+              </button>
+            )}
+
+            {momentumSelectedDrawingIndex !== null &&
+              momentumDrawings[momentumSelectedDrawingIndex]?.type ===
+                "line" && (
+                <button
+                  className="btn btn-sm btn-info"
+                  onClick={handleMomentumCopyDrawing}
+                  title="Copy Selected Trendline"
+                >
+                  📋 Copy
+                </button>
+              )}
+
+            <button
+              onClick={momentumResetChart}
+              className="tool-button"
+              title="Reload Chart"
+            >
+              <RotateCcw size={16} />
+            </button>
+          </div>
+        </div>
+        <div
+          ref={momentumChartRef}
+          style={{ width: "100%", height: "450px" }}
+        />
+        <div className="d-flex flex-wrap mt-1">
+          {[
+            { color: "#000080", label: "Close" },
+            { color: "#ff9800", label: "Momentum" },
+          ].map(({ color, label }) => (
+            <div key={label} className="me-3 d-flex align-items-center small">
+              <span
+                style={{
+                  display: "inline-block",
+                  width: "12px",
+                  height: "12px",
+                  backgroundColor: color,
+                  marginRight: "6px",
+                  borderRadius: "2px",
+                }}
+              />
+              <span>{label}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* === Overlay Grid === */}
