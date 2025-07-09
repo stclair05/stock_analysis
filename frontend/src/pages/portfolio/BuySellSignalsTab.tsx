@@ -479,7 +479,7 @@ export default function BuySellSignalsTab({
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        if (Date.now() - parsed.timestamp < 10 * 60 * 1000) {
+        if (Date.now() - parsed.timestamp < 100 * 60 * 1000) {
           signalsCache.current[cacheKey] = parsed.data;
           setSignalSummary(parsed.data);
           setSignalsLoading(false);
