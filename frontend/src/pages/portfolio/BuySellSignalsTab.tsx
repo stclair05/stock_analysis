@@ -324,6 +324,9 @@ export default function BuySellSignalsTab({
 
         // Clear caches and reset states when list type changes
         signalsCache.current = {}; // Clear signals cache as the underlying tickers changed
+        Object.keys(localStorage).forEach((k) => {
+          if (k.startsWith("signalsCache-")) localStorage.removeItem(k);
+        });
         setSignalSummary({});
         setSortColumn(null);
         setSecondarySortColumn(null);
@@ -469,8 +472,26 @@ export default function BuySellSignalsTab({
     setSignalsLoading(true);
 
     const cacheKey = `${selectedTimeframe}-${listType}`; // Include listType in cache key
+    const storageKey = `signalsCache-${cacheKey}`;
 
-    // If cached, use it immediately
+    // Check localStorage first
+    const stored = localStorage.getItem(storageKey);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (Date.now() - parsed.timestamp < 10 * 60 * 1000) {
+          signalsCache.current[cacheKey] = parsed.data;
+          setSignalSummary(parsed.data);
+          setSignalsLoading(false);
+          return;
+        }
+        localStorage.removeItem(storageKey);
+      } catch {
+        localStorage.removeItem(storageKey);
+      }
+    }
+
+    // If cached in memory, use it immediately
     if (signalsCache.current[cacheKey]) {
       setSignalSummary(signalsCache.current[cacheKey]);
       setSignalsLoading(false);
@@ -541,6 +562,10 @@ export default function BuySellSignalsTab({
         })
       );
       signalsCache.current[cacheKey] = summary;
+      localStorage.setItem(
+        `signalsCache-${cacheKey}`,
+        JSON.stringify({ timestamp: Date.now(), data: summary })
+      );
       setSignalSummary(summary);
       setSignalsLoading(false);
     }
