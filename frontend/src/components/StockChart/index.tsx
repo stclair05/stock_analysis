@@ -12,6 +12,7 @@ import {
   HistogramSeries,
   AreaSeries,
   PriceScaleMode,
+  LineType,
 } from "lightweight-charts";
 import { useEffect, useRef, useState } from "react";
 import { Ruler, Minus, RotateCcw, ArrowUpDown } from "lucide-react";
@@ -71,6 +72,11 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
   const rsiChartRef = useRef<HTMLDivElement>(null);
   const rsiChartInstance = useRef<IChartApi | null>(null);
   const rsiLineRef = useRef<ISeriesApi<"Line"> | null>(null);
+
+  // Mansfield RS Chart
+  const mansfieldChartRef = useRef<HTMLDivElement>(null);
+  const mansfieldChartInstance = useRef<IChartApi | null>(null);
+  const mansfieldLineRef = useRef<ISeriesApi<"Line"> | null>(null);
 
   // Volatility Chart
   const volChartRef = useRef<HTMLDivElement>(null);
@@ -137,6 +143,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     bb_lower?: { time: number; value: number }[];
     price_line?: { time: number; value: number }[];
     momentum_90?: { time: number; value: number }[];
+    mansfield_rs?: { time: number; value: number }[];
   }>({});
 
   const [momentumData, setMomentumData] = useState<
@@ -362,6 +369,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       [chartRef.current, candleSeriesRef.current],
       [meanRevChartInstance.current, meanRevLineRef.current],
       [rsiChartInstance.current, rsiLineRef.current],
+      [mansfieldChartInstance.current, mansfieldLineRef.current],
       [volChartInstance.current, volLineRef.current],
       [momentumChartInstance.current, momentumPriceSeriesRef.current],
     ];
@@ -699,6 +707,22 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     rsiLine.setData([{ time: (Date.now() / 1000) as UTCTimestamp, value: 50 }]);
     rsiLineRef.current = rsiLine;
 
+    const mansfieldChart = initChart(
+      mansfieldChartRef,
+      mansfieldChartRef.current!.clientWidth,
+      150
+    );
+    mansfieldChartInstance.current = mansfieldChart;
+    const mansfieldLine = mansfieldChart.addSeries(LineSeries, {
+      color: "#000000",
+      lineWidth: 1,
+      lineType: LineType.WithSteps,
+    });
+    mansfieldLine.setData([
+      { time: (Date.now() / 1000) as UTCTimestamp, value: 0 },
+    ]);
+    mansfieldLineRef.current = mansfieldLine;
+
     const volChart = initChart(
       volChartRef,
       volChartRef.current!.clientWidth,
@@ -750,6 +774,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           chart.resize(w, 400);
           meanChart.resize(w, 200);
           rsiChart.resize(w, 150);
+          mansfieldChart.resize(w, 150);
           volChart.resize(w, 150);
           momentumChart.resize(w, 450);
         }
@@ -783,14 +808,20 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           chartRef.current,
           meanRevChartInstance.current,
           rsiChartInstance.current,
+          mansfieldChartInstance.current,
           volChartInstance.current,
           momentumChartInstance.current,
         ].forEach((c) => c !== sourceChart && safeSetVisibleRange(c, range));
       });
     }
-    [chart, meanChart, rsiChart, volChart, momentumChart].forEach(
-      syncVisibleRangeToAll
-    );
+    [
+      chart,
+      meanChart,
+      rsiChart,
+      mansfieldChart,
+      volChart,
+      momentumChart,
+    ].forEach(syncVisibleRangeToAll);
 
     // --- 10. Main chart crosshair handler: drawing/preview logic + sync ---
     chart.subscribeCrosshairMove((param) => {
@@ -856,6 +887,9 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     );
     rsiChart.subscribeCrosshairMove((p) =>
       handleCrosshairMove(p, rsiChart, rsiLineRef)
+    );
+    mansfieldChart.subscribeCrosshairMove((p) =>
+      handleCrosshairMove(p, mansfieldChart, mansfieldLineRef)
     );
     volChart.subscribeCrosshairMove((p) =>
       handleCrosshairMove(p, volChart, volLineRef)
@@ -996,14 +1030,21 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
 
     // --- 13. Cleanup ---
     return () => {
-      [chart, meanChart, rsiChart, volChart, momentumChart].forEach((c) =>
-        c.remove()
-      );
+      [
+        chart,
+        meanChart,
+        rsiChart,
+        mansfieldChart,
+        volChart,
+        momentumChart,
+      ].forEach((c) => c.remove());
       resizeObserver.disconnect();
       chartRef.current = null;
       meanRevChartInstance.current = null;
       rsiChartInstance.current = null;
       rsiLineRef.current = null;
+      mansfieldChartInstance.current = null;
+      mansfieldLineRef.current = null;
       volChartInstance.current = null;
       volLineRef.current = null;
       momentumChartInstance.current = null;
@@ -1286,6 +1327,58 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     overlayData.rsi_middle_band,
     overlayData.rsi_lower_band,
   ]);
+
+  /*
+    MANSFIELD RS CHART'S USEEFFECT
+  */
+  useEffect(() => {
+    const chart = mansfieldChartInstance.current;
+    if (!chart) return;
+
+    const createdSeries: ISeriesApi<"Line">[] = [];
+
+    if (overlayData.mansfield_rs) {
+      const line = chart.addSeries(LineSeries, {
+        color: "#000000",
+        lineWidth: 1,
+        lineType: LineType.WithSteps,
+        priceLineVisible: false,
+        lastValueVisible: false,
+      });
+      line.setData(
+        overlayData.mansfield_rs.map((d) => ({
+          time: d.time as UTCTimestamp,
+          value: d.value,
+        }))
+      );
+      createdSeries.push(line);
+      mansfieldLineRef.current = line;
+
+      const zeroLine = chart.addSeries(LineSeries, {
+        color: "#2196f3",
+        lineWidth: 1,
+        priceLineVisible: false,
+        lastValueVisible: false,
+        lineStyle: 2,
+        crosshairMarkerVisible: false,
+      });
+      zeroLine.setData(
+        overlayData.mansfield_rs.map((d) => ({
+          time: d.time as UTCTimestamp,
+          value: 0,
+        }))
+      );
+      createdSeries.push(zeroLine);
+    }
+
+    return () => {
+      createdSeries.forEach((series) => {
+        try {
+          chart.removeSeries(series);
+        } catch {}
+      });
+    };
+  }, [overlayData.mansfield_rs]);
 
   /*
     VOLATILITY CHART'S USEEFFECT 
@@ -1668,6 +1761,15 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* === Mansfield Relative Strength === */}
+      <div className="mt-4">
+        <div className="fw-bold text-muted mb-1">📊 Mansfield RS</div>
+        <div
+          ref={mansfieldChartRef}
+          style={{ width: "100%", height: "150px" }}
+        />
       </div>
 
       {/* === Volatility Chart === */}
