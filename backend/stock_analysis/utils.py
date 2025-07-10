@@ -342,7 +342,7 @@ def compute_mansfield_rs(
     # Align benchmark series to stock index and forward fill for missing values
     benchmark_aligned = benchmark_close.reindex(stock_close.index).ffill()
 
-    ratio = stock_close / benchmark_aligned * 100
+    ratio = (stock_close / benchmark_aligned * 100).astype("float32")
     zero_line_ma = ratio.rolling(window=ma_length).mean()
     mansfield = (ratio / zero_line_ma - 1) * 100
     return mansfield.dropna()
