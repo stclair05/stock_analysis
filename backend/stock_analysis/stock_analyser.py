@@ -8,7 +8,25 @@ from functools import lru_cache
 from functools import cached_property
 from .models import TimeSeriesMetric
 from aliases import SYMBOL_ALIASES
-from .utils import compute_demarker, safe_value, detect_rsi_divergence, find_pivots, compute_wilder_rsi, compute_bbwp, compute_ichimoku_lines, compute_supertrend_lines, to_series, classify_adx_trend, classify_mace_signal, classify_40w_status, classify_dma_trend, classify_bbwp_percentile, wilder_smooth, reindex_indicator
+from .utils import (
+    compute_demarker,
+    safe_value,
+    detect_rsi_divergence,
+    find_pivots,
+    compute_wilder_rsi,
+    compute_bbwp,
+    compute_mansfield_rs,
+    compute_ichimoku_lines,
+    compute_supertrend_lines,
+    to_series,
+    classify_adx_trend,
+    classify_mace_signal,
+    classify_40w_status,
+    classify_dma_trend,
+    classify_bbwp_percentile,
+    wilder_smooth,
+    reindex_indicator,
+)
 from .pricetarget import get_price_targets, calculate_mean_reversion_50dma_target
 from threading import Lock
 
@@ -872,6 +890,26 @@ class StockAnalyser:
         momentum = close / ma90 - 1
         print(momentum.tail(20))
         return to_series(reindex_indicator(close, momentum))
+    
+    def get_mansfield_rs_series(self, ma_length: int = 52):
+        """Mansfield Relative Strength versus the S&P 500 index."""
+        benchmark_df = StockAnalyser.get_price_data("SPX")
+        benchmark_weekly = benchmark_df.resample("W-FRI").agg(
+            {
+                "Open": "first",
+                "High": "max",
+                "Low": "min",
+                "Close": "last",
+                "Volume": "sum",
+            }
+        ).dropna()
+
+        stock_close = self.weekly_df["Close"]
+        benchmark_close = benchmark_weekly["Close"]
+
+        mansfield = compute_mansfield_rs(stock_close, benchmark_close, ma_length)
+        mansfield_full = reindex_indicator(stock_close, mansfield)
+        return to_series(mansfield_full)
 
     def get_150dma_series(self):
         close = self.weekly_df["Close"]
@@ -1082,6 +1120,7 @@ class StockAnalyser:
             "momentum_90": self.get_momentum_90_series(),
 
             # Others
+            "mansfield_rs": self.get_mansfield_rs_series(),
             **self.get_rsi_lines(timeframe=timeframe), #3rd chart from price
             **self.get_volatility_bbwp(timeframe=timeframe),  #1st chart from price
             **self.get_mean_reversion_deviation_lines(), #2nd chart from price

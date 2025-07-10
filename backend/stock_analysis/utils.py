@@ -333,6 +333,21 @@ def compute_bbwp(close: pd.Series, length: int = 13, bbwp_window: int = 252) -> 
     return bbwp_series
 
 
+def compute_mansfield_rs(
+    stock_close: pd.Series,
+    benchmark_close: pd.Series,
+    ma_length: int = 52,
+) -> pd.Series:
+    """Compute Mansfield Relative Strength of a stock versus benchmark."""
+    # Align benchmark series to stock index and forward fill for missing values
+    benchmark_aligned = benchmark_close.reindex(stock_close.index).ffill()
+
+    ratio = stock_close / benchmark_aligned * 100
+    zero_line_ma = ratio.rolling(window=ma_length).mean()
+    mansfield = (ratio / zero_line_ma - 1) * 100
+    return mansfield.dropna()
+
+
 
 
 def compute_ichimoku_lines(df_weekly: pd.DataFrame) -> tuple[pd.Series, pd.Series, pd.Series, pd.Series]:
