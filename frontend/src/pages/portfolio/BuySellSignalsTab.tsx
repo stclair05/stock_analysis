@@ -14,6 +14,122 @@ const allStrategies = [
   // Add other strategies if needed
 ];
 
+// Additional metrics available for optional columns
+const METRIC_COLUMNS = [
+  "current_price",
+  "three_year_ma",
+  "two_hundred_dma",
+  "weekly_ichimoku",
+  "super_trend",
+  "adx",
+  "mace",
+  "forty_week_status",
+  "fifty_dma_and_150_dma",
+  "twenty_dma",
+  "fifty_dma",
+  "mean_rev_weekly",
+  "bollinger_band_width_percentile_daily",
+  "rsi_ma_weekly",
+  "chaikin_money_flow",
+];
+
+// === Color helper functions (mirroring Metrics component) ===
+const colorizeString = (value: number | string | null) => {
+  if (typeof value !== "string") return "text-secondary";
+  const lower = value.toLowerCase();
+
+  if (
+    lower.includes("slightly extended") ||
+    lower.includes("slightly over sold") ||
+    lower.includes("slightly oversold")
+  )
+    return "text-warning";
+  if (lower.includes("extended")) return "text-danger";
+  if (lower.includes("oversold") || lower.includes("over sold"))
+    return "text-danger";
+  if (lower.includes("overbought")) return "text-down-strong";
+  if (lower.includes("normal")) return "text-secondary";
+
+  if (lower.includes("below")) return "text-down-strong";
+  if (lower.includes("above")) return "text-up-strong";
+  if (lower.includes("inside")) return "text-neutral";
+  if (lower.includes("between")) return "text-neutral";
+
+  if (lower.includes("buy")) return "text-up-strong";
+  if (lower.includes("sell")) return "text-down-strong";
+
+  if (lower.includes("strong bullish")) return "text-up-strong";
+  if (lower.includes("bullish")) return "text-up-weak";
+  if (lower.includes("strong bearish")) return "text-down-strong";
+  if (lower.includes("bearish")) return "text-down-weak";
+  if (lower.includes("weak")) return "text-neutral";
+
+  if (lower.includes("u1")) return "text-up-weak";
+  if (lower.includes("u2")) return "text-up-strong";
+  if (lower.includes("u3")) return "text-up-strong fw-bold";
+  if (lower.includes("d1")) return "text-down-weak";
+  if (lower.includes("d2")) return "text-down-strong";
+  if (lower.includes("d3")) return "text-down-strong fw-bold";
+
+  if (lower.includes("above rising ma")) return "text-up-strong fw-bold";
+  if (lower.includes("above falling ma")) return "text-up-strong";
+  if (lower.includes("below rising ma")) return "text-neutral";
+  if (lower.includes("below falling ma")) return "text-down-strong";
+
+  if (lower.includes("sloping upward")) return "text-up-weak";
+  if (lower.includes("sloping downward")) return "text-down-weak";
+  if (lower.includes("flat")) return "text-neutral";
+
+  if (lower.includes("strong uptrend")) return "text-up-strong fw-bold";
+  if (lower.includes("above both mas, but 50dma < 150dma"))
+    return "text-up-weak";
+  if (lower.includes("strong downtrend")) return "text-down-strong fw-bold";
+  if (lower.includes("below both mas, but 50dma > 150dma"))
+    return "text-down-weak";
+  if (lower.includes("between/inside moving averages")) return "text-neutral";
+
+  if (lower === "green") return "text-up-strong";
+  if (lower === "light green") return "text-up-weak";
+  if (lower === "red") return "text-down-strong";
+  if (lower === "light red") return "text-down-weak";
+  if (lower === "orange") return "text-neutral";
+  if (lower === "in progress") return "text-secondary";
+
+  if (lower.includes("above rising ma") || lower.includes("++"))
+    return "text-up-strong fw-bold";
+  if (lower.includes("above falling ma") || lower.includes("+-"))
+    return "text-up-weak";
+  if (lower.includes("below rising ma") || lower.includes("-+"))
+    return "text-neutral";
+  if (lower.includes("below falling ma") || lower.includes("--"))
+    return "text-down-strong fw-bold";
+
+  if (lower.includes("bullish divergence")) return "text-up-strong fw-bold";
+  if (lower.includes("bearish divergence")) return "text-down-strong fw-bold";
+
+  if (lower.includes("blue band")) return "text-neutral";
+  if (lower.includes("red band")) return "text-down-strong";
+
+  if (lower.includes("money inflow (increasing)"))
+    return "text-up-strong fw-bold";
+  if (lower.includes("money inflow (weakening)")) return "text-up-weak";
+  if (lower.includes("money outflow (increasing)"))
+    return "text-down-strong fw-bold";
+  if (lower.includes("money outflow (weakening)")) return "text-down-weak";
+
+  return "text-secondary";
+};
+
+const colorize = (
+  price: number | null,
+  value: number | string | null
+): string => {
+  if (price == null || typeof value !== "number") {
+    return "text-secondary";
+  }
+  return value < price ? "text-success" : "text-danger";
+};
+
 export default function BuySellSignalsTab({
   initialListType = "portfolio",
   onListTypeChange,
@@ -76,6 +192,7 @@ export default function BuySellSignalsTab({
         currentPrice: number | null;
         dailyChange: number | null;
         dailyChangePercent: number | null;
+        metrics?: any;
       }
     >
   >({});
@@ -103,29 +220,52 @@ export default function BuySellSignalsTab({
     price_target: "Price vs Target",
     cmf: "Chaikin MF",
     supertrend: "Supertrend",
+    current_price: "Current Price",
+    three_year_ma: "3-Year MA",
+    two_hundred_dma: "200 DMA",
+    weekly_ichimoku: "Weekly Ichimoku",
+    super_trend: "Super Trend (Metric)",
+    adx: "ADX",
+    mace: "MACE",
+    forty_week_status: "40-Week Status",
+    fifty_dma_and_150_dma: "50/150 DMA",
+    twenty_dma: "20 DMA",
+    fifty_dma: "50 DMA",
+    mean_rev_weekly: "Mean Rev (Weekly)",
+    bollinger_band_width_percentile_daily: "BBWP (Daily)",
+    rsi_ma_weekly: "RSI & MA (Weekly)",
+    chaikin_money_flow: "Chaikin Money Flow",
   };
 
   const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
 
-  const allColumns = useMemo(() => {
-    const base = ["mean_rev_rsi"] as string[];
+  const baseColumns = useMemo(() => {
+    const cols = ["mean_rev_rsi"] as string[];
     if (listType === "portfolio") {
-      base.push("pnl", "daily_change", "price_target");
+      cols.push("pnl", "daily_change", "price_target");
     } else {
-      base.push("daily_change");
+      cols.push("daily_change");
     }
-    base.push("cmf", "supertrend");
-    return [...base, ...getVisibleAndOrderedStrategies(selectedTimeframe)];
-  }, [selectedTimeframe, listType]);
+    cols.push("cmf", "supertrend");
+    return cols;
+  }, [listType]);
+
+  const allColumns = useMemo(() => {
+    return [
+      ...baseColumns,
+      ...METRIC_COLUMNS,
+      ...getVisibleAndOrderedStrategies(selectedTimeframe),
+    ];
+  }, [selectedTimeframe, baseColumns]);
 
   useEffect(() => {
     setSelectedColumns((prev) => {
-      if (prev.length === 0) return allColumns;
+      if (prev.length === 0) return baseColumns;
       const kept = prev.filter((c) => allColumns.includes(c));
-      const added = allColumns.filter((c) => !kept.includes(c));
-      return Array.from(new Set([...kept, ...added]));
+      const addedBase = baseColumns.filter((c) => !kept.includes(c));
+      return Array.from(new Set([...kept, ...addedBase]));
     });
-  }, [allColumns]);
+  }, [allColumns, baseColumns]);
 
   const getSlopeArrow = (val: string | null) => {
     if (!val) return "-";
@@ -437,6 +577,7 @@ export default function BuySellSignalsTab({
             currentPrice: number | null;
             dailyChange: number | null;
             dailyChangePercent: number | null;
+            metrics?: any;
           }
         > = {};
         Object.entries(data).forEach(([sym, val]: any) => {
@@ -453,6 +594,7 @@ export default function BuySellSignalsTab({
               typeof val?.daily_change_percent === "number"
                 ? val.daily_change_percent
                 : null,
+            metrics: val,
           };
         });
         setMeanRevRsi(summary);
@@ -729,6 +871,26 @@ export default function BuySellSignalsTab({
           const valB = typeof chB === "number" ? chB : -Infinity;
           if (valA === valB) return a.ticker.localeCompare(b.ticker);
           return dir === "asc" ? valA - valB : valB - valA;
+        } else if (METRIC_COLUMNS.includes(col)) {
+          const valAraw = meanRevRsi[a.ticker]?.metrics?.[col];
+          const valBraw = meanRevRsi[b.ticker]?.metrics?.[col];
+          const vA =
+            valAraw && typeof valAraw === "object" && "current" in valAraw
+              ? valAraw.current
+              : valAraw;
+          const vB =
+            valBraw && typeof valBraw === "object" && "current" in valBraw
+              ? valBraw.current
+              : valBraw;
+          if (typeof vA === "number" && typeof vB === "number") {
+            if (vA === vB) return a.ticker.localeCompare(b.ticker);
+            return dir === "asc" ? vA - vB : vB - vA;
+          }
+          const sA = vA != null ? String(vA).toLowerCase() : "";
+          const sB = vB != null ? String(vB).toLowerCase() : "";
+          const cmp = sA.localeCompare(sB);
+          if (cmp === 0) return a.ticker.localeCompare(b.ticker);
+          return dir === "asc" ? cmp : -cmp;
         } else {
           const sortOrder = { BUY: 1, SELL: 2, "": 3, "-": 4 };
           const signalA = signalSummary[a.ticker]?.[col]?.status || "-";
@@ -937,6 +1099,10 @@ export default function BuySellSignalsTab({
       "supertrend",
     ];
 
+    if (METRIC_COLUMNS.includes(col)) {
+      return meanRevRsi[t]?.metrics?.[col] != null;
+    }
+
     if (signalCols.includes(col)) {
       return !!signalSummary[t]?.[col];
     }
@@ -1122,6 +1288,35 @@ export default function BuySellSignalsTab({
           >
             <span title={delta}>{buySell || "-"}</span>
           </div>
+        </td>
+      );
+    }
+
+    if (METRIC_COLUMNS.includes(col)) {
+      if (col === "current_price") {
+        const val = meanRevRsi[ticker]?.metrics?.current_price;
+        return (
+          <td style={{ textAlign: "center" }}>
+            {typeof val === "number" ? val.toFixed(2) : val ?? "-"}
+          </td>
+        );
+      }
+
+      const metric = meanRevRsi[ticker]?.metrics?.[col];
+      let value: any = metric;
+      if (metric && typeof metric === "object" && "current" in metric) {
+        value = metric.current;
+      }
+      const price = meanRevRsi[ticker]?.metrics?.current_price ?? null;
+      const className =
+        typeof value === "string"
+          ? colorizeString(value)
+          : colorize(price, value);
+      const display =
+        typeof value === "number" ? value.toFixed(2) : value ?? "-";
+      return (
+        <td className={className} style={{ textAlign: "center" }}>
+          {display}
         </td>
       );
     }
