@@ -895,32 +895,18 @@ class StockAnalyser:
         """Mansfield Relative Strength versus the S&P 500 index."""
         benchmark_df = StockAnalyser.get_price_data("^GSPC")
 
-        # Use Adj Close for consistency with stock
-        if "Adj Close" in benchmark_df.columns:
-            benchmark_df["Close"] = benchmark_df["Adj Close"]
-        print("benchmark_df tail")
-        print(benchmark_df.tail(5))
-        benchmark_weekly = benchmark_df.resample("W-FRI").agg(
-            {
-                "Open": "first",
-                "High": "max",
-                "Low": "min",
-                "Close": "last",
-                "Volume": "sum",
-            }
-        ).dropna()
-       
-        stock_close = self.weekly_df["Close"]
-        print("stock close")
-        print(stock_close.tail(5))
-        benchmark_close = benchmark_weekly["Close"]
-        print("Benchmark close weekly")
-        print(benchmark_close.tail(5))
-        mansfield = compute_mansfield_rs(stock_close, benchmark_close, ma_length)
-        print("mansfield")
-        print(mansfield.tail(5))
-        mansfield_full = reindex_indicator(stock_close, mansfield)
-        print("Mansfield full ")
+        benchmark_weekly_close = (
+                benchmark_df["Close"].resample("W-FRI").last().dropna()
+            )
+        stock_weekly_close = (
+            self.df["Close"].resample("W-FRI").last().dropna()
+        )
+
+        mansfield = compute_mansfield_rs(
+            stock_weekly_close, benchmark_weekly_close, ma_length
+        )
+        mansfield_full = reindex_indicator(stock_weekly_close, mansfield)
+        print("mansfield_full")
         print(mansfield_full.tail(5))
         return to_series(mansfield_full)
 
