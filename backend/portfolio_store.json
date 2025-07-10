@@ -232,7 +232,7 @@
       "shares": 19000.0,
       "average_cost": 33.53,
       "sector": "Energy",
-      "target": 32.13,
+      "target": 36,
       "player": 2,
       "technigrade": [1, 2, 1, 1, 3, 2]
     },
@@ -878,7 +878,7 @@
       "average_cost": 32.35,
       "sector": "Technology",
       "target": 59,
-      "player": null
+      "player": 10
     },
     {
       "ticker": "0020.HK",
@@ -953,7 +953,7 @@
       "average_cost": 268.8,
       "sector": "Hong Kong and China",
       "target": 330,
-      "player": null
+      "player": 10
     }
   ],
   "fixed_income": [
