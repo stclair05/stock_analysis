@@ -574,10 +574,6 @@ export default function BuySellSignalsTab({
     // eslint-disable-next-line
   }, [portfolio, selectedTimeframe]); // Ensure this effect runs when portfolio changes
 
-  useEffect(() => {
-    setSignalSummary({}); // Clear signals when portfolio is being reloaded (e.g., initial load or manual portfolio refresh)
-  }, [portfolio]);
-
   // Calculate P/L in USD currency for a given ticker
   // Return P/L in USD
   const getPnlForTicker = (
@@ -920,34 +916,99 @@ export default function BuySellSignalsTab({
     }
   };
 
+  const isDataReadyForColumn = (ticker: string, col: string) => {
+    const t = ticker.toUpperCase().trim(); // enforce safe key usage
+
+    const signalCols = [
+      "northstar",
+      "trendinvestorpro",
+      "demarker",
+      "stclair",
+      "stclairlongterm",
+      "mace_40w",
+      "generic",
+    ];
+
+    const priceCols = [
+      "mean_rev_rsi",
+      "daily_change",
+      "cmf",
+      "price_target",
+      "supertrend",
+    ];
+
+    if (signalCols.includes(col)) {
+      return !!signalSummary[t]?.[col];
+    }
+
+    if (col === "mean_rev_rsi") {
+      return !!meanRevRsi[t]?.meanRev && !!meanRevRsi[t]?.rsi;
+    }
+
+    if (col === "daily_change") {
+      return (
+        meanRevRsi[t]?.dailyChange != null &&
+        meanRevRsi[t]?.dailyChangePercent != null
+      );
+    }
+
+    if (col === "price_target") {
+      return meanRevRsi[t]?.currentPrice != null;
+    }
+
+    if (col === "cmf") {
+      return meanRevRsi[t]?.cmf != null;
+    }
+
+    if (col === "supertrend") {
+      return meanRevRsi[t]?.supertrend != null;
+    }
+
+    if (col === "pnl") {
+      return (
+        holdingInfo[t]?.shares != null &&
+        holdingInfo[t]?.average_cost != null &&
+        meanRevRsi[t]?.currentPrice != null
+      );
+    }
+
+    return true; // fallback for other columns
+  };
+
   const renderCell = (
     col: string,
     holding: { ticker: string; sector?: string; target?: number }
   ) => {
+    const ticker = holding.ticker;
+
+    if (!isDataReadyForColumn(ticker, col)) {
+      return <td style={{ textAlign: "center", color: "#ccc" }}>⏳</td>;
+    }
+
     if (col === "mean_rev_rsi") {
       return (
         <td style={{ textAlign: "center" }}>
           <span
             style={{
-              color: getMeanRevColor(
-                meanRevRsi[holding.ticker]?.meanRev ?? null
-              ),
+              color: getMeanRevColor(meanRevRsi[ticker]?.meanRev ?? null),
             }}
           >
-            {getSlopeArrow(meanRevRsi[holding.ticker]?.meanRev ?? null)}
+            {getSlopeArrow(meanRevRsi[ticker]?.meanRev ?? null)}
           </span>{" "}
           |{" "}
           <span
             style={{
-              color: getRsiColor(meanRevRsi[holding.ticker]?.rsi ?? null),
+              color: getRsiColor(meanRevRsi[ticker]?.rsi ?? null),
             }}
           >
-            {getSlopeArrow(meanRevRsi[holding.ticker]?.rsi ?? null)}
+            {getSlopeArrow(meanRevRsi[ticker]?.rsi ?? null)}
           </span>
         </td>
       );
-    } else if (col === "pnl") {
-      const pnl = getPnlForTicker(holding.ticker);
+    }
+
+    if (col === "pnl") {
+      const pnl = getPnlForTicker(ticker);
       if (!pnl) return <td style={{ textAlign: "center" }}>-</td>;
       const color =
         pnl.amount > 0 ? "#4caf50" : pnl.amount < 0 ? "#f44336" : "#bdbdbd";
@@ -960,8 +1021,10 @@ export default function BuySellSignalsTab({
           </div>
         </td>
       );
-    } else if (col === "daily_change") {
-      const ch = meanRevRsi[holding.ticker];
+    }
+
+    if (col === "daily_change") {
+      const ch = meanRevRsi[ticker];
       const amount = ch?.dailyChange;
       const pct = ch?.dailyChangePercent;
       if (amount == null || pct == null)
@@ -973,8 +1036,10 @@ export default function BuySellSignalsTab({
           {`${sign}${formatCurrency(amount)}`} ({`${sign}${pct.toFixed(2)}%`})
         </td>
       );
-    } else if (col === "price_target") {
-      const price = meanRevRsi[holding.ticker]?.currentPrice;
+    }
+
+    if (col === "price_target") {
+      const price = meanRevRsi[ticker]?.currentPrice;
       const target = holding.target;
       if (typeof price === "number" && typeof target === "number") {
         const diff = ((price - target) / target) * 100;
@@ -993,22 +1058,26 @@ export default function BuySellSignalsTab({
           {price != null ? price.toFixed(2) : "-"}
         </td>
       );
-    } else if (col === "cmf") {
+    }
+
+    if (col === "cmf") {
       return (
         <td
           style={{
-            color: getCmfColor(meanRevRsi[holding.ticker]?.cmf ?? null),
+            color: getCmfColor(meanRevRsi[ticker]?.cmf ?? null),
             textAlign: "center",
             fontWeight: 550,
           }}
         >
-          {meanRevRsi[holding.ticker]?.cmf ?? "-"}
+          {meanRevRsi[ticker]?.cmf ?? "-"}
         </td>
       );
-    } else if (col === "supertrend") {
-      const stVal = meanRevRsi[holding.ticker]?.supertrend ?? null;
+    }
+
+    if (col === "supertrend") {
+      const stVal = meanRevRsi[ticker]?.supertrend ?? null;
       const buySell = stVal ? stVal.toUpperCase() : "";
-      const delta = signalSummary[holding.ticker]?._generic?.strength || "";
+      const delta = signalSummary[ticker]?._generic?.strength || "";
       const color =
         buySell === "BUY"
           ? "#4caf50"
@@ -1017,8 +1086,7 @@ export default function BuySellSignalsTab({
           : "#bdbdbd";
 
       let cellClass = "";
-      const genericStatus =
-        signalSummary[holding.ticker]?._generic?.status || "";
+      const genericStatus = signalSummary[ticker]?._generic?.status || "";
 
       if (genericStatus === "BUY") {
         if (delta === "very strong") cellClass = "signal-buy-very-strong";
@@ -1038,14 +1106,11 @@ export default function BuySellSignalsTab({
         cellClass += " signal-crossed";
       }
 
-      const cellStyle: React.CSSProperties = {
-        color,
-        textAlign: "center",
-        fontWeight: 700,
-      };
-
       return (
-        <td style={cellStyle} className={cellClass}>
+        <td
+          style={{ color, textAlign: "center", fontWeight: 700 }}
+          className={cellClass}
+        >
           <div
             style={{
               display: "flex",
@@ -1060,25 +1125,21 @@ export default function BuySellSignalsTab({
         </td>
       );
     }
-    // strategy columns
-    const signalObj = signalSummary[holding.ticker]?.[col] ?? {};
+
+    // fallback for other signal strategy columns
+    const signalObj = signalSummary[ticker]?.[col] ?? {};
     const buySell = signalObj.signal || "";
-    const delta = signalSummary[holding.ticker]?._generic?.strength || "";
+    const delta = signalSummary[ticker]?._generic?.strength || "";
     const color =
       buySell === "BUY"
         ? "#4caf50"
         : buySell === "SELL"
         ? "#f44336"
         : "#bdbdbd";
-    let icon = "";
-    if (delta === "crossed") icon = " 🔁";
-    const cellStyle: React.CSSProperties = {
-      color,
-      textAlign: "center",
-      fontWeight: 700,
-    };
+    const genericStatus = signalSummary[ticker]?._generic?.status || "";
     let cellClass = "";
-    const genericStatus = signalSummary[holding.ticker]?._generic?.status || "";
+    let icon = "";
+
     if (genericStatus === "BUY") {
       if (delta === "very strong") cellClass = "signal-buy-very-strong";
       else if (delta === "strengthening")
@@ -1092,11 +1153,18 @@ export default function BuySellSignalsTab({
       else if (delta === "weakening") cellClass = "signal-sell-weakening";
       else if (delta === "very weak") cellClass = "signal-sell-very-weak";
     }
+
     if (delta === "crossed") {
+      icon = " 🔁";
       cellClass += " signal-crossed";
     }
+
     return (
-      <td key={col} style={cellStyle} className={cellClass}>
+      <td
+        key={col}
+        style={{ color, textAlign: "center", fontWeight: 700 }}
+        className={cellClass}
+      >
         <div
           style={{
             display: "flex",
