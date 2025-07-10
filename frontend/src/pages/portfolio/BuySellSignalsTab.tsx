@@ -917,6 +917,8 @@ export default function BuySellSignalsTab({
   };
 
   const isDataReadyForColumn = (ticker: string, col: string) => {
+    const t = ticker.toUpperCase().trim(); // enforce safe key usage
+
     const signalCols = [
       "northstar",
       "trendinvestorpro",
@@ -926,21 +928,51 @@ export default function BuySellSignalsTab({
       "mace_40w",
       "generic",
     ];
+
     const priceCols = [
       "mean_rev_rsi",
       "daily_change",
       "cmf",
       "price_target",
-      "supertrend", // ✅ move it here
+      "supertrend",
     ];
 
     if (signalCols.includes(col)) {
-      return !!signalSummary[ticker]?.[col];
+      return !!signalSummary[t]?.[col];
     }
-    if (priceCols.includes(col)) {
-      return !!meanRevRsi[ticker];
+
+    if (col === "mean_rev_rsi") {
+      return !!meanRevRsi[t]?.meanRev && !!meanRevRsi[t]?.rsi;
     }
-    return true; // fallback for "pnl" or other columns
+
+    if (col === "daily_change") {
+      return (
+        meanRevRsi[t]?.dailyChange != null &&
+        meanRevRsi[t]?.dailyChangePercent != null
+      );
+    }
+
+    if (col === "price_target") {
+      return meanRevRsi[t]?.currentPrice != null;
+    }
+
+    if (col === "cmf") {
+      return meanRevRsi[t]?.cmf != null;
+    }
+
+    if (col === "supertrend") {
+      return meanRevRsi[t]?.supertrend != null;
+    }
+
+    if (col === "pnl") {
+      return (
+        holdingInfo[t]?.shares != null &&
+        holdingInfo[t]?.average_cost != null &&
+        meanRevRsi[t]?.currentPrice != null
+      );
+    }
+
+    return true; // fallback for other columns
   };
 
   const renderCell = (

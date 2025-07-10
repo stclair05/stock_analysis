@@ -623,7 +623,8 @@ class StockAnalyser:
     def bollinger_band_width_percentile_daily(self) -> TimeSeriesMetric:
         close = self.df['Close']
         if len(close) < 126:
-            raise HTTPException(status_code=400, detail="Not enough data for Bollinger Band Width Percentile.")
+            return TimeSeriesMetric(current=None, seven_days_ago=None, fourteen_days_ago=None, twentyone_days_ago=None)
+
 
         bbwp = compute_bbwp(close, length=20, bbwp_window=126)
         band_labels = classify_bbwp_percentile(bbwp).dropna()
@@ -774,7 +775,13 @@ class StockAnalyser:
         df = self.weekly_df
 
         if df.empty or len(df) < 30:
-            raise HTTPException(status_code=400, detail="Not enough weekly data for Chaikin Oscillator.")
+            # Instead of crashing the endpoint, just return nulls
+            return TimeSeriesMetric(
+                current=None,
+                seven_days_ago=None,
+                fourteen_days_ago=None,
+                twentyone_days_ago=None
+            )
 
         high = df["High"]
         low = df["Low"]
