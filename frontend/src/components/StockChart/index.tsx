@@ -12,6 +12,7 @@ import {
   HistogramSeries,
   AreaSeries,
   PriceScaleMode,
+  LineType,
 } from "lightweight-charts";
 import { useEffect, useRef, useState } from "react";
 import { Ruler, Minus, RotateCcw, ArrowUpDown } from "lucide-react";
@@ -715,6 +716,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     const mansfieldLine = mansfieldChart.addSeries(LineSeries, {
       color: "#000000",
       lineWidth: 1,
+      lineType: LineType.WithSteps,
     });
     mansfieldLine.setData([
       { time: (Date.now() / 1000) as UTCTimestamp, value: 0 },
@@ -806,14 +808,20 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           chartRef.current,
           meanRevChartInstance.current,
           rsiChartInstance.current,
+          mansfieldChartInstance.current,
           volChartInstance.current,
           momentumChartInstance.current,
         ].forEach((c) => c !== sourceChart && safeSetVisibleRange(c, range));
       });
     }
-    [chart, meanChart, rsiChart, volChart, momentumChart].forEach(
-      syncVisibleRangeToAll
-    );
+    [
+      chart,
+      meanChart,
+      rsiChart,
+      mansfieldChart,
+      volChart,
+      momentumChart,
+    ].forEach(syncVisibleRangeToAll);
 
     // --- 10. Main chart crosshair handler: drawing/preview logic + sync ---
     chart.subscribeCrosshairMove((param) => {
@@ -1333,6 +1341,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       const line = chart.addSeries(LineSeries, {
         color: "#000000",
         lineWidth: 1,
+        lineType: LineType.WithSteps,
         priceLineVisible: false,
         lastValueVisible: false,
       });
