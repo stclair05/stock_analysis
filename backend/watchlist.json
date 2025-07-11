@@ -365,6 +365,16 @@
       "ticker": "B",
       "sector": "",
       "technigrade": [6, 6, 4, 3, 6]
+    },
+    {
+      "ticker": "FTNT",
+      "sector": "",
+      "technigrade": [11, 11, 12, 11, 8]
+    },
+    {
+      "ticker": "OSCR",
+      "sector": "",
+      "technigrade": [7, 1, 1, 13, 6]
     }
   ],
   "portfolio": []
