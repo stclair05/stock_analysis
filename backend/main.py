@@ -445,6 +445,8 @@ def _get_signals_for_symbol(symbol: str, timeframe: str, strategies: List[str]):
             result[strat] = {"markers": analyser.get_stclairlongterm_signals(timeframe)}
         elif strat == "mace_40w":
             result[strat] = {"markers": analyser.get_mace_40w_signals()}
+        elif strat == "mansfield":
+            result[strat] = {"markers": analyser.get_mansfield_signals()}
     result["_generic"] = analyser.get_generic_strength_status(timeframe)
     return result
 
@@ -626,6 +628,8 @@ def get_signals(timeframe: str, symbol: str, strategy: str = Query("trendinvesto
         return {"markers": analyser.get_stclairlongterm_signals(timeframe)}
     elif strategy == "mace_40w":
         return {"markers": analyser.get_mace_40w_signals()}
+    elif strategy == "mansfield":
+        return {"markers": analyser.get_mansfield_signals()}
     elif strategy == "demarker":
         return {"markers": analyser.get_demarker_signals(timeframe)}
 
@@ -781,6 +785,8 @@ def backtest_signals(
         markers = analyser.get_stclairlongterm_signals(timeframe)
     elif strategy == "mace_40w":
         markers = analyser.get_mace_40w_signals()
+    elif strategy == "mansfield":
+        markers = analyser.get_mansfield_signals()
     elif strategy == "demarker":
         markers = analyser.get_demarker_signals(timeframe)
     else:
@@ -814,6 +820,8 @@ def get_signal_strength(
         return analyser.get_stclairlongterm_status_and_strength()
     elif strategy == "mace_40w":
         return analyser.get_mace_40w_status_and_strength()
+    elif strategy == "mansfield":
+        return analyser.get_mansfield_status()
     elif strategy == "demarker":
         return analyser.get_demarker_status_and_strength(timeframe)
     elif strategy == "northstar":

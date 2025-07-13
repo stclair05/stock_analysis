@@ -10,6 +10,7 @@ const allStrategies = [
   "st_clair",
   "stclair_longterm",
   "mace_40w",
+  "mansfield",
   // "demarker",
   // Add other strategies if needed
 ];
@@ -210,6 +211,7 @@ export default function BuySellSignalsTab({
     northstar: "northstar",
     stclair_longterm: "stclairlongterm",
     mace_40w: "mace_40w",
+    mansfield: "mansfield",
     // demarker: "demarker",
   };
 
@@ -670,23 +672,51 @@ export default function BuySellSignalsTab({
                   ? await resSignals.json()
                   : null;
 
-                const latestSignal =
+                // Fetch Mansfield status separately to determine new buy flag
+                let mansfieldStatus: any = null;
+                if (strategy === "mansfield") {
+                  try {
+                    const res = await fetch(
+                      `http://localhost:8000/api/signal_strength/${holding.ticker}?strategy=mansfield`
+                    );
+                    mansfieldStatus = res.ok ? await res.json() : null;
+                  } catch {
+                    mansfieldStatus = null;
+                  }
+                }
+
+                let latestSignal = "";
+                if (
                   Array.isArray(signalData?.markers) &&
                   signalData.markers.length > 0
-                    ? signalData.markers[
-                        signalData.markers.length - 1
-                      ].side.toUpperCase()
-                    : "";
+                ) {
+                  const last =
+                    signalData.markers[signalData.markers.length - 1];
+                  if (strategy === "mansfield") {
+                    latestSignal =
+                      last.side.toUpperCase() === "BUY" ? "BUY" : "";
+                  } else {
+                    latestSignal = last.side.toUpperCase();
+                  }
+                }
 
-                const status = genericStrength?.status || "";
-                const delta = genericStrength?.strength || "";
-                const details = genericStrength?.details;
+                const status =
+                  strategy === "mansfield"
+                    ? mansfieldStatus?.status || ""
+                    : genericStrength?.status || "";
+                const delta =
+                  strategy === "mansfield"
+                    ? ""
+                    : genericStrength?.strength || "";
+                const details =
+                  strategy === "mansfield" ? null : genericStrength?.details;
 
                 row[strategy] = {
                   signal: latestSignal,
                   status,
                   delta,
                   details,
+                  newBuy: mansfieldStatus?.new_buy || false,
                 };
               } catch (e) {
                 row[strategy] = {
@@ -694,6 +724,7 @@ export default function BuySellSignalsTab({
                   status: "",
                   delta: "",
                   details: null,
+                  newBuy: false,
                 };
               }
             })
@@ -751,6 +782,7 @@ export default function BuySellSignalsTab({
       return true;
     if (strategy === "stclair_longterm" && tf !== "weekly") return true;
     if (strategy === "mace_40w" && tf !== "weekly") return true;
+    if (strategy === "mansfield" && tf !== "weekly") return true;
     return false;
   }
 
@@ -1088,6 +1120,7 @@ export default function BuySellSignalsTab({
       "stclair",
       "stclairlongterm",
       "mace_40w",
+      "mansfield",
       "generic",
     ];
 
@@ -1317,6 +1350,29 @@ export default function BuySellSignalsTab({
       return (
         <td className={className} style={{ textAlign: "center" }}>
           {display}
+        </td>
+      );
+    }
+
+    // Special handling for Mansfield strategy
+    if (col === "mansfield") {
+      const mObj = signalSummary[ticker]?.[col] ?? {};
+      const buySell = mObj.signal || "";
+      const isNewBuy = mObj.newBuy;
+      const color =
+        buySell === "BUY"
+          ? "#4caf50"
+          : buySell === "SELL"
+          ? "#f44336"
+          : "#bdbdbd";
+      const cellClass = isNewBuy ? "signal-new-buy" : "";
+      return (
+        <td
+          key={col}
+          style={{ color, textAlign: "center", fontWeight: 700 }}
+          className={cellClass}
+        >
+          {buySell || "-"}
         </td>
       );
     }
