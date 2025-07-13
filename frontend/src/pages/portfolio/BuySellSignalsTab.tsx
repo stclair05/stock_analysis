@@ -672,6 +672,19 @@ export default function BuySellSignalsTab({
                   ? await resSignals.json()
                   : null;
 
+                // Fetch Mansfield status separately to determine new buy flag
+                let mansfieldStatus: any = null;
+                if (strategy === "mansfield") {
+                  try {
+                    const res = await fetch(
+                      `http://localhost:8000/api/signal_strength/${holding.ticker}?strategy=mansfield`
+                    );
+                    mansfieldStatus = res.ok ? await res.json() : null;
+                  } catch {
+                    mansfieldStatus = null;
+                  }
+                }
+
                 let latestSignal = "";
                 if (
                   Array.isArray(signalData?.markers) &&
@@ -687,15 +700,23 @@ export default function BuySellSignalsTab({
                   }
                 }
 
-                const status = genericStrength?.status || "";
-                const delta = genericStrength?.strength || "";
-                const details = genericStrength?.details;
+                const status =
+                  strategy === "mansfield"
+                    ? mansfieldStatus?.status || ""
+                    : genericStrength?.status || "";
+                const delta =
+                  strategy === "mansfield"
+                    ? ""
+                    : genericStrength?.strength || "";
+                const details =
+                  strategy === "mansfield" ? null : genericStrength?.details;
 
                 row[strategy] = {
                   signal: latestSignal,
                   status,
                   delta,
                   details,
+                  newBuy: mansfieldStatus?.new_buy || false,
                 };
               } catch (e) {
                 row[strategy] = {
@@ -703,6 +724,7 @@ export default function BuySellSignalsTab({
                   status: "",
                   delta: "",
                   details: null,
+                  newBuy: false,
                 };
               }
             })
@@ -1328,6 +1350,29 @@ export default function BuySellSignalsTab({
       return (
         <td className={className} style={{ textAlign: "center" }}>
           {display}
+        </td>
+      );
+    }
+
+    // Special handling for Mansfield strategy
+    if (col === "mansfield") {
+      const mObj = signalSummary[ticker]?.[col] ?? {};
+      const buySell = mObj.signal || "";
+      const isNewBuy = mObj.newBuy;
+      const color =
+        buySell === "BUY"
+          ? "#4caf50"
+          : buySell === "SELL"
+          ? "#f44336"
+          : "#bdbdbd";
+      const cellClass = isNewBuy ? "signal-new-buy" : "";
+      return (
+        <td
+          key={col}
+          style={{ color, textAlign: "center", fontWeight: 700 }}
+          className={cellClass}
+        >
+          {buySell || "-"}
         </td>
       );
     }
