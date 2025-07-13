@@ -2332,7 +2332,7 @@ class StockAnalyser:
                     "time": int(pd.Timestamp(status_series.index[idx]).timestamp()),
                     "price": close.iloc[idx],
                     "side": "buy",
-                    "label": "NEW BUY",
+                    "label": "ENTRY",
                 })
 
             # NEW SELL signal
@@ -2341,7 +2341,7 @@ class StockAnalyser:
                     "time": int(pd.Timestamp(status_series.index[idx]).timestamp()),
                     "price": close.iloc[idx],
                     "side": "sell",
-                    "label": "NEW SELL",
+                    "label": "EXIT",
                 })
 
         return markers

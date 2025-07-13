@@ -10,6 +10,7 @@ const allStrategies = [
   "st_clair",
   "stclair_longterm",
   "mace_40w",
+  "mansfield",
   // "demarker",
   // Add other strategies if needed
 ];
@@ -210,6 +211,7 @@ export default function BuySellSignalsTab({
     northstar: "northstar",
     stclair_longterm: "stclairlongterm",
     mace_40w: "mace_40w",
+    mansfield: "mansfield",
     // demarker: "demarker",
   };
 
@@ -670,13 +672,20 @@ export default function BuySellSignalsTab({
                   ? await resSignals.json()
                   : null;
 
-                const latestSignal =
+                let latestSignal = "";
+                if (
                   Array.isArray(signalData?.markers) &&
                   signalData.markers.length > 0
-                    ? signalData.markers[
-                        signalData.markers.length - 1
-                      ].side.toUpperCase()
-                    : "";
+                ) {
+                  const last =
+                    signalData.markers[signalData.markers.length - 1];
+                  if (strategy === "mansfield") {
+                    latestSignal =
+                      last.side.toUpperCase() === "BUY" ? "BUY" : "";
+                  } else {
+                    latestSignal = last.side.toUpperCase();
+                  }
+                }
 
                 const status = genericStrength?.status || "";
                 const delta = genericStrength?.strength || "";
@@ -751,6 +760,7 @@ export default function BuySellSignalsTab({
       return true;
     if (strategy === "stclair_longterm" && tf !== "weekly") return true;
     if (strategy === "mace_40w" && tf !== "weekly") return true;
+    if (strategy === "mansfield" && tf !== "weekly") return true;
     return false;
   }
 
@@ -1088,6 +1098,7 @@ export default function BuySellSignalsTab({
       "stclair",
       "stclairlongterm",
       "mace_40w",
+      "mansfield",
       "generic",
     ];
 
