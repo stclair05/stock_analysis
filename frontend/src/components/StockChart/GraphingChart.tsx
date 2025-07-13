@@ -70,6 +70,7 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     | "stclairlongterm"
     | "mace_40w"
     | "demarker"
+    | "mansfield"
   >(null);
 
   const [signalSummary, setSignalSummary] = useState<SignalSummary>({
@@ -79,6 +80,7 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     stclairlongterm: { daily: "", weekly: "", monthly: "" },
     mace_40w: { daily: "", weekly: "", monthly: "" },
     demarker: { daily: "", weekly: "", monthly: "" },
+    mansfield: { daily: "", weekly: "", monthly: "" },
   });
   const strategies = [
     "trendinvestorpro",
@@ -87,6 +89,7 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     "stclairlongterm",
     "mace_40w",
     "demarker",
+    "mansfield",
   ] as const;
   const timeframes = ["daily", "weekly", "monthly"] as const;
 
@@ -297,6 +300,7 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
       // ONLY weekly supported
       return true;
     if (strategy === "mace_40w" && tf !== "weekly") return true;
+    if (strategy === "mansfield" && tf !== "weekly") return true;
     return false;
   };
 
@@ -674,6 +678,8 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
             { key: "ma_13w", color: "#ffd600", label: "13W" }, // Yellow (bright)
             { key: "ma_26w", color: "#e53935", label: "26W" }, // Red
           ];
+        } else if (selectedStrategy === "mansfield") {
+          maConfigs = [{ key: "ma_30w", color: "#3f51b5", label: "30W" }];
         }
 
         maConfigs.forEach((cfg) => {

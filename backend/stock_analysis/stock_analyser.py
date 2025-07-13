@@ -891,7 +891,7 @@ class StockAnalyser:
         print(momentum.tail(20))
         return to_series(reindex_indicator(close, momentum))
     
-    def get_mansfield_rs_series(self, ma_length: int = 52):
+    def get_mansfield_rs_series(self, ma_length: int = 52, *, as_list: bool = True):
         """Mansfield Relative Strength versus the S&P 500 index."""
         benchmark_df = StockAnalyser.get_price_data("^GSPC")
 
@@ -908,7 +908,9 @@ class StockAnalyser:
         mansfield_full = reindex_indicator(stock_weekly_close, mansfield)
         print("mansfield_full")
         print(mansfield_full.tail(5))
-        return to_series(mansfield_full)
+        if as_list:
+            return to_series(mansfield_full)
+        return mansfield_full
 
     def get_150dma_series(self):
         close = self.weekly_df["Close"]
@@ -941,6 +943,12 @@ class StockAnalyser:
         df_weekly = self.weekly_df
         close = df_weekly["Close"]
         ma = close.rolling(window=40).mean()
+        return to_series(reindex_indicator(close, ma))
+    
+    def get_30_week_ma_series(self):
+        df_weekly = self.weekly_df
+        close = df_weekly["Close"]
+        ma = close.rolling(window=30).mean()
         return to_series(reindex_indicator(close, ma))
     
     def get_rsi_ma_series(self, period: int = 14):
@@ -1164,6 +1172,7 @@ class StockAnalyser:
             overlays["ma_4w"] = self.get_ma_series(4, timeframe="weekly")      # 4-week MA
             overlays["ma_13w"] = self.get_ma_series(13, timeframe="weekly")    # 13-week MA
             overlays["ma_26w"] = self.get_ma_series(26, timeframe="weekly")    # 26-week MA
+            overlays["ma_30w"] = self.get_ma_series(30, timeframe="weekly")    # 30-week MA
         elif timeframe == "monthly":
             index = self.monthly_df.index
             # -- Daily MAs resampled to monthly --
@@ -2279,6 +2288,76 @@ class StockAnalyser:
         else:  # dem_now > 0.7
             delta = "strengthening" if dem_now < dem_prev else "weakening"
             return {"status": "SELL", "delta": delta}
+        
+    def _mansfield_status_series(self) -> pd.Series:
+        """Helper to compute Mansfield signal classification per week."""
+        df_weekly = self.weekly_df
+
+        if len(df_weekly) < 52:
+            return pd.Series(dtype="object")
+
+        close = df_weekly["Close"]
+        ma30 = close.rolling(30).mean()
+
+        mansfield = self.get_mansfield_rs_series(as_list=False)
+        mansfield = reindex_indicator(close, mansfield)
+
+        def classify(p, m, ma):
+            if pd.isna(p) or pd.isna(m) or pd.isna(ma):
+                return None
+            if p < ma:
+                return "SELL" if m < 0 else "NEUTRAL"
+            else:
+                return "BUY" if m > 0 else "NEUTRAL"
+
+        statuses = [classify(p, m, ma) for p, m, ma in zip(close, mansfield, ma30)]
+        return pd.Series(statuses, index=close.index)
+
+    def get_mansfield_signals(self) -> list[dict]:
+        """Return NEW BUY and SELL markers based on Mansfield signal."""
+        status_series = self._mansfield_status_series()
+        if status_series.empty:
+            return []
+
+        close = self.weekly_df["Close"].reindex(status_series.index)
+        markers = []
+
+        for idx in range(1, len(status_series)):
+            curr = status_series.iloc[idx]
+            prev = status_series.iloc[idx - 1]
+
+            # NEW BUY signal
+            if curr == "BUY" and prev in ["SELL", "NEUTRAL"]:
+                markers.append({
+                    "time": int(pd.Timestamp(status_series.index[idx]).timestamp()),
+                    "price": close.iloc[idx],
+                    "side": "buy",
+                    "label": "NEW BUY",
+                })
+
+            # NEW SELL signal
+            elif curr == "SELL" and prev in ["BUY", "NEUTRAL"]:
+                markers.append({
+                    "time": int(pd.Timestamp(status_series.index[idx]).timestamp()),
+                    "price": close.iloc[idx],
+                    "side": "sell",
+                    "label": "NEW SELL",
+                })
+
+        return markers
+
+
+    def get_mansfield_status(self) -> dict:
+        """Return latest Mansfield signal status and new buy flag."""
+        status_series = self._mansfield_status_series()
+        if status_series.empty:
+            return {"status": None, "new_buy": False}
+
+        curr = status_series.iloc[-1]
+        prev = status_series.iloc[-2] if len(status_series) >= 2 else None
+        new_buy = curr == "BUY" and prev in ["SELL", "NEUTRAL"]
+
+        return {"status": curr, "new_buy": new_buy}
 
 
     def get_generic_strength_status(self, timeframe: str = "weekly") -> dict:
