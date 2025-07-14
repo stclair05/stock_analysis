@@ -692,12 +692,7 @@ export default function BuySellSignalsTab({
                 ) {
                   const last =
                     signalData.markers[signalData.markers.length - 1];
-                  if (strategy === "mansfield") {
-                    latestSignal =
-                      last.side.toUpperCase() === "BUY" ? "BUY" : "";
-                  } else {
-                    latestSignal = last.side.toUpperCase();
-                  }
+                  latestSignal = last.side.toUpperCase();
                 }
 
                 const status =

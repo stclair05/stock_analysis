@@ -188,7 +188,7 @@
       "shares": 1107.0,
       "average_cost": 90.56,
       "sector": "Energy",
-      "target": 92,
+      "target": 106,
       "player": 2
     },
     {
@@ -656,7 +656,7 @@
       "shares": 197000.0,
       "average_cost": 15.55,
       "sector": "Precious Metals",
-      "target": 16.27,
+      "target": 24,
       "player": 8
     },
     {
