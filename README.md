@@ -61,3 +61,19 @@ uvicorn backend.main:app --host 0.0.0.0 --port $PORT
 ```
 
 Render will automatically supply the `$PORT` environment variable for the service.
+
+## Deployment on Vercel
+
+Vercel can host the frontend by default, but you may also deploy the FastAPI backend as a Python serverless function. Create a file `api/index.py` at the repository root with the following contents:
+
+```python
+from backend.main import app
+```
+
+This exposes the `app` object for Vercel's runtime. Configure the production branch in the Vercel dashboard to point at your desired branch (for example `prod`). When building locally, run the backend with:
+
+```bash
+uvicorn backend.main:app --reload
+```
+
+Your frontend's `VITE_API_URL` should be set to the URL where this function is deployed.
