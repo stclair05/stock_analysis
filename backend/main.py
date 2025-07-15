@@ -4,14 +4,22 @@ import io
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import requests
-from stock_analysis.pricetarget import find_downtrend_lines
-from stock_analysis.stock_analyser import StockAnalyser
-from stock_analysis.portfolio_analyser import PortfolioAnalyser
-from stock_analysis.models import StockRequest, StockAnalysisResponse, ElliottWaveScenariosResponse, FinancialMetrics
-from stock_analysis.elliott_wave import calculate_elliott_wave
-from stock_analysis.fmp_fundamentals import FMPFundamentals
-from stock_analysis.twelve_data_fundamentals import TwelveDataFundamentals
-from stock_analysis.utils import compute_sortino_ratio_cached as compute_sortino_ratio, convert_numpy_types
+from .stock_analysis.pricetarget import find_downtrend_lines
+from .stock_analysis.stock_analyser import StockAnalyser
+from .stock_analysis.portfolio_analyser import PortfolioAnalyser
+from .stock_analysis.models import (
+    StockRequest,
+    StockAnalysisResponse,
+    ElliottWaveScenariosResponse,
+    FinancialMetrics,
+)
+from .stock_analysis.elliott_wave import calculate_elliott_wave
+from .stock_analysis.fmp_fundamentals import FMPFundamentals
+from .stock_analysis.twelve_data_fundamentals import TwelveDataFundamentals
+from .stock_analysis.utils import (
+    compute_sortino_ratio_cached as compute_sortino_ratio,
+    convert_numpy_types,
+)
 from fastapi.responses import JSONResponse
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed

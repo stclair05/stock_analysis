@@ -3,7 +3,7 @@ import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Optional
 from dotenv import load_dotenv
-from stock_analysis.models import FinancialMetrics
+from .models import FinancialMetrics
 
 load_dotenv()
 FMP_API_KEY = os.getenv("FMP_API_KEY", "YOUR_KEY_HERE")

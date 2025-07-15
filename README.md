@@ -32,7 +32,7 @@ This repository contains a FastAPI backend and a React frontend used for various
 4. Start the API server:
 
    ```bash
-   uvicorn main:app --reload
+   uvicorn backend.main:app --reload
    ```
 
 The backend listens on port `8000` by default.

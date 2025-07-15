@@ -5,7 +5,7 @@ import numpy as np
 from dotenv import load_dotenv
 from typing import Optional
 from datetime import datetime, timedelta
-from stock_analysis.models import FinancialMetrics
+from .models import FinancialMetrics
 from functools import lru_cache
 
 
