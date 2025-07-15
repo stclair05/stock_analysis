@@ -24,7 +24,7 @@ from fastapi.responses import JSONResponse
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from time import time
-from aliases import SYMBOL_ALIASES
+from .aliases import SYMBOL_ALIASES
 import yfinance as yf
 import asyncio
 import json

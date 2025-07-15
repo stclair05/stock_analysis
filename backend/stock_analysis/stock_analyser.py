@@ -7,7 +7,7 @@ from fastapi import HTTPException
 from functools import lru_cache
 from functools import cached_property
 from .models import TimeSeriesMetric
-from aliases import SYMBOL_ALIASES
+from ..aliases import SYMBOL_ALIASES
 from .utils import (
     compute_demarker,
     safe_value,
