@@ -397,6 +397,16 @@
       "ticker": "SA",
       "sector": "",
       "technigrade": [3, 3, 4, 3, 2]
+    },
+    {
+      "ticker": "GRAL",
+      "sector": "",
+      "technigrade": [3, 1, 1, 1, 1]
+    },
+    {
+      "ticker": "RDW",
+      "sector": "",
+      "technigrade": [3, 4, 3, 3, 1]
     }
   ],
   "portfolio": []
