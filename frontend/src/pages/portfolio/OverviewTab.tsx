@@ -43,7 +43,9 @@ const OverviewTab = () => {
 
     const fetchPortfolio = async () => {
       try {
-        const res = await fetch("http://localhost:8000/portfolio_live_data");
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}/portfolio_live_data`
+        );
         const data = await res.json();
         if (mounted) setPortfolio(data); // only update if still mounted
       } catch (err) {

@@ -16,7 +16,9 @@ export function useMainChartData(
     async function fetchData() {
       try {
         const res = await fetch(
-          `http://localhost:8000/api/chart_data_${timeframe}/${stockSymbol.toUpperCase()}`
+          `${
+            import.meta.env.VITE_API_URL
+          }/api/chart_data_${timeframe}/${stockSymbol.toUpperCase()}`
         );
         const data = await res.json();
         const candleSeries = candleSeriesRef.current;

@@ -573,7 +573,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     const fetchInitialTargets = async () => {
       try {
         const res = await fetch(
-          `http://localhost:8000/price_targets/${stockSymbol}`
+          `${import.meta.env.VITE_API_URL}/price_targets/${stockSymbol}`
         );
         const json = await res.json();
         const mean_rev_targets = json.price_targets?.mean_reversion ?? {};
@@ -1092,7 +1092,9 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     const fetchOverlayData = async () => {
       try {
         const res = await fetch(
-          `http://localhost:8000/overlay_data/${stockSymbol}?timeframe=${timeframe}`
+          `${
+            import.meta.env.VITE_API_URL
+          }/overlay_data/${stockSymbol}?timeframe=${timeframe}`
         );
         const data = await res.json();
         setOverlayData(data);
@@ -1112,7 +1114,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     async function fetchPeers() {
       try {
         const res = await fetch(
-          `http://localhost:8000/stock_peers/${stockSymbol}`
+          `${import.meta.env.VITE_API_URL}/stock_peers/${stockSymbol}`
         );
         const data = await res.json();
         setPeerSymbols((data.peers || []).slice(0, 3));

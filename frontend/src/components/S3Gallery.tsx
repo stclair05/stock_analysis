@@ -9,7 +9,7 @@ const S3Gallery: React.FC<S3GalleryProps> = ({ folder = "natgas" }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`http://localhost:8000/s3-images?prefix=${folder}/`)
+    fetch(`${import.meta.env.VITE_API_URL}/s3-images?prefix=${folder}/`)
       .then((res) => res.json())
       .then((data) => {
         console.log("Original images:", data.images); // <--- see what you get

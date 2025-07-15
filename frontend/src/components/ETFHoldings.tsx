@@ -24,7 +24,7 @@ const ETFHoldings = ({ stockSymbol }: { stockSymbol: string }) => {
     setLoading(true);
     setError(null);
     setData(null);
-    fetch(`http://localhost:8000/etf_holdings/${stockSymbol}`)
+    fetch(`${import.meta.env.VITE_API_URL}/etf_holdings/${stockSymbol}`)
       .then((res) => {
         if (!res.ok) throw new Error("No ETF holdings found.");
         return res.json();

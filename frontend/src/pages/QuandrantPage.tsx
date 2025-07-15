@@ -21,7 +21,7 @@ export default function QuadrantPage() {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`http://localhost:8000/quadrant_data?list_type=${listType}`)
+    fetch(`${import.meta.env.VITE_API_URL}/quadrant_data?list_type=${listType}`)
       .then((res) => res.json())
       .then((d) => {
         setData(d);

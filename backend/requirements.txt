@@ -1,12 +1,3 @@
-fastapi
-uvicorn
-pydantic
-requests
-pandas
-numpy
-scikit-learn
-yfinance
-ta
 fastapi>=0.110
 uvicorn[standard]>=0.27
 pydantic>=2.5

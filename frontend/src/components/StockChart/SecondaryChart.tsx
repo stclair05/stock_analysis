@@ -87,7 +87,9 @@ const SecondaryChart = ({
       if (!priceSeriesRef.current || !maSeriesRef.current) return;
       try {
         const res = await fetch(
-          `http://localhost:8000/compare_ratio?symbol1=${baseSymbol}&symbol2=${comparisonSymbol}&timeframe=weekly`
+          `${
+            import.meta.env.VITE_API_URL
+          }/compare_ratio?symbol1=${baseSymbol}&symbol2=${comparisonSymbol}&timeframe=weekly`
         );
 
         const data = await res.json();

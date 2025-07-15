@@ -214,9 +214,12 @@ export default function WatchlistPage() {
       .replace(/[^A-Z0-9.]/g, "");
     if (!sanitized) return false;
     try {
-      const res = await fetch(`http://localhost:8000/watchlist/${sanitized}`, {
-        method: "POST",
-      });
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/watchlist/${sanitized}`,
+        {
+          method: "POST",
+        }
+      );
       if (!res.ok) {
         // Handle already in watchlist
         const errorData = await res.json();
@@ -236,9 +239,12 @@ export default function WatchlistPage() {
   async function removeTickerFromWatchlist(symbol: string) {
     const sanitized = symbol.trim().toUpperCase();
     try {
-      const res = await fetch(`http://localhost:8000/watchlist/${sanitized}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/watchlist/${sanitized}`,
+        {
+          method: "DELETE",
+        }
+      );
       if (!res.ok) {
         const errorData = await res.json();
         alert(errorData.detail || "Failed to remove ticker.");
@@ -255,7 +261,7 @@ export default function WatchlistPage() {
   // this is stock by stock
   const fetchAnalysisData = async (symbol: string, retry = 0) => {
     try {
-      const response = await fetch("http://localhost:8000/analyse", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/analyse`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ symbol }),
@@ -293,11 +299,14 @@ export default function WatchlistPage() {
     // Send the list of stock requests to the backend
     const requests = symbols.map((symbol) => ({ symbol }));
     try {
-      const response = await fetch("http://localhost:8000/analyse_batch", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requests),
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/analyse_batch`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requests),
+        }
+      );
 
       if (!response.ok) {
         // Batch error (very rare), handle globally
@@ -413,7 +422,7 @@ export default function WatchlistPage() {
 
   // Get watchlist
   useEffect(() => {
-    fetch("http://localhost:8000/watchlist")
+    fetch(`${import.meta.env.VITE_API_URL}/watchlist`)
       .then((res) => res.json())
       .then((data) => setWatchlistTickers(data))
       .catch(() => setWatchlistTickers([]));

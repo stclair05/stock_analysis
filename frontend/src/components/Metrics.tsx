@@ -51,11 +51,14 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
         }
         if (setParentLoading) setParentLoading(true);
 
-        const response = await fetch("http://localhost:8000/analyse", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ symbol: stockSymbol }),
-        });
+        const response = await fetch(
+          `${import.meta.env.VITE_API_URL}/analyse`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ symbol: stockSymbol }),
+          }
+        );
 
         if (!response.ok) {
           if (retry >= 3) {

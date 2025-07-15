@@ -267,7 +267,9 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
   ) {
     try {
       const res = await fetch(
-        `http://localhost:8000/api/signals_${timeframe}/${stockSymbol}?strategy=${strategy}`
+        `${
+          import.meta.env.VITE_API_URL
+        }/api/signals_${timeframe}/${stockSymbol}?strategy=${strategy}`
       );
       if (!res.ok) {
         // If 400, treat as unavailable
@@ -332,7 +334,9 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     start: string, // e.g. "01012023"
     end: string // e.g. "01062024"
   ) {
-    const url = `http://localhost:8000/api/backtest_signals_${timeframe}/${stockSymbol}?strategy=${strategy}&start=${start}&end=${end}`;
+    const url = `${
+      import.meta.env.VITE_API_URL
+    }/api/backtest_signals_${timeframe}/${stockSymbol}?strategy=${strategy}&start=${start}&end=${end}`;
     const res = await fetch(url);
     const data = await res.json();
     setBacktestSummary({
@@ -511,7 +515,9 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     const fetchSignals = async () => {
       try {
         const res = await fetch(
-          `http://localhost:8000/api/signals_${timeframe}/${stockSymbol}?strategy=${selectedStrategy}`
+          `${
+            import.meta.env.VITE_API_URL
+          }/api/signals_${timeframe}/${stockSymbol}?strategy=${selectedStrategy}`
         );
         const data = await res.json();
         if (!Array.isArray(data.markers)) return;
@@ -629,7 +635,9 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     async function fetchSignalLines() {
       try {
         const res = await fetch(
-          `http://localhost:8000/signal_lines/${stockSymbol}?timeframe=${timeframe}`
+          `${
+            import.meta.env.VITE_API_URL
+          }/signal_lines/${stockSymbol}?timeframe=${timeframe}`
         );
         const data = await res.json();
         setSignalMAData(data);
@@ -741,7 +749,9 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     async function fetchTrendlines() {
       try {
         const res = await fetch(
-          `http://localhost:8000/api/projection_arrows/${stockSymbol}?timeframe=${timeframe}`
+          `${
+            import.meta.env.VITE_API_URL
+          }/api/projection_arrows/${stockSymbol}?timeframe=${timeframe}`
         );
         const data = await res.json();
         setTrendLines(data.trendlines || []); // Only use trendlines!

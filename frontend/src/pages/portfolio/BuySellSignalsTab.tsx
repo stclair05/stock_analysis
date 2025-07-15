@@ -426,7 +426,7 @@ export default function BuySellSignalsTab({
         listType === "portfolio" ? "/portfolio_tickers" : "/watchlist"; // Assuming a /watchlist endpoint exists and returns similar data
 
       try {
-        const res = await fetch(`http://localhost:8000${endpoint}`);
+        const res = await fetch(`${import.meta.env.VITE_API_URL}${endpoint}`);
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
         }
@@ -513,7 +513,9 @@ export default function BuySellSignalsTab({
     }
     const fetchLive = async () => {
       try {
-        const res = await fetch("http://localhost:8000/portfolio_live_data");
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}/portfolio_live_data`
+        );
         const data = await res.json();
         const map: Record<string, { shares: number; average_cost: number }> =
           {};
@@ -538,7 +540,7 @@ export default function BuySellSignalsTab({
   useEffect(() => {
     const fetchFx = async () => {
       try {
-        const res = await fetch("http://localhost:8000/forex_rates");
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/forex_rates`);
         const data = await res.json();
         const fx: Record<string, number> = {};
         if (Array.isArray(data)) {
@@ -562,11 +564,14 @@ export default function BuySellSignalsTab({
 
     const fetchMetrics = async () => {
       try {
-        const res = await fetch("http://localhost:8000/analyse_batch", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(portfolio.map((p) => ({ symbol: p.ticker }))),
-        });
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}/analyse_batch`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(portfolio.map((p) => ({ symbol: p.ticker }))),
+          }
+        );
         if (!res.ok) throw new Error("Failed metrics");
         const data = await res.json();
         const summary: Record<
@@ -615,7 +620,11 @@ export default function BuySellSignalsTab({
 
     setSignalsLoading(true);
 
-    const cacheKey = `${selectedTimeframe}-${listType}`; // Include listType in cache key
+    const tickersKey = portfolio
+      .map((p) => p.ticker)
+      .sort()
+      .join(",");
+    const cacheKey = `${selectedTimeframe}-${listType}-${tickersKey}`;
     const storageKey = `signalsCache-${cacheKey}`;
 
     // Check localStorage first
@@ -654,7 +663,9 @@ export default function BuySellSignalsTab({
           let genericStrength: any = null;
           try {
             const resStrength = await fetch(
-              `http://localhost:8000/api/signal_strength/${holding.ticker}?strategy=generic&timeframe=${selectedTimeframe}`
+              `${import.meta.env.VITE_API_URL}/api/signal_strength/${
+                holding.ticker
+              }?strategy=generic&timeframe=${selectedTimeframe}`
             );
             genericStrength = resStrength.ok ? await resStrength.json() : null;
           } catch (e) {
@@ -665,7 +676,11 @@ export default function BuySellSignalsTab({
               try {
                 const apiStrategy = strategyApiMap[strategy] || strategy;
                 const resSignals = await fetch(
-                  `http://localhost:8000/api/signals_${selectedTimeframe}/${holding.ticker}?strategy=${apiStrategy}`
+                  `${
+                    import.meta.env.VITE_API_URL
+                  }/api/signals_${selectedTimeframe}/${
+                    holding.ticker
+                  }?strategy=${apiStrategy}`
                 );
 
                 const signalData = resSignals.ok
@@ -677,7 +692,9 @@ export default function BuySellSignalsTab({
                 if (strategy === "mansfield") {
                   try {
                     const res = await fetch(
-                      `http://localhost:8000/api/signal_strength/${holding.ticker}?strategy=mansfield`
+                      `${import.meta.env.VITE_API_URL}/api/signal_strength/${
+                        holding.ticker
+                      }?strategy=mansfield`
                     );
                     mansfieldStatus = res.ok ? await res.json() : null;
                   } catch {

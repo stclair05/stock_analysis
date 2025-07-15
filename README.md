@@ -25,6 +25,8 @@ This repository contains a FastAPI backend and a React frontend used for various
    TWELVE_DATA_API_KEY=<your Twelve Data key>
    AWS_ACCESS_KEY_ID=<optional AWS key>
    AWS_SECRET_ACCESS_KEY=<optional AWS secret>
+   # Comma-separated list of allowed origins for CORS
+   ALLOWED_ORIGINS=http://localhost:5173
    ```
 
 4. Start the API server:
@@ -34,6 +36,8 @@ This repository contains a FastAPI backend and a React frontend used for various
    ```
 
 The backend listens on port `8000` by default.
+Set the optional `ALLOWED_ORIGINS` variable in `.env` to control which
+origins are allowed to make cross-origin requests.
 
 ## Frontend Setup
 
@@ -46,4 +50,14 @@ The backend listens on port `8000` by default.
    npm run dev
    ```
 
-The frontend expects the backend to be running on `http://localhost:8000`.
+Copy `frontend/.env.example` to `frontend/.env` and set `VITE_API_URL` to the URL of your backend. For local development this should be `http://localhost:8000`.
+
+## Deployment on Render
+
+To deploy the backend as a Render web service, set the start command to:
+
+```bash
+uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+```
+
+Render will automatically supply the `$PORT` environment variable for the service.

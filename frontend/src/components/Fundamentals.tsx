@@ -148,7 +148,7 @@ const Fundamentals = ({ stockSymbol }: Props) => {
         setError(null);
         setLoading(true);
         const res = await fetch(
-          `http://localhost:8000/fmp_financials/${stockSymbol}`
+          `${import.meta.env.VITE_API_URL}/fmp_financials/${stockSymbol}`
         );
         if (!res.ok) throw new Error("Failed to fetch financials.");
         const json = await res.json();

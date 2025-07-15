@@ -29,9 +29,18 @@ from fastapi import Query
 
 app = FastAPI()
 
+# Allowed origins for CORS. Read from environment or default to the local
+# frontend when developing.
+_default_origins = "http://localhost:5173"
+allowed_origins = [
+    o.strip()
+    for o in os.getenv("ALLOWED_ORIGINS", _default_origins).split(",")
+    if o.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
