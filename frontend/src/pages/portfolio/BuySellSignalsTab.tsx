@@ -1336,12 +1336,36 @@ export default function BuySellSignalsTab({
         value = metric.current;
       }
       const price = meanRevRsi[ticker]?.metrics?.current_price ?? null;
-      const className =
-        typeof value === "string"
-          ? colorizeString(value)
-          : colorize(price, value);
-      const display =
-        typeof value === "number" ? value.toFixed(2) : value ?? "-";
+      // Determine how to display the metric
+      let className: string;
+      let display: string | number | null | undefined;
+
+      if (
+        col === "twenty_dma" ||
+        col === "fifty_dma" ||
+        col === "two_hundred_dma" ||
+        col === "three_year_ma"
+      ) {
+        if (typeof value === "number" && typeof price === "number") {
+          className = colorize(price, value);
+          if (price > value) display = "Above";
+          else if (price < value) display = "Below";
+          else display = "at";
+        } else {
+          className =
+            typeof value === "string"
+              ? colorizeString(value)
+              : colorize(price, value);
+          display = typeof value === "number" ? value.toFixed(2) : value ?? "-";
+        }
+      } else {
+        className =
+          typeof value === "string"
+            ? colorizeString(value)
+            : colorize(price, value);
+        display = typeof value === "number" ? value.toFixed(2) : value ?? "-";
+      }
+
       return (
         <td className={className} style={{ textAlign: "center" }}>
           {display}
