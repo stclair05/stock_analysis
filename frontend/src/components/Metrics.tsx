@@ -37,6 +37,10 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [technigrade, setTechnigrade] = useState<number[] | null>(null);
+  const [stageInfo, setStageInfo] = useState<{
+    stage: number | null;
+    weeks: number | null;
+  } | null>(null);
 
   useEffect(() => {
     if (!stockSymbol || stockSymbol.trim() === "") return;
@@ -115,6 +119,26 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
       }
     };
     fetchTechnigrade();
+
+    const fetchStage = async () => {
+      try {
+        const res = await fetch(`http://localhost:8000/stage/${stockSymbol}`);
+        if (!res.ok) return;
+        const json = await res.json();
+        if (
+          json &&
+          typeof json.stage === "number" &&
+          typeof json.weeks === "number"
+        ) {
+          setStageInfo({ stage: json.stage, weeks: json.weeks });
+        } else {
+          setStageInfo(null);
+        }
+      } catch {
+        setStageInfo(null);
+      }
+    };
+    fetchStage();
   }, [stockSymbol, setParentLoading]);
 
   const colorize = (value: number | string | null) => {
@@ -280,6 +304,14 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
                 {idx < technigrade.length - 1 ? ", " : ""}
               </span>
             ))}
+          </div>
+        )}
+        {stageInfo && stageInfo.stage != null && (
+          <div
+            style={{ marginBottom: 4, fontSize: "1.25rem", fontWeight: 700 }}
+          >
+            Stage {stageInfo.stage} for {stageInfo.weeks}{" "}
+            {stageInfo.weeks === 1 ? "week" : "weeks"}
           </div>
         )}
         <div className="d-flex justify-content-between align-items-center mb-3">

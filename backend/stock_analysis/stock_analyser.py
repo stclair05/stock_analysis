@@ -957,6 +957,36 @@ class StockAnalyser:
         rsi_ma = rsi.rolling(window=period).mean()
         return to_series(reindex_indicator(close, rsi_ma))
 
+    def stage_analysis(self, ma_period: int = 30, slope_period: int = 1) -> tuple[int | None, int]:
+        """Return the current Stage (1-4) and how many weeks it has persisted."""
+        df_weekly = self.weekly_df
+        if len(df_weekly) < ma_period:
+            return None, 0
+
+        price = df_weekly["Close"]
+        ma = price.rolling(ma_period).mean()
+        slope = ma.diff(periods=slope_period)
+
+        stage_series = pd.Series(index=df_weekly.index, dtype="float")
+        stage_series[(price <= ma) & (slope > 0)] = 1
+        stage_series[(price > ma) & (slope > 0)] = 2
+        stage_series[(price > ma) & (slope <= 0)] = 3
+        stage_series[(price <= ma) & (slope <= 0)] = 4
+
+        last_stage = stage_series.iloc[-1]
+        if pd.isna(last_stage):
+            return None, 0
+
+        last_stage = int(last_stage)
+
+        weeks = 0
+        for val in reversed(stage_series.dropna()):
+            if int(val) == last_stage:
+                weeks += 1
+            else:
+                break
+
+        return last_stage, weeks
 
     def get_rsi_series(self):
         df_weekly = self.weekly_df
