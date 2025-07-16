@@ -394,6 +394,41 @@ def remove_from_watchlist(symbol: str):
     tickers = [i.get("ticker") if isinstance(i, dict) else i for i in data["watchlist"]]
     return {"watchlist": tickers}
 
+@app.get("/technigrade/{symbol}")
+def get_technigrade(symbol: str):
+    """Return technigrade array for a symbol if present in portfolio or watchlist."""
+    target = symbol.upper()
+
+    # Check portfolio_store.json
+    json_path = Path("portfolio_store.json")
+    if json_path.exists():
+        try:
+            with open(json_path, "r") as f:
+                pdata = json.load(f)
+            for item in pdata.get("equities", []):
+                if str(item.get("ticker", "")).upper() == target:
+                    tg = item.get("technigrade")
+                    if isinstance(tg, list):
+                        return {"source": "portfolio", "technigrade": tg}
+        except Exception:
+            pass
+
+    # Check watchlist
+    data = load_data()
+    for entry in data.get("watchlist", []):
+        if isinstance(entry, dict):
+            t = entry.get("ticker")
+            if t and t.upper() == target:
+                tg = entry.get("technigrade")
+                if isinstance(tg, list):
+                    return {"source": "watchlist", "technigrade": tg}
+                else:
+                    return {"source": "watchlist", "technigrade": []}
+        elif isinstance(entry, str) and entry.upper() == target:
+            return {"source": "watchlist", "technigrade": []}
+
+    return {"technigrade": []}
+
 @app.post("/analyse_batch")
 def analyse_batch(stock_requests: List[StockRequest]):
     results = {}

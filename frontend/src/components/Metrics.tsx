@@ -36,6 +36,7 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
   const [metrics, setMetrics] = useState<MetricsType | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [technigrade, setTechnigrade] = useState<number[] | null>(null);
 
   useEffect(() => {
     if (!stockSymbol || stockSymbol.trim() === "") return;
@@ -100,6 +101,20 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
     };
 
     fetchMetrics();
+    const fetchTechnigrade = async () => {
+      try {
+        const res = await fetch(
+          `http://localhost:8000/technigrade/${stockSymbol}`
+        );
+        if (!res.ok) return;
+        const json = await res.json();
+        if (Array.isArray(json.technigrade)) setTechnigrade(json.technigrade);
+        else setTechnigrade(null);
+      } catch {
+        setTechnigrade(null);
+      }
+    };
+    fetchTechnigrade();
   }, [stockSymbol, setParentLoading]);
 
   const colorize = (value: number | string | null) => {
@@ -247,6 +262,11 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
       {error && <div className="alert alert-danger text-center">{error}</div>}
 
       <div className="table-responsive">
+        {technigrade && technigrade.length > 0 && (
+          <div style={{ marginBottom: 8, fontWeight: 500 }}>
+            Technigrade: {technigrade.join(", ")}
+          </div>
+        )}
         <div className="d-flex justify-content-between align-items-center mb-3">
           <h2 className="mb-0 fw-semibold text-dark">
             Metrics for <strong>{stockSymbol}</strong>

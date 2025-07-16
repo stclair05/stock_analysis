@@ -26,6 +26,7 @@ import {
   SignalSide,
   GraphingChartProps,
 } from "./types";
+import SignalSummaryComponent from "../SignalSummary";
 import "./graphing-chart.css"; // <-- Add your custom styles here
 
 const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
@@ -1037,58 +1038,7 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
       )}
 
       {/* Summary of signals */}
-      {showSummary && (
-        <div className="signal-summary-table-wrap">
-          <table className="signal-summary-table">
-            <thead>
-              <tr>
-                <th>Strategy</th>
-                {timeframes.map((tf) => (
-                  <th key={tf}>{tf.charAt(0).toUpperCase() + tf.slice(1)}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {strategies.map((strat) => (
-                <tr key={strat}>
-                  <td>
-                    {strat.charAt(0).toUpperCase() +
-                      strat.slice(1).replace("longterm", " LongTerm")}
-                  </td>
-                  {timeframes.map((tf) => {
-                    const unavailable = isUnavailable(strat, tf);
-                    let content;
-                    let color = "#bdbdbd";
-                    if (unavailable) {
-                      content = "—";
-                      color = "#232323";
-                    } else if (signalSummary[strat][tf] === "BUY") {
-                      content = "BUY";
-                      color = "#009944";
-                    } else if (signalSummary[strat][tf] === "SELL") {
-                      content = "SELL";
-                      color = "#e91e63";
-                    }
-                    return (
-                      <td
-                        key={tf}
-                        style={{
-                          color,
-                          opacity: unavailable ? 0.7 : 1,
-                          textAlign: "center",
-                          fontWeight: 700,
-                        }}
-                      >
-                        <span>{content ?? "-"}</span>
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      {showSummary && <SignalSummaryComponent stockSymbol={stockSymbol} />}
     </div>
   );
 };
