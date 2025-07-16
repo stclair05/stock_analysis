@@ -5,6 +5,7 @@ import StockChart from "../components/StockChart";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import ETFHoldings from "../components/ETFHoldings";
+import SignalSummary from "../components/SignalSummary";
 import etfList from "../utils/etfs.json";
 
 function HomePage() {
@@ -125,6 +126,7 @@ function HomePage() {
               ) : (
                 <Fundamentals stockSymbol={stockSymbol} />
               )}
+              <SignalSummary stockSymbol={stockSymbol} />
             </div>
           </div>
         </>
