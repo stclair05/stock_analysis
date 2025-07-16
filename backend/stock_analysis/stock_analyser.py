@@ -958,30 +958,59 @@ class StockAnalyser:
         return to_series(reindex_indicator(close, rsi_ma))
 
     def stage_analysis(self, ma_period: int = 30, slope_period: int = 1) -> tuple[int | None, int]:
-        """Return the current Stage (1-4) and how many weeks it has persisted."""
-        df_weekly = self.weekly_df
-        if len(df_weekly) < ma_period:
+        """
+        Return the current Stage (1-4) and how many weeks it has persisted,
+        using a linear‐regression slope over `slope_period` weeks instead of a 1-week diff.
+
+        Parameters
+        ----------
+        ma_period : int
+            Number of weeks for the long‐term moving average (classic = 30).
+        slope_period : int
+            Number of weeks over which to fit a line to the MA to get its slope;
+            slope_period=1 reduces to a simple 1-week diff.
+
+        Returns
+        -------
+        (stage, weeks)
+        stage : 1–4, or None if not enough data
+        weeks : how many consecutive weeks we’ve been in that stage
+        """
+        df_weekly = self.weekly_df.copy()
+        # need at least ma_period + slope_period weeks to compute both MA & slope
+        if len(df_weekly) < ma_period + slope_period:
             return None, 0
 
-        price = df_weekly["Close"]
-        ma = price.rolling(ma_period).mean()
-        slope = ma.diff(periods=slope_period)
+        # prefer Adjusted Close if available
+        price = df_weekly["Adj Close"] if "Adj Close" in df_weekly.columns else df_weekly["Close"]
 
-        stage_series = pd.Series(index=df_weekly.index, dtype="float")
-        stage_series[(price <= ma) & (slope > 0)] = 1
-        stage_series[(price > ma) & (slope > 0)] = 2
-        stage_series[(price > ma) & (slope <= 0)] = 3
-        stage_series[(price <= ma) & (slope <= 0)] = 4
+        # 1. long‐term MA
+        ma = price.rolling(window=ma_period).mean()
 
-        last_stage = stage_series.iloc[-1]
-        if pd.isna(last_stage):
+        # 2. robust slope: fit a line to the last (slope_period+1) MA values
+        window = slope_period + 1
+        slope = ma.rolling(window=window, min_periods=window).apply(
+            lambda arr: np.polyfit(np.arange(len(arr)), arr, 1)[0],
+            raw=True
+        )
+
+        # 3. classify each week
+        stage_series = pd.Series(index=df_weekly.index, dtype="float64")
+        stage_series[(price <= ma) & (slope > 0)]  = 1  # Accumulation
+        stage_series[(price >  ma) & (slope > 0)]  = 2  # Markup
+        stage_series[(price >  ma) & (slope <= 0)] = 3  # Distribution
+        stage_series[(price <= ma) & (slope <= 0)] = 4  # Markdown
+
+        # 4. peel off the last non‐NaN stage
+        last = stage_series.dropna().iloc[-1] if not stage_series.dropna().empty else np.nan
+        if pd.isna(last):
             return None, 0
+        last_stage = int(last)
 
-        last_stage = int(last_stage)
-
+        # 5. count how many weeks in a row we’ve been in that stage
         weeks = 0
-        for val in reversed(stage_series.dropna()):
-            if int(val) == last_stage:
+        for s in reversed(stage_series.dropna()):
+            if int(s) == last_stage:
                 weeks += 1
             else:
                 break
