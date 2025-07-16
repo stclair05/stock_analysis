@@ -257,14 +257,29 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
     });
   };
 
+  const technigradeColor = (val: number) => {
+    if (val >= 1 && val <= 5) return "text-success";
+    if (val >= 6 && val <= 10) return "text-warning";
+    if (val >= 11 && val <= 15) return "text-neutral";
+    return "text-danger";
+  };
+
   return (
     <>
       {error && <div className="alert alert-danger text-center">{error}</div>}
 
       <div className="table-responsive">
         {technigrade && technigrade.length > 0 && (
-          <div style={{ marginBottom: 8, fontWeight: 500 }}>
-            Technigrade: {technigrade.join(", ")}
+          <div
+            style={{ marginBottom: 8, fontSize: "1.25rem", fontWeight: 700 }}
+          >
+            Technigrade:{" "}
+            {technigrade.map((val, idx) => (
+              <span key={idx} className={technigradeColor(val) + " fw-bold"}>
+                {val}
+                {idx < technigrade.length - 1 ? ", " : ""}
+              </span>
+            ))}
           </div>
         )}
         <div className="d-flex justify-content-between align-items-center mb-3">
