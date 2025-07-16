@@ -69,7 +69,6 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     | "northstar"
     | "stclairlongterm"
     | "mace_40w"
-    | "demarker"
     | "mansfield"
   >(null);
 
@@ -79,7 +78,6 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     northstar: { daily: "", weekly: "", monthly: "" },
     stclairlongterm: { daily: "", weekly: "", monthly: "" },
     mace_40w: { daily: "", weekly: "", monthly: "" },
-    demarker: { daily: "", weekly: "", monthly: "" },
     mansfield: { daily: "", weekly: "", monthly: "" },
   });
   const strategies = [
@@ -88,7 +86,6 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     "northstar",
     "stclairlongterm",
     "mace_40w",
-    "demarker",
     "mansfield",
   ] as const;
   const timeframes = ["daily", "weekly", "monthly"] as const;
@@ -882,8 +879,7 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
               <span>
                 {name
                   .replace(/^\w/, (c) => c.toUpperCase())
-                  .replace("longterm", " LongTerm")
-                  .replace("demarker", "DeMarker")}
+                  .replace("longterm", " LongTerm")}
               </span>
             </label>
           ))}

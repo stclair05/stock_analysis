@@ -381,15 +381,6 @@
       "technigrade": [3, 3, 3, 2, 2, 2, 1]
     },
     {
-      "ticker": "MP",
-      "shares": 20000.0,
-      "average_cost": 28.37,
-      "sector": "Precious Metals",
-      "target": 59,
-      "player": 3,
-      "technigrade": [1, 2, 1, 1, 1, 4, 12]
-    },
-    {
       "ticker": "NTR",
       "shares": 29000.0,
       "average_cost": 56.77,
@@ -762,7 +753,7 @@
       "shares": 35000.0,
       "average_cost": 5.74,
       "sector": "Energy",
-      "target": 7.74,
+      "target": 9,
       "player": 5
     },
     {

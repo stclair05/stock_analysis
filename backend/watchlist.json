@@ -404,6 +404,11 @@
       "technigrade": [3, 1, 1, 1, 1]
     },
     {
+      "ticker": "MP",
+      "sector": "",
+      "technigrade": [1, 2, 1, 1, 1, 4, 12]
+    },
+    {
       "ticker": "RDW",
       "sector": "",
       "technigrade": [3, 4, 3, 3, 1]
