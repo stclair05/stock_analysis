@@ -41,12 +41,18 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
     stage: number | null;
     weeks: number | null;
   } | null>(null);
+  const [technigradeLoading, setTechnigradeLoading] = useState<boolean>(false);
+  const [stageLoading, setStageLoading] = useState<boolean>(false);
 
   useEffect(() => {
     if (!stockSymbol || stockSymbol.trim() === "") return;
 
     setMetrics(null);
     setLoading(true);
+    setTechnigrade(null);
+    setStageInfo(null);
+    setTechnigradeLoading(true);
+    setStageLoading(true);
 
     const fetchMetrics = async (retry = 0) => {
       try {
@@ -106,24 +112,34 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
 
     fetchMetrics();
     const fetchTechnigrade = async () => {
+      setTechnigradeLoading(true);
       try {
         const res = await fetch(
           `http://localhost:8000/technigrade/${stockSymbol}`
         );
-        if (!res.ok) return;
+        if (!res.ok) {
+          setTechnigrade(null);
+          return;
+        }
         const json = await res.json();
         if (Array.isArray(json.technigrade)) setTechnigrade(json.technigrade);
         else setTechnigrade(null);
       } catch {
         setTechnigrade(null);
+      } finally {
+        setTechnigradeLoading(false);
       }
     };
     fetchTechnigrade();
 
     const fetchStage = async () => {
+      setStageLoading(true);
       try {
         const res = await fetch(`http://localhost:8000/stage/${stockSymbol}`);
-        if (!res.ok) return;
+        if (!res.ok) {
+          setStageInfo(null);
+          return;
+        }
         const json = await res.json();
         if (
           json &&
@@ -136,6 +152,8 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
         }
       } catch {
         setStageInfo(null);
+      } finally {
+        setStageLoading(false);
       }
     };
     fetchStage();
@@ -288,31 +306,71 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
     return "text-danger";
   };
 
+  const stageColor = (val: number | null) => {
+    switch (val) {
+      case 1:
+        return "text-dark";
+      case 2:
+        return "text-success";
+      case 3:
+        return "text-warning";
+      case 4:
+        return "text-danger";
+      default:
+        return "text-secondary";
+    }
+  };
+
   return (
     <>
       {error && <div className="alert alert-danger text-center">{error}</div>}
 
       <div className="table-responsive">
-        {technigrade && technigrade.length > 0 && (
-          <div
-            style={{ marginBottom: 8, fontSize: "1.25rem", fontWeight: 700 }}
-          >
-            Technigrade:{" "}
-            {technigrade.map((val, idx) => (
-              <span key={idx} className={technigradeColor(val) + " fw-bold"}>
-                {val}
-                {idx < technigrade.length - 1 ? ", " : ""}
-              </span>
-            ))}
+        {stageLoading ? (
+          <div className="d-flex align-items-center gap-2 mb-1">
+            <div
+              className="spinner-border spinner-border-sm text-primary"
+              role="status"
+            />
+            <span className="text-muted">Fetching stage...</span>
           </div>
+        ) : (
+          stageInfo &&
+          stageInfo.stage != null && (
+            <div
+              style={{ marginBottom: 4, fontSize: "1.25rem", fontWeight: 700 }}
+            >
+              Stage{" "}
+              <span className={stageColor(stageInfo.stage)}>
+                {stageInfo.stage}
+              </span>{" "}
+              for {stageInfo.weeks} {stageInfo.weeks === 1 ? "week" : "weeks"}
+            </div>
+          )
         )}
-        {stageInfo && stageInfo.stage != null && (
-          <div
-            style={{ marginBottom: 4, fontSize: "1.25rem", fontWeight: 700 }}
-          >
-            Stage {stageInfo.stage} for {stageInfo.weeks}{" "}
-            {stageInfo.weeks === 1 ? "week" : "weeks"}
+        {technigradeLoading ? (
+          <div className="d-flex align-items-center gap-2 mb-2">
+            <div
+              className="spinner-border spinner-border-sm text-primary"
+              role="status"
+            />
+            <span className="text-muted">Fetching technigrade...</span>
           </div>
+        ) : (
+          technigrade &&
+          technigrade.length > 0 && (
+            <div
+              style={{ marginBottom: 8, fontSize: "1.25rem", fontWeight: 700 }}
+            >
+              Technigrade:{" "}
+              {technigrade.map((val, idx) => (
+                <span key={idx} className={technigradeColor(val) + " fw-bold"}>
+                  {val}
+                  {idx < technigrade.length - 1 ? ", " : ""}
+                </span>
+              ))}
+            </div>
+          )
         )}
         <div className="d-flex justify-content-between align-items-center mb-3">
           <h2 className="mb-0 fw-semibold text-dark">
