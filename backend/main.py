@@ -429,6 +429,13 @@ def get_technigrade(symbol: str):
 
     return {"technigrade": []}
 
+@app.get("/stage/{symbol}")
+def get_stage(symbol: str):
+    """Return current Stage and duration in weeks."""
+    analyser = StockAnalyser(symbol)
+    stage, weeks = analyser.stage_analysis()
+    return {"stage": stage, "weeks": weeks}
+
 @app.post("/analyse_batch")
 def analyse_batch(stock_requests: List[StockRequest]):
     results = {}
