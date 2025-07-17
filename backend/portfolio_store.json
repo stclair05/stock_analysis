@@ -38,7 +38,7 @@
       "ticker": "SNPS",
       "shares": 1000.0,
       "average_cost": 557.23,
-      "target": 585.73,
+      "target": 591.0,
       "player": 1,
       "technigrade": [4, 5, 8, 11, 10, 9, 12]
     },
@@ -770,7 +770,7 @@
       "shares": 3000.0,
       "average_cost": 72.54,
       "sector": "Technology",
-      "target": 105,
+      "target": 130,
       "player": 1,
       "technigrade": [1, 1, 1, 1, 1, 1, 1]
     },
