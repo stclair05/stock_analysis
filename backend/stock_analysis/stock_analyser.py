@@ -787,6 +787,36 @@ class StockAnalyser:
             fourteen_days_ago=safe_value(signals, -3),
             twentyone_days_ago=safe_value(signals, -4),
         )
+    
+    # ----- Simple Price/RSI Divergence -----
+
+    def _simple_price_rsi_divergence(self, df: pd.DataFrame) -> str | None:
+        """Return basic divergence signal comparing the last 10 points."""
+        close = df["Close"].dropna()
+        if len(close) < 10:
+            return None
+
+        rsi = compute_wilder_rsi(close)
+        if len(rsi.dropna()) < 10:
+            return None
+
+        price_change = close.iloc[-1] - close.iloc[-10]
+        rsi_change = rsi.iloc[-1] - rsi.iloc[-10]
+
+        if price_change > 0 and rsi_change < 0:
+            return "Bearish Divergence"
+        if price_change < 0 and rsi_change > 0:
+            return "Bullish Divergence"
+        return "No Divergence"
+
+    def simple_divergence_daily(self) -> str | None:
+        return self._simple_price_rsi_divergence(self.df)
+
+    def simple_divergence_weekly(self) -> str | None:
+        return self._simple_price_rsi_divergence(self.weekly_df)
+
+    def simple_divergence_monthly(self) -> str | None:
+        return self._simple_price_rsi_divergence(self.monthly_df)
 
   
     def chaikin_money_flow(self) -> TimeSeriesMetric:
