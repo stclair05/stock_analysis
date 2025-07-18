@@ -791,23 +791,41 @@ class StockAnalyser:
     # ----- Simple Price/RSI Divergence -----
 
     def _simple_price_rsi_divergence(self, df: pd.DataFrame) -> str | None:
-        """Return basic divergence signal comparing the last 10 points."""
+        """Return basic divergence signal using the last 10 data points."""
+        if df.empty or len(df) < 10:
+            return None
+
         close = df["Close"].dropna()
-        if len(close) < 10:
+        rsi = compute_wilder_rsi(close).dropna()
+        if len(rsi) < 10:
             return None
 
-        rsi = compute_wilder_rsi(close)
-        if len(rsi.dropna()) < 10:
+        df_last10 = df.iloc[-10:]
+        idx = df_last10.index
+
+        high_last10 = df_last10["High"].reindex(idx).dropna()
+        low_last10 = df_last10["Low"].reindex(idx).dropna()
+        rsi_last10 = rsi.reindex(idx)
+
+        if len(high_last10) < 2 or len(low_last10) < 2 or rsi_last10.isna().any():
             return None
 
-        price_change = close.iloc[-1] - close.iloc[-10]
-        rsi_change = rsi.iloc[-1] - rsi.iloc[-10]
+        # Bearish divergence check (price higher high, RSI lower high)
+        top_highs = high_last10.nlargest(2).sort_index()
+        if top_highs.index[0] < top_highs.index[1]:  # ensure chronological order
+            h1, h2 = top_highs.index[0], top_highs.index[1]
+            if high_last10[h2] > high_last10[h1] and rsi_last10[h2] < rsi_last10[h1]:
+                return "Bearish Divergence"
 
-        if price_change > 0 and rsi_change < 0:
-            return "Bearish Divergence"
-        if price_change < 0 and rsi_change > 0:
-            return "Bullish Divergence"
+        # Bullish divergence check (price lower low, RSI higher low)
+        bottom_lows = low_last10.nsmallest(2).sort_index()
+        if bottom_lows.index[0] < bottom_lows.index[1]:  # ensure chronological order
+            l1, l2 = bottom_lows.index[0], bottom_lows.index[1]
+            if low_last10[l2] < low_last10[l1] and rsi_last10[l2] > rsi_last10[l1]:
+                return "Bullish Divergence"
+
         return "No Divergence"
+
 
     def simple_divergence_daily(self) -> str | None:
         return self._simple_price_rsi_divergence(self.df)
@@ -817,7 +835,6 @@ class StockAnalyser:
 
     def simple_divergence_monthly(self) -> str | None:
         return self._simple_price_rsi_divergence(self.monthly_df)
-
   
     def chaikin_money_flow(self) -> TimeSeriesMetric:
         df = self.weekly_df
