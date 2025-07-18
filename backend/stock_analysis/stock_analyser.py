@@ -791,38 +791,58 @@ class StockAnalyser:
     # ----- Simple Price/RSI Divergence -----
 
     def _simple_price_rsi_divergence(self, df: pd.DataFrame) -> str | None:
-        """Return basic divergence signal using the last 10 data points."""
-        if df.empty or len(df) < 10:
+        """Detect bearish divergence by comparing all consecutive price pivot highs with RSI values over last 10 candles."""
+        if df.empty or len(df) < 20:
+            print("❌ Not enough price data")
             return None
 
         close = df["Close"].dropna()
         rsi = compute_wilder_rsi(close).dropna()
         if len(rsi) < 10:
+            print("❌ Not enough RSI data")
             return None
 
         df_last10 = df.iloc[-10:]
         idx = df_last10.index
+        prices = df_last10["Close"].reindex(idx).values
+        rsi_vals = rsi.reindex(idx).values
 
-        high_last10 = df_last10["High"].reindex(idx).dropna()
-        low_last10 = df_last10["Low"].reindex(idx).dropna()
-        rsi_last10 = rsi.reindex(idx)
-
-        if len(high_last10) < 2 or len(low_last10) < 2 or rsi_last10.isna().any():
+        if np.isnan(rsi_vals).any():
+            print("❌ RSI contains NaN values")
             return None
 
-        # Bearish divergence check (price higher high, RSI lower high)
-        top_highs = high_last10.nlargest(2).sort_index()
-        if top_highs.index[0] < top_highs.index[1]:  # ensure chronological order
-            h1, h2 = top_highs.index[0], top_highs.index[1]
-            if high_last10[h2] > high_last10[h1] and rsi_last10[h2] < rsi_last10[h1]:
-                return "Bearish Divergence"
+        print("\n🔍 Last 10 candles:")
+        for i in range(len(prices)):
+            print(f"  idx={i:2d}, Price={prices[i]:.2f}, RSI={rsi_vals[i]:.2f}")
 
-        # Bullish divergence check (price lower low, RSI higher low)
-        bottom_lows = low_last10.nsmallest(2).sort_index()
-        if bottom_lows.index[0] < bottom_lows.index[1]:  # ensure chronological order
-            l1, l2 = bottom_lows.index[0], bottom_lows.index[1]
-            if low_last10[l2] < low_last10[l1] and rsi_last10[l2] > rsi_last10[l1]:
-                return "Bullish Divergence"
+        price_highs = []
+
+        print("\n🔼 Checking for pivot highs:")
+        for i in range(1, len(prices) - 1):
+            prev, curr, nxt = prices[i - 1], prices[i], prices[i + 1]
+            if curr > prev and curr > nxt:
+                price_highs.append((i, curr))
+                print(f"  ✅ Pivot high at i={i} (Price={curr:.2f})")
+
+        print("\n📊 All pivot highs:")
+        print(price_highs)
+
+        if len(price_highs) >= 2:
+            for k in range(len(price_highs) - 1):
+                (i1, p1), (i2, p2) = price_highs[k], price_highs[k + 1]
+                r1 = rsi_vals[i1]
+                r2 = rsi_vals[i2]
+
+                print(f"\n🔁 Comparing pivot {k} and {k+1}:")
+                print(f"  Price: p1={p1:.2f} at i={i1}, p2={p2:.2f} at i={i2}")
+                print(f"  RSI:   r1={r1:.2f} at i={i1}, r2={r2:.2f} at i={i2}")
+
+                if p2 > p1 and r2 < r1:
+                    print("📉 Bearish divergence detected!")
+                    return "Bearish Divergence"
+            print("✅ No bearish divergence found in pivot pairs")
+        else:
+            print("❌ Less than 2 pivot highs found")
 
         return "No Divergence"
 
