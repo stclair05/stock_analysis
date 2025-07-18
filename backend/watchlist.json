@@ -422,6 +422,11 @@
       "ticker": "UUUU",
       "sector": "",
       "technigrade": []
+    },
+    {
+      "ticker": "RCAT",
+      "sector": "",
+      "technigrade": []
     }
   ],
   "portfolio": []

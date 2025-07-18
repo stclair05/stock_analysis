@@ -5,7 +5,7 @@
       "shares": 28397.0,
       "average_cost": 99.74,
       "sector": "Index",
-      "target": 77.23,
+      "target": 80,
       "player": 1
     },
     {
@@ -30,7 +30,7 @@
       "shares": 27000.0,
       "average_cost": 34.38,
       "sector": "Technology",
-      "target": 55.42,
+      "target": 31,
       "player": 1,
       "technigrade": [8, 11, 14, 15, 15, 10, 7]
     },
@@ -38,7 +38,7 @@
       "ticker": "SNPS",
       "shares": 1000.0,
       "average_cost": 557.23,
-      "target": 591.0,
+      "target": 625,
       "player": 1,
       "technigrade": [4, 5, 8, 11, 10, 9, 12]
     },
@@ -788,7 +788,7 @@
       "shares": 600.0,
       "average_cost": 331.18,
       "sector": "Automotive",
-      "target": 414,
+      "target": 367,
       "player": 1,
       "technigrade": [12, 13, 9, 8, 7, 16, 4]
     },
