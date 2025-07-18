@@ -1,6 +1,414 @@
 {
   "watchlist": [
     {
+      "ticker": "NEM",
+      "sector": "",
+      "technigrade": [4, 4, 4, 3, 2, 5, 3]
+    },
+    {
+      "ticker": "GEV",
+      "sector": "",
+      "technigrade": [2, 2, 1, 2, 2, 1, 1]
+    },
+    {
+      "ticker": "DE",
+      "sector": "",
+      "technigrade": [11, 10, 8, 5, 6, 5, 5]
+    },
+    {
+      "ticker": "NTRA",
+      "sector": "",
+      "technigrade": [13, 13, 8, 5, 7, 8, 10]
+    },
+    {
+      "ticker": "IQV",
+      "sector": "",
+      "technigrade": [15, 15, 16, 16, 16, 18, 19]
+    },
+    {
+      "ticker": "MRNA",
+      "sector": "",
+      "technigrade": [5, 11, 18, 18, 18, 18, 18]
+    },
+    {
+      "ticker": "AEM",
+      "sector": "",
+      "technigrade": [7, 7, 7, 4, 3, 4, 3]
+    },
+    {
+      "ticker": "ORLA",
+      "sector": "",
+      "technigrade": [3, 5, 6, 2, 1, 1, 1]
+    },
+    {
+      "ticker": "WPM",
+      "sector": "",
+      "technigrade": [5, 4, 4, 3, 2, 2, 2]
+    },
+    {
+      "ticker": "RGLD",
+      "sector": "",
+      "technigrade": [17, 9, 7, 5, 4, 5, 3]
+    },
+    {
+      "ticker": "AGI",
+      "sector": "",
+      "technigrade": [10, 9, 10, 6, 4, 5, 4]
+    },
+    {
+      "ticker": "SAND",
+      "sector": "",
+      "technigrade": [2, 2, 3, 2, 2, 2, 1]
+    },
+    {
+      "ticker": "HMY",
+      "sector": "",
+      "technigrade": [8, 9, 11, 5, 3, 3, 2]
+    },
+    {
+      "ticker": "GDX",
+      "sector": ""
+    },
+    {
+      "ticker": "GDXJ",
+      "sector": ""
+    },
+    {
+      "ticker": "ISRG",
+      "sector": "",
+      "technigrade": [17, 13, 13, 15, 14, 8, 8]
+    },
+    {
+      "ticker": "APD",
+      "sector": "",
+      "technigrade": [13, 14, 14, 16, 13, 15, 14]
+    },
+    {
+      "ticker": "DECK",
+      "sector": "",
+      "technigrade": [20, 20, 19, 20, 20, 20, 20]
+    },
+    {
+      "ticker": "ACHR",
+      "sector": "",
+      "technigrade": [5, 7, 4, 5, 5, 4, 3]
+    },
+    {
+      "ticker": "MDT",
+      "sector": "",
+      "technigrade": [12, 13, 14, 11, 10, 10, 13]
+    },
+    {
+      "ticker": "FIX",
+      "sector": "",
+      "technigrade": [2, 2, 2, 2, 2, 2, 2]
+    },
+    {
+      "ticker": "XLK",
+      "sector": ""
+    },
+    {
+      "ticker": "NVDA",
+      "sector": "",
+      "technigrade": [2, 3, 2, 4, 4, 4, 4]
+    },
+    {
+      "ticker": "BA",
+      "sector": "",
+      "technigrade": [3, 4, 3, 5, 4, 3, 3]
+    },
+    {
+      "ticker": "CW",
+      "sector": "",
+      "technigrade": [3, 2, 2, 2, 1, 2, 2]
+    },
+    {
+      "ticker": "ATI",
+      "sector": "",
+      "technigrade": [2, 2, 1, 1, 1, 1, 1]
+    },
+    {
+      "ticker": "ORCL",
+      "sector": "",
+      "technigrade": [2, 1, 2, 2, 1, 5, 6]
+    },
+    {
+      "ticker": "WMB",
+      "sector": "",
+      "technigrade": [15, 15, 8, 8, 9, 8, 7]
+    },
+    {
+      "ticker": "ADM",
+      "sector": "",
+      "technigrade": [6, 6, 8, 5, 6, 14, 11]
+    },
+    {
+      "ticker": "ARQQ",
+      "sector": ""
+    },
+    {
+      "ticker": "SNOW",
+      "sector": "",
+      "technigrade": [4, 3, 2, 2, 2, 2, 2]
+    },
+    {
+      "ticker": "CRM",
+      "sector": "",
+      "technigrade": [18, 17, 15, 17, 17, 16, 16]
+    },
+    {
+      "ticker": "TRMB",
+      "sector": "",
+      "technigrade": [5, 6, 6, 8, 8, 8, 7]
+    },
+    {
+      "ticker": "9992.HK",
+      "sector": ""
+    },
+    {
+      "ticker": "SYK",
+      "sector": "",
+      "technigrade": [12, 11, 9, 11, 11, 10, 9]
+    },
+    {
+      "ticker": "300673.SZ",
+      "sector": ""
+    },
+    {
+      "ticker": "002891.SZ",
+      "sector": ""
+    },
+    {
+      "ticker": "FN",
+      "sector": "",
+      "technigrade": [2, 2, 2, 2, 4, 5, 5]
+    },
+    {
+      "ticker": "300750.SZ",
+      "sector": ""
+    },
+    {
+      "ticker": "RHM.DE",
+      "sector": ""
+    },
+    {
+      "ticker": "HO.PA",
+      "sector": ""
+    },
+    {
+      "ticker": "SAF.PA",
+      "sector": ""
+    },
+    {
+      "ticker": "BA.L",
+      "sector": "",
+      "technigrade": [4, 3, 2, 2, 1, 1, 1]
+    },
+    {
+      "ticker": "AM.PA",
+      "sector": ""
+    },
+    {
+      "ticker": "XYL",
+      "sector": "",
+      "technigrade": [10, 9, 9, 9, 8, 8, 7]
+    },
+    {
+      "ticker": "BBAI",
+      "sector": ""
+    },
+    {
+      "ticker": "CDI.PA",
+      "sector": "",
+      "technigrade": [17, 16, 19, 19, 19, 19, 18]
+    },
+    {
+      "ticker": "AMR",
+      "sector": "",
+      "technigrade": [16, 19, 20, 20, 19, 20, 20]
+    },
+    {
+      "ticker": "HCC",
+      "sector": "",
+      "technigrade": [7, 11, 18, 18, 14, 14, 16]
+    },
+    {
+      "ticker": "DOCU",
+      "sector": "",
+      "technigrade": [19, 17, 18, 18, 18, 18, 8]
+    },
+    {
+      "ticker": "EVO.ST",
+      "sector": ""
+    },
+    {
+      "ticker": "EDV.TO",
+      "sector": "",
+      "technigrade": [4, 3, 3, 2, 1, 2, 1]
+    },
+    {
+      "ticker": "META",
+      "sector": "",
+      "technigrade": [6, 5, 4, 5, 5, 4, 6]
+    },
+    {
+      "ticker": "FCX",
+      "sector": "",
+      "technigrade": [4, 4, 4, 6, 6, 5, 8]
+    },
+    {
+      "ticker": "SCCO",
+      "sector": "",
+      "technigrade": [8, 6, 5, 9, 8, 8, 11]
+    },
+    {
+      "ticker": "MT",
+      "sector": "",
+      "technigrade": [4, 6, 6, 7, 6, 6, 4]
+    },
+    {
+      "ticker": "GRRR",
+      "sector": "",
+      "technigrade": [13, 10, 6, 7, 6, 6, 4]
+    },
+    {
+      "ticker": "CDE",
+      "sector": "",
+      "technigrade": [2, 2, 2, 1, 1, 1, 1]
+    },
+    {
+      "ticker": "DRD",
+      "sector": "",
+      "technigrade": [13, 11, 13, 6, 4, 5, 2]
+    },
+    {
+      "ticker": "ARG.TO",
+      "sector": ""
+    },
+    {
+      "ticker": "FNV",
+      "sector": "",
+      "technigrade": [13, 10, 9, 5, 4, 4, 3]
+    },
+    {
+      "ticker": "WDO.TO",
+      "sector": "",
+      "technigrade": [7, 5, 4, 2, 2, 2, 2]
+    },
+    {
+      "ticker": "KNT.TO",
+      "sector": "",
+      "technigrade": [3, 2, 2, 1, 1, 1, 1]
+    },
+    {
+      "ticker": "HG=F",
+      "sector": ""
+    },
+    {
+      "ticker": "SBSW",
+      "sector": "",
+      "technigrade": [1, 1, 1, 1, 1, 1, 1]
+    },
+    {
+      "ticker": "KTOS",
+      "sector": "",
+      "technigrade": [1, 2, 1, 2, 2, 2, 2]
+    },
+    {
+      "ticker": "SPOT",
+      "sector": "",
+      "technigrade": [5, 4, 2, 3, 2, 2, 3]
+    },
+    {
+      "ticker": "AMPX",
+      "sector": ""
+    },
+    {
+      "ticker": "IONQ",
+      "sector": "",
+      "technigrade": [2, 2, 2, 2, 3, 2, 1]
+    },
+    {
+      "ticker": "CRK",
+      "sector": "",
+      "technigrade": [11, 6, 1, 1, 2, 2]
+    },
+    {
+      "ticker": "GDS",
+      "sector": "",
+      "technigrade": []
+    },
+    {
+      "ticker": "SOFI",
+      "sector": "",
+      "technigrade": [1, 2, 2, 4, 7, 7]
+    },
+    {
+      "ticker": "B",
+      "sector": "",
+      "technigrade": [6, 6, 6, 4, 3, 6]
+    },
+    {
+      "ticker": "FTNT",
+      "sector": "",
+      "technigrade": [16, 11, 11, 12, 11, 8]
+    },
+    {
+      "ticker": "OSCR",
+      "sector": "",
+      "technigrade": [17, 7, 1, 1, 13, 6]
+    },
+    {
+      "ticker": "NBIS",
+      "sector": "",
+      "technigrade": [2, 1, 1, 1, 1]
+    },
+    {
+      "ticker": "MBLY",
+      "sector": "",
+      "technigrade": [12, 3, 3, 15, 13]
+    },
+    {
+      "ticker": "TDOC",
+      "sector": "",
+      "technigrade": [11, 12, 9, 19, 19]
+    },
+    {
+      "ticker": "CYTK",
+      "sector": "",
+      "technigrade": [16, 19, 19, 19, 18, 20]
+    },
+    {
+      "ticker": "CAVA",
+      "sector": "",
+      "technigrade": [12, 17, 19, 20, 20]
+    },
+    {
+      "ticker": "MDGL",
+      "sector": "",
+      "technigrade": [13, 17, 15, 17, 15]
+    },
+    {
+      "ticker": "RKLB",
+      "sector": "",
+      "technigrade": [1, 1, 1, 2, 5]
+    },
+    {
+      "ticker": "SA",
+      "sector": "",
+      "technigrade": [3, 3, 4, 3, 2]
+    },
+    {
+      "ticker": "GRAL",
+      "sector": "",
+      "technigrade": [3, 1, 1, 1, 1]
+    },
+    {
+      "ticker": "MP",
+      "sector": "",
+      "technigrade": [1, 2, 1, 1, 1, 4, 12]
+    },
+    {
       "ticker": "RDW",
       "sector": "",
       "technigrade": [3, 4, 3, 3, 1]
