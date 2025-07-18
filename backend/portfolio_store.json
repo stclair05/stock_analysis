@@ -313,14 +313,6 @@
       "player": 2
     },
     {
-      "ticker": "XEG.TO",
-      "shares": 41000.0,
-      "average_cost": 13.91,
-      "sector": "Energy",
-      "target": 23.72,
-      "player": 2
-    },
-    {
       "ticker": "TXP.TO",
       "shares": 180000.0,
       "average_cost": 0.51,
@@ -624,6 +616,14 @@
       "sector": "Technology",
       "target": 387,
       "player": 0
+    },
+    {
+      "ticker": "SERV",
+      "shares": 20000,
+      "average_cost": 12.3,
+      "sector": "Industrials",
+      "target": 17,
+      "player": null
     },
     {
       "ticker": "PAAS",
