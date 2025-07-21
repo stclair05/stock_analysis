@@ -422,6 +422,26 @@
       "ticker": "UUUU",
       "sector": "",
       "technigrade": []
+    },
+    {
+      "ticker": "BOX",
+      "sector": "",
+      "technigrade": [15, 14, 10, 7, 5]
+    },
+    {
+      "ticker": "BESI.AS",
+      "sector": "",
+      "technigrade": [3, 6, 4, 4, 2]
+    },
+    {
+      "ticker": "SPIR",
+      "sector": "",
+      "technigrade": [8, 7, 7, 17, 11]
+    },
+    {
+      "ticker": "MVST",
+      "sector": "",
+      "technigrade": [2, 1, 1, 1, 1]
     }
   ],
   "portfolio": []

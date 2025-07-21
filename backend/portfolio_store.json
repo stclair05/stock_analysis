@@ -43,15 +43,6 @@
       "technigrade": [4, 5, 8, 11, 10, 9, 12]
     },
     {
-      "ticker": "SHOP",
-      "shares": 4000.0,
-      "average_cost": 106.11,
-      "sector": "Technology",
-      "target": 127,
-      "player": 1,
-      "technigrade": [8, 6, 6, 8, 8, 6, 6]
-    },
-    {
       "ticker": "ASML.AS",
       "shares": 240.0,
       "average_cost": 921.87,
@@ -550,14 +541,6 @@
       "player": 8
     },
     {
-      "ticker": "XPTUSD",
-      "shares": 234,
-      "average_cost": 1281.0,
-      "sector": "Precious Metals",
-      "target": 1500,
-      "player": 8
-    },
-    {
       "ticker": "XPDUSD",
       "shares": 264.55,
       "average_cost": 1135,
@@ -773,15 +756,6 @@
       "target": 118,
       "player": 1,
       "technigrade": [12, 7, 2, 2, 1, 2, 4]
-    },
-    {
-      "ticker": "HOOD",
-      "shares": 3000.0,
-      "average_cost": 72.54,
-      "sector": "Technology",
-      "target": 130,
-      "player": 1,
-      "technigrade": [1, 1, 1, 1, 1, 1, 1]
     },
     {
       "ticker": "TSLA",
