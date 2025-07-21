@@ -443,7 +443,7 @@
       "shares": 110000.0,
       "average_cost": 12.18,
       "sector": "Bitcoin",
-      "target": 12.87,
+      "target": 16,
       "player": 5,
       "technigrade": [2, 2, 4, 7, 6, 6, 17]
     },
@@ -461,7 +461,7 @@
       "shares": 31000.0,
       "average_cost": 262.49,
       "sector": "Bitcoin",
-      "target": 441,
+      "target": 450,
       "player": 5,
       "technigrade": [1, 1, 1, 1, 6, 5, 5]
     },
