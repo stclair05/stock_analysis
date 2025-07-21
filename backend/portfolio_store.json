@@ -588,7 +588,7 @@
       "shares": 40000.0,
       "average_cost": 11.42,
       "sector": "Aerospace & Defense",
-      "target": 12.3,
+      "target": 15,
       "player": 10,
       "technigrade": [5, 7, 4, 5, 5]
     },
@@ -745,7 +745,7 @@
       "shares": 100000.0,
       "average_cost": 7.105,
       "sector": "Energy",
-      "target": 9,
+      "target": 11.4,
       "player": 5
     },
     {
