@@ -442,7 +442,8 @@
       "ticker": "MVST",
       "sector": "",
       "technigrade": [2, 1, 1, 1, 1]
-
+    },
+    {
       "ticker": "RCAT",
       "sector": "",
       "technigrade": []
