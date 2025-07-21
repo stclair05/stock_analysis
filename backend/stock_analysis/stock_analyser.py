@@ -787,7 +787,91 @@ class StockAnalyser:
             fourteen_days_ago=safe_value(signals, -3),
             twentyone_days_ago=safe_value(signals, -4),
         )
+    
+    # ----- Simple Price/RSI Divergence -----
 
+    def _simple_price_rsi_divergence(self, df: pd.DataFrame) -> str:
+        """Detect bearish and bullish divergence over last 10 candles."""
+        if df.empty or len(df) < 20:
+            print("❌ Not enough price data")
+            return "No Divergence"
+
+        close = df["Close"].dropna()
+        rsi = compute_wilder_rsi(close).dropna()
+        if len(rsi) < 10:
+            print("❌ Not enough RSI data")
+            return "No Divergence"
+
+        df_last10 = df.iloc[-10:]
+        idx = df_last10.index
+        prices = df_last10["Close"].reindex(idx).values
+        rsi_vals = rsi.reindex(idx).values
+
+        if np.isnan(rsi_vals).any():
+            print("❌ RSI contains NaN values")
+            return "No Divergence"
+
+        print("\n🔍 Last 10 candles:")
+        for i in range(len(prices)):
+            print(f"  idx={i:2d}, Price={prices[i]:.2f}, RSI={rsi_vals[i]:.2f}")
+
+        result = []
+
+        # ─── Bearish Divergence ───
+        price_highs = []
+        print("\n🔼 Checking for pivot highs:")
+        for i in range(1, len(prices) - 1):
+            if prices[i] > prices[i - 1] and prices[i] > prices[i + 1]:
+                price_highs.append((i, prices[i]))
+                print(f"  ✅ Pivot high at i={i} (Price={prices[i]:.2f})")
+
+        if len(price_highs) >= 2:
+            for k in range(len(price_highs) - 1):
+                (i1, p1), (i2, p2) = price_highs[k], price_highs[k + 1]
+                r1 = rsi_vals[i1]
+                r2 = rsi_vals[i2]
+                print(f"\n🔁 Bearish check: Highs {k} & {k+1} — Price: {p1:.2f}→{p2:.2f}, RSI: {r1:.2f}→{r2:.2f}")
+                if p2 > p1 and r2 < r1:
+                    print("📉 Bearish divergence detected!")
+                    result.append("Bearish Divergence")
+                    break
+        else:
+            print("❌ Less than 2 pivot highs found")
+
+        # ─── Bullish Divergence ───
+        price_lows = []
+        print("\n🔽 Checking for pivot lows:")
+        for i in range(1, len(prices) - 1):
+            if prices[i] < prices[i - 1] and prices[i] < prices[i + 1]:
+                price_lows.append((i, prices[i]))
+                print(f"  ✅ Pivot low at i={i} (Price={prices[i]:.2f})")
+
+        if len(price_lows) >= 2:
+            for k in range(len(price_lows) - 1):
+                (i1, p1), (i2, p2) = price_lows[k], price_lows[k + 1]
+                r1 = rsi_vals[i1]
+                r2 = rsi_vals[i2]
+                print(f"\n🔁 Bullish check: Lows {k} & {k+1} — Price: {p1:.2f}→{p2:.2f}, RSI: {r1:.2f}→{r2:.2f}")
+                if p2 < p1 and r2 > r1:
+                    print("📈 Bullish divergence detected!")
+                    result.append("Bullish Divergence")
+                    break
+        else:
+            print("❌ Less than 2 pivot lows found")
+
+        if result:
+            return " + ".join(result)
+        return "No Divergence"
+
+
+    def simple_divergence_daily(self) -> str | None:
+        return self._simple_price_rsi_divergence(self.df)
+
+    def simple_divergence_weekly(self) -> str | None:
+        return self._simple_price_rsi_divergence(self.weekly_df)
+
+    def simple_divergence_monthly(self) -> str | None:
+        return self._simple_price_rsi_divergence(self.monthly_df)
   
     def chaikin_money_flow(self) -> TimeSeriesMetric:
         df = self.weekly_df

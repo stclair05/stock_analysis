@@ -872,3 +872,13 @@ def get_signal_strength(
         return analyser.get_generic_strength_status(timeframe)
     else:
         return {"error": f"Unknown strategy: {strategy}"}
+    
+@app.get("/api/price_rsi_divergence/{symbol}")
+def price_rsi_divergence(symbol: str):
+    """Return simple price/RSI divergence on multiple timeframes."""
+    analyser = StockAnalyser(symbol)
+    return {
+        "daily": analyser.simple_divergence_daily(),
+        "weekly": analyser.simple_divergence_weekly(),
+        "monthly": analyser.simple_divergence_monthly(),
+    }

@@ -1358,6 +1358,20 @@ export default function BuySellSignalsTab({
               : colorize(price, value);
           display = typeof value === "number" ? value.toFixed(2) : value ?? "-";
         }
+        // Highlight when price has just crossed below the MA
+        const prevPrice =
+          typeof price === "number" &&
+          typeof meanRevRsi[ticker]?.dailyChange === "number"
+            ? price - meanRevRsi[ticker]!.dailyChange!
+            : null;
+        const crossedBelow =
+          typeof prevPrice === "number" &&
+          typeof value === "number" &&
+          prevPrice >= value &&
+          price < value;
+        if (crossedBelow) {
+          className += " ma-crossed-below";
+        }
       } else {
         className =
           typeof value === "string"
