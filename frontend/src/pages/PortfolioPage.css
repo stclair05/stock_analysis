@@ -103,3 +103,11 @@
   outline-offset: -3px;
   border-radius: 4px;
 }
+
+/* Price just crossed above MA */
+.ma-crossed-above {
+  border: none !important;
+  outline: 3px solid #4caf50; /* green border */
+  outline-offset: -3px;
+  border-radius: 4px;
+}
