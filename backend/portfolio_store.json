@@ -760,7 +760,7 @@
     {
       "ticker": "TSLA",
       "shares": 600.0,
-      "average_cost": 331.18,
+      "average_cost": 348,
       "sector": "Automotive",
       "target": 367,
       "player": 1,
