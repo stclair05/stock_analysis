@@ -1370,15 +1370,16 @@ export default function BuySellSignalsTab({
           typeof value === "number" &&
           prevPrice >= value &&
           price < value;
-          const crossedAbove =
+        const crossedAbove =
           typeof prevPrice === "number" &&
           typeof value === "number" &&
           prevPrice <= value &&
           price > value;
         if (crossedBelow) {
           className += " ma-crossed-below";
-       } else if (crossedAbove) {
+        } else if (crossedAbove) {
           className += " ma-crossed-above";
+        }
       } else {
         className =
           typeof value === "string"
