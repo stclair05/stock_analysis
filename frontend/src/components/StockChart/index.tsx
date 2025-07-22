@@ -14,7 +14,7 @@ import {
   PriceScaleMode,
   LineType,
 } from "lightweight-charts";
-import { useEffect, useRef, useState } from "react";
+import { JSX, useEffect, useRef, useState } from "react";
 import { Ruler, Minus, RotateCcw, ArrowUpDown } from "lucide-react";
 import { StockChartProps, Point, CopyTrendlineBuffer } from "./types";
 import { useWebSocketData } from "./useWebSocketData";
@@ -124,6 +124,12 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
     deviation_pct?: number;
     fib_1_618?: number;
     fib_direction?: "up" | "down";
+  }>({});
+
+  const [divergence, setDivergence] = useState<{
+    daily?: string;
+    weekly?: string;
+    monthly?: string;
   }>({});
 
   const [overlayData, setOverlayData] = useState<{
@@ -604,6 +610,19 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       }
     };
     fetchInitialTargets();
+
+    const fetchDivergence = async () => {
+      try {
+        const res = await fetch(
+          `http://localhost:8000/api/price_rsi_divergence/${stockSymbol}`
+        );
+        const data = await res.json();
+        setDivergence(data);
+      } catch {
+        setDivergence({});
+      }
+    };
+    fetchDivergence();
 
     // --- 3. Guard: abort if containers/refs missing ---
     if (
@@ -1601,62 +1620,37 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
           </button>
         </div>
 
-        {/* === Middle: Price Target Buttons === */}
-        {(typeof priceTargets.reversion_target === "number" ||
-          typeof priceTargets.fib_1_618 === "number") && (
-          <div className="d-flex flex-wrap gap-3 mb-3 align-items-center">
-            <div className="fw-bold text-muted"> Price Targets:</div>
-
-            {priceTargets.reversion_target && (
-              <div className="position-relative">
-                <button
-                  className="btn btn-sm btn-outline-dark"
-                  onClick={() => setShow50dmaTarget((v) => !v)}
+        {/* === Middle: RSI Divergence === */}
+        {(() => {
+          const parts = ["daily", "weekly", "monthly"].flatMap((tf) => {
+            const val = (divergence as any)[tf];
+            if (typeof val === "string" && val !== "No Divergence") {
+              const isBull = val.toLowerCase().includes("bullish");
+              return (
+                <span
+                  key={tf}
+                  className={isBull ? "text-success" : "text-danger"}
+                  style={{ marginLeft: 4, whiteSpace: "nowrap" }}
                 >
-                  50DMA Target
-                </button>
-                {show50dmaTarget && (
-                  <div
-                    className="position-absolute bg-white border shadow-sm p-2 rounded small mt-1"
-                    style={{ zIndex: 10 }}
-                  >
-                    <div>
-                      <strong>${priceTargets.reversion_target}</strong>
-                    </div>
-                    <div className="text-muted">
-                      ({priceTargets.deviation_pct}% above 50DMA)
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {priceTargets.fib_1_618 && (
-              <div className="position-relative">
-                <button
-                  className="btn btn-sm btn-outline-secondary"
-                  onClick={() => setShowFibTarget((v) => !v)}
-                >
-                  Fib 1.618x
-                </button>
-                {showFibTarget && (
-                  <div
-                    className="position-absolute bg-white border shadow-sm p-2 rounded small mt-1"
-                    style={{ zIndex: 10 }}
-                  >
-                    <div>
-                      <strong>${priceTargets.fib_1_618}</strong>
-                    </div>
-                    <div className="text-muted">
-                      ({priceTargets.fib_direction === "up" ? "↑" : "↓"} 1.618
-                      extension)
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
+                  {tf.charAt(0).toUpperCase() + tf.slice(1)}{" "}
+                  {isBull ? "Bullish" : "Bearish"}
+                </span>
+              );
+            }
+            return [] as JSX.Element[];
+          });
+          if (parts.length === 0) return null;
+          return (
+            <div className="d-flex flex-wrap gap-1 mb-3 align-items-center">
+              {parts.map((el, idx) => (
+                <>
+                  {idx > 0 && <span style={{ margin: "0 2px" }}>and </span>}
+                  {el}
+                </>
+              ))}
+            </div>
+          );
+        })()}
 
         {/* Right side: timeframe toggle */}
         <div className="btn-group">
