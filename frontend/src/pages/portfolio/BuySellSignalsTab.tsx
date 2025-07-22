@@ -1229,6 +1229,40 @@ export default function BuySellSignalsTab({
           >
             {getSlopeArrow(meanRevRsi[ticker]?.rsi ?? null)}
           </span>
+          {(() => {
+            const info = divergence[ticker];
+            if (!info) return null;
+            const parts = ["daily", "weekly", "monthly"].flatMap((tf) => {
+              const val = (info as any)[tf];
+              if (typeof val === "string" && val !== "No Divergence") {
+                const isBull = val.toLowerCase().includes("bullish");
+                return (
+                  <span
+                    key={tf}
+                    className={isBull ? "text-success" : "text-danger"}
+                    style={{ marginLeft: 4, whiteSpace: "nowrap" }}
+                  >
+                    {tf.charAt(0).toUpperCase() + tf.slice(1)}{" "}
+                    {isBull ? "Bullish" : "Bearish"}
+                  </span>
+                );
+              }
+              return [] as JSX.Element[];
+            });
+            if (parts.length === 0) return null;
+            return (
+              <div
+                style={{ fontSize: "0.8em", fontStyle: "italic", marginTop: 2 }}
+              >
+                {parts.map((el, idx) => (
+                  <React.Fragment key={idx}>
+                    {idx > 0 && <span style={{ margin: "0 2px" }}>and </span>}
+                    {el}
+                  </React.Fragment>
+                ))}
+              </div>
+            );
+          })()}
         </td>
       );
     }
@@ -1666,57 +1700,6 @@ export default function BuySellSignalsTab({
                           <div style={{ fontWeight: "bold", fontSize: "1rem" }}>
                             {holding.ticker}
                           </div>
-
-                          {(() => {
-                            const info = divergence[holding.ticker];
-                            if (!info) return null;
-                            const parts = [
-                              "daily",
-                              "weekly",
-                              "monthly",
-                            ].flatMap((tf) => {
-                              const val = (info as any)[tf];
-                              if (
-                                typeof val === "string" &&
-                                val !== "No Divergence"
-                              ) {
-                                const isBull = val
-                                  .toLowerCase()
-                                  .includes("bullish");
-                                return (
-                                  <span
-                                    key={tf}
-                                    className={
-                                      isBull ? "text-success" : "text-danger"
-                                    }
-                                    style={{
-                                      marginLeft: 4,
-                                      whiteSpace: "nowrap",
-                                    }}
-                                  >
-                                    {tf.charAt(0).toUpperCase() + tf.slice(1)}{" "}
-                                    {isBull ? "Bullish" : "Bearish"}
-                                  </span>
-                                );
-                              }
-                              return [] as JSX.Element[];
-                            });
-                            if (parts.length === 0) return null;
-                            return (
-                              <>
-                                {parts.map((el, idx) => (
-                                  <React.Fragment key={idx}>
-                                    {idx > 0 && (
-                                      <span style={{ margin: "0 2px" }}>
-                                        and{" "}
-                                      </span>
-                                    )}
-                                    {el}
-                                  </React.Fragment>
-                                ))}
-                              </>
-                            );
-                          })()}
 
                           {(() => {
                             const details =
