@@ -794,15 +794,6 @@
       "technigrade": [5, 5, 9, 10, 16, 17, 16, 16]
     },
     {
-      "ticker": "AVAV",
-      "shares": 3200.0,
-      "average_cost": 222.93,
-      "sector": "Aerospace & Defense",
-      "target": 334,
-      "player": 10,
-      "technigrade": [1, 1, 1, 1, 2, 2, 2, 2]
-    },
-    {
       "ticker": "CHWY",
       "shares": 10000.0,
       "average_cost": 43.5,
@@ -810,15 +801,6 @@
       "target": 334,
       "player": 10,
       "technigrade": [12, 15, 9, 5, 5, 5, 2, 2]
-    },
-    {
-      "ticker": "PLTR",
-      "shares": 1500.0,
-      "average_cost": 140.76,
-      "sector": "Technology",
-      "target": 204.6,
-      "player": 1,
-      "technigrade": [2, 2, 2, 2, 1, 1, 1, 1]
     },
     {
       "ticker": "IPI",
