@@ -35,14 +35,6 @@
       "technigrade": [4, 8, 11, 14, 15, 15, 10, 7]
     },
     {
-      "ticker": "SNPS",
-      "shares": 1000.0,
-      "average_cost": 557.23,
-      "target": 625,
-      "player": 1,
-      "technigrade": [3, 4, 5, 8, 11, 10, 9, 12]
-    },
-    {
       "ticker": "ASML.AS",
       "shares": 240.0,
       "average_cost": 921.87,
@@ -534,8 +526,8 @@
     },
     {
       "ticker": "XAUUSD",
-      "shares": 95,
-      "average_cost": 3052.48,
+      "shares": 2695,
+      "average_cost": 3385.48,
       "sector": "Precious Metals",
       "target": 3959,
       "player": 8
@@ -782,15 +774,6 @@
       "sector": "Index",
       "target": 64,
       "player": 8
-    },
-    {
-      "ticker": "LLY",
-      "shares": 550.0,
-      "average_cost": 767.98,
-      "sector": "HealthCare",
-      "target": 931,
-      "player": 10,
-      "technigrade": [16, 15, 16, 15, 15, 9, 15, 16]
     },
     {
       "ticker": "EL",
