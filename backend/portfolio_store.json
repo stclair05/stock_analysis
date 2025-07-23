@@ -5,7 +5,7 @@
       "shares": 28397.0,
       "average_cost": 99.74,
       "sector": "Index",
-      "target": 80,
+      "target": 82,
       "player": 1
     },
     {
@@ -521,7 +521,7 @@
       "shares": 566809.0,
       "average_cost": 29.42,
       "sector": "Precious Metals",
-      "target": 39,
+      "target": 41,
       "player": 8
     },
     {
@@ -614,7 +614,7 @@
       "shares": 42000.0,
       "average_cost": 7.35,
       "sector": "Precious Metals",
-      "target": 13,
+      "target": 8,
       "player": 8,
       "technigrade": [10, 5, 7, 7, 6, 4, 3, 13]
     },
@@ -623,7 +623,7 @@
       "shares": 9089.0,
       "average_cost": 44.52,
       "sector": "Precious Metals",
-      "target": 58.79,
+      "target": 54,
       "player": 8
     },
     {
@@ -763,7 +763,7 @@
       "shares": 60000.0,
       "average_cost": 7.07,
       "sector": "Precious Metals",
-      "target": 8.84,
+      "target": 9,
       "player": 8,
       "technigrade": [11, 9, 6, 6, 4, 3, 3, 4]
     },
