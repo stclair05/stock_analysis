@@ -181,6 +181,21 @@ export default function BuySellSignalsTab({
     "ALL" | "BUY" | "SELL" | "MIXED"
   >("ALL");
 
+  // State to filter by sector when viewing the portfolio list
+  const [sectorFilter, setSectorFilter] = useState<string>("ALL");
+
+  // Derive list of available sectors from the loaded portfolio data
+  const sectorOptions = useMemo(() => {
+    const opts = Array.from(
+      new Set(
+        portfolio
+          .map((p) => p.sector)
+          .filter((s): s is string => !!s && s !== "N/A" && s.trim() !== "")
+      )
+    );
+    return opts.sort((a, b) => a.localeCompare(b));
+  }, [portfolio]);
+
   // Hold mean reversion, RSI, Chaikin Money Flow, Supertrend, and current price info for each ticker
   const [meanRevRsi, setMeanRevRsi] = useState<
     Record<
@@ -477,6 +492,7 @@ export default function BuySellSignalsTab({
         setSortColumn(null);
         setSecondarySortColumn(null);
         setFilterType("ALL");
+        setSectorFilter("ALL");
       } catch (error) {
         console.error(`Error fetching ${listType} tickers:`, error);
         setPortfolio([]); // Clear portfolio on error
@@ -486,6 +502,7 @@ export default function BuySellSignalsTab({
         setSortColumn(null);
         setSecondarySortColumn(null);
         setFilterType("ALL");
+        setSectorFilter("ALL");
       } finally {
         setSignalsLoading(false); // End loading indicator
       }
@@ -834,6 +851,13 @@ export default function BuySellSignalsTab({
 
   const displayedPortfolio = useMemo(() => {
     let currentPortfolio = [...portfolio];
+
+    // Apply sector filter only when viewing the portfolio list
+    if (listType === "portfolio" && sectorFilter !== "ALL") {
+      currentPortfolio = currentPortfolio.filter(
+        (h) => h.sector === sectorFilter
+      );
+    }
     const visibleAndOrderedStrategies =
       getVisibleAndOrderedStrategies(selectedTimeframe);
 
@@ -990,6 +1014,8 @@ export default function BuySellSignalsTab({
     secondarySortColumn,
     secondarySortDirection,
     filterType,
+    sectorFilter,
+    listType,
     selectedTimeframe,
   ]);
 
@@ -1647,6 +1673,28 @@ export default function BuySellSignalsTab({
             <option value="MIXED">Mixed</option>
           </select>
         </div>
+
+        {/* Sector Filter Dropdown - only for portfolio view */}
+        {listType === "portfolio" && (
+          <div className="d-flex align-items-center ms-4">
+            <label className="fw-semibold me-2">Sector:</label>
+            <select
+              value={sectorFilter}
+              onChange={(e) => {
+                setSectorFilter(e.target.value);
+                setSortColumn(null);
+                setSecondarySortColumn(null);
+              }}
+            >
+              <option value="ALL">All Sectors</option>
+              {sectorOptions.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {/* Loading or No Data States */}
