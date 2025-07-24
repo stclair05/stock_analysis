@@ -368,7 +368,7 @@
       "ticker": "IWM",
       "shares": 4000.0,
       "average_cost": 237.1,
-      "sector": "Energy",
+      "sector": "Index",
       "target": 233,
       "player": 4
     },
