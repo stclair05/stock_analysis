@@ -414,6 +414,11 @@
       "ticker": "RCAT",
       "sector": "",
       "technigrade": []
+    },
+    {
+      "ticker": "CRDO",
+      "sector": "",
+      "technigrade": [1, 1, 1, 1, 1]
     }
   ],
   "portfolio": []
