@@ -617,6 +617,52 @@ def get_quadrant_data(list_type: str = Query("portfolio", enum=["portfolio", "wa
 
     return table
 
+@app.get("/stage_table")
+def get_stage_table(list_type: str = Query("portfolio", enum=["portfolio", "watchlist"])):
+    """Return Stage quadrant table with 20DMA status."""
+    if list_type == "portfolio":
+        json_path = Path("portfolio_store.json")
+        if not json_path.exists():
+            tickers: list[str] = []
+        else:
+            with open(json_path, "r") as f:
+                data = json.load(f)
+            tickers = [item["ticker"] for item in data.get("equities", []) if "ticker" in item]
+    else:
+        data = load_data()
+        tickers = []
+        for item in data.get("watchlist", []):
+            if isinstance(item, dict):
+                ticker = item.get("ticker")
+                if ticker:
+                    tickers.append(ticker)
+            else:
+                tickers.append(item)
+
+    table = {stage: {"tickers": []} for stage in [1, 2, 3, 4]}
+
+    for symbol in tickers:
+        try:
+            analyser = StockAnalyser(symbol)
+            stage, _ = analyser.stage_analysis()
+            dma20 = analyser.calculate_20dma().current
+            price_now = analyser.get_current_price()
+            if stage in [1, 2, 3, 4]:
+                table[stage]["tickers"].append(
+                    {
+                        "symbol": symbol,
+                        "below20dma": (
+                            price_now is not None
+                            and dma20 is not None
+                            and price_now < dma20
+                        ),
+                    }
+                )
+        except Exception as e:
+            print(f"Stage table error for {symbol}: {e}")
+
+    return table
+
 @app.get("/s3-images")
 def list_s3_images(prefix: str = "natgas/"):
     s3 = boto3.client(

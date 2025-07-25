@@ -146,3 +146,8 @@
   background-size: 1000px 100%;
   animation: shimmer 1.5s infinite linear;
 }
+
+.stage-label {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
