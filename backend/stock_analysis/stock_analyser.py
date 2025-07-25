@@ -1112,10 +1112,13 @@ class StockAnalyser:
                 abs((p - m) / m) <= 0.02 and              # Price within ±2% of MA
                 not (p > m and s > 0.01)                          # avoid misclassifying mild uptrend
             ):
-                if not prev_stages.empty and any(prev_stages == 2):
+                # Require majority of last 3-5 weeks to be Stage 2
+                recent_2_count = (prev_stages == 2).sum()
+                if len(prev_stages) >= 3 and recent_2_count >= 3:
                     stage = 3
                 else:
                     stage = np.nan
+
 
 
             else:
