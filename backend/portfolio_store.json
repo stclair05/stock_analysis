@@ -550,23 +550,6 @@
       "technigrade": [6, 5, 4, 2, 4, 4, 3, 4]
     },
     {
-      "ticker": "AIR.PA",
-      "shares": 1500,
-      "average_cost": 178.115,
-      "sector": "Aerospace & Defense",
-      "target": 220,
-      "player": 10
-    },
-    {
-      "ticker": "RR.L",
-      "shares": 1500,
-      "average_cost": 1304.14,
-      "sector": "Aerospace & Defense",
-      "target": 1428,
-      "player": 10,
-      "technigrade": []
-    },
-    {
       "ticker": "AXON",
       "shares": 400,
       "average_cost": 825.89,

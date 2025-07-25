@@ -419,6 +419,31 @@
       "ticker": "CRDO",
       "sector": "",
       "technigrade": [1, 1, 1, 1, 1]
+    },
+    {
+      "ticker": "LEU",
+      "sector": "",
+      "technigrade": []
+    },
+    {
+      "ticker": "LAC",
+      "sector": "",
+      "technigrade": []
+    },
+    {
+      "ticker": "SQM",
+      "sector": "",
+      "technigrade": []
+    },
+    {
+      "ticker": "ALB",
+      "sector": "",
+      "technigrade": []
+    },
+    {
+      "ticker": "REMX",
+      "sector": "",
+      "technigrade": []
     }
   ],
   "portfolio": []

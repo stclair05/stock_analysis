@@ -1043,44 +1043,75 @@ class StockAnalyser:
 
     def stage_analysis(self) -> tuple[int | None, int]:
         """
-        Stage Analysis per TradingView/NextBigTrade logic using 30‑ and 40‑week SMAs:
-
-        Stages:
-        1: Accumulation  (close > 30‑week SMA and close < 40‑week SMA)
-        2: Markup        (close > prior 13‑week high and close > 40‑week SMA)
-        3: Distribution  (close < 30‑week SMA and close > 40‑week SMA)
-        4: Markdown      (close < prior 13‑week low and close < 40‑week SMA)
+        Stage Analysis + SATA filter per TradingView/NextBigTrade logic.
 
         Returns:
             (last_stage, weeks_in_stage)
         """
-        df = self.weekly_df.copy()
+        df    = self.weekly_df.copy()
         price = df.get("Adj Close", df["Close"])
+        vol   = df["Volume"]
 
-        # Calculate simple moving averages
-        sma30 = price.rolling(window=30).mean()
-        sma40 = price.rolling(window=40).mean()
+        # moving averages
+        sma30 = price.rolling(30).mean()
+        sma40 = price.rolling(40).mean()
 
-        # 13‑week swing highs/lows (shifted by 1 to avoid lookahead)
-        high13 = price.rolling(window=13).max().shift(1)
-        low13  = price.rolling(window=13).min().shift(1)
+        # swing pivots
+        high13 = price.rolling(13).max().shift(1)
+        low13  = price.rolling(13).min().shift(1)
+
+        # extra series for SATA
+        price_diff = price.diff()
+        vol_ma20   = vol.rolling(20).mean()
+        vol_diff   = vol.diff()
+        max52      = price.rolling(52).max().shift(1)
+
+        # relative strength vs SPX (Mansfield)
+        # assumes you have this method returning a pd.Series aligned to df.index
+        rs       = self.get_mansfield_rs_series()        
+        rs_ma30  = rs.rolling(30).mean()    
 
         stages = pd.Series(index=df.index, dtype="Int64")
 
         for i in range(len(df)):
-            p = price.iat[i]
-            m30 = sma30.iat[i]
-            m40 = sma40.iat[i]
-            h13 = high13.iat[i]
-            l13 = low13.iat[i]
+            p    = price.iat[i]
+            m30  = sma30.iat[i]
+            m40  = sma40.iat[i]
+            h13  = high13.iat[i]
+            l13  = low13.iat[i]
+            v    = vol.iat[i]
+
+            # SATA helpers
+            pdiff = price_diff.iat[i]
+            vma20 = vol_ma20.iat[i]
+            vdiff = vol_diff.iat[i]
+            m52   = max52.iat[i]
+            rsi   = rs.iat[i]       if i < len(rs)   else np.nan
+            rsma  = rs_ma30.iat[i]  if i < len(rs_ma30) else np.nan
 
             # need enough data
-            if pd.isna(p) or pd.isna(m30) or pd.isna(m40) or pd.isna(h13) or pd.isna(l13):
+            if any(pd.isna(x) for x in (p, m30, m40, h13, l13, vma20, rsi, rsma, m52)):
                 continue
 
-            if p > h13 and p > m40:
+            # build 10 SATA flags
+            sata_flags = [
+                p > m30,               # price above 30‑w MA
+                p > m40,               # price above 40‑w MA
+                m30 > m40,             # 30‑wMA > 40‑wMA
+                p > h13,               # breakout of 13‑w high
+                pdiff > 0,             # positive price momentum
+                v >  vma20,            # heavy volume
+                vdiff > 0,             # rising volume
+                rsi  > 0,              # positive Mansfield RS
+                rsi  > rsma,           # improving RS vs its MA
+                p > m52,               # breakout of 52‑w high
+            ]
+            sata = sum(int(f) for f in sata_flags)
+
+            # Stage logic + SATA gating
+            if p > h13 and p > m40 and sata >= 6:
                 stage = 2
-            elif p < l13 and p < m40:
+            elif p < l13 and p < m40 and sata <= 3:
                 stage = 4
             elif p > m30 and p < m40:
                 stage = 1
@@ -1091,21 +1122,21 @@ class StockAnalyser:
 
             stages.iat[i] = stage
 
-        # Find the last non‑NA stage
+        # pick last non‑NA stage
         valid = stages.dropna()
         if valid.empty:
             return None, 0
-        last_stage = int(valid.iloc[-1])
 
-        # Count how many consecutive weeks we’ve been in that stage
+        last = int(valid.iloc[-1])
+        # count consecutive weeks
         weeks = 0
         for s in reversed(valid.tolist()):
-            if int(s) == last_stage:
+            if int(s) == last:
                 weeks += 1
             else:
                 break
 
-        return last_stage, weeks
+        return last, weeks
 
 
 
