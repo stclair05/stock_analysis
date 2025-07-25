@@ -1041,105 +1041,72 @@ class StockAnalyser:
         rsi_ma = rsi.rolling(window=period).mean()
         return to_series(reindex_indicator(close, rsi_ma))
 
-    def stage_analysis(self, ma_period: int = 30, slope_period: int = 1) -> tuple[int | None, int]:
+    def stage_analysis(self) -> tuple[int | None, int]:
         """
-        Return the current Stage (1-4) and how many weeks it has persisted,
-        with improved detection for Stage 3 and stricter criteria for Stage 4.
+        Stage Analysis per TradingView/NextBigTrade logic using 30‑ and 40‑week SMAs:
+
+        Stages:
+        1: Accumulation  (close > 30‑week SMA and close < 40‑week SMA)
+        2: Markup        (close > prior 13‑week high and close > 40‑week SMA)
+        3: Distribution  (close < 30‑week SMA and close > 40‑week SMA)
+        4: Markdown      (close < prior 13‑week low and close < 40‑week SMA)
+
+        Returns:
+            (last_stage, weeks_in_stage)
         """
-        df_weekly = self.weekly_df.copy()
-        if len(df_weekly) < ma_period + slope_period:
-            return None, 0
+        df = self.weekly_df.copy()
+        price = df.get("Adj Close", df["Close"])
 
-        price = df_weekly["Adj Close"] if "Adj Close" in df_weekly.columns else df_weekly["Close"]
-        ma = price.ewm(span=ma_period, adjust=False).mean()
+        # Calculate simple moving averages
+        sma30 = price.rolling(window=30).mean()
+        sma40 = price.rolling(window=40).mean()
 
-        # Compute slope using linear regression
-        slope = ma.rolling(window=slope_period + 1, min_periods=slope_period + 1).apply(
-            lambda arr: np.polyfit(np.arange(len(arr)), arr, 1)[0],
-            raw=True
-        )
+        # 13‑week swing highs/lows (shifted by 1 to avoid lookahead)
+        high13 = price.rolling(window=13).max().shift(1)
+        low13  = price.rolling(window=13).min().shift(1)
 
-        stage_series = pd.Series(index=df_weekly.index, dtype="float64")
+        stages = pd.Series(index=df.index, dtype="Int64")
 
-        lookback = 12  # For Stage 4
-        flat_slope_threshold = 0.1
-        near_ma_pct = 0.05
+        for i in range(len(df)):
+            p = price.iat[i]
+            m30 = sma30.iat[i]
+            m40 = sma40.iat[i]
+            h13 = high13.iat[i]
+            l13 = low13.iat[i]
 
-        for i in range(len(df_weekly)):
-            if i < ma_period + slope_period:
+            # need enough data
+            if pd.isna(p) or pd.isna(m30) or pd.isna(m40) or pd.isna(h13) or pd.isna(l13):
                 continue
 
-            p = price.iloc[i]
-            m = ma.iloc[i]
-            s = slope.iloc[i]
-
-            if np.isnan(p) or np.isnan(m) or np.isnan(s):
-                continue
-
-            slope_window = slope.iloc[i - lookback + 1: i + 1]
-            price_below_ma = price.iloc[i - lookback + 1: i + 1] < ma.iloc[i - lookback + 1: i + 1]
-            prev_stages = stage_series.iloc[max(i - 5, 0):i].dropna()
-
-           # === Stage 4: Current price below MA, MA sloping down, past avg weakness
-            if (
-                p < m and
-                s < -flat_slope_threshold and
-                price.iloc[i - lookback + 1:i + 1].mean() < ma.iloc[i - lookback + 1:i + 1].mean()
-            ):
-                stage = 4
-
-
-
-
-            # === Stage 2: Price above MA, slope rising ===
-            elif p > m and s > flat_slope_threshold:
+            if p > h13 and p > m40:
                 stage = 2
-
-            # === Stage 1: After decline, base forms, slope flat or turning up
-            elif (
-                abs(s) <= flat_slope_threshold and                    # MA flattening
-                abs((p - m) / m) <= near_ma_pct and                   # price hugging MA
-                price.iloc[i - lookback + 1:i + 1].mean() < ma.iloc[i - lookback + 1:i + 1].mean() and  # still basing below MA
-                not (p < m and s < -flat_slope_threshold) and         # exclude declining
-                not (prev_stages.empty or all(prev_stages != 4))      # must come after Stage 4
-            ):
+            elif p < l13 and p < m40:
+                stage = 4
+            elif p > m30 and p < m40:
                 stage = 1
-
-
-            # === Stage 3: Flattening MA and price oscillating around MA
-            elif (
-                abs(s) <= 0.05 and                        # MA very flat
-                abs((p - m) / m) <= 0.02 and              # Price within ±2% of MA
-                not (p > m and s > 0.01)                          # avoid misclassifying mild uptrend
-            ):
-                # Require majority of last 3-5 weeks to be Stage 2
-                recent_2_count = (prev_stages == 2).sum()
-                if len(prev_stages) >= 3 and recent_2_count >= 3:
-                    stage = 3
-                else:
-                    stage = np.nan
-
-
-
+            elif p < m30 and p > m40:
+                stage = 3
             else:
-                stage = np.nan  # fallback
+                stage = pd.NA
 
-            stage_series.iloc[i] = stage
+            stages.iat[i] = stage
 
-        # Final stage result
-        last = stage_series.dropna().iloc[-1] if not stage_series.dropna().empty else np.nan
-        if pd.isna(last):
+        # Find the last non‑NA stage
+        valid = stages.dropna()
+        if valid.empty:
             return None, 0
+        last_stage = int(valid.iloc[-1])
 
-        last_stage = int(last)
+        # Count how many consecutive weeks we’ve been in that stage
         weeks = 0
-        for s in reversed(stage_series.dropna()):
+        for s in reversed(valid.tolist()):
             if int(s) == last_stage:
                 weeks += 1
             else:
                 break
 
         return last_stage, weeks
+
 
 
     def get_rsi_series(self):
