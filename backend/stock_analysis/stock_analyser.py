@@ -1041,92 +1041,114 @@ class StockAnalyser:
         rsi_ma = rsi.rolling(window=period).mean()
         return to_series(reindex_indicator(close, rsi_ma))
     
-    def compute_sata(df: pd.DataFrame, benchmark: str = "^GSPC") -> pd.DataFrame:
+    def stage_analysis(self) -> tuple[int | None, int]:
         """
-        Compute the 10 SATA bands plus total score for each week.
-        df must contain columns 'Close' and 'Volume'.  
-        benchmark: ticker for Mansfield RS comparison.
-        """
-        price = df["Close"]
-        volume = df["Volume"]
-
-        # ── Band 10: Breakouts / Breakdowns (52-week) ──
-        hi52 = price.rolling(window=52).max().shift(1)
-        lo52 = price.rolling(window=52).min().shift(1)
-        band10 = ((price > hi52) | (price < lo52)).astype(int)
-
-        # ── Bands 9–6: Price vs. Moving Averages (10, 20, 30, 40 weeks) ──
-        ma_periods = [10, 20, 30, 40]
-        bands = {
-            f"band{9 - i}": (price > price.rolling(window=p).mean()).astype(int)
-            for i, p in enumerate(ma_periods)
-        }
-
-        # ── Band 5: Mansfield Relative Strength vs. S&P 500 ──
-        # You need to supply your own compute_mansfield_rs function
-        ms = compute_mansfield_rs(price, benchmark_close=get_price_data(benchmark)["Close"])
-        bands["band5"] = (ms > 0).reindex(df.index).fillna(0).astype(int)
-
-        # ── Bands 4 & 3: Momentum (1‑week and 4‑week returns) ──
-        ret1 = price.pct_change(periods=1)
-        ret4 = price.pct_change(periods=4)
-        bands["band4"] = (ret1 > 0).astype(int)
-        bands["band3"] = (ret4 > 0).astype(int)
-
-        # ── Band 2: Volume above its 10‑week average ──
-        vol_ma10 = volume.rolling(window=10).mean()
-        bands["band2"] = (volume > vol_ma10).astype(int)
-
-        # ── Band 1: Overhead Resistance (prior 40‑week high) ──
-        overhead = price.rolling(window=40).max().shift(1)
-        bands["band1"] = (price > overhead).astype(int)
-
-        # Assemble into a DataFrame
-        sata = pd.DataFrame(
-            {**bands, "band10": band10},
-            index=df.index
-        )
-        sata["score"] = sata.sum(axis=1)
-        return sata
-
-    def stage_analysis(self) -> tuple[int, int]:
-        """
-        Uses compute_sata to get a 0–10 score, then maps to Weinstein’s four stages:
-        • 6–10 → Stage 2 (Uptrend)
-        • 0–1  → Stage 4 (Downtrend)
-        • rising score → Stage 1 (Accumulation)
-        • falling score → Stage 3 (Distribution)
-        Returns (current_stage, weeks_in_stage).
+        Simplified Stage Analysis based on NextBigTrade's core ideology from the PDF, using EMAs.
+        Focuses on Price vs 30-Week EMA, 30-Week EMA slope, and Volume for Stage 2 breakouts.
         """
         df = self.weekly_df.copy()
-        sata = self.compute_sata(df)
-        latest_score = int(sata["score"].iloc[-1])
-        slope = sata["score"].diff().iloc[-1]
+        price = df.get("Adj Close", df["Close"])
+        volume = df["Volume"]
+        
+        # Calculate 30-week EMA 
+        # EWM span parameter is typically the period length, but adjust=False for traditional EMA.
+        ema30 = price.ewm(span=30, adjust=False).mean()
+        
+        # Calculate 30-week EMA slope. Using a small rolling window for smoothing[cite: 646, 861].
+        slope_raw = ema30.diff()
+        slope30_smoothed = slope_raw.rolling(window=3, min_periods=1).mean()
+        
+        # 10-week average volume for breakout check 
+        vol_ma10 = volume.rolling(window=10).mean()
+        
+        stage_series = pd.Series(index=df.index, dtype="Int64")
+        
+        for i in range(len(df)):
+            p = price.iat[i]
+            m30 = ema30.iat[i]
+            current_vol = volume.iat[i]
+            avg_vol10 = vol_ma10.iat[i]
+            slope = slope30_smoothed.iat[i]
 
-        # Map to Stage
-        if latest_score >= 6:
-            stage = 2
-        elif latest_score <= 1:
-            stage = 4
-        elif slope > 0:
-            stage = 1
-        else:
-            stage = 3
+            st = pd.NA # Default for the current week
 
-        # Count consecutive weeks in that same stage
-        # Create a boolean series of “in current stage” each week
-        if stage == 2:
-            mask = sata["score"] >= 6
-        elif stage == 4:
-            mask = sata["score"] <= 1
-        elif stage == 1:
-            mask = sata["score"].diff() > 0
-        else:  # stage 3
-            mask = sata["score"].diff() < 0
+            # Get the previous stage. Use .iat for integer-based indexing.
+            # Handle the case where there is no previous data or it was NA.
+            prev_st = stage_series.iat[i-1] if i > 0 and pd.notna(stage_series.iat[i-1]) else None
 
-        # Count how many True’s at the end of the mask
-        weeks = int(mask[::-1].cumprod()[mask.shape[0] - 1:].sum())
-        return stage, weeks
+            # Check for NaN values in critical components for the current week.
+            # If any are NaN, we cannot determine the stage for this week.
+            if pd.isna(p) or pd.isna(m30) or pd.isna(current_vol) or pd.isna(avg_vol10) or pd.isna(slope):
+                stage_series.iat[i] = st
+                continue
+
+            # Define thresholds for slope to determine 'rising', 'falling', or 'flat' [cite: 646]
+            # A small percentage of the EMA value itself makes it more robust.
+            slope_relative_threshold = m30 * 0.005 # 0.5% of EMA value for flatness
+
+            is_30ema_rising = slope > slope_relative_threshold
+            is_30ema_falling = slope < -slope_relative_threshold
+            is_30ema_flat = abs(slope) <= slope_relative_threshold
+
+            # --- Stage Determination Logic (Prioritized as per NextBigTrade interpretation) ---
+
+            # Stage 2: Advancing Stage (Uptrend) [cite: 813]
+            # Conditions: Price above a rising 30-week EMA[cite: 816, 862]. Volume increase for initial breakouts.
+            if p > m30 and is_30ema_rising:
+                # Check for high volume if this is a potential *new* Stage 2 breakout (from Stage 1/3/None).
+                # If already in Stage 2, it continues.
+                if prev_st in [1, 3, None]: # If transitioning into Stage 2
+                    is_volume_high = (current_vol >= (2 * avg_vol10)) if pd.notna(avg_vol10) and avg_vol10 > 0 else False
+                    if is_volume_high:
+                        st = 2
+                    # If volume isn't high enough for a breakout, it's not a confirmed Stage 2 yet.
+                    # It will remain NA and potentially be caught by later rules (Stage 1/3 or carry-over).
+                else: # If already Stage 2, and conditions hold, remain Stage 2 (no re-check of 2x volume for continuation)
+                    st = 2
+            
+            # Stage 4: Declining Stage (Downtrend) [cite: 1110]
+            # Conditions: Price below a falling 30-week EMA[cite: 1110].
+            # "The 30-week moving average begins a long slope downward." [cite: 1111]
+            elif p < m30 and is_30ema_falling:
+                st = 4
+            
+            # Stage 3: Consolidation/Topping Stage [cite: 1049]
+            # Conditions: Follows Stage 2, 30-week EMA flattens or turns down, price oscillates around EMA[cite: 1051, 1052].
+            elif (is_30ema_flat or is_30ema_falling) and (prev_st == 2 or prev_st == 3):
+                st = 3
+
+            # Stage 1: Basing Stage [cite: 666]
+            # Conditions: Follows Stage 4, 30-week EMA flattens or turns up, price oscillates around EMA[cite: 669, 671, 686].
+            elif (is_30ema_flat or is_30ema_rising) and (prev_st == 4 or prev_st == 1):
+                 st = 1
+            
+            # If none of the explicit stage rules are met for the current week,
+            # carry over the previous stage if one exists, to maintain continuity.
+            if pd.isna(st) and prev_st is not None:
+                st = prev_st
+            elif pd.isna(st) and prev_st is None:
+                 # If at the very beginning and no explicit stage, and EMA is flat, default to Stage 1
+                 if is_30ema_flat:
+                     st = 1
+
+            stage_series.iat[i] = st
+            
+        # Calculate last_stage and weeks_in_stage from the populated series
+        valid = stage_series.dropna().astype(int)
+        if valid.empty:
+            return None, 0
+        
+        last_stage = int(valid.iloc[-1])
+        
+        weeks = 0
+        for s in reversed(valid.tolist()):
+            if s == last_stage:
+                weeks += 1
+            else:
+                break
+        
+        return last_stage, weeks
+    
 
     def get_rsi_series(self):
         df_weekly = self.weekly_df
