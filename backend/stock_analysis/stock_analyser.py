@@ -1040,74 +1040,93 @@ class StockAnalyser:
         rsi = compute_wilder_rsi(close)
         rsi_ma = rsi.rolling(window=period).mean()
         return to_series(reindex_indicator(close, rsi_ma))
-
-    def stage_analysis(self) -> tuple[int | None, int]:
+    
+    def compute_sata(df: pd.DataFrame, benchmark: str = "^GSPC") -> pd.DataFrame:
         """
-        Stage Analysis per TradingView/NextBigTrade logic using 30‑ and 40‑week SMAs:
+        Compute the 10 SATA bands plus total score for each week.
+        df must contain columns 'Close' and 'Volume'.  
+        benchmark: ticker for Mansfield RS comparison.
+        """
+        price = df["Close"]
+        volume = df["Volume"]
 
-        Stages:
-        1: Accumulation  (close > 30‑week SMA and close < 40‑week SMA)
-        2: Markup        (close > prior 13‑week high and close > 40‑week SMA)
-        3: Distribution  (close < 30‑week SMA and close > 40‑week SMA)
-        4: Markdown      (close < prior 13‑week low and close < 40‑week SMA)
+        # ── Band 10: Breakouts / Breakdowns (52-week) ──
+        hi52 = price.rolling(window=52).max().shift(1)
+        lo52 = price.rolling(window=52).min().shift(1)
+        band10 = ((price > hi52) | (price < lo52)).astype(int)
 
-        Returns:
-            (last_stage, weeks_in_stage)
+        # ── Bands 9–6: Price vs. Moving Averages (10, 20, 30, 40 weeks) ──
+        ma_periods = [10, 20, 30, 40]
+        bands = {
+            f"band{9 - i}": (price > price.rolling(window=p).mean()).astype(int)
+            for i, p in enumerate(ma_periods)
+        }
+
+        # ── Band 5: Mansfield Relative Strength vs. S&P 500 ──
+        # You need to supply your own compute_mansfield_rs function
+        ms = compute_mansfield_rs(price, benchmark_close=get_price_data(benchmark)["Close"])
+        bands["band5"] = (ms > 0).reindex(df.index).fillna(0).astype(int)
+
+        # ── Bands 4 & 3: Momentum (1‑week and 4‑week returns) ──
+        ret1 = price.pct_change(periods=1)
+        ret4 = price.pct_change(periods=4)
+        bands["band4"] = (ret1 > 0).astype(int)
+        bands["band3"] = (ret4 > 0).astype(int)
+
+        # ── Band 2: Volume above its 10‑week average ──
+        vol_ma10 = volume.rolling(window=10).mean()
+        bands["band2"] = (volume > vol_ma10).astype(int)
+
+        # ── Band 1: Overhead Resistance (prior 40‑week high) ──
+        overhead = price.rolling(window=40).max().shift(1)
+        bands["band1"] = (price > overhead).astype(int)
+
+        # Assemble into a DataFrame
+        sata = pd.DataFrame(
+            {**bands, "band10": band10},
+            index=df.index
+        )
+        sata["score"] = sata.sum(axis=1)
+        return sata
+
+    def stage_analysis(self) -> tuple[int, int]:
+        """
+        Uses compute_sata to get a 0–10 score, then maps to Weinstein’s four stages:
+        • 6–10 → Stage 2 (Uptrend)
+        • 0–1  → Stage 4 (Downtrend)
+        • rising score → Stage 1 (Accumulation)
+        • falling score → Stage 3 (Distribution)
+        Returns (current_stage, weeks_in_stage).
         """
         df = self.weekly_df.copy()
-        price = df.get("Adj Close", df["Close"])
+        sata = self.compute_sata(df)
+        latest_score = int(sata["score"].iloc[-1])
+        slope = sata["score"].diff().iloc[-1]
 
-        # Calculate simple moving averages
-        sma30 = price.rolling(window=30).mean()
-        sma40 = price.rolling(window=40).mean()
+        # Map to Stage
+        if latest_score >= 6:
+            stage = 2
+        elif latest_score <= 1:
+            stage = 4
+        elif slope > 0:
+            stage = 1
+        else:
+            stage = 3
 
-        # 13‑week swing highs/lows (shifted by 1 to avoid lookahead)
-        high13 = price.rolling(window=13).max().shift(1)
-        low13  = price.rolling(window=13).min().shift(1)
+        # Count consecutive weeks in that same stage
+        # Create a boolean series of “in current stage” each week
+        if stage == 2:
+            mask = sata["score"] >= 6
+        elif stage == 4:
+            mask = sata["score"] <= 1
+        elif stage == 1:
+            mask = sata["score"].diff() > 0
+        else:  # stage 3
+            mask = sata["score"].diff() < 0
 
-        stages = pd.Series(index=df.index, dtype="Int64")
-
-        for i in range(len(df)):
-            p = price.iat[i]
-            m30 = sma30.iat[i]
-            m40 = sma40.iat[i]
-            h13 = high13.iat[i]
-            l13 = low13.iat[i]
-
-            # need enough data
-            if pd.isna(p) or pd.isna(m30) or pd.isna(m40) or pd.isna(h13) or pd.isna(l13):
-                continue
-
-            if p > h13 and p > m40:
-                stage = 2
-            elif p < l13 and p < m40:
-                stage = 4
-            elif p > m30 and p < m40:
-                stage = 1
-            elif p < m30 and p > m40:
-                stage = 3
-            else:
-                stage = pd.NA
-
-            stages.iat[i] = stage
-
-        # Find the last non‑NA stage
-        valid = stages.dropna()
-        if valid.empty:
-            return None, 0
-        last_stage = int(valid.iloc[-1])
-
-        # Count how many consecutive weeks we’ve been in that stage
-        weeks = 0
-        for s in reversed(valid.tolist()):
-            if int(s) == last_stage:
-                weeks += 1
-            else:
-                break
-
-        return last_stage, weeks
-
-
+        # Count how many True’s at the end of the mask
+        weeks = int(mask[::-1].cumprod()[mask.shape[0] - 1:].sum())
+        return stage, weeks
 
     def get_rsi_series(self):
         df_weekly = self.weekly_df
