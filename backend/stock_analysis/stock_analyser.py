@@ -1071,51 +1071,51 @@ class StockAnalyser:
                 stage_series.iat[i] = st
                 continue
 
-            slope_relative_threshold = m30 * 0.001
+            slope_relative_threshold = 0.25  # or a small absolute threshold like 0.3
             is_30ema_rising = slope > slope_relative_threshold
             is_30ema_falling = slope < -slope_relative_threshold
             is_30ema_flat = abs(slope) <= slope_relative_threshold
 
-            if i >= len(df) - 20:
+            if i >= len(df) - 30:
                 print(f"\n[{df.index[i].strftime('%Y-%m-%d')}]")
                 print(f"Price={p:.2f}, EMA30={m30:.2f}, Slope={slope:.4f} → {'Rising' if is_30ema_rising else 'Falling' if is_30ema_falling else 'Flat'}")
-                print(f"Volume={current_vol:.0f}, 10W MA Volume={avg_vol10:.0f}")
-                print(f"Prev Stage={prev_st}")
+                print(f"Volume={current_vol:.0f}, 10W Avg Volume={avg_vol10:.0f}, Prev Stage={prev_st}")
 
-            # --- Stage 2: Uptrend ---
+            # --- Stage 2: Breakout ---
             if p > m30 and is_30ema_rising:
                 st = 2
-                if i >= len(df) - 20:
-                    is_volume_high = (current_vol >= 1.3 * avg_vol10) if pd.notna(avg_vol10) and avg_vol10 > 0 else False
-                    if is_volume_high:
-                        print("✅ Stage 2 breakout with volume confirmation")
-                    else:
-                        print("✅ Stage 2 breakout (no volume confirmation)")
+                if i >= len(df) - 30:
+                    print("✅ Stage 2 breakout")
 
+            # --- Stage 4: Breakdown ---
             elif p < m30 and is_30ema_falling:
                 st = 4
-                if i >= len(df) - 20:
+                if i >= len(df) - 30:
                     print("🔻 Stage 4 assigned")
 
-            elif (is_30ema_flat or is_30ema_falling) and prev_st in [2, 3]:
-                st = 3
-                if i >= len(df) - 20:
-                    print("🔄 Stage 3 assigned")
-
-            elif (is_30ema_flat or is_30ema_rising) and prev_st in [4, 1]:
+            # --- Stage 1: Basing (Price near flat/rising EMA30 after decline) ---
+            elif (is_30ema_flat or is_30ema_rising) and (p >= m30 * 0.8) and prev_st in [4, 1]:
                 st = 1
                 if i >= len(df) - 20:
                     print("⏳ Stage 1 assigned")
 
+
+            # --- Stage 3: Top distribution after a clear Stage 2, above flattening/falling EMA ---
+            elif (is_30ema_flat or is_30ema_falling) and (m30 * 0.95 <= p <= m30 * 1.2) and prev_st in [2, 3]:
+                st = 3
+                if i >= len(df) - 20:
+                    print("🔄 Stage 3 assigned")
+
+            # --- Carry forward previous stage if ambiguous ---
             if pd.isna(st) and prev_st is not None:
                 st = prev_st
-                if i >= len(df) - 20:
+                if i >= len(df) - 30:
                     print("↩️ Carry-over previous stage")
 
             elif pd.isna(st) and prev_st is None:
                 if is_30ema_flat:
                     st = 1
-                    if i >= len(df) - 20:
+                    if i >= len(df) - 30:
                         print("🔹 Initial stage: Stage 1")
 
             stage_series.iat[i] = st
@@ -1132,8 +1132,8 @@ class StockAnalyser:
             else:
                 break
 
+        print(f"\n📊 Final Result: STAGE {last_stage} for {weeks} weeks")
         return last_stage, weeks
-
 
     def get_rsi_series(self):
         df_weekly = self.weekly_df
