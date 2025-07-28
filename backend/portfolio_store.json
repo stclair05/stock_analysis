@@ -6,7 +6,8 @@
       "average_cost": 99.74,
       "sector": "Index",
       "target": 82,
-      "player": 1
+      "player": 1,
+      "stage": [2, 10]
     },
     {
       "ticker": "ARKQ",
@@ -15,7 +16,7 @@
       "sector": "Index",
       "target": 104,
       "player": 1,
-      "technigrade": []
+      "stage": [2, 11]
     },
     {
       "ticker": "ARKG",
