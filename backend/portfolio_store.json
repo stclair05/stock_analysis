@@ -422,15 +422,6 @@
       "player": 5
     },
     {
-      "ticker": "UEC",
-      "shares": 22500.0,
-      "average_cost": 8.07,
-      "sector": "Uranium",
-      "target": 13,
-      "player": 5,
-      "stage": [2, 3]
-    },
-    {
       "ticker": "DYL.AX",
       "shares": 200000,
       "average_cost": 1.13,
