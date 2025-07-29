@@ -542,3 +542,55 @@ def compute_demarker(close: pd.Series, high: pd.Series, low: pd.Series, period: 
     sum_demin = demin.rolling(window=period).sum()
     dem = sum_demax / (sum_demax + sum_demin)
     return dem
+
+def price_oscillates_around_ema(ema_series: pd.Series, price_series: pd.Series, i: int, lookback: int = 5, tolerance: float = 0.02) -> bool:
+    """
+    Check if the price has crossed above and below EMA multiple times over a lookback window.
+
+    Parameters:
+    - ema_series: EMA30 series
+    - price_series: price series
+    - i: current index
+    - lookback: how many weeks back to check
+    - tolerance: percentage buffer around EMA for detecting crosses
+
+    Returns:
+    - True if price has crossed EMA up/down at least twice in lookback window
+    """
+    if i < lookback:
+        return False
+
+    crosses = 0
+    above: bool | None = None # Explicitly type hint for clarity
+
+    # Find the initial state within the lookback window
+    for j in range(i - lookback, i + 1): # Include current index 'i' for initial state
+        if j < 0: # Handle cases where i - lookback is negative
+            continue
+        price_j = price_series.iat[j]
+        ema_j = ema_series.iat[j]
+        if pd.isna(price_j) or pd.isna(ema_j):
+            continue
+
+        is_above_current = price_j > ema_j * (1 + tolerance)
+        is_below_current = price_j < ema_j * (1 - tolerance)
+
+        if above is None: # Set initial state
+            if is_above_current:
+                above = True
+            elif is_below_current:
+                above = False
+            # If current price is within tolerance, 'above' remains None until a clear state is found
+            continue # Move to next iteration to find a clear state
+
+        # Check for crosses from the point where 'above' was first defined
+        if is_above_current and above == False:
+            crosses += 1
+            above = True
+        elif is_below_current and above == True:
+            crosses += 1
+            above = False
+        # If price is within tolerance, the state doesn't change, no cross detected
+        # If price stays on the same side, no cross detected
+
+    return crosses >= 2

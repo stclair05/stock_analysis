@@ -26,6 +26,7 @@ from .utils import (
     classify_bbwp_percentile,
     wilder_smooth,
     reindex_indicator,
+    price_oscillates_around_ema
 )
 from .pricetarget import get_price_targets, calculate_mean_reversion_50dma_target
 from threading import Lock
@@ -1094,20 +1095,29 @@ class StockAnalyser:
                     if i >= len(df) - 30:
                         print("🟢 Sustaining Stage 2")
 
-            # --- Stage 4: Breakdown ---
-            if pd.isna(st) and p < m30 and is_30ema_falling:
-                st = 4
-                if i >= len(df) - 30:
-                    print("🔻 Stage 4 assigned")
-
-            # --- Stage 3: Distribution after failed Stage 2 breakout ---
-            if pd.isna(st) and prev_st == 2 and p < m30 and (is_30ema_flat or is_30ema_falling) and p >= m30 * 0.95:
+           # --- Stage 3: Consolidation/Topping ---
+            if pd.isna(st) and (
+                prev_st in [1, 2, 3] and
+                is_30ema_flat and
+                price_oscillates_around_ema(ema30, price, i)
+            ):
                 st = 3
                 if i >= len(df) - 30:
-                    print("🔄 Stage 3 assigned after failed Stage 2")
+                    print("🔄 Stage 3 assigned (EMA flattening with price oscillating around it)")
+
+            # --- Stage 4: Declining stage ---
+            elif pd.isna(st) and (
+                p < m30 * 0.90 and
+                is_30ema_falling and
+                prev_st in [3, 2]
+            ):
+                st = 4
+                if i >= len(df) - 30:
+                    print("🔻 Stage 4 assigned (Breakdown from Stage 3 or 2)")
+
 
             # --- Stage 1: Basing ---
-            if pd.isna(st) and (is_30ema_flat or is_30ema_rising) and (p >= m30 * 0.8) and prev_st in [1, 2, 4]:
+            if pd.isna(st) and (is_30ema_flat or is_30ema_rising) and (p >= m30 * 0.8) and prev_st == 4:
                 st = 1
                 if i >= len(df) - 20:
                     print("⏳ Stage 1 assigned")
