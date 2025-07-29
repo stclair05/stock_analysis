@@ -429,9 +429,36 @@ def get_technigrade(symbol: str):
 
     return {"technigrade": []}
 
+def _get_portfolio_stage(symbol: str):
+    """Return (stage, weeks) if available in portfolio_store.json."""
+    target = symbol.upper()
+    json_path = Path("portfolio_store.json")
+    if json_path.exists():
+        try:
+            with open(json_path, "r") as f:
+                pdata = json.load(f)
+            for item in pdata.get("equities", []):
+                if str(item.get("ticker", "")).upper() == target:
+                    st = item.get("stage")
+                    if (
+                        isinstance(st, list)
+                        and len(st) == 2
+                        and isinstance(st[0], (int, float))
+                        and isinstance(st[1], (int, float))
+                    ):
+                        return int(st[0]), int(st[1])
+        except Exception:
+            pass
+    return None
+
 @app.get("/stage/{symbol}")
 def get_stage(symbol: str):
     """Return current Stage and duration in weeks."""
+    cached = _get_portfolio_stage(symbol)
+    if cached is not None:
+        stage, weeks = cached
+        return {"stage": stage, "weeks": weeks}
+    
     analyser = StockAnalyser(symbol)
     stage, weeks = analyser.stage_analysis()
     return {"stage": stage, "weeks": weeks}
@@ -620,6 +647,7 @@ def get_quadrant_data(list_type: str = Query("portfolio", enum=["portfolio", "wa
 @app.get("/stage_table")
 def get_stage_table(list_type: str = Query("portfolio", enum=["portfolio", "watchlist"])):
     """Return Stage quadrant table with 20DMA status."""
+    stage_cache: dict[str, int] = {}
     if list_type == "portfolio":
         json_path = Path("portfolio_store.json")
         if not json_path.exists():
@@ -627,7 +655,18 @@ def get_stage_table(list_type: str = Query("portfolio", enum=["portfolio", "watc
         else:
             with open(json_path, "r") as f:
                 data = json.load(f)
-            tickers = [item["ticker"] for item in data.get("equities", []) if "ticker" in item]
+            tickers = []
+            for item in data.get("equities", []):
+                t = item.get("ticker")
+                if t:
+                    tickers.append(t)
+                    st = item.get("stage")
+                    if (
+                        isinstance(st, list)
+                        and len(st) == 2
+                        and isinstance(st[0], (int, float))
+                    ):
+                        stage_cache[t.upper()] = int(st[0])
     else:
         data = load_data()
         tickers = []
@@ -638,13 +677,16 @@ def get_stage_table(list_type: str = Query("portfolio", enum=["portfolio", "watc
                     tickers.append(ticker)
             else:
                 tickers.append(item)
+        stage_cache = {}
 
     table = {stage: {"tickers": []} for stage in [1, 2, 3, 4]}
 
     for symbol in tickers:
         try:
             analyser = StockAnalyser(symbol)
-            stage, _ = analyser.stage_analysis()
+            stage = stage_cache.get(symbol.upper())
+            if stage is None:
+                stage, _ = analyser.stage_analysis()
             dma20 = analyser.calculate_20dma().current
             price_now = analyser.get_current_price()
             if stage in [1, 2, 3, 4]:
