@@ -1110,22 +1110,26 @@ class StockAnalyser:
             if pd.isna(st) and prev_st == 3:
                 drop_too_much = p < m30 * (1 - DROP_BELOW_EMA_THRESHOLD)
                 ema_falling_fast = slope < SLOPE_DROP_THRESHOLD and slope_change < SLOPE_DELTA_THRESHOLD
+                ema_falling_soft = slope < -0.05  # NEW: captures slow rolling over into Stage 4
 
                 if p > m30 * 1.05 and is_30ema_rising:
                     st = 2
                     if i >= len(df) - 30:
                         print("✅ Stage 2 re-entry from Stage 3")
-                elif drop_too_much or ema_falling_fast:
+                elif drop_too_much or ema_falling_fast or ema_falling_soft:
                     st = 4
                     if i >= len(df) - 30:
                         if drop_too_much:
                             print("🔻 Stage 4 entered (Price dropped >10% below EMA30)")
-                        else:
+                        elif ema_falling_fast:
                             print("🔻 Stage 4 entered (EMA falling and accelerating down)")
+                        else:
+                            print("🔻 Stage 4 entered (EMA slowly rolling over)")
                 else:
                     st = 3
                     if i >= len(df) - 30:
                         print("🔄 Remaining in Stage 3")
+
 
             # --- Stage 4 → Stage 3 recovery ---
             if pd.isna(st) and prev_st == 4:
