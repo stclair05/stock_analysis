@@ -1043,9 +1043,9 @@ class StockAnalyser:
     
     def stage_analysis(self) -> tuple[int | None, int]:
         """
-        Stage Analysis per NextBigTrade methodology.
-        Enter Stage 2 only on price > 1.05 * EMA30 or volume > 10W MA.
-        Remain in Stage 2 as long as price > EMA30 and EMA30 is rising.
+        Updated Stage Analysis Logic with Tolerance:
+        - Stage 2 requires breakout or strength
+        - Stage 3 is stickier, needs confirmed weakness to go Stage 4
         """
         df = self.weekly_df.copy()
         price = df.get("Adj Close", df["Close"])
@@ -1054,9 +1054,15 @@ class StockAnalyser:
         ema30 = price.ewm(span=30, adjust=False).mean()
         slope_raw = ema30.diff()
         slope30_smoothed = slope_raw.rolling(window=3, min_periods=1).mean()
+        slope_delta = slope30_smoothed.diff()
         vol_ma10 = volume.rolling(window=10).mean()
 
         stage_series = pd.Series(index=df.index, dtype="Int64")
+
+        # Stage 4 tolerances
+        SLOPE_DROP_THRESHOLD = -0.1
+        SLOPE_DELTA_THRESHOLD = -0.2
+        DROP_BELOW_EMA_THRESHOLD = 0.10  # 10% below EMA
 
         for i in range(len(df)):
             p = price.iat[i]
@@ -1064,11 +1070,12 @@ class StockAnalyser:
             current_vol = volume.iat[i]
             avg_vol10 = vol_ma10.iat[i]
             slope = slope30_smoothed.iat[i]
+            slope_change = slope_delta.iat[i]
 
             st = pd.NA
             prev_st = stage_series.iat[i-1] if i > 0 and pd.notna(stage_series.iat[i-1]) else None
 
-            if pd.isna(p) or pd.isna(m30) or pd.isna(current_vol) or pd.isna(avg_vol10) or pd.isna(slope):
+            if pd.isna(p) or pd.isna(m30) or pd.isna(current_vol) or pd.isna(avg_vol10) or pd.isna(slope) or pd.isna(slope_change):
                 stage_series.iat[i] = st
                 continue
 
@@ -1080,9 +1087,9 @@ class StockAnalyser:
             if i >= len(df) - 30:
                 print(f"\n[{df.index[i].strftime('%Y-%m-%d')}]")
                 print(f"Price={p:.2f}, EMA30={m30:.2f}, Slope={slope:.4f} → {'Rising' if is_30ema_rising else 'Falling' if is_30ema_falling else 'Flat'}")
-                print(f"Volume={current_vol:.0f}, 10W Avg Volume={avg_vol10:.0f}, Prev Stage={prev_st}")
+                print(f"Slope Δ={slope_change:.4f}, Volume={current_vol:.0f}, 10W Avg Volume={avg_vol10:.0f}, Prev Stage={prev_st}")
 
-            # --- Stage 2 ---
+            # --- Stage 2: Breakout or continuation ---
             if prev_st != 2:
                 if (p > m30 * 1.05 and is_30ema_rising) or (p > m30 and is_30ema_rising and current_vol > avg_vol10):
                     st = 2
@@ -1093,36 +1100,62 @@ class StockAnalyser:
                     st = 2
                     if i >= len(df) - 30:
                         print("🟢 Sustaining Stage 2")
+                elif p < m30:
+                    st = 3
+                    if i >= len(df) - 30:
+                        print("🔄 Stage 3 entered (Price dipped below EMA30)")
 
-            # --- Stage 4: Breakdown ---
-            if pd.isna(st) and p < m30 and is_30ema_falling:
-                st = 4
-                if i >= len(df) - 30:
-                    print("🔻 Stage 4 assigned")
+            # --- Stage 3: Stay in stage 3 unless triggered to move ---
+            if pd.isna(st) and prev_st == 3:
+                drop_too_much = p < m30 * (1 - DROP_BELOW_EMA_THRESHOLD)
+                ema_falling_fast = slope < SLOPE_DROP_THRESHOLD and slope_change < SLOPE_DELTA_THRESHOLD
+                ema_falling_soft = slope < -0.05  # NEW: captures slow rolling over into Stage 4
 
-            # --- Stage 3: Distribution after failed Stage 2 breakout ---
-            if pd.isna(st) and prev_st == 2 and p < m30 and (is_30ema_flat or is_30ema_falling) and p >= m30 * 0.95:
-                st = 3
-                if i >= len(df) - 30:
-                    print("🔄 Stage 3 assigned after failed Stage 2")
+                if p > m30 * 1.05 and is_30ema_rising:
+                    st = 2
+                    if i >= len(df) - 30:
+                        print("✅ Stage 2 re-entry from Stage 3")
+                elif drop_too_much or ema_falling_fast or ema_falling_soft:
+                    st = 4
+                    if i >= len(df) - 30:
+                        if drop_too_much:
+                            print("🔻 Stage 4 entered (Price dropped >10% below EMA30)")
+                        elif ema_falling_fast:
+                            print("🔻 Stage 4 entered (EMA falling and accelerating down)")
+                        else:
+                            print("🔻 Stage 4 entered (EMA slowly rolling over)")
+                else:
+                    st = 3
+                    if i >= len(df) - 30:
+                        print("🔄 Remaining in Stage 3")
 
-            # --- Stage 1: Basing ---
-            if pd.isna(st) and (is_30ema_flat or is_30ema_rising) and (p >= m30 * 0.8) and prev_st in [1, 2, 4]:
+
+            # --- Stage 4 → Stage 3 recovery ---
+            if pd.isna(st) and prev_st == 4:
+                price_close_to_ema = abs(p - m30) / m30 <= 0.05  # within ±5%
+                ema_not_falling_fast = slope >= -m30 * 0.001
+
+                if price_close_to_ema and ema_not_falling_fast:
+                    st = 3
+                    if i >= len(df) - 30:
+                        print("🔁 Stage 3 recovery from Stage 4 (price hovering near flat EMA)")
+
+
+            # --- Stage 1: Basing (optional) ---
+            if pd.isna(st) and (is_30ema_flat or is_30ema_rising) and (p >= m30 * 0.8) and prev_st == 4:
                 st = 1
                 if i >= len(df) - 20:
                     print("⏳ Stage 1 assigned")
 
-            # --- Carry forward previous stage ---
+            # --- Carry-over or initialize ---
             if pd.isna(st) and prev_st is not None:
                 st = prev_st
                 if i >= len(df) - 30:
                     print("↩️ Carry-over previous stage")
-
             elif pd.isna(st) and prev_st is None:
-                if is_30ema_flat:
-                    st = 1
-                    if i >= len(df) - 30:
-                        print("🔹 Initial stage: Stage 1")
+                st = 1
+                if i >= len(df) - 30:
+                    print("🔹 Initial stage: Stage 1")
 
             stage_series.iat[i] = st
 
@@ -1141,6 +1174,7 @@ class StockAnalyser:
         print(f"\n📊 Final Result: STAGE {last_stage} for {weeks} weeks")
         return last_stage, weeks
 
+    
     
     def get_rsi_series(self):
         df_weekly = self.weekly_df
