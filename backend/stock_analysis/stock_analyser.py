@@ -26,7 +26,6 @@ from .utils import (
     classify_bbwp_percentile,
     wilder_smooth,
     reindex_indicator,
-    price_oscillates_around_ema
 )
 from .pricetarget import get_price_targets, calculate_mean_reversion_50dma_target
 from threading import Lock
@@ -1127,6 +1126,17 @@ class StockAnalyser:
                     st = 3
                     if i >= len(df) - 30:
                         print("🔄 Remaining in Stage 3")
+
+            # --- Stage 4 → Stage 3 recovery ---
+            if pd.isna(st) and prev_st == 4:
+                price_close_to_ema = abs(p - m30) / m30 <= 0.05  # within ±5%
+                ema_not_falling_fast = slope >= -m30 * 0.001
+
+                if price_close_to_ema and ema_not_falling_fast:
+                    st = 3
+                    if i >= len(df) - 30:
+                        print("🔁 Stage 3 recovery from Stage 4 (price hovering near flat EMA)")
+
 
             # --- Stage 1: Basing (optional) ---
             if pd.isna(st) and (is_30ema_flat or is_30ema_rising) and (p >= m30 * 0.8) and prev_st == 4:
