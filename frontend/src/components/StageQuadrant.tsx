@@ -50,6 +50,11 @@ export default function StageQuadrant({ data }: { data: StageTableData }) {
           </tr>
         </tbody>
       </table>
+      <div className="arrow-legend">
+        <div>
+          <span className="ticker-tag below-ma20">ABC</span> Below 20 Day MA
+        </div>
+      </div>
     </div>
   );
 }

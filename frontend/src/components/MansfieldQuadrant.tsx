@@ -33,23 +33,29 @@ export default function MansfieldQuadrant({
   return (
     <div className="quadrant-table-container" style={{ marginTop: 40 }}>
       <table className="quadrant-table">
+        <thead>
+          <tr>
+            <th>Sell</th>
+            <th>Neutral</th>
+            <th>Buy</th>
+          </tr>
+        </thead>
         <tbody>
           <tr>
-            <td>
-              <div className="stage-label">Sell</div>
-              {renderTickers("SELL")}
-            </td>
-            <td>
-              <div className="stage-label">Neutral</div>
-              {renderTickers("NEUTRAL")}
-            </td>
-            <td>
-              <div className="stage-label">Buy</div>
-              {renderTickers("BUY")}
-            </td>
+            <td>{renderTickers("SELL")}</td>
+            <td>{renderTickers("NEUTRAL")}</td>
+            <td>{renderTickers("BUY")}</td>
           </tr>
         </tbody>
       </table>
+      <div className="arrow-legend">
+        <div>
+          <span className="ticker-tag below-ma20">ABC</span> Below 20 Day MA
+        </div>
+        <div>
+          <span className="ticker-tag new-buy">XYZ</span> Just Turned Buy
+        </div>
+      </div>
     </div>
   );
 }
