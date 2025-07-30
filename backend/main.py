@@ -705,6 +705,55 @@ def get_stage_table(list_type: str = Query("portfolio", enum=["portfolio", "watc
 
     return table
 
+@app.get("/mansfield_table")
+def get_mansfield_table(list_type: str = Query("portfolio", enum=["portfolio", "watchlist"])):
+    """Return Mansfield quadrant table with 20DMA status and new buy flag."""
+    if list_type == "portfolio":
+        json_path = Path("portfolio_store.json")
+        if not json_path.exists():
+            tickers: list[str] = []
+        else:
+            with open(json_path, "r") as f:
+                data = json.load(f)
+            tickers = [item["ticker"] for item in data.get("equities", []) if "ticker" in item]
+    else:
+        data = load_data()
+        tickers = []
+        for item in data.get("watchlist", []):
+            if isinstance(item, dict):
+                t = item.get("ticker")
+                if t:
+                    tickers.append(t)
+            else:
+                tickers.append(item)
+
+    table = {s: {"tickers": []} for s in ["BUY", "NEUTRAL", "SELL"]}
+
+    for symbol in tickers:
+        try:
+            analyser = StockAnalyser(symbol)
+            mansfield = analyser.get_mansfield_status()
+            status = mansfield.get("status")
+            new_buy = mansfield.get("new_buy", False)
+            dma20 = analyser.calculate_20dma().current
+            price_now = analyser.get_current_price()
+            if status in ["BUY", "SELL", "NEUTRAL"]:
+                table[status]["tickers"].append(
+                    {
+                        "symbol": symbol,
+                        "below20dma": (
+                            price_now is not None
+                            and dma20 is not None
+                            and price_now < dma20
+                        ),
+                        "newBuy": new_buy,
+                    }
+                )
+        except Exception as e:
+            print(f"Mansfield table error for {symbol}: {e}")
+
+    return table
+
 @app.get("/s3-images")
 def list_s3_images(prefix: str = "natgas/"):
     s3 = boto3.client(

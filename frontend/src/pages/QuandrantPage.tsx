@@ -3,6 +3,9 @@ import { Link, useParams } from "react-router-dom";
 import Quadrant, { TableData } from "../components/Quadrant";
 import QuadrantSkeleton from "../components/QuadrantSkeleton";
 import StageQuadrant, { StageTableData } from "../components/StageQuadrant";
+import MansfieldQuadrant, {
+  MansfieldTableData,
+} from "../components/MansfieldQuadrant";
 
 export default function QuadrantPage() {
   const { listType: listParam } = useParams<{ listType?: string }>();
@@ -14,6 +17,10 @@ export default function QuadrantPage() {
   const [loading, setLoading] = useState(false);
   const [stageData, setStageData] = useState<StageTableData | null>(null);
   const [stageLoading, setStageLoading] = useState(false);
+  const [mansfieldData, setMansfieldData] = useState<MansfieldTableData | null>(
+    null
+  );
+  const [mansfieldLoading, setMansfieldLoading] = useState(false);
 
   // Update state when URL param changes
   useEffect(() => {
@@ -44,6 +51,17 @@ export default function QuadrantPage() {
       .catch(() => setStageLoading(false));
   }, [listType]);
 
+  useEffect(() => {
+    setMansfieldLoading(true);
+    fetch(`http://localhost:8000/mansfield_table?list_type=${listType}`)
+      .then((res) => res.json())
+      .then((d) => {
+        setMansfieldData(d);
+        setMansfieldLoading(false);
+      })
+      .catch(() => setMansfieldLoading(false));
+  }, [listType]);
+
   return (
     <div className="container mt-4">
       <h1 className="fw-bold mb-4">Quadrant</h1>
@@ -71,6 +89,13 @@ export default function QuadrantPage() {
         <h2 className="fw-bold mb-3">Stage Quadrant</h2>
         {stageLoading && <QuadrantSkeleton />}
         {stageData && !stageLoading && <StageQuadrant data={stageData} />}
+      </div>
+      <div className="mt-5">
+        <h2 className="fw-bold mb-3">Mansfield Quadrant</h2>
+        {mansfieldLoading && <QuadrantSkeleton />}
+        {mansfieldData && !mansfieldLoading && (
+          <MansfieldQuadrant data={mansfieldData} />
+        )}
       </div>
     </div>
   );

@@ -69,6 +69,12 @@
   color: #205522; /* deep forest green */
 }
 
+.ticker-tag.new-buy {
+  background-color: #e5fbe5; /* soft green */
+  color: #2e7d32; /* dark green text */
+  border: 1px solid #4caf50;
+}
+
 .ticker-arrow {
   margin-left: 2px;
   font-size: 12px;
