@@ -1490,13 +1490,15 @@ export default function BuySellSignalsTab({
     // Special handling for Mansfield strategy
     if (col === "mansfield") {
       const mObj = signalSummary[ticker]?.[col] ?? {};
-      const buySell = mObj.signal || "";
+      const status = mObj.status || "";
       const isNewBuy = mObj.newBuy;
       const color =
-        buySell === "BUY"
+        status === "BUY"
           ? "#4caf50"
-          : buySell === "SELL"
+          : status === "SELL"
           ? "#f44336"
+          : status === "NEUTRAL"
+          ? "#ffa500"
           : "#bdbdbd";
       const cellClass = isNewBuy ? "signal-new-buy" : "";
       return (
@@ -1505,7 +1507,7 @@ export default function BuySellSignalsTab({
           style={{ color, textAlign: "center", fontWeight: 700 }}
           className={cellClass}
         >
-          {buySell || "-"}
+          {status || "-"}
         </td>
       );
     }
