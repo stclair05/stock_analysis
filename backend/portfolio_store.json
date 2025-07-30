@@ -431,16 +431,6 @@
       "technigrade": []
     },
     {
-      "ticker": "URA",
-      "shares": 10000,
-      "average_cost": 38.35,
-      "sector": "Uranium",
-      "target": 51,
-      "player": 5,
-      "technigrade": [],
-      "stage": [2, 10]
-    },
-    {
       "ticker": "IBIT",
       "shares": 74000.0,
       "average_cost": 47.41,
@@ -752,15 +742,6 @@
       "target": 16,
       "player": 1,
       "technigrade": [5, 3, 5, 8, 16, 16, 19, 16, 15],
-      "stage": [2, 5]
-    },
-    {
-      "ticker": "UUUU",
-      "shares": 100000.0,
-      "average_cost": 7.105,
-      "sector": "Uranium",
-      "target": 11.4,
-      "player": 5,
       "stage": [2, 5]
     },
     {

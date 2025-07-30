@@ -69,7 +69,7 @@ export default function QuadrantPage() {
       {data && !loading && <Quadrant data={data} />}
       <div className="mt-5">
         <h2 className="fw-bold mb-3">Stage Quadrant</h2>
-        {stageLoading && <div>Loading...</div>}
+        {stageLoading && <QuadrantSkeleton />}
         {stageData && !stageLoading && <StageQuadrant data={stageData} />}
       </div>
     </div>
