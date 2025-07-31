@@ -28,6 +28,14 @@
       "stage": [2, 2]
     },
     {
+      "ticker": "REMX",
+      "shares": 3500.0,
+      "average_cost": 54.39,
+      "sector": "Index",
+      "target": 63,
+      "player": 0
+    },
+    {
       "ticker": "AI",
       "shares": 27000.0,
       "average_cost": 34.38,
