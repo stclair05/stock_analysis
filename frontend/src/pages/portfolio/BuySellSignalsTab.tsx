@@ -941,8 +941,17 @@ export default function BuySellSignalsTab({
           if (!isValidA) return 1; // push A to bottom
           if (!isValidB) return -1; // push B to bottom
 
-          const diffA = ((priceA - targetA) / targetA) * 100;
-          const diffB = ((priceB - targetB) / targetB) * 100;
+          let diffA: number;
+          let diffB: number;
+          if (listType === "buylist") {
+            // Sort by the absolute percentage move required to reach the buy price
+            diffA = Math.abs(((targetA - priceA) / priceA) * 100);
+            diffB = Math.abs(((targetB - priceB) / priceB) * 100);
+          } else {
+            // Portfolio/Watchlist view keeps the signed difference relative to the target
+            diffA = ((priceA - targetA) / targetA) * 100;
+            diffB = ((priceB - targetB) / targetB) * 100;
+          }
 
           return dir === "asc" ? diffA - diffB : diffB - diffA;
         } else if (col === "pnl" && listType === "portfolio") {
@@ -1345,8 +1354,13 @@ export default function BuySellSignalsTab({
       const target = holding.target;
       if (typeof price === "number" && typeof target === "number") {
         if (listType === "buylist") {
-          const diff = Math.abs(((price - target) / target) * 100);
-          const cellClass = diff >= 3 ? "price-diff-highlight" : "";
+          // Calculate how much the current price must change to reach the
+          // desired buy price. The percentage difference is relative to the
+          // current price so that a move from $90 to $100 shows 11.11% and a
+          // drop from $105 to $100 shows 4.76%.
+          const diff = Math.abs(((target - price) / price) * 100);
+          // Highlight when the required move is 3% or less
+          const cellClass = diff <= 3 ? "price-diff-highlight" : "";
           return (
             <td className={cellClass} style={{ textAlign: "center" }}>
               {`${price.toFixed(2)} | ${target.toFixed(2)} (${diff.toFixed(
