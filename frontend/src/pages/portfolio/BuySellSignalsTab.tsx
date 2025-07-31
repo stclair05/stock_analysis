@@ -1086,9 +1086,13 @@ export default function BuySellSignalsTab({
   }, [sectorSummary]);
 
   const renderHeader = (col: string) => {
-    const label =
+    const baseLabel =
       COLUMN_LABELS[col] ||
       col.replace(/_/g, " ").replace("longterm", " LongTerm");
+    const label =
+      col === "price_target" && listType === "buylist"
+        ? "Price vs Buy Price"
+        : baseLabel;
     if (col === "mean_rev_rsi") {
       return (
         <th
@@ -1340,16 +1344,28 @@ export default function BuySellSignalsTab({
       const price = meanRevRsi[ticker]?.currentPrice;
       const target = holding.target;
       if (typeof price === "number" && typeof target === "number") {
-        const diff = ((price - target) / target) * 100;
-        const diffStr =
-          diff >= 0 ? `+${diff.toFixed(2)}%` : `${diff.toFixed(2)}%`;
-        const cellClass =
-          diff >= 0 ? "price-target-positive" : "price-target-negative";
-        return (
-          <td className={cellClass} style={{ textAlign: "center" }}>
-            {`${price.toFixed(2)} | ${target.toFixed(2)} (${diffStr})`}
-          </td>
-        );
+        if (listType === "buylist") {
+          const diff = Math.abs(((price - target) / target) * 100);
+          const cellClass = diff >= 3 ? "price-diff-highlight" : "";
+          return (
+            <td className={cellClass} style={{ textAlign: "center" }}>
+              {`${price.toFixed(2)} | ${target.toFixed(2)} (${diff.toFixed(
+                2
+              )}%)`}
+            </td>
+          );
+        } else {
+          const diff = ((price - target) / target) * 100;
+          const diffStr =
+            diff >= 0 ? `+${diff.toFixed(2)}%` : `${diff.toFixed(2)}%`;
+          const cellClass =
+            diff >= 0 ? "price-target-positive" : "price-target-negative";
+          return (
+            <td className={cellClass} style={{ textAlign: "center" }}>
+              {`${price.toFixed(2)} | ${target.toFixed(2)} (${diffStr})`}
+            </td>
+          );
+        }
       }
       return (
         <td style={{ textAlign: "center" }}>

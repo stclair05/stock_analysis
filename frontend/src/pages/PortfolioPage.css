@@ -88,6 +88,11 @@
   background-color: #ffe5e5 !important; /* soft red */
 }
 
+/* Highlight for Buy List price difference >= 3% */
+.price-diff-highlight {
+  background-color: #e5fbe5 !important; /* soft green */
+}
+
 /* Highlight for Mansfield NEW BUY */
 .signal-new-buy {
   background-color: #e5fbe5 !important; /* soft green */
