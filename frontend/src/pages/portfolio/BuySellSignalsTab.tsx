@@ -135,8 +135,8 @@ export default function BuySellSignalsTab({
   initialListType = "portfolio",
   onListTypeChange,
 }: {
-  initialListType?: "portfolio" | "watchlist";
-  onListTypeChange?: (lt: "portfolio" | "watchlist") => void;
+  initialListType?: "portfolio" | "watchlist" | "buylist";
+  onListTypeChange?: (lt: "portfolio" | "watchlist" | "buylist") => void;
 }) {
   // MODIFIED: portfolio state now includes sector
   const [portfolio, setPortfolio] = useState<
@@ -158,12 +158,13 @@ export default function BuySellSignalsTab({
   const portfolioDataCache = useRef<{
     portfolio?: { ticker: string; sector?: string; target?: number }[];
     watchlist?: { ticker: string; sector?: string; target?: number }[];
+    buylist?: { ticker: string; sector?: string; target?: number }[];
   }>({});
 
   // State for list type selection
-  const [listType, setListType] = useState<"portfolio" | "watchlist">(
-    initialListType
-  );
+  const [listType, setListType] = useState<
+    "portfolio" | "watchlist" | "buylist"
+  >(initialListType);
 
   // State for sorting (primary and optional secondary)
   const [sortColumn, setSortColumn] = useState<string | null>(null);
@@ -264,6 +265,8 @@ export default function BuySellSignalsTab({
     const cols = ["mean_rev_rsi"] as string[];
     if (listType === "portfolio") {
       cols.push("pnl", "daily_change", "price_target");
+    } else if (listType === "buylist") {
+      cols.push("daily_change", "price_target");
     } else {
       cols.push("daily_change");
     }
@@ -442,7 +445,11 @@ export default function BuySellSignalsTab({
 
       setSignalsLoading(true); // Indicate loading when fetching new tickers
       const endpoint =
-        listType === "portfolio" ? "/portfolio_tickers" : "/watchlist"; // Assuming a /watchlist endpoint exists and returns similar data
+        listType === "portfolio"
+          ? "/portfolio_tickers"
+          : listType === "watchlist"
+          ? "/watchlist"
+          : "/buylist";
 
       try {
         const res = await fetch(`http://localhost:8000${endpoint}`);
@@ -852,8 +859,11 @@ export default function BuySellSignalsTab({
   const displayedPortfolio = useMemo(() => {
     let currentPortfolio = [...portfolio];
 
-    // Apply sector filter only when viewing the portfolio list
-    if (listType === "portfolio" && sectorFilter !== "ALL") {
+    // Apply sector filter when viewing portfolio or buylist
+    if (
+      (listType === "portfolio" || listType === "buylist") &&
+      sectorFilter !== "ALL"
+    ) {
       currentPortfolio = currentPortfolio.filter(
         (h) => h.sector === sectorFilter
       );
@@ -1058,6 +1068,8 @@ export default function BuySellSignalsTab({
   const emptyListMessage =
     listType === "portfolio"
       ? "No equities in your portfolio."
+      : listType === "buylist"
+      ? "No equities in your buy list."
       : "No equities in your watchlist.";
 
   // Determine the badge color based on the filterType
@@ -1578,7 +1590,10 @@ export default function BuySellSignalsTab({
           <select
             value={listType}
             onChange={(e) => {
-              const val = e.target.value as "portfolio" | "watchlist";
+              const val = e.target.value as
+                | "portfolio"
+                | "watchlist"
+                | "buylist";
               setListType(val);
               onListTypeChange?.(val);
             }}
@@ -1586,6 +1601,7 @@ export default function BuySellSignalsTab({
           >
             <option value="portfolio">Portfolio</option>
             <option value="watchlist">Watchlist</option>
+            <option value="buylist">Buy List</option>
           </select>
 
           {/* Timeframe Dropdown */}
@@ -1676,8 +1692,8 @@ export default function BuySellSignalsTab({
           </select>
         </div>
 
-        {/* Sector Filter Dropdown - only for portfolio view */}
-        {listType === "portfolio" && (
+        {/* Sector Filter Dropdown - for portfolio and buylist views */}
+        {(listType === "portfolio" || listType === "buylist") && (
           <div className="d-flex align-items-center ms-4">
             <label className="fw-semibold me-2">Sector:</label>
             <select

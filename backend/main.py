@@ -161,15 +161,16 @@ def preload_price_history():
     except Exception as e:
         print(f"[warmup] Failed to read portfolio_store.json: {e}")
 
-    # Load watchlist tickers
+    # Load watchlist and buylist tickers
     try:
         with open(WATCHLIST_FILE, "r") as f:
             wdata = json.load(f)
             for entry in wdata.get("watchlist", []):
-                if isinstance(entry, dict):
-                    t = entry.get("ticker")
-                else:
-                    t = entry
+                t = entry.get("ticker") if isinstance(entry, dict) else entry
+                if t:
+                    tickers.add(t)
+            for entry in wdata.get("buylist", []):
+                t = entry.get("ticker") if isinstance(entry, dict) else entry
                 if t:
                     tickers.add(t)
     except Exception as e:
@@ -335,11 +336,13 @@ def load_data():
             # Always ensure both keys exist, for safety
             if "watchlist" not in data:
                 data["watchlist"] = []
+            if "buylist" not in data:
+                data["buylist"] = []
             if "portfolio" not in data:
                 data["portfolio"] = []
             return data
     except (FileNotFoundError, json.JSONDecodeError):
-        return {"watchlist": [], "portfolio": []}
+        return {"watchlist": [], "buylist": [], "portfolio": []}
 
 def save_data(data):
     with open(WATCHLIST_FILE, "w") as f:
@@ -372,6 +375,26 @@ def add_to_watchlist(symbol: str):
     save_data(data)
     tickers = [i.get("ticker") if isinstance(i, dict) else i for i in data["watchlist"]]
     return {"watchlist": tickers}
+
+@app.get("/buylist")
+def get_buylist():
+    """Return buylist tickers with sector and target info."""
+    data = load_data()
+    items = []
+    for entry in data.get("buylist", []):
+        if isinstance(entry, dict):
+            t = entry.get("ticker")
+            if t:
+                items.append(
+                    {
+                        "ticker": t,
+                        "sector": entry.get("sector", "N/A"),
+                        "target": entry.get("target"),
+                    }
+                )
+        elif isinstance(entry, str):
+            items.append({"ticker": entry, "sector": "N/A"})
+    return items
 
 @app.delete("/watchlist/{symbol}")
 def remove_from_watchlist(symbol: str):
@@ -413,19 +436,20 @@ def get_technigrade(symbol: str):
         except Exception:
             pass
 
-    # Check watchlist
+    # Check watchlist and buylist
     data = load_data()
-    for entry in data.get("watchlist", []):
-        if isinstance(entry, dict):
-            t = entry.get("ticker")
-            if t and t.upper() == target:
-                tg = entry.get("technigrade")
-                if isinstance(tg, list):
-                    return {"source": "watchlist", "technigrade": tg}
-                else:
-                    return {"source": "watchlist", "technigrade": []}
-        elif isinstance(entry, str) and entry.upper() == target:
-            return {"source": "watchlist", "technigrade": []}
+    for lst_name in ["watchlist", "buylist"]:
+        for entry in data.get(lst_name, []):
+            if isinstance(entry, dict):
+                t = entry.get("ticker")
+                if t and t.upper() == target:
+                    tg = entry.get("technigrade")
+                    if isinstance(tg, list):
+                        return {"source": lst_name, "technigrade": tg}
+                    else:
+                        return {"source": lst_name, "technigrade": []}
+            elif isinstance(entry, str) and entry.upper() == target:
+                return {"source": lst_name, "technigrade": []}
 
     return {"technigrade": []}
 

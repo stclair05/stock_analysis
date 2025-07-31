@@ -34,8 +34,10 @@ function PortfolioPage() {
     pathToTab[tab ?? ""] || "Buy/Sell Signals"
   );
   const [signalListType, setSignalListType] = useState<
-    "portfolio" | "watchlist"
-  >(listType === "watchlist" ? "watchlist" : "portfolio");
+    "portfolio" | "watchlist" | "buylist"
+  >(
+    listType === "watchlist" || listType === "buylist" ? listType : "portfolio"
+  );
 
   const underlineRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -63,7 +65,11 @@ function PortfolioPage() {
     if (tab && pathToTab[tab]) {
       setActiveTab(pathToTab[tab]);
     }
-    if (listType === "watchlist" || listType === "portfolio") {
+    if (
+      listType === "watchlist" ||
+      listType === "portfolio" ||
+      listType === "buylist"
+    ) {
       setSignalListType(listType);
     }
   }, [tab, listType]);
