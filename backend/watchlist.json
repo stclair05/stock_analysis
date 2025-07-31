@@ -461,6 +461,11 @@
       "ticker": "ONC",
       "sector": "",
       "technigrade": [5, 4, 12, 13, 12]
+    },
+    {
+      "ticker": "ZWS",
+      "sector": "",
+      "technigrade": []
     }
   ],
   "buylist": [
