@@ -472,271 +472,271 @@
     {
       "ticker": "UUUU",
       "sector": "Uranium",
-      "buy_price": 9,
+      "target": 9,
       "technigrade": []
     },
     {
       "ticker": "URA",
       "sector": "Uranium",
-      "buy_price": 35,
+      "target": 35,
       "technigrade": []
     },
     {
       "ticker": "UEC",
       "sector": "Uranium",
-      "buy_price": 8,
+      "target": 8,
       "technigrade": []
     },
     {
       "ticker": "FNV",
       "sector": "Precious Metals",
-      "buy_price": 150,
+      "target": 150,
       "technigrade": []
     },
     {
       "ticker": "RGLD",
       "sector": "Precious Metals",
-      "buy_price": 147,
+      "target": 147,
       "technigrade": []
     },
     {
       "ticker": "GFI",
       "sector": "Precious Metals",
-      "buy_price": 23,
+      "target": 23,
       "technigrade": []
     },
     {
       "ticker": "HMY",
       "sector": "Precious Metals",
-      "buy_price": 12.5,
+      "target": 12.5,
       "technigrade": []
     },
     {
       "ticker": "AEM",
       "sector": "Precious Metals",
-      "buy_price": 113,
+      "target": 113,
       "technigrade": []
     },
     {
       "ticker": "B",
       "sector": "Precious Metals",
-      "buy_price": 21.5,
+      "target": 21.5,
       "technigrade": []
     },
     {
       "ticker": "GDX",
       "sector": "Precious Metals",
-      "buy_price": 44,
+      "target": 44,
       "technigrade": []
     },
     {
       "ticker": "CDE",
       "sector": "Precious Metals",
-      "buy_price": 7.3,
+      "target": 7.3,
       "technigrade": []
     },
     {
       "ticker": "ACHR",
       "sector": "Aerospace & Defense",
-      "buy_price": 8.4,
+      "target": 8.4,
       "technigrade": []
     },
     {
       "ticker": "SOUN",
       "sector": "Technology",
-      "buy_price": 9.2,
+      "target": 9.2,
       "technigrade": []
     },
     {
       "ticker": "PYPL",
       "sector": "Technology",
-      "buy_price": 68.5,
+      "target": 68.5,
       "technigrade": []
     },
     {
       "ticker": "ISRG",
       "sector": "Healthcare",
-      "buy_price": 485,
+      "target": 485,
       "technigrade": []
     },
     {
       "ticker": "ORCL",
       "sector": "Technology",
-      "buy_price": 207,
+      "target": 207,
       "technigrade": []
     },
     {
       "ticker": "AXON",
       "sector": "Aerospace & Defense",
-      "buy_price": 757,
+      "target": 757,
       "technigrade": []
     },
     {
       "ticker": "ZTS",
       "sector": "Healthcare",
-      "buy_price": 145,
+      "target": 145,
       "technigrade": []
     },
     {
       "ticker": "DOCS",
       "sector": "Healthcare",
-      "buy_price": 57,
+      "target": 57,
       "technigrade": []
     },
     {
       "ticker": "IDXX",
       "sector": "Healthcare",
-      "buy_price": 578,
+      "target": 578,
       "technigrade": []
     },
     {
       "ticker": "HOLX",
       "sector": "Healthcare",
-      "buy_price": 67.5,
+      "target": 67.5,
       "technigrade": []
     },
     {
       "ticker": "NTRA",
       "sector": "Healthcare",
-      "buy_price": 148,
+      "target": 148,
       "technigrade": []
     },
     {
       "ticker": "XLK",
       "sector": "Technology",
-      "buy_price": 242,
+      "target": 242,
       "technigrade": []
     },
     {
       "ticker": "ARKQ",
       "sector": "Index",
-      "buy_price": 87,
+      "target": 87,
       "technigrade": []
     },
     {
       "ticker": "IVES",
       "sector": "Index",
-      "buy_price": 26,
+      "target": 26,
       "technigrade": []
     },
     {
       "ticker": "NFLX",
       "sector": "Technology",
-      "buy_price": 1110,
+      "target": 1110,
       "technigrade": []
     },
     {
       "ticker": "CRM",
       "sector": "Technology",
-      "buy_price": 275,
+      "target": 275,
       "technigrade": []
     },
     {
       "ticker": "TSLA",
       "sector": "Technology",
-      "buy_price": 338,
+      "target": 338,
       "technigrade": []
     },
     {
       "ticker": "TEM",
       "sector": "Technology",
-      "buy_price": 52,
+      "target": 52,
       "technigrade": []
     },
     {
       "ticker": "HOOD",
       "sector": "Technology",
-      "buy_price": 85,
+      "target": 85,
       "technigrade": []
     },
     {
       "ticker": "PLTR",
       "sector": "Technology",
-      "buy_price": 125,
+      "target": 125,
       "technigrade": []
     },
     {
       "ticker": "AVAV",
       "sector": "Aerospace & Defense",
-      "buy_price": 215,
+      "target": 215,
       "technigrade": []
     },
     {
       "ticker": "KTOS",
       "sector": "Aerospace & Defense",
-      "buy_price": 46,
+      "target": 46,
       "technigrade": []
     },
     {
       "ticker": "CRDO",
       "sector": "Technology",
-      "buy_price": 85,
+      "target": 85,
       "technigrade": []
     },
     {
       "ticker": "SYK",
       "sector": "Healthcare",
-      "buy_price": 380,
+      "target": 380,
       "technigrade": []
     },
     {
       "ticker": "SHOP",
       "sector": "Technology",
-      "buy_price": 110,
+      "target": 110,
       "technigrade": []
     },
     {
       "ticker": "EL",
       "sector": "Luxury & Cosmetics",
-      "buy_price": 80,
+      "target": 80,
       "technigrade": []
     },
     {
       "ticker": "LTBR",
       "sector": "Others",
-      "buy_price": 16,
+      "target": 16,
       "technigrade": []
     },
     {
       "ticker": "SBSW",
       "sector": "Precious Metals",
-      "buy_price": 6.3,
+      "target": 6.3,
       "technigrade": []
     },
     {
       "ticker": "BA.L",
       "sector": "Aerospace & Defense",
-      "buy_price": 215,
+      "target": 215,
       "technigrade": []
     },
     {
       "ticker": "DRD",
       "sector": "Precious Metals",
-      "buy_price": 12.3,
+      "target": 12.3,
       "technigrade": []
     },
     {
       "ticker": "KGC",
       "sector": "Precious Metals",
-      "buy_price": 12.4,
+      "target": 12.4,
       "technigrade": []
     },
     {
       "ticker": "MRNA",
       "sector": "Healthcare",
-      "buy_price": 36,
+      "target": 36,
       "technigrade": []
     },
     {
       "ticker": "ALB",
       "sector": "Others",
-      "buy_price": 80,
+      "target": 80,
       "technigrade": []
     },
     {
       "ticker": "REMX",
       "sector": "Index",
-      "buy_price": 54,
+      "target": 54,
       "technigrade": []
     }
   ],
