@@ -397,15 +397,6 @@
       "stage": [2, 27]
     },
     {
-      "ticker": "IWM",
-      "shares": 4000.0,
-      "average_cost": 237.1,
-      "sector": "Index",
-      "target": 233,
-      "player": 4,
-      "stage": [2, 4]
-    },
-    {
       "ticker": "0P0000RU80.L",
       "shares": 41700.0,
       "average_cost": 4.34,
