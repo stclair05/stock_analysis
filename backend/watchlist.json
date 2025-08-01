@@ -738,6 +738,18 @@
       "sector": "Index",
       "target": 54,
       "technigrade": []
+    },
+    {
+      "ticker": "CRSP",
+      "sector": "Technology",
+      "target": 54,
+      "technigrade": []
+    },
+    {
+      "ticker": "NOW",
+      "sector": "Technology",
+      "target": 830,
+      "technigrade": []
     }
   ],
   "portfolio": []
