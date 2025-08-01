@@ -742,13 +742,31 @@
     {
       "ticker": "CRSP",
       "sector": "Technology",
-      "target": 54,
+      "target": 60,
       "technigrade": []
     },
     {
       "ticker": "NOW",
       "sector": "Technology",
       "target": 830,
+      "technigrade": []
+    },
+    {
+      "ticker": "ADBE",
+      "sector": "Technology",
+      "target": 418,
+      "technigrade": []
+    },
+    {
+      "ticker": "RCAT",
+      "sector": "Technology",
+      "target": 7.5,
+      "technigrade": []
+    },
+    {
+      "ticker": "USAR",
+      "sector": "Others",
+      "target": 14.2,
       "technigrade": []
     }
   ],
