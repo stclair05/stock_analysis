@@ -324,6 +324,15 @@ def get_price_targets(symbol: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/engulfing/{symbol}")
+def get_engulfing(symbol: str):
+    """Return bullish or bearish engulfing status for multiple timeframes."""
+    try:
+        analyser = StockAnalyser(symbol)
+        return analyser.detect_engulfing()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 '''
 TEMP WATCHLIST DATABASE 
 '''

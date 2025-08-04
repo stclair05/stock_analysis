@@ -178,6 +178,58 @@ class StockAnalyser:
     @cached_property
     def monthly_df(self) -> pd.DataFrame:
         return self.df.resample("ME").last().dropna()
+    
+    # New method to detect engulfing patterns
+    def detect_engulfing(self) -> dict[str, str]:
+        """Detect bullish or bearish engulfing patterns for multiple timeframes."""
+
+        def _pattern(df: pd.DataFrame) -> str:
+            if df is None or len(df) < 2:
+                return "none"
+            prev = df.iloc[-2]
+            curr = df.iloc[-1]
+
+            # Bullish engulfing: previous bearish, current bullish, body engulfs
+            if (
+                prev["Close"] < prev["Open"]
+                and curr["Close"] > curr["Open"]
+                and curr["Open"] <= prev["Close"]
+                and curr["Close"] >= prev["Open"]
+            ):
+                return "bullish engulfing"
+
+            # Bearish engulfing: previous bullish, current bearish, body engulfs
+            if (
+                prev["Close"] > prev["Open"]
+                and curr["Close"] < curr["Open"]
+                and curr["Open"] >= prev["Close"]
+                and curr["Close"] <= prev["Open"]
+            ):
+                return "bearish engulfing"
+
+            return "none"
+
+        # Daily uses existing daily dataframe
+        daily_pattern = _pattern(self.df)
+
+        # Weekly uses resampled weekly dataframe
+        weekly_pattern = _pattern(self.weekly_df)
+
+        # Monthly requires proper OHLC resampling
+        monthly_ohlc = self.df.resample("M").agg({
+            "Open": "first",
+            "High": "max",
+            "Low": "min",
+            "Close": "last",
+            "Volume": "sum" if "Volume" in self.df.columns else "first",
+        }).dropna()
+        monthly_pattern = _pattern(monthly_ohlc)
+
+        return {
+            "daily": daily_pattern,
+            "weekly": weekly_pattern,
+            "monthly": monthly_pattern,
+        }
 
     def get_current_price(self) -> float | None:
         return safe_value(self.df['Close'], -1)
