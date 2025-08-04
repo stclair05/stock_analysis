@@ -704,6 +704,15 @@
       "player": 8,
       "technigrade": [5, 5, 4, 7, 7, 4, 2, 2, 5]
     },
+
+    {
+      "ticker": "USAR",
+      "shares": 65000,
+      "average_cost": 12.82,
+      "sector": "Rare Earth",
+      "target": null,
+      "player": 8
+    },
     {
       "ticker": "SMG",
       "shares": 10470.0,
