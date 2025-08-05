@@ -555,14 +555,6 @@
       "player": 8
     },
     {
-      "ticker": "XPDUSD",
-      "shares": 264.55,
-      "average_cost": 1135,
-      "sector": "Precious Metals",
-      "target": 1550,
-      "player": 8
-    },
-    {
       "ticker": "1810.HK",
       "shares": 30000,
       "average_cost": 60.4647,
