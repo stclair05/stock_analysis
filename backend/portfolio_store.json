@@ -708,9 +708,9 @@
     {
       "ticker": "USAR",
       "shares": 65000,
-      "average_cost": 15.5,
+      "average_cost": 12.82,
       "sector": "Rare Earth",
-      "target": null,
+      "target": 15.5,
       "player": 8
     },
     {
