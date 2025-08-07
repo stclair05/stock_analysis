@@ -218,6 +218,8 @@ export default function BuySellSignalsTab({
     Record<string, { daily?: string; weekly?: string; monthly?: string }>
   >({});
 
+  const [engulfing, setEngulfing] = useState<Record<string, string>>({});
+
   // Hold shares and average cost info for P/L calculation
   const [holdingInfo, setHoldingInfo] = useState<
     Record<string, { shares: number; average_cost: number }>
@@ -662,6 +664,32 @@ export default function BuySellSignalsTab({
     };
 
     fetchDivergences();
+  }, [portfolio]);
+
+  // Fetch daily engulfing pattern info for all tickers
+  useEffect(() => {
+    if (portfolio.length === 0) return;
+
+    const fetchEngulfing = async () => {
+      const map: Record<string, string> = {};
+      await Promise.all(
+        portfolio.map(async (p) => {
+          try {
+            const res = await fetch(
+              `http://localhost:8000/engulfing/${p.ticker}`
+            );
+            const data = await res.json();
+            map[p.ticker] =
+              typeof data?.daily === "string" ? data.daily : "none";
+          } catch {
+            map[p.ticker] = "none";
+          }
+        })
+      );
+      setEngulfing(map);
+    };
+
+    fetchEngulfing();
   }, [portfolio]);
 
   // Fetch signals for all stocks/strategies/timeframes
@@ -1345,6 +1373,24 @@ export default function BuySellSignalsTab({
       return (
         <td style={{ textAlign: "center", color, fontWeight: 700 }}>
           {`${sign}${formatCurrency(amount)}`} ({`${sign}${pct.toFixed(2)}%`})
+          {(() => {
+            const pattern = engulfing[ticker];
+            if (!pattern || pattern === "none") return null;
+            const isBull = pattern.toLowerCase().includes("bullish");
+            return (
+              <div
+                style={{
+                  fontSize: "0.8em",
+                  fontStyle: "italic",
+                  marginTop: 2,
+                  fontWeight: 400,
+                  color: isBull ? "#4caf50" : "#f44336",
+                }}
+              >
+                {`Daily ${isBull ? "Bullish" : "Bearish"} Engulfing`}
+              </div>
+            );
+          })()}
         </td>
       );
     }
