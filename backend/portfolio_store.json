@@ -9,14 +9,6 @@
       "player": 1
     },
     {
-      "ticker": "ARKQ",
-      "shares": 2500,
-      "average_cost": 88.08,
-      "sector": "Index",
-      "target": 104,
-      "player": 1
-    },
-    {
       "ticker": "ARKG",
       "shares": 20520.0,
       "average_cost": 68.0,
@@ -305,14 +297,6 @@
       "target": 35,
       "player": 2,
       "technigrade": [16, 18, 14, 19, 20, 14, 12, 20, 20]
-    },
-    {
-      "ticker": "IGE",
-      "shares": 10000.0,
-      "average_cost": 44.07,
-      "sector": "Index",
-      "target": 57,
-      "player": 2
     },
     {
       "ticker": "TXP.TO",
