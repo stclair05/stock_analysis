@@ -92,7 +92,8 @@
       "sector": "Energy",
       "target": 50,
       "player": 2,
-      "technigrade": [20, 17, 18, 16, 7, 3, 4, 8, 9]
+      "technigrade": [20, 17, 18, 16, 7, 3, 4, 8, 9],
+      "stage": [3, 3]
     },
     {
       "ticker": "RRC",
@@ -101,7 +102,8 @@
       "sector": "Energy",
       "target": 51,
       "player": 2,
-      "technigrade": [19, 13, 14, 14, 7, 4, 5, 9, 8]
+      "technigrade": [19, 13, 14, 14, 7, 4, 5, 9, 8],
+      "stage": [3, 2]
     },
     {
       "ticker": "DK",
@@ -119,7 +121,8 @@
       "sector": "Energy",
       "target": 115,
       "player": 2,
-      "technigrade": [13, 15, 12, 15, 16, 10, 8, 17, 17]
+      "technigrade": [13, 15, 12, 15, 16, 10, 8, 17, 17],
+      "stage": [1, 6]
     },
     {
       "ticker": "XOP",
@@ -127,7 +130,8 @@
       "average_cost": 152.57,
       "sector": "Energy",
       "target": 188,
-      "player": 2
+      "player": 2,
+      "stage": [1, 9]
     },
     {
       "ticker": "TALO",
@@ -145,7 +149,8 @@
       "sector": "Energy",
       "target": 46,
       "player": 2,
-      "technigrade": [10, 11, 8, 13, 14, 6, 6, 13, 16]
+      "technigrade": [10, 11, 8, 13, 14, 6, 6, 13, 16],
+      "stage": [1, 9]
     },
     {
       "ticker": "DINO",
@@ -171,7 +176,8 @@
       "average_cost": 26.1,
       "sector": "Energy",
       "target": "",
-      "player": 2
+      "player": 2,
+      "stage": [1, 9]
     },
     {
       "ticker": "XLE",
@@ -179,7 +185,8 @@
       "average_cost": 90.56,
       "sector": "Energy",
       "target": 106,
-      "player": 2
+      "player": 2,
+      "stage": [1, 1]
     },
     {
       "ticker": "APA",
@@ -188,7 +195,8 @@
       "sector": "Energy",
       "target": 26,
       "player": 2,
-      "technigrade": [13, 13, 9, 12, 14, 7, 5, 14, 17]
+      "technigrade": [13, 13, 9, 12, 14, 7, 5, 14, 17],
+      "stage": [1, 9]
     },
     {
       "ticker": "SM",
@@ -197,7 +205,8 @@
       "sector": "Energy",
       "target": 36,
       "player": 2,
-      "technigrade": [12, 16, 10, 18, 18, 12, 10, 19, 19]
+      "technigrade": [12, 16, 10, 18, 18, 12, 10, 19, 19],
+      "stage": [1, 3]
     },
     {
       "ticker": "VET",
@@ -206,7 +215,8 @@
       "sector": "Energy",
       "target": 11,
       "player": 2,
-      "technigrade": [7, 9, 10, 14, 14, 6, 5, 15, 18]
+      "technigrade": [7, 9, 10, 14, 14, 6, 5, 15, 18],
+      "stage": [1, 9]
     },
     {
       "ticker": "VTLE",
@@ -233,7 +243,8 @@
       "sector": "Energy",
       "target": 57.13,
       "player": 2,
-      "technigrade": [10, 8, 7, 11, 12, 6, 6, 15, 17]
+      "technigrade": [10, 8, 7, 11, 12, 6, 6, 15, 17],
+      "stage": [1, 9]
     },
     {
       "ticker": "PR",
@@ -249,7 +260,8 @@
       "shares": 277000.0,
       "average_cost": 3.93,
       "sector": "Energy",
-      "target": 2.62
+      "target": 2.62,
+      "stage": [1, 5]
     },
     {
       "ticker": "CRGY",
@@ -471,7 +483,8 @@
       "sector": "Energy",
       "target": 227,
       "player": 7,
-      "technigrade": [14, 16, 15, 17, 16, 10, 7, 16, 17]
+      "technigrade": [14, 16, 15, 17, 16, 10, 7, 16, 17],
+      "stage": [1, 3]
     },
     {
       "ticker": "DVN",
@@ -705,7 +718,8 @@
       "sector": "Technology",
       "target": 367,
       "player": 1,
-      "technigrade": [12, 8, 12, 13, 9, 8, 7, 16, 4]
+      "technigrade": [12, 8, 12, 13, 9, 8, 7, 16, 4],
+      "stage": [3, 1]
     },
     {
       "ticker": "IAG",
@@ -749,7 +763,8 @@
       "sector": "Pets",
       "target": 334,
       "player": 10,
-      "technigrade": [18, 12, 15, 9, 5, 5, 5, 2, 2]
+      "technigrade": [18, 12, 15, 9, 5, 5, 5, 2, 2],
+      "stage": [3, 2]
     },
     {
       "ticker": "IPI",
