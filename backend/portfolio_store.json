@@ -117,15 +117,6 @@
       "stage": [1, 6]
     },
     {
-      "ticker": "XOP",
-      "shares": 655.0,
-      "average_cost": 152.57,
-      "sector": "Energy",
-      "target": 188,
-      "player": 2,
-      "stage": [1, 9]
-    },
-    {
       "ticker": "TALO",
       "shares": 14000.0,
       "average_cost": 22.04,
@@ -170,15 +161,6 @@
       "target": "",
       "player": 2,
       "stage": [1, 9]
-    },
-    {
-      "ticker": "XLE",
-      "shares": 1107.0,
-      "average_cost": 90.56,
-      "sector": "Energy",
-      "target": 106,
-      "player": 2,
-      "stage": [1, 1]
     },
     {
       "ticker": "APA",
@@ -641,7 +623,6 @@
       "player": 8,
       "technigrade": [5, 5, 4, 7, 7, 4, 2, 2, 5]
     },
-
     {
       "ticker": "USAR",
       "shares": 65000,
@@ -649,15 +630,6 @@
       "sector": "Rare Earth",
       "target": 15.5,
       "player": 8
-    },
-    {
-      "ticker": "SMG",
-      "shares": 10470.0,
-      "average_cost": 122.0,
-      "sector": "Fertilizer",
-      "target": 80,
-      "player": 10,
-      "technigrade": [6, 7, 5, 6, 6, 9, 10, 5, 12]
     },
     {
       "ticker": "PYPL",
