@@ -1420,6 +1420,9 @@ class StockAnalyser:
             overlays["ma_20d"] = self.get_ma_series(20, timeframe="daily")    # StClair
             overlays["dma_200"] = self.get_ma_series(200, timeframe="daily")  # TrendInvestorPro
             overlays["ma_5d"] = self.get_ma_series(5, timeframe="daily")      # TrendInvestorPro
+            # NDR: 21-day and 252-day MAs
+            overlays["ma_21"] = self.get_ma_series(21, timeframe="daily")
+            overlays["ma_252"] = self.get_ma_series(252, timeframe="daily")
 
         elif timeframe == "weekly":
             index = self.weekly_df.index
@@ -1427,6 +1430,8 @@ class StockAnalyser:
             ma_20_daily = self.df["Close"].rolling(20).mean().resample("W-FRI").last().reindex(index)
             ma_200_daily = self.df["Close"].rolling(200).mean().resample("W-FRI").last().reindex(index)
             ma_5_daily = self.df["Close"].rolling(5).mean().resample("W-FRI").last().reindex(index)
+            ma_21_daily = self.df["Close"].rolling(21).mean().resample("W-FRI").last().reindex(index)
+            ma_252_daily = self.df["Close"].rolling(252).mean().resample("W-FRI").last().reindex(index)
             # Northstar: uses *weekly* MA12, MA36
             overlays["ma_12"] = self.get_ma_series(12, timeframe="weekly")
             overlays["ma_36"] = self.get_ma_series(36, timeframe="weekly")
@@ -1434,6 +1439,8 @@ class StockAnalyser:
             overlays["ma_20d"] = to_series(ma_20_daily)
             overlays["dma_200"] = to_series(ma_200_daily)
             overlays["ma_5d"] = to_series(ma_5_daily)
+            overlays["ma_21"] = to_series(ma_21_daily)
+            overlays["ma_252"] = to_series(ma_252_daily)
             # StClairLongterm
             overlays.update(self.get_supertrend_lines())
             overlays.update(self.get_ichimoku_lines())
@@ -1449,6 +1456,8 @@ class StockAnalyser:
             ma_20_daily = self.df["Close"].rolling(20).mean().resample("M").last().reindex(index)
             ma_200_daily = self.df["Close"].rolling(200).mean().resample("M").last().reindex(index)
             ma_5_daily = self.df["Close"].rolling(5).mean().resample("M").last().reindex(index)
+            ma_21_daily = self.df["Close"].rolling(21).mean().resample("M").last().reindex(index)
+            ma_252_daily = self.df["Close"].rolling(252).mean().resample("M").last().reindex(index)
             # Northstar: uses *monthly* MA12, MA36
             overlays["ma_12"] = self.get_ma_series(12, timeframe="monthly")
             overlays["ma_36"] = self.get_ma_series(36, timeframe="monthly")
@@ -1456,6 +1465,8 @@ class StockAnalyser:
             overlays["ma_20d"] = to_series(ma_20_daily)
             overlays["dma_200"] = to_series(ma_200_daily)
             overlays["ma_5d"] = to_series(ma_5_daily)
+            overlays["ma_21"] = to_series(ma_21_daily)
+            overlays["ma_252"] = to_series(ma_252_daily)
         else:
             raise ValueError(f"Unsupported timeframe: {timeframe}")
 
@@ -2628,6 +2639,55 @@ class StockAnalyser:
         new_buy = curr == "BUY" and prev in ["SELL", "NEUTRAL"]
 
         return {"status": curr, "new_buy": new_buy}
+    
+
+    def get_ndr_signal(self, timeframe: str = "daily") -> list[dict]:
+        """Return markers when the 21-period SMA crosses the 252-period SMA."""
+        if timeframe == "daily":
+            df = self.df
+        elif timeframe == "weekly":
+            df = self.weekly_df
+        elif timeframe == "monthly":
+            df = self.monthly_df
+        else:
+            raise ValueError(f"Invalid timeframe: {timeframe}")
+
+        df = df.copy().dropna()
+        if len(df) < 252:
+            return []
+
+        close = df["Close"]
+        ma21 = close.rolling(window=21).mean()
+        ma252 = close.rolling(window=252).mean()
+
+        markers: list[dict] = []
+        prev_above = ma21.iloc[251] > ma252.iloc[251]
+
+        for i in range(252, len(df)):
+            t = df.index[i]
+            price = close.iloc[i]
+            above = ma21.iloc[i] > ma252.iloc[i]
+            if above and not prev_above:
+                markers.append(
+                    {
+                        "time": int(pd.Timestamp(t).timestamp()),
+                        "price": price,
+                        "side": "buy",
+                        "label": "BUY",
+                    }
+                )
+            elif not above and prev_above:
+                markers.append(
+                    {
+                        "time": int(pd.Timestamp(t).timestamp()),
+                        "price": price,
+                        "side": "sell",
+                        "label": "SELL",
+                    }
+                )
+            prev_above = above
+
+        return markers
 
 
     def get_generic_strength_status(self, timeframe: str = "weekly") -> dict:

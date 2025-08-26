@@ -13,6 +13,7 @@ const strategies = [
   "stclairlongterm",
   "mace_40w",
   "mansfield",
+  "ndr",
 ] as const;
 
 const timeframes = ["daily", "weekly", "monthly"] as const;
@@ -25,6 +26,7 @@ const SignalSummaryComponent = ({ stockSymbol }: SignalSummaryProps) => {
     stclairlongterm: { daily: "", weekly: "", monthly: "" },
     mace_40w: { daily: "", weekly: "", monthly: "" },
     mansfield: { daily: "", weekly: "", monthly: "" },
+    ndr: { daily: "", weekly: "", monthly: "" },
   });
 
   useEffect(() => {
@@ -95,6 +97,7 @@ const SignalSummaryComponent = ({ stockSymbol }: SignalSummaryProps) => {
     if (strategy === "stclairlongterm" && tf !== "weekly") return true;
     if (strategy === "mace_40w" && tf !== "weekly") return true;
     if (strategy === "mansfield" && tf !== "weekly") return true;
+    if (strategy === "ndr" && tf === "monthly") return true;
     return false;
   };
 
