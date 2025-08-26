@@ -9,14 +9,6 @@
       "player": 1
     },
     {
-      "ticker": "ARKQ",
-      "shares": 2500,
-      "average_cost": 88.08,
-      "sector": "Index",
-      "target": 104,
-      "player": 1
-    },
-    {
       "ticker": "ARKG",
       "shares": 20520.0,
       "average_cost": 68.0,
@@ -125,15 +117,6 @@
       "stage": [1, 6]
     },
     {
-      "ticker": "XOP",
-      "shares": 655.0,
-      "average_cost": 152.57,
-      "sector": "Energy",
-      "target": 188,
-      "player": 2,
-      "stage": [1, 9]
-    },
-    {
       "ticker": "TALO",
       "shares": 14000.0,
       "average_cost": 22.04,
@@ -178,15 +161,6 @@
       "target": "",
       "player": 2,
       "stage": [1, 9]
-    },
-    {
-      "ticker": "XLE",
-      "shares": 1107.0,
-      "average_cost": 90.56,
-      "sector": "Energy",
-      "target": 106,
-      "player": 2,
-      "stage": [1, 1]
     },
     {
       "ticker": "APA",
@@ -306,14 +280,6 @@
       "target": 35,
       "player": 2,
       "technigrade": [10, 9, 14, 17, 16]
-    },
-    {
-      "ticker": "IGE",
-      "shares": 10000.0,
-      "average_cost": 44.07,
-      "sector": "Index",
-      "target": 57,
-      "player": 2
     },
     {
       "ticker": "TXP.TO",
@@ -694,7 +660,6 @@
       "player": 8,
       "technigrade": [12, 10, 8, 8, 5]
     },
-
     {
       "ticker": "USAR",
       "shares": 135000,
@@ -702,15 +667,6 @@
       "sector": "Rare Earth",
       "target": 15.5,
       "player": 8
-    },
-    {
-      "ticker": "SMG",
-      "shares": 10470.0,
-      "average_cost": 122.0,
-      "sector": "Fertilizer",
-      "target": 80,
-      "player": 10,
-      "technigrade": [13, 12, 15, 10, 6]
     },
     {
       "ticker": "PYPL",
