@@ -47,7 +47,6 @@ SYMBOL_ALIASES = {
     # Energy
     "NATGAS": "NG=F",
     "NATURALGAS": "NG=F",
-    "NG": "NG=F",
     "NG=F": "NG=F",
     "URANIUM": "URA",
     "UX": "URA",
