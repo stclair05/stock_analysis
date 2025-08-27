@@ -1552,14 +1552,24 @@ export default function BuySellSignalsTab({
       const score = getShortTermTrendScore(ticker);
       if (score == null) return <td style={{ textAlign: "center" }}>-</td>;
       const trend = score >= 2 ? "Uptrend" : "Downtrend";
-      return <td style={{ textAlign: "center" }}>{`${trend} (${score}/3)`}</td>;
+      const color = score >= 2 ? "#4caf50" : "#f44336";
+      return (
+        <td
+          style={{ textAlign: "center", color, fontWeight: 550 }}
+        >{`${trend} (${score}/3)`}</td>
+      );
     }
 
     if (col === "long_term_trend") {
       const score = getLongTermTrendScore(ticker);
       if (score == null) return <td style={{ textAlign: "center" }}>-</td>;
       const trend = score >= 4 ? "Uptrend" : "Downtrend";
-      return <td style={{ textAlign: "center" }}>{`${trend} (${score}/6)`}</td>;
+      const color = score >= 4 ? "#4caf50" : "#f44336";
+      return (
+        <td
+          style={{ textAlign: "center", color, fontWeight: 550 }}
+        >{`${trend} (${score}/6)`}</td>
+      );
     }
 
     if (col === "cmf") {
