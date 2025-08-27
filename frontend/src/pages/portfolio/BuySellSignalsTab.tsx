@@ -11,7 +11,7 @@ const allStrategies = [
   "stclair_longterm",
   "mace_40w",
   "mansfield",
-  // "demarker",
+  "ndr",
   // Add other strategies if needed
 ];
 
@@ -234,7 +234,7 @@ export default function BuySellSignalsTab({
     stclair_longterm: "stclairlongterm",
     mace_40w: "mace_40w",
     mansfield: "mansfield",
-    // demarker: "demarker",
+    ndr: "ndr",
   };
 
   const COLUMN_LABELS: Record<string, string> = {
@@ -377,7 +377,7 @@ export default function BuySellSignalsTab({
         );
         break;
       case "daily":
-        currentVisibleStrategies = ["trend_investor_pro", "northstar"];
+        currentVisibleStrategies = ["trend_investor_pro", "northstar", "ndr"];
         break;
       case "monthly":
         currentVisibleStrategies = ["northstar"];
@@ -862,6 +862,7 @@ export default function BuySellSignalsTab({
     if (strategy === "stclair_longterm" && tf !== "weekly") return true;
     if (strategy === "mace_40w" && tf !== "weekly") return true;
     if (strategy === "mansfield" && tf !== "weekly") return true;
+    if (strategy === "ndr" && tf === "monthly") return true;
     return false;
   }
 

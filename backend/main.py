@@ -549,6 +549,8 @@ def _get_signals_for_symbol(symbol: str, timeframe: str, strategies: List[str]):
             result[strat] = {"markers": analyser.get_mace_40w_signals()}
         elif strat == "mansfield":
             result[strat] = {"markers": analyser.get_mansfield_signals()}
+        elif strat == "ndr":
+            result[strat] = {"markers": analyser.get_ndr_signal(timeframe)}
     result["_generic"] = analyser.get_generic_strength_status(timeframe)
     return result
 
@@ -842,6 +844,8 @@ def get_signals(timeframe: str, symbol: str, strategy: str = Query("trendinvesto
         return {"markers": analyser.get_mace_40w_signals()}
     elif strategy == "mansfield":
         return {"markers": analyser.get_mansfield_signals()}
+    elif strategy == "ndr":
+        return {"markers": analyser.get_ndr_signal(timeframe)}
     elif strategy == "demarker":
         return {"markers": analyser.get_demarker_signals(timeframe)}
 
@@ -999,6 +1003,8 @@ def backtest_signals(
         markers = analyser.get_mace_40w_signals()
     elif strategy == "mansfield":
         markers = analyser.get_mansfield_signals()
+    elif strategy == "ndr":
+        markers = analyser.get_ndr_signal(timeframe)
     elif strategy == "demarker":
         markers = analyser.get_demarker_signals(timeframe)
     else:

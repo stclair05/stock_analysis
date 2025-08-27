@@ -71,6 +71,7 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     | "stclairlongterm"
     | "mace_40w"
     | "mansfield"
+    | "ndr"
   >(null);
 
   const [signalSummary, setSignalSummary] = useState<SignalSummary>({
@@ -80,6 +81,7 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     stclairlongterm: { daily: "", weekly: "", monthly: "" },
     mace_40w: { daily: "", weekly: "", monthly: "" },
     mansfield: { daily: "", weekly: "", monthly: "" },
+    ndr: { daily: "", weekly: "", monthly: "" },
   });
   const strategies = [
     "trendinvestorpro",
@@ -88,6 +90,7 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     "stclairlongterm",
     "mace_40w",
     "mansfield",
+    "ndr",
   ] as const;
   const timeframes = ["daily", "weekly", "monthly"] as const;
 
@@ -299,6 +302,7 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
       return true;
     if (strategy === "mace_40w" && tf !== "weekly") return true;
     if (strategy === "mansfield" && tf !== "weekly") return true;
+    if (strategy === "ndr" && tf === "monthly") return true;
     return false;
   };
 
@@ -333,12 +337,16 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
     const url = `http://localhost:8000/api/backtest_signals_${timeframe}/${stockSymbol}?strategy=${strategy}&start=${start}&end=${end}`;
     const res = await fetch(url);
     const data = await res.json();
+    if (!data || data.error) {
+      setBacktestSummary(null);
+      return;
+    }
     setBacktestSummary({
-      num_trades: data.num_trades,
-      profitable_trades: data.profitable_trades,
-      total_profit_pct: data.total_profit_pct,
-      total_loss_pct: data.total_loss_pct,
-      net_profit_pct: data.net_profit_pct,
+      num_trades: Number(data.num_trades ?? 0),
+      profitable_trades: Number(data.profitable_trades ?? 0),
+      total_profit_pct: Number(data.total_profit_pct ?? 0),
+      total_loss_pct: Number(data.total_loss_pct ?? 0),
+      net_profit_pct: Number(data.net_profit_pct ?? 0),
     });
   }
 
@@ -678,6 +686,11 @@ const GraphingChart = ({ stockSymbol, onClose }: GraphingChartProps) => {
           ];
         } else if (selectedStrategy === "mansfield") {
           maConfigs = [{ key: "ma_30w", color: "#3f51b5", label: "30W" }];
+        } else if (selectedStrategy === "ndr") {
+          maConfigs = [
+            { key: "ma_21", color: "#ff5722", label: "21MA" },
+            { key: "ma_252", color: "#3f51b5", label: "252MA" },
+          ];
         }
 
         maConfigs.forEach((cfg) => {
