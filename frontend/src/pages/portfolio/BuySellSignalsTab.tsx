@@ -276,7 +276,13 @@ export default function BuySellSignalsTab({
     } else {
       cols.push("daily_change");
     }
-    cols.push("cmf", "supertrend");
+    cols.push(
+      "cmf",
+      "supertrend",
+      "short_term_trend",
+      "long_term_trend",
+      "sell_signal"
+    );
     return cols;
   }, [listType]);
 
