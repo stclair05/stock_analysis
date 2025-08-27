@@ -1615,15 +1615,22 @@ class StockAnalyser:
                 diff_pct = (mean_rev - price) / mean_rev * 100
                 if diff_pct <= 5:
                     near_target = 1
+        cmf_flag = 0
+        if isinstance(cmf_val, str):
+            label = cmf_val.lower()
+            if ("money outflow" in label and "increasing" in label) or (
+                "money inflow" in label and (
+                    "weakening" in label or "decreasing" in label
+                )
+            ):
+                cmf_flag = 1
 
         res = {
             "below_20_dma": _below(ma20),
             "bearish_engulfing_weekly": 1
             if isinstance(engulf, str) and "bearish" in engulf.lower()
             else 0,
-            "chaikin_money_outflow": 1
-            if isinstance(cmf_val, str) and "money outflow" in cmf_val.lower()
-            else 0,
+            "chaikin_money_outflow": cmf_flag,
             "bearish_divergence_weekly": 1
             if isinstance(div, str) and "bearish" in div.lower()
             else 0,

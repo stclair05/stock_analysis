@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import ETFHoldings from "../components/ETFHoldings";
 import SignalSummary from "../components/SignalSummary";
+import ScoreSummary from "../components/ScoreSummary";
 import etfList from "../utils/etfs.json";
 
 function HomePage() {
@@ -129,6 +130,7 @@ function HomePage() {
               <SignalSummary stockSymbol={stockSymbol} />
             </div>
           </div>
+          <ScoreSummary stockSymbol={stockSymbol} />
         </>
       ) : (
         <div className="text-center mt-5">
