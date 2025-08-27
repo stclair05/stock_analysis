@@ -393,15 +393,6 @@
       "player": 5
     },
     {
-      "ticker": "RIOT",
-      "shares": 30000.0,
-      "average_cost": 12.27,
-      "sector": "Bitcoin",
-      "target": 16,
-      "player": 5,
-      "technigrade": [2, 4, 4, 4, 1]
-    },
-    {
       "ticker": "GRNY",
       "shares": 120000.0,
       "average_cost": 20.7,
@@ -555,6 +546,15 @@
       "target": 8,
       "player": 8,
       "technigrade": [2, 2, 2, 10, 8]
+    },
+    {
+      "ticker": "WDO.TO",
+      "shares": 20000.0,
+      "average_cost": 12.6,
+      "sector": "Precious Metals",
+      "target": 20.2,
+      "player": 8,
+      "technigrade": [16, 17, 9, 14, 14]
     },
     {
       "ticker": "SIL",
