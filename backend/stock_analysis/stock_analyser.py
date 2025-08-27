@@ -1,4 +1,6 @@
 import os
+import json
+from pathlib import Path
 import requests
 import yfinance as yf
 import pandas as pd
@@ -245,6 +247,25 @@ class StockAnalyser:
         diff = float(close_today) - float(close_prev)
         pct = (diff / float(close_prev)) * 100 if close_prev else 0
         return round(diff, 2), round(pct, 2)
+    
+    def short_interest_percent(self) -> float | None:
+        """Return short interest as a percentage of float using yfinance."""
+        try:
+            info = yf.Ticker(self.symbol).info
+            val = info.get("shortPercentOfFloat")
+            if val is None:
+                val = info.get("sharesShortPercentFloat")
+            if val is None:
+                return None
+            try:
+                val = float(val)
+            except (TypeError, ValueError):
+                return None
+            if val < 1:
+                val *= 100
+            return round(val, 2)
+        except Exception:
+            return None
 
     def calculate_3year_ma(self) -> TimeSeriesMetric:
         # 3 years of weekly closes = 156 weeks
@@ -1478,6 +1499,142 @@ class StockAnalyser:
         Combines mean reversion targets and Fibonacci extension targets.
         """
         return get_price_targets(self.df, self.symbol)
+    
+    def short_term_trend_score(self) -> dict[str, int]:
+        price = self.get_current_price()
+        twenty = self.calculate_20dma().current
+        fifty = self.calculate_50dma().current
+        mace_val = self.mace().current
+
+        def _above(val):
+            if price is None or val is None:
+                return 0
+            if isinstance(val, (int, float)):
+                return 1 if price > val else 0
+            if isinstance(val, str):
+                return 1 if "above" in val.lower() else 0
+            return 0
+
+        res = {
+            "above_20_dma": _above(twenty),
+            "above_50_dma": _above(fifty),
+            "mace_uptrend": 1
+            if isinstance(mace_val, str)
+            and mace_val.lower().startswith("u")
+            and (len(mace_val) > 1 and mace_val[1] in "123")
+            else 0,
+        }
+        res["total"] = sum(res.values())
+        return res
+
+    def long_term_trend_score(self) -> dict[str, int]:
+        price = self.get_current_price()
+        ma200 = self.calculate_200dma().current
+        ma3y = self.calculate_3year_ma().current
+        ichimoku = self.ichimoku_cloud().current
+        st = self.super_trend().current
+
+        # NDR buy signal: 21 > 252 day SMA
+        ndr_buy = 0
+        if len(self.df) >= 252:
+            ma21 = self.df["Close"].rolling(21).mean().iloc[-1]
+            ma252 = self.df["Close"].rolling(252).mean().iloc[-1]
+            if not pd.isna(ma21) and not pd.isna(ma252) and ma21 > ma252:
+                ndr_buy = 1
+
+        stage, _weeks = self.stage_analysis()
+
+        def _above(val):
+            if price is None or val is None:
+                return 0
+            if isinstance(val, (int, float)):
+                return 1 if price > val else 0
+            if isinstance(val, str):
+                return 1 if "above" in val.lower() else 0
+            return 0
+
+        res = {
+            "ndr_buy": ndr_buy,
+            "above_200_dma": _above(ma200),
+            "above_3yr_ma": _above(ma3y),
+            "stage_2": 1 if stage == 2 else 0,
+            "ichimoku_above_cloud": 1
+            if isinstance(ichimoku, str) and "above" in ichimoku.lower()
+            else 0,
+            "super_trend_buy": 1
+            if isinstance(st, str) and "buy" in st.lower()
+            else 0,
+        }
+        res["total"] = sum(res.values())
+        return res
+
+    def sell_signal_score(self) -> dict[str, int]:
+        price = self.get_current_price()
+        ma20 = self.calculate_20dma().current
+        engulf = self.detect_engulfing().get("weekly")
+        cmf_val = self.chaikin_money_flow().current
+        div = self.simple_divergence_weekly()
+        short_int = self.short_interest_percent()
+        mean_rev = calculate_mean_reversion_50dma_target(self.df).get(
+            "reversion_projected_target_price"
+        )
+
+        # PnL from portfolio_store.json if available
+        pnl_flag = 0
+        try:
+            path = Path("portfolio_store.json")
+            if path.exists() and price is not None:
+                with open(path, "r") as f:
+                    pdata = json.load(f)
+                for items in pdata.values():
+                    for item in items:
+                        if str(item.get("ticker", "")).upper() == self.symbol:
+                            avg = item.get("average_cost")
+                            if isinstance(avg, (int, float)) and avg > 0:
+                                pct = (price - avg) / avg * 100
+                                if pct > 30:
+                                    pnl_flag = 1
+                            raise StopIteration
+        except StopIteration:
+            pass
+        except Exception:
+            pass
+
+        def _below(val):
+            if price is None or val is None:
+                return 0
+            if isinstance(val, (int, float)):
+                return 1 if price < val else 0
+            if isinstance(val, str):
+                return 1 if "below" in val.lower() else 0
+            return 0
+
+        near_target = 0
+        if price is not None and isinstance(mean_rev, (int, float)):
+            if price <= mean_rev:
+                diff_pct = (mean_rev - price) / mean_rev * 100
+                if diff_pct <= 5:
+                    near_target = 1
+
+        res = {
+            "below_20_dma": _below(ma20),
+            "bearish_engulfing_weekly": 1
+            if isinstance(engulf, str) and "bearish" in engulf.lower()
+            else 0,
+            "chaikin_money_outflow": 1
+            if isinstance(cmf_val, str) and "money outflow" in cmf_val.lower()
+            else 0,
+            "bearish_divergence_weekly": 1
+            if isinstance(div, str) and "bearish" in div.lower()
+            else 0,
+            "pnl_gt_30": pnl_flag,
+            "near_mean_reversion_upper": near_target,
+            "short_interest_gt_20": 1
+            if isinstance(short_int, (int, float)) and short_int > 20
+            else 0,
+        }
+        res["total"] = sum(res.values())
+        return res
 
     def compare_ratio_with(
         self,
