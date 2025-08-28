@@ -209,6 +209,7 @@ export default function BuySellSignalsTab({
         currentPrice: number | null;
         dailyChange: number | null;
         dailyChangePercent: number | null;
+        shortInterest: number | null;
         metrics?: any;
       }
     >
@@ -259,6 +260,9 @@ export default function BuySellSignalsTab({
     bollinger_band_width_percentile_daily: "BBWP (Daily)",
     rsi_ma_weekly: "RSI & MA (Weekly)",
     chaikin_money_flow: "Chaikin Money Flow",
+    short_term_trend: "Short Term Trend",
+    long_term_trend: "Long Term Trend",
+    sell_signal: "Sell Signal",
   };
 
   const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
@@ -272,7 +276,13 @@ export default function BuySellSignalsTab({
     } else {
       cols.push("daily_change");
     }
-    cols.push("cmf", "supertrend");
+    cols.push(
+      "cmf",
+      "supertrend",
+      "short_term_trend",
+      "long_term_trend",
+      "sell_signal"
+    );
     return cols;
   }, [listType]);
 
@@ -365,6 +375,16 @@ export default function BuySellSignalsTab({
     }
 
     return "#9e9e9e"; // fallback neutral
+  };
+
+  const getShortTermTrendScore = (ticker: string): number | null => {
+    const val = meanRevRsi[ticker]?.metrics?.short_term_trend?.total;
+    return typeof val === "number" ? val : null;
+  };
+
+  const getLongTermTrendScore = (ticker: string): number | null => {
+    const val = meanRevRsi[ticker]?.metrics?.long_term_trend?.total;
+    return typeof val === "number" ? val : null;
   };
 
   function getVisibleAndOrderedStrategies(timeframe: string) {
@@ -609,6 +629,7 @@ export default function BuySellSignalsTab({
             currentPrice: number | null;
             dailyChange: number | null;
             dailyChangePercent: number | null;
+            shortInterest: number | null;
             metrics?: any;
           }
         > = {};
@@ -625,6 +646,10 @@ export default function BuySellSignalsTab({
             dailyChangePercent:
               typeof val?.daily_change_percent === "number"
                 ? val.daily_change_percent
+                : null,
+            shortInterest:
+              typeof val?.short_interest === "number"
+                ? val.short_interest
                 : null,
             metrics: val,
           };
@@ -851,6 +876,11 @@ export default function BuySellSignalsTab({
     return { amount, percent, currency: "USD" };
   };
 
+  const getSellScore = (ticker: string): number | null => {
+    const val = meanRevRsi[ticker]?.metrics?.sell_signal?.total;
+    return typeof val === "number" ? val : null;
+  };
+
   function isUnavailable(strategy: string, tf: string) {
     if (
       strategy === "trend_investor_pro" &&
@@ -1022,6 +1052,21 @@ export default function BuySellSignalsTab({
           const cmp = sA.localeCompare(sB);
           if (cmp === 0) return a.ticker.localeCompare(b.ticker);
           return dir === "asc" ? cmp : -cmp;
+        } else if (col === "short_term_trend") {
+          const valA = getShortTermTrendScore(a.ticker) ?? -1;
+          const valB = getShortTermTrendScore(b.ticker) ?? -1;
+          if (valA === valB) return a.ticker.localeCompare(b.ticker);
+          return dir === "asc" ? valA - valB : valB - valA;
+        } else if (col === "long_term_trend") {
+          const valA = getLongTermTrendScore(a.ticker) ?? -1;
+          const valB = getLongTermTrendScore(b.ticker) ?? -1;
+          if (valA === valB) return a.ticker.localeCompare(b.ticker);
+          return dir === "asc" ? valA - valB : valB - valA;
+        } else if (col === "sell_signal") {
+          const valA = getSellScore(a.ticker) ?? -1;
+          const valB = getSellScore(b.ticker) ?? -1;
+          if (valA === valB) return a.ticker.localeCompare(b.ticker);
+          return dir === "asc" ? valA - valB : valB - valA;
         } else {
           const sortOrder = { BUY: 1, SELL: 2, "": 3, "-": 4 };
           const signalA = signalSummary[a.ticker]?.[col]?.status || "-";
@@ -1278,6 +1323,18 @@ export default function BuySellSignalsTab({
       );
     }
 
+    if (col === "short_term_trend") {
+      return meanRevRsi[t]?.metrics?.short_term_trend != null;
+    }
+
+    if (col === "long_term_trend") {
+      return meanRevRsi[t]?.metrics?.long_term_trend != null;
+    }
+
+    if (col === "sell_signal") {
+      return meanRevRsi[t]?.metrics?.sell_signal != null;
+    }
+
     return true; // fallback for other columns
   };
 
@@ -1431,6 +1488,42 @@ export default function BuySellSignalsTab({
       return (
         <td style={{ textAlign: "center" }}>
           {price != null ? price.toFixed(2) : "-"}
+        </td>
+      );
+    }
+
+    if (col === "short_term_trend") {
+      const score = getShortTermTrendScore(ticker);
+      if (score == null) return <td style={{ textAlign: "center" }}>-</td>;
+      const trend = score >= 2 ? "Uptrend" : "Downtrend";
+      const color = score >= 2 ? "#4caf50" : "#f44336";
+      return (
+        <td
+          style={{ textAlign: "center", color, fontWeight: 550 }}
+        >{`${trend} (${score}/3)`}</td>
+      );
+    }
+
+    if (col === "long_term_trend") {
+      const score = getLongTermTrendScore(ticker);
+      if (score == null) return <td style={{ textAlign: "center" }}>-</td>;
+      const trend = score >= 4 ? "Uptrend" : "Downtrend";
+      const color = score >= 4 ? "#4caf50" : "#f44336";
+      return (
+        <td
+          style={{ textAlign: "center", color, fontWeight: 550 }}
+        >{`${trend} (${score}/6)`}</td>
+      );
+    }
+
+    if (col === "sell_signal") {
+      const score = getSellScore(ticker);
+      if (score == null) return <td style={{ textAlign: "center" }}>-</td>;
+      const action = score >= 4 ? "Sell" : "Hold";
+      const color = score >= 4 ? "#f44336" : "#4caf50";
+      return (
+        <td style={{ textAlign: "center", color, fontWeight: 550 }}>
+          {`${action} (${score}/7)`}
         </td>
       );
     }

@@ -62,6 +62,10 @@ def analyse(stock_request: StockRequest):
         bollinger_band_width_percentile_daily=analyser.bollinger_band_width_percentile_daily(),
         rsi_ma_weekly=analyser.rsi_ma_weekly(),
         chaikin_money_flow=analyser.chaikin_money_flow(),
+        short_interest=analyser.short_interest_percent(),
+        short_term_trend=analyser.short_term_trend_score(),
+        long_term_trend=analyser.long_term_trend_score(),
+        sell_signal=analyser.sell_signal_score(),
     )
 
 @app.post("/elliott", response_model=ElliottWaveScenariosResponse)

@@ -29,6 +29,10 @@ class StockAnalysisResponse(BaseModel):
     bollinger_band_width_percentile_daily: TimeSeriesMetric
     rsi_ma_weekly: TimeSeriesMetric
     chaikin_money_flow: TimeSeriesMetric
+    short_interest: float | None = None
+    short_term_trend: dict[str, int] | None = None
+    long_term_trend: dict[str, int] | None = None
+    sell_signal: dict[str, int] | None = None
 
 class WaveLabel(BaseModel):
     index: int
