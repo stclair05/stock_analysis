@@ -11,7 +11,6 @@ const strategies = [
   "stclair",
   "northstar",
   "stclairlongterm",
-  "mace_40w",
   "mansfield",
   "ndr",
 ] as const;
@@ -24,7 +23,6 @@ const SignalSummaryComponent = ({ stockSymbol }: SignalSummaryProps) => {
     stclair: { daily: "", weekly: "", monthly: "" },
     northstar: { daily: "", weekly: "", monthly: "" },
     stclairlongterm: { daily: "", weekly: "", monthly: "" },
-    mace_40w: { daily: "", weekly: "", monthly: "" },
     mansfield: { daily: "", weekly: "", monthly: "" },
     ndr: { daily: "", weekly: "", monthly: "" },
   });
@@ -95,7 +93,6 @@ const SignalSummaryComponent = ({ stockSymbol }: SignalSummaryProps) => {
     if (strategy === "stclair" && (tf === "daily" || tf === "monthly"))
       return true;
     if (strategy === "stclairlongterm" && tf !== "weekly") return true;
-    if (strategy === "mace_40w" && tf !== "weekly") return true;
     if (strategy === "mansfield" && tf !== "weekly") return true;
     if (strategy === "ndr" && tf === "monthly") return true;
     return false;
