@@ -115,10 +115,28 @@ const ScoreSummary = ({ stockSymbol }: ScoreSummaryProps) => {
           </tr>
           <tr>
             <td className="text-center fw-bold">
-              {data.short_term_trend.total} of {Object.keys(stLabels).length}
+              {data.short_term_trend.total} of {Object.keys(stLabels).length}{" "}
+              <span
+                className={
+                  data.short_term_trend.total >= 2
+                    ? "text-success"
+                    : "text-danger"
+                }
+              >
+                {data.short_term_trend.total >= 2 ? "UPTREND" : "DOWNTREND"}
+              </span>
             </td>
             <td className="text-center fw-bold">
-              {data.long_term_trend.total} of {Object.keys(ltLabels).length}
+              {data.long_term_trend.total} of {Object.keys(ltLabels).length}{" "}
+              <span
+                className={
+                  data.long_term_trend.total >= 4
+                    ? "text-success"
+                    : "text-danger"
+                }
+              >
+                {data.long_term_trend.total >= 4 ? "UPTREND" : "DOWNTREND"}
+              </span>
             </td>
             <td className="text-center fw-bold">
               ({data.sell_signal.total} of {Object.keys(sellLabels).length}){" "}
@@ -127,19 +145,11 @@ const ScoreSummary = ({ stockSymbol }: ScoreSummaryProps) => {
           </tr>
         </tbody>
       </table>
-      <div className="mt-3 text-center">
-        <p>
-          Short-term Trend: ({data.short_term_trend.total} of 3){" "}
-          {data.short_term_trend.total >= 2 ? "UPTREND" : "DOWNTREND"}
-        </p>
-        <p>
-          Bull Market (LT Trend): ({data.long_term_trend.total} of 6){" "}
-          {data.long_term_trend.total >= 4 ? "UPTREND" : "DOWNTREND"}
-        </p>
-        {data.short_interest != null && (
+      {data.short_interest != null && (
+        <div className="mt-3 text-center">
           <p>Short Interest: {data.short_interest.toFixed(2)}%</p>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
