@@ -1579,8 +1579,9 @@ class StockAnalyser:
             "reversion_projected_target_price"
         )
 
-        # PnL from portfolio_store.json if available
-        pnl_flag = 0
+         # PnL / ownership from portfolio_store.json if available
+        pnl_flag: int | None = None
+        owned = False
         try:
             path = Path("portfolio_store.json")
             if path.exists() and price is not None:
@@ -1589,11 +1590,11 @@ class StockAnalyser:
                 for items in pdata.values():
                     for item in items:
                         if str(item.get("ticker", "")).upper() == self.symbol:
+                            owned = True
                             avg = item.get("average_cost")
                             if isinstance(avg, (int, float)) and avg > 0:
                                 pct = (price - avg) / avg * 100
-                                if pct > 30:
-                                    pnl_flag = 1
+                                pnl_flag = 1 if pct > 30 else 0
                             raise StopIteration
         except StopIteration:
             pass
@@ -1625,6 +1626,16 @@ class StockAnalyser:
             ):
                 cmf_flag = 1
 
+        # Short interest is only considered a sell signal when data is available
+        # and exceeds 20%. If no data or below threshold, omit from scoring so
+        # it appears as a neutral (grey) metric in the UI.
+        short_interest_flag: int | None = None
+        if isinstance(short_int, (int, float)):
+            if short_int > 20:
+                short_interest_flag = 1
+            else:
+                short_interest_flag = None
+
         res = {
             "below_20_dma": _below(ma20),
             "bearish_engulfing_weekly": 1
@@ -1636,11 +1647,9 @@ class StockAnalyser:
             else 0,
             "pnl_gt_30": pnl_flag,
             "near_mean_reversion_upper": near_target,
-            "short_interest_gt_20": 1
-            if isinstance(short_int, (int, float)) and short_int > 20
-            else 0,
+            "short_interest_gt_20": short_interest_flag,
         }
-        res["total"] = sum(res.values())
+        res["total"] = sum(v for v in res.values() if isinstance(v, (int, float)))
         return res
 
     def compare_ratio_with(

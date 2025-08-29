@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 interface TrendScores {
-  [key: string]: number;
+  [key: string]: number | null;
   total: number;
 }
 
@@ -43,9 +43,12 @@ const sellLabels: Record<string, string> = {
 
 const ScoreSummary = ({ stockSymbol }: ScoreSummaryProps) => {
   const [data, setData] = useState<AnalysisSummary | null>(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
+    setData(null);
 
     const fetchData = async () => {
       try {
@@ -66,6 +69,8 @@ const ScoreSummary = ({ stockSymbol }: ScoreSummaryProps) => {
         }
       } catch {
         // ignore errors
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     };
 
@@ -75,24 +80,38 @@ const ScoreSummary = ({ stockSymbol }: ScoreSummaryProps) => {
     };
   }, [stockSymbol]);
 
+  if (loading) {
+    return (
+      <div className="text-center mt-4">
+        <div className="spinner-border" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    );
+  }
+
   if (!data) return null;
 
   const renderList = (scores: TrendScores, labels: Record<string, string>) => (
     <ul className="list-unstyled mb-0">
       {Object.entries(scores)
         .filter(([key]) => key !== "total")
-        .map(([key, val]) => (
-          <li
-            key={key}
-            style={{
-              backgroundColor: val ? "#c8e6c9" : "#ffcdd2",
-              margin: "2px 0",
-              padding: "2px 4px",
-            }}
-          >
-            {labels[key] ?? key}
-          </li>
-        ))}
+        .map(([key, val]) => {
+          const bgColor =
+            val === null ? "#e0e0e0" : val ? "#c8e6c9" : "#ffcdd2";
+          return (
+            <li
+              key={key}
+              style={{
+                backgroundColor: bgColor,
+                margin: "2px 0",
+                padding: "2px 4px",
+              }}
+            >
+              {labels[key] ?? key}
+            </li>
+          );
+        })}
     </ul>
   );
 
@@ -139,17 +158,32 @@ const ScoreSummary = ({ stockSymbol }: ScoreSummaryProps) => {
               </span>
             </td>
             <td className="text-center fw-bold">
-              ({data.sell_signal.total} of {Object.keys(sellLabels).length}){" "}
-              {data.sell_signal.total >= 4 ? "SELL" : "HOLD"}
+              ({data.sell_signal.total} of{" "}
+              {
+                Object.entries(data.sell_signal).filter(
+                  ([key, val]) => key !== "total" && val !== null
+                ).length
+              }
+              ) {data.sell_signal.total >= 4 ? "SELL" : "HOLD"}
             </td>
           </tr>
         </tbody>
       </table>
-      {data.short_interest != null && (
-        <div className="mt-3 text-center">
-          <p>Short Interest: {data.short_interest.toFixed(2)}%</p>
-        </div>
-      )}
+      <div className="mt-3 text-center">
+        <p
+          style={{
+            color:
+              data.sell_signal.short_interest_gt_20 === null
+                ? "#9e9e9e"
+                : undefined,
+          }}
+        >
+          Short Interest:{" "}
+          {data.short_interest != null
+            ? `${data.short_interest.toFixed(2)}%`
+            : "N/A"}
+        </p>
+      </div>
     </div>
   );
 };

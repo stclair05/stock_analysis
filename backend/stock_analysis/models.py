@@ -32,7 +32,7 @@ class StockAnalysisResponse(BaseModel):
     short_interest: float | None = None
     short_term_trend: dict[str, int] | None = None
     long_term_trend: dict[str, int] | None = None
-    sell_signal: dict[str, int] | None = None
+    sell_signal: dict[str, int | None] | None = None
 
 class WaveLabel(BaseModel):
     index: int
