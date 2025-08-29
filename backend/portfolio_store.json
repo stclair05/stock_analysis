@@ -128,7 +128,7 @@
       "shares": 4748.0,
       "average_cost": 63.93,
       "sector": "Energy",
-      "target": 49.44,
+      "target": 51,
       "player": 2,
       "technigrade": [3, 4, 4, 4, 4]
     },
@@ -259,7 +259,7 @@
       "shares": 11000.0,
       "average_cost": 72.41,
       "sector": "Energy",
-      "target": 35,
+      "target": 45,
       "player": 2,
       "technigrade": [10, 9, 14, 17, 16]
     },
@@ -554,15 +554,6 @@
       "technigrade": [2, 3, 6, 7, 5]
     },
     {
-      "ticker": "EQX",
-      "shares": 45000.0,
-      "average_cost": 5.95,
-      "sector": "Precious Metals",
-      "target": 9.58,
-      "player": 8,
-      "technigrade": [4, 3, 12, 15, 15]
-    },
-    {
       "ticker": "B",
       "shares": 100000,
       "average_cost": 24.38,
@@ -601,7 +592,7 @@
       "ticker": "USAR",
       "shares": 135000,
       "average_cost": 14.4,
-      "sector": "Rare Earth",
+      "sector": "Others",
       "target": 18.5,
       "player": 8
     },
@@ -819,14 +810,6 @@
       "average_cost": 138.08,
       "sector": "Hong Kong and China",
       "target": 1392,
-      "player": 10
-    },
-    {
-      "ticker": "9992.HK",
-      "shares": 1200,
-      "average_cost": 34.24,
-      "sector": "Hong Kong and China",
-      "target": 330,
       "player": 10
     },
     {
