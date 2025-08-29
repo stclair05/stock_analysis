@@ -768,6 +768,12 @@
       "sector": "Others",
       "target": 14.2,
       "technigrade": []
+    },
+    {
+      "ticker": "9992.HK",
+      "sector": "Hong Kong & China",
+      "target": 8,
+      "technigrade": []
     }
   ],
   "portfolio": []
