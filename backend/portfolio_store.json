@@ -5,8 +5,14 @@
       "shares": 28397.0,
       "average_cost": 99.74,
       "sector": "Others",
-      "target": 82,
-      "player": 1
+      "target": 79.27,
+      "player": 1,
+      "invalidation_1": 72.2,
+      "invalidation_2": 71.28,
+      "invalidation_3": 70.39,
+      "target_1": 85.16,
+      "target_2": 92,
+      "target_3": 97
     },
     {
       "ticker": "ARKG",
@@ -455,9 +461,15 @@
       "shares": 90000.0,
       "average_cost": 11.19,
       "sector": "Aerospace & Defense",
-      "target": 15,
+      "target": 13.91,
       "player": 4,
-      "technigrade": [14, 11, 10, 10, 4]
+      "technigrade": [14, 11, 10, 10, 4],
+      "invalidation_1": 9.1,
+      "invalidation_2": 8.86,
+      "invalidation_3": -1,
+      "target_1": 16.55,
+      "target_2": 18.38,
+      "target_3": -1
     },
     {
       "ticker": "CRCL",
@@ -593,8 +605,14 @@
       "shares": 135000,
       "average_cost": 14.4,
       "sector": "Others",
-      "target": 18.5,
-      "player": 8
+      "target": 15.47,
+      "player": 8,
+      "invalidation_1": 14.02,
+      "invalidation_2": 12.6,
+      "invalidation_3": 11.75,
+      "target_1": 18.55,
+      "target_2": 33,
+      "target_3": 45.12
     },
     {
       "ticker": "PYPL",
@@ -663,9 +681,15 @@
       "shares": 30000.0,
       "average_cost": 14.06,
       "sector": "Technology",
-      "target": 19,
+      "target": 18.72,
       "player": 2,
-      "technigrade": [2, 2, 2, 1, 1]
+      "technigrade": [2, 2, 2, 1, 1],
+      "invalidation_1": 12.28,
+      "invalidation_2": 10.88,
+      "invalidation_3": -1,
+      "target_1": 18.72,
+      "target_2": 22,
+      "target_3": 38.8
     },
     {
       "ticker": "ZM",
