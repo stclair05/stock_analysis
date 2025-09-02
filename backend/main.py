@@ -98,12 +98,20 @@ def get_portfolio_tickers():
     with open(json_path, "r") as f:
         data = json.load(f)
         equities = data.get("equities", [])
-        # Return ticker, sector, and optional target for each equity
+         # Return ticker, sector, and optional levels for each equity
+        def _sanitize_level(val):
+            return val if isinstance(val, (int, float)) and val > 0 else None
         return [
             {
                 "ticker": item["ticker"],
                 "sector": item.get("sector", "N/A"),
-                "target": item.get("target"),
+                "target": _sanitize_level(item.get("target")),
+                "target_1": _sanitize_level(item.get("target_1")),
+                "target_2": _sanitize_level(item.get("target_2")),
+                "target_3": _sanitize_level(item.get("target_3")),
+                "invalidation_1": _sanitize_level(item.get("invalidation_1")),
+                "invalidation_2": _sanitize_level(item.get("invalidation_2")),
+                "invalidation_3": _sanitize_level(item.get("invalidation_3")),
             }
             for item in equities
             if "ticker" in item

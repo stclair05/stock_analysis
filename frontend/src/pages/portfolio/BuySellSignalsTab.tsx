@@ -15,6 +15,18 @@ const allStrategies = [
   // Add other strategies if needed
 ];
 
+type Holding = {
+  ticker: string;
+  sector?: string;
+  target?: number;
+  target_1?: number;
+  target_2?: number;
+  target_3?: number;
+  invalidation_1?: number;
+  invalidation_2?: number;
+  invalidation_3?: number;
+};
+
 // Additional metrics available for optional columns
 const METRIC_COLUMNS = [
   "current_price",
@@ -138,10 +150,8 @@ export default function BuySellSignalsTab({
   initialListType?: "portfolio" | "watchlist" | "buylist";
   onListTypeChange?: (lt: "portfolio" | "watchlist" | "buylist") => void;
 }) {
-  // MODIFIED: portfolio state now includes sector
-  const [portfolio, setPortfolio] = useState<
-    { ticker: string; sector?: string; target?: number }[]
-  >([]);
+  // MODIFIED: portfolio state now includes sector and levels
+  const [portfolio, setPortfolio] = useState<Holding[]>([]);
   const [signalSummary, setSignalSummary] = useState<any>({});
   const [selectedTimeframe, setSelectedTimeframe] = useState("weekly");
   const [signalsLoading, setSignalsLoading] = useState(false);
@@ -156,9 +166,9 @@ export default function BuySellSignalsTab({
   // NEW: Cache for the portfolio/watchlist ticker lists themselves
   // MODIFIED: portfolioDataCache now includes sector
   const portfolioDataCache = useRef<{
-    portfolio?: { ticker: string; sector?: string; target?: number }[];
-    watchlist?: { ticker: string; sector?: string; target?: number }[];
-    buylist?: { ticker: string; sector?: string; target?: number }[];
+    portfolio?: Holding[];
+    watchlist?: Holding[];
+    buylist?: Holding[];
   }>({});
 
   // State for list type selection
@@ -243,6 +253,13 @@ export default function BuySellSignalsTab({
     pnl: "P/L",
     daily_change: "Daily Δ",
     price_target: "Price vs Target",
+    levels_breached: "Levels breached?",
+    target_1: "Target 1",
+    target_2: "Target 2",
+    target_3: "Target 3",
+    invalidation_1: "Inv 1",
+    invalidation_2: "Inv 2",
+    invalidation_3: "Inv 3",
     cmf: "Chaikin MF",
     supertrend: "Supertrend",
     current_price: "Current Price",
@@ -270,7 +287,18 @@ export default function BuySellSignalsTab({
   const baseColumns = useMemo(() => {
     const cols = ["mean_rev_rsi"] as string[];
     if (listType === "portfolio") {
-      cols.push("pnl", "daily_change", "price_target");
+      cols.push(
+        "pnl",
+        "daily_change",
+        "price_target",
+        "levels_breached",
+        "target_1",
+        "target_2",
+        "target_3",
+        "invalidation_1",
+        "invalidation_2",
+        "invalidation_3"
+      );
     } else if (listType === "buylist") {
       cols.push("daily_change", "price_target");
     } else {
@@ -480,12 +508,8 @@ export default function BuySellSignalsTab({
         }
         const data = await res.json();
 
-        // MODIFIED: Safely format tickers, expecting { ticker, sector } objects
-        const formattedTickers: {
-          ticker: string;
-          sector?: string;
-          target?: number;
-        }[] = Array.isArray(data)
+        // MODIFIED: Safely format tickers, expecting { ticker, sector, levels } objects
+        const formattedTickers: Holding[] = Array.isArray(data)
           ? data
               .map((item: any) => {
                 // Handle both string (old backend) and object (new backend) formats
@@ -500,7 +524,36 @@ export default function BuySellSignalsTab({
                     ticker: item.ticker,
                     sector: item.sector || "N/A",
                     target:
-                      typeof item.target === "number" ? item.target : undefined,
+                      typeof item.target === "number" && item.target > 0
+                        ? item.target
+                        : undefined,
+                    target_1:
+                      typeof item.target_1 === "number" && item.target_1 > 0
+                        ? item.target_1
+                        : undefined,
+                    target_2:
+                      typeof item.target_2 === "number" && item.target_2 > 0
+                        ? item.target_2
+                        : undefined,
+                    target_3:
+                      typeof item.target_3 === "number" && item.target_3 > 0
+                        ? item.target_3
+                        : undefined,
+                    invalidation_1:
+                      typeof item.invalidation_1 === "number" &&
+                      item.invalidation_1 > 0
+                        ? item.invalidation_1
+                        : undefined,
+                    invalidation_2:
+                      typeof item.invalidation_2 === "number" &&
+                      item.invalidation_2 > 0
+                        ? item.invalidation_2
+                        : undefined,
+                    invalidation_3:
+                      typeof item.invalidation_3 === "number" &&
+                      item.invalidation_3 > 0
+                        ? item.invalidation_3
+                        : undefined,
                   }; // Use provided sector or default
                 }
                 return { ticker: "", sector: "N/A" }; // Fallback for malformed data
@@ -978,8 +1031,8 @@ export default function BuySellSignalsTab({
       const compareByColumn = (
         col: string,
         dir: "asc" | "desc",
-        a: { ticker: string; target?: number },
-        b: { ticker: string; target?: number }
+        a: Holding,
+        b: Holding
       ) => {
         if (col === "price_target") {
           const priceA = meanRevRsi[a.ticker]?.currentPrice;
@@ -990,11 +1043,13 @@ export default function BuySellSignalsTab({
           const isValidA =
             typeof priceA === "number" &&
             typeof targetA === "number" &&
-            !isNaN(targetA);
+            !isNaN(targetA) &&
+            targetA > 0;
           const isValidB =
             typeof priceB === "number" &&
             typeof targetB === "number" &&
-            !isNaN(targetB);
+            !isNaN(targetB) &&
+            targetB > 0;
 
           if (!isValidA && !isValidB) return 0;
           if (!isValidA) return 1; // push A to bottom
@@ -1013,6 +1068,56 @@ export default function BuySellSignalsTab({
           }
 
           return dir === "asc" ? diffA - diffB : diffB - diffA;
+        } else if (["target_1", "target_2", "target_3"].includes(col)) {
+          const priceA = meanRevRsi[a.ticker]?.currentPrice;
+          const levelA = (a as any)[col];
+          const priceB = meanRevRsi[b.ticker]?.currentPrice;
+          const levelB = (b as any)[col];
+
+          const isValidA =
+            typeof priceA === "number" &&
+            typeof levelA === "number" &&
+            levelA > 0;
+          const isValidB =
+            typeof priceB === "number" &&
+            typeof levelB === "number" &&
+            levelB > 0;
+
+          if (!isValidA && !isValidB) return 0;
+          if (!isValidA) return 1;
+          if (!isValidB) return -1;
+
+          const diffA = ((priceA - levelA) / levelA) * 100;
+          const diffB = ((priceB - levelB) / levelB) * 100;
+
+          return dir === "asc" ? diffA - diffB : diffB - diffA;
+        } else if (
+          ["invalidation_1", "invalidation_2", "invalidation_3"].includes(col)
+        ) {
+          const priceA = meanRevRsi[a.ticker]?.currentPrice;
+          const levelA = (a as any)[col];
+          const priceB = meanRevRsi[b.ticker]?.currentPrice;
+          const levelB = (b as any)[col];
+
+          const isValidA =
+            typeof priceA === "number" &&
+            typeof levelA === "number" &&
+            levelA > 0;
+          const isValidB =
+            typeof priceB === "number" &&
+            typeof levelB === "number" &&
+            levelB > 0;
+
+          if (!isValidA && !isValidB) return 0;
+          if (!isValidA) return 1;
+          if (!isValidB) return -1;
+
+          const diffA = ((priceA - levelA) / levelA) * 100;
+          const diffB = ((priceB - levelB) / levelB) * 100;
+
+          return dir === "asc" ? diffA - diffB : diffB - diffA;
+        } else if (col === "levels_breached") {
+          return 0;
         } else if (col === "pnl" && listType === "portfolio") {
           const pnlA = getPnlForTicker(a.ticker);
           const pnlB = getPnlForTicker(b.ticker);
@@ -1262,8 +1367,8 @@ export default function BuySellSignalsTab({
     }
   };
 
-  const isDataReadyForColumn = (ticker: string, col: string) => {
-    const t = ticker.toUpperCase().trim(); // enforce safe key usage
+  const isDataReadyForColumn = (holding: Holding, col: string) => {
+    const t = holding.ticker.toUpperCase().trim(); // enforce safe key usage
 
     const signalCols = [
       "northstar",
@@ -1307,6 +1412,28 @@ export default function BuySellSignalsTab({
       return meanRevRsi[t]?.currentPrice != null;
     }
 
+    if (["target_1", "target_2", "target_3"].includes(col)) {
+      const lvl = (holding as any)[col];
+      return (
+        meanRevRsi[t]?.currentPrice != null &&
+        typeof lvl === "number" &&
+        lvl > 0
+      );
+    }
+
+    if (["invalidation_1", "invalidation_2", "invalidation_3"].includes(col)) {
+      const lvl = (holding as any)[col];
+      return (
+        meanRevRsi[t]?.currentPrice != null &&
+        typeof lvl === "number" &&
+        lvl > 0
+      );
+    }
+
+    if (col === "levels_breached") {
+      return meanRevRsi[t]?.currentPrice != null;
+    }
+
     if (col === "cmf") {
       return meanRevRsi[t]?.cmf != null;
     }
@@ -1338,13 +1465,10 @@ export default function BuySellSignalsTab({
     return true; // fallback for other columns
   };
 
-  const renderCell = (
-    col: string,
-    holding: { ticker: string; sector?: string; target?: number }
-  ) => {
+  const renderCell = (col: string, holding: Holding) => {
     const ticker = holding.ticker;
 
-    if (!isDataReadyForColumn(ticker, col)) {
+    if (!isDataReadyForColumn(holding, col)) {
       return <td style={{ textAlign: "center", color: "#ccc" }}>⏳</td>;
     }
 
@@ -1456,7 +1580,11 @@ export default function BuySellSignalsTab({
     if (col === "price_target") {
       const price = meanRevRsi[ticker]?.currentPrice;
       const target = holding.target;
-      if (typeof price === "number" && typeof target === "number") {
+      if (
+        typeof price === "number" &&
+        typeof target === "number" &&
+        target > 0
+      ) {
         if (listType === "buylist") {
           // Calculate how much the current price must change to reach the
           // desired buy price. The percentage difference is relative to the
@@ -1488,6 +1616,104 @@ export default function BuySellSignalsTab({
       return (
         <td style={{ textAlign: "center" }}>
           {price != null ? price.toFixed(2) : "-"}
+        </td>
+      );
+    }
+
+    if (["target_1", "target_2", "target_3"].includes(col)) {
+      const price = meanRevRsi[ticker]?.currentPrice;
+      const level = (holding as any)[col];
+      if (typeof price === "number" && typeof level === "number" && level > 0) {
+        const diff = ((price - level) / level) * 100;
+        const diffStr =
+          diff >= 0 ? `+${diff.toFixed(2)}%` : `${diff.toFixed(2)}%`;
+        const cellClass = price >= level ? "target-hit" : "";
+        return (
+          <td className={cellClass} style={{ textAlign: "center" }}>
+            {`${price.toFixed(2)} | ${level.toFixed(2)} (${diffStr})`}
+          </td>
+        );
+      }
+      return <td style={{ textAlign: "center" }}>-</td>;
+    }
+
+    if (["invalidation_1", "invalidation_2", "invalidation_3"].includes(col)) {
+      const price = meanRevRsi[ticker]?.currentPrice;
+      const level = (holding as any)[col];
+      if (typeof price === "number" && typeof level === "number" && level > 0) {
+        const diff = ((price - level) / level) * 100;
+        const diffStr =
+          diff >= 0 ? `+${diff.toFixed(2)}%` : `${diff.toFixed(2)}%`;
+        const cellClass = price <= level ? "inv-hit" : "";
+        return (
+          <td className={cellClass} style={{ textAlign: "center" }}>
+            {`${price.toFixed(2)} | ${level.toFixed(2)} (${diffStr})`}
+          </td>
+        );
+      }
+      return <td style={{ textAlign: "center" }}>-</td>;
+    }
+
+    if (col === "levels_breached") {
+      const price = meanRevRsi[ticker]?.currentPrice;
+      const sanitize = (v: number | undefined) =>
+        typeof v === "number" && v > 0 ? v : undefined;
+      const levels = {
+        target: sanitize(holding.target),
+        target_3: sanitize(holding.target_3),
+        target_2: sanitize(holding.target_2),
+        target_1: sanitize(holding.target_1),
+        invalidation_1: sanitize(holding.invalidation_1),
+        invalidation_2: sanitize(holding.invalidation_2),
+        invalidation_3: sanitize(holding.invalidation_3),
+      };
+      let status = "NEUTRAL";
+      let cls = "";
+      if (typeof price === "number") {
+        if (typeof levels.target === "number" && price >= levels.target) {
+          status = "HIT TARGET";
+          cls = "target-hit";
+        } else if (
+          typeof levels.target_3 === "number" &&
+          price >= levels.target_3
+        ) {
+          status = "TARGET 3";
+          cls = "target-hit";
+        } else if (
+          typeof levels.target_2 === "number" &&
+          price >= levels.target_2
+        ) {
+          status = "TARGET 2";
+          cls = "target-hit";
+        } else if (
+          typeof levels.target_1 === "number" &&
+          price >= levels.target_1
+        ) {
+          status = "TARGET 1";
+          cls = "target-hit";
+        } else if (
+          typeof levels.invalidation_3 === "number" &&
+          price <= levels.invalidation_3
+        ) {
+          status = "Breached INVALIDATION 3";
+          cls = "inv-hit";
+        } else if (
+          typeof levels.invalidation_2 === "number" &&
+          price <= levels.invalidation_2
+        ) {
+          status = "Breached INVALIDATION 2";
+          cls = "inv-hit";
+        } else if (
+          typeof levels.invalidation_1 === "number" &&
+          price <= levels.invalidation_1
+        ) {
+          status = "Breached INVALIDATION 1";
+          cls = "inv-hit";
+        }
+      }
+      return (
+        <td className={cls} style={{ textAlign: "center" }}>
+          {status}
         </td>
       );
     }

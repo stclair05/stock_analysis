@@ -93,6 +93,16 @@
   background-color: #e5fbe5 !important; /* soft green */
 }
 
+.target-hit {
+  background-color: #e5fbe5 !important; /* soft green */
+  color: #2e7d32 !important; /* dark green text */
+}
+
+.inv-hit {
+  background-color: #ffe5e5 !important; /* soft red */
+  color: #c62828 !important; /* red text */
+}
+
 /* Highlight for Mansfield NEW BUY */
 .signal-new-buy {
   background-color: #e5fbe5 !important; /* soft green */
