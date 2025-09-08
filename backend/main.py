@@ -178,20 +178,7 @@ def get_portfolio_status():
 
             rsi_series = compute_wilder_rsi(analyser.df["Close"])
             rsi_val = safe_value(rsi_series, -1)
-            rsi_ext = (
-                isinstance(rsi_val, (int, float)) and (rsi_val >= 70 or rsi_val <= 30)
-            )
-
-            mean_rev = analyser.mean_reversion_50dma().current
-            mean_rev_ext = (
-                isinstance(mean_rev, str)
-                and mean_rev in ["Overbought", "Oversold"]
-            )
-
-            bbwp = analyser.bollinger_band_width_percentile_daily().current
-            bbwp_red = isinstance(bbwp, str) and "red" in bbwp.lower()
-
-            if rsi_ext or mean_rev_ext or bbwp_red:
+            if isinstance(rsi_val, (int, float)) and rsi_val >= 70:
                 results["extended_vol"].append(ticker)
         except Exception:
             continue

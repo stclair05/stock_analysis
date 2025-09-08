@@ -79,7 +79,18 @@ export default function StatusPage() {
             <tr
               key={row.symbol}
               style={{
-                backgroundColor: row.count >= 2 ? "#f8d7da" : "transparent",
+                backgroundColor:
+                  row.count >= 3
+                    ? "#f8d7da"
+                    : row.count === 2
+                    ? "#fff3cd"
+                    : "transparent",
+                color:
+                  row.count >= 3
+                    ? "#dc3545"
+                    : row.count === 2
+                    ? "#fd7e14"
+                    : "inherit",
               }}
             >
               <td>{row.below20 ? row.symbol : ""}</td>
