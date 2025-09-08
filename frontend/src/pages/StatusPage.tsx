@@ -78,20 +78,13 @@ export default function StatusPage() {
           {rows.map((row) => (
             <tr
               key={row.symbol}
-              style={{
-                backgroundColor:
-                  row.count >= 3
-                    ? "#f8d7da"
-                    : row.count === 2
-                    ? "#fff3cd"
-                    : "transparent",
-                color:
-                  row.count >= 3
-                    ? "#dc3545"
-                    : row.count === 2
-                    ? "#fd7e14"
-                    : "inherit",
-              }}
+              className={
+                row.count >= 3
+                  ? "table-danger"
+                  : row.count === 2
+                  ? "table-warning"
+                  : undefined
+              }
             >
               <td>{row.below20 ? row.symbol : ""}</td>
               <td>{row.below200 ? row.symbol : ""}</td>
