@@ -774,6 +774,12 @@
       "sector": "Hong Kong & China",
       "target": 8,
       "technigrade": []
+    },
+    {
+      "ticker": "ERII",
+      "sector": "Hong Kong & China",
+      "target": 8,
+      "technigrade": [13, 11, 11, 10]
     }
   ],
   "portfolio": []
