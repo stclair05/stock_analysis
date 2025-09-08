@@ -1,28 +1,6 @@
 {
   "equities": [
     {
-      "ticker": "ARKK",
-      "shares": 28397.0,
-      "average_cost": 99.74,
-      "sector": "Others",
-      "target": 79.27,
-      "player": 1,
-      "invalidation_1": 72.2,
-      "invalidation_2": 71.28,
-      "invalidation_3": 70.39,
-      "target_1": 85.16,
-      "target_2": 92,
-      "target_3": 97
-    },
-    {
-      "ticker": "ARKG",
-      "shares": 20520.0,
-      "average_cost": 68.0,
-      "sector": "Others",
-      "target": 33.6,
-      "player": 1
-    },
-    {
       "ticker": "AI",
       "shares": 27000.0,
       "average_cost": 34.38,
@@ -309,15 +287,6 @@
       "player": 2
     },
     {
-      "ticker": "FCX",
-      "shares": 119543.0,
-      "average_cost": 38.45,
-      "sector": "Precious Metals",
-      "target": 51,
-      "player": 3,
-      "technigrade": [10, 10, 9, 10, 6]
-    },
-    {
       "ticker": "CF",
       "shares": 10000.0,
       "average_cost": 89.9,
@@ -377,20 +346,6 @@
       "target": 71,
       "player": 2,
       "technigrade": [3, 2, 3, 3, 2]
-    },
-    {
-      "ticker": "GRNY",
-      "shares": 120000.0,
-      "average_cost": 20.7,
-      "sector": "Others",
-      "target": 24.39,
-      "player": 5,
-      "invalidation_1": 23.4,
-      "invalidation_2": 23.13,
-      "invalidation_3": 22.71,
-      "target_1": 24.76,
-      "target_2": 25.31,
-      "target_3": 26.52
     },
     {
       "ticker": "PBR",
@@ -519,26 +474,79 @@
     },
     {
       "ticker": "HL",
-      "shares": 42000.0,
-      "average_cost": 7.35,
+      "shares": 182000,
+      "average_cost": 8.55,
       "sector": "Precious Metals",
       "target": 9.25,
       "player": 8,
-      "technigrade": [2, 2, 2, 10, 8]
+      "technigrade": [2, 2, 2, 2, 10]
     },
     {
       "ticker": "WDO.TO",
-      "shares": 20000.0,
-      "average_cost": 12.6,
+      "shares": 40000,
+      "average_cost": 12.91,
       "sector": "Precious Metals",
       "target": 20.2,
       "player": 8,
-      "technigrade": [16, 17, 9, 14, 14]
+      "technigrade": [12, 16, 17, 9, 14]
+    },
+    {
+      "ticker": "TMC",
+      "shares": 100000.0,
+      "average_cost": 5.37,
+      "sector": "Precious Metals",
+      "target": 5.9,
+      "player": 8,
+      "technigrade": [2, 2, 2, 2, 1]
+    },
+    {
+      "ticker": "KNT.TO",
+      "shares": 25000.0,
+      "average_cost": 11.27,
+      "sector": "Precious Metals",
+      "target": 17,
+      "player": 8,
+      "technigrade": [7, 9, 6, 4, 5]
+    },
+    {
+      "ticker": "ASM",
+      "shares": 100000,
+      "average_cost": 4.31,
+      "sector": "Precious Metals",
+      "target": 5.5,
+      "player": 8
+    },
+    {
+      "ticker": "RGLD",
+      "shares": 10000.0,
+      "average_cost": 182.15,
+      "sector": "Precious Metals",
+      "target": 191.7,
+      "player": 8,
+      "technigrade": [11, 12, 12, 12, 17]
+    },
+    {
+      "ticker": "WPM",
+      "shares": 15000.0,
+      "average_cost": 102.19,
+      "sector": "Precious Metals",
+      "target": 112.6,
+      "player": 8,
+      "technigrade": [6, 8, 7, 3, 5]
+    },
+    {
+      "ticker": "EXK",
+      "shares": 100000.0,
+      "average_cost": 6.68,
+      "sector": "Precious Metals",
+      "target": 7.49,
+      "player": 8,
+      "technigrade": [2, 3, 3, 3, 4]
     },
     {
       "ticker": "SIL",
-      "shares": 18089,
-      "average_cost": 49.87,
+      "shares": 38089,
+      "average_cost": 53.54,
       "sector": "Precious Metals",
       "target": 75,
       "player": 8
@@ -596,21 +604,13 @@
       "technigrade": [5, 10, 7, 11, 12]
     },
     {
-      "ticker": "ASM",
-      "shares": 50000,
-      "average_cost": 4.09,
-      "sector": "Precious Metals",
-      "target": 7.4,
-      "player": 4
-    },
-    {
       "ticker": "AYA.TO",
-      "shares": 100000.0,
-      "average_cost": 8.29,
+      "shares": 120000,
+      "average_cost": 8.72,
       "sector": "Precious Metals",
       "target": 26.7,
       "player": 8,
-      "technigrade": [12, 10, 8, 8, 5]
+      "technigrade": [6, 12, 10, 8, 8]
     },
     {
       "ticker": "USAR",
@@ -711,6 +711,15 @@
       "target": 84,
       "player": 2,
       "technigrade": [10, 16, 17, 17, 17]
+    },
+    {
+      "ticker": "MDB",
+      "shares": 1500.0,
+      "average_cost": 310.0,
+      "sector": "Technology",
+      "target": 338,
+      "player": 2,
+      "technigrade": [1, 9, 8, 10, 6]
     },
     {
       "ticker": "NAK",
