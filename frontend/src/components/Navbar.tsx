@@ -49,6 +49,14 @@ export default function Navbar() {
         >
           Ratios
         </Link>
+        <Link
+          to="/status"
+          className={`nav-link ${
+            location.pathname === "/status" ? "active" : ""
+          }`}
+        >
+          Status
+        </Link>
       </div>
     </nav>
   );

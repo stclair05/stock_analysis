@@ -11,7 +11,12 @@ from stock_analysis.models import StockRequest, StockAnalysisResponse, ElliottWa
 from stock_analysis.elliott_wave import calculate_elliott_wave
 from stock_analysis.fmp_fundamentals import FMPFundamentals
 from stock_analysis.twelve_data_fundamentals import TwelveDataFundamentals
-from stock_analysis.utils import compute_sortino_ratio_cached as compute_sortino_ratio, convert_numpy_types
+from stock_analysis.utils import (
+    compute_sortino_ratio_cached as compute_sortino_ratio,
+    convert_numpy_types,
+    compute_wilder_rsi,
+    safe_value,
+)
 from fastapi.responses import JSONResponse
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -116,6 +121,82 @@ def get_portfolio_tickers():
             for item in equities
             if "ticker" in item
         ]
+
+
+@app.get("/portfolio_status")
+def get_portfolio_status():
+    json_path = Path("portfolio_store.json")
+    if not json_path.exists():
+        return {
+            "below_20dma": [],
+            "below_200dma": [],
+            "bearish_candle": [],
+            "extended_vol": [],
+        }
+
+    with open(json_path, "r") as f:
+        data = json.load(f)
+        equities = [item.get("ticker") for item in data.get("equities", []) if "ticker" in item]
+
+    results = {
+        "below_20dma": [],
+        "below_200dma": [],
+        "bearish_candle": [],
+        "extended_vol": [],
+    }
+
+    for ticker in equities:
+        try:
+            analyser = StockAnalyser(ticker)
+            price = analyser.get_current_price()
+
+            twenty = analyser.calculate_20dma().current
+            if (
+                isinstance(price, (int, float))
+                and isinstance(twenty, (int, float))
+                and price < twenty
+            ):
+                results["below_20dma"].append(ticker)
+
+            two_hundred = analyser.calculate_200dma().current
+            if (
+                isinstance(price, (int, float))
+                and isinstance(two_hundred, (int, float))
+                and price < two_hundred
+            ):
+                results["below_200dma"].append(ticker)
+
+            engulf = analyser.detect_engulfing()
+            daily = engulf.get("daily")
+            weekly = engulf.get("weekly")
+            if (
+                isinstance(daily, str) and "bearish" in daily.lower()
+            ) or (
+                isinstance(weekly, str) and "bearish" in weekly.lower()
+            ):
+                results["bearish_candle"].append(ticker)
+
+            rsi_series = compute_wilder_rsi(analyser.df["Close"])
+            rsi_val = safe_value(rsi_series, -1)
+            rsi_ext = (
+                isinstance(rsi_val, (int, float)) and (rsi_val >= 70 or rsi_val <= 30)
+            )
+
+            mean_rev = analyser.mean_reversion_50dma().current
+            mean_rev_ext = (
+                isinstance(mean_rev, str)
+                and mean_rev in ["Overbought", "Oversold"]
+            )
+
+            bbwp = analyser.bollinger_band_width_percentile_daily().current
+            bbwp_red = isinstance(bbwp, str) and "red" in bbwp.lower()
+
+            if rsi_ext or mean_rev_ext or bbwp_red:
+                results["extended_vol"].append(ticker)
+        except Exception:
+            continue
+
+    return results
 
 @app.get("/fmp_financials/{symbol}", response_model=FinancialMetrics)
 async def get_fmp_financials(symbol: str):

@@ -10,6 +10,7 @@ import PortfolioPage from "./pages/PortfolioPage.tsx";
 import WatchlistPage from "./pages/WatchlistPage.tsx";
 import QuadrantPage from "./pages/QuandrantPage.tsx";
 import RatioPage from "./pages/RatioPage";
+import StatusPage from "./pages/StatusPage";
 import Navbar from "./components/Navbar";
 
 function App() {
@@ -36,6 +37,7 @@ function App() {
         />
         <Route path="/quadrant/:listType" element={<QuadrantPage />} />
         <Route path="/ratios" element={<RatioPage />} />
+        <Route path="/status" element={<StatusPage />} />
       </Routes>
     </Router>
   );
