@@ -92,34 +92,34 @@ const ScoreSummary = ({ stockSymbol }: ScoreSummaryProps) => {
 
   if (!data) return null;
 
-  const renderList = (scores: TrendScores, labels: Record<string, string>) => (
-    <ul className="list-unstyled mb-0">
-      {Object.entries(scores)
-        .filter(([key]) => key !== "total")
-        .map(([key, val]) => {
-          const bgColor =
-            val === null ? "#e0e0e0" : val ? "#c8e6c9" : "#ffcdd2";
-          return (
-            <li
-              key={key}
-              style={{
-                backgroundColor: bgColor,
-                margin: "2px 0",
-                padding: "2px 4px",
-              }}
-            >
-              {labels[key] ?? key}
-            </li>
-          );
-        })}
-    </ul>
-  );
+  const buildItems = (scores: TrendScores, labels: Record<string, string>) =>
+    Object.entries(scores)
+      .filter(([key]) => key !== "total")
+      .map(([key, val]) => ({ label: labels[key] ?? key, val }));
+
+  const stItems = buildItems(data.short_term_trend, stLabels);
+  const ltItems = buildItems(data.long_term_trend, ltLabels);
+  const sellItems = buildItems(data.sell_signal, sellLabels);
+  const maxRows = Math.max(stItems.length, ltItems.length, sellItems.length);
+
+  const renderCell = (item?: { label: string; val: number | null }) => {
+    if (!item) return <td>&nbsp;</td>;
+    const cls =
+      item.val === null ? "" : item.val ? "table-success" : "table-danger";
+    const style =
+      item.val === null ? { backgroundColor: "#e0e0e0" } : undefined;
+    return (
+      <td className={cls} style={style}>
+        {item.label}
+      </td>
+    );
+  };
 
   return (
     <div className="mt-4">
       <h3 className="text-center mb-3">Trend &amp; Signal Summary</h3>
-      <table className="table table-bordered">
-        <thead>
+      <table className="table text-center excel-table">
+        <thead className="bg-white">
           <tr>
             <th>Short-term Trend</th>
             <th>Bull Market (LT Trend)</th>
@@ -127,37 +127,48 @@ const ScoreSummary = ({ stockSymbol }: ScoreSummaryProps) => {
           </tr>
         </thead>
         <tbody>
+          {Array.from({ length: maxRows }, (_, i) => (
+            <tr key={i}>
+              {renderCell(stItems[i])}
+              {renderCell(ltItems[i])}
+              {renderCell(sellItems[i])}
+            </tr>
+          ))}
           <tr>
-            <td>{renderList(data.short_term_trend, stLabels)}</td>
-            <td>{renderList(data.long_term_trend, ltLabels)}</td>
-            <td>{renderList(data.sell_signal, sellLabels)}</td>
+            <td>&nbsp;</td>
+            <td>&nbsp;</td>
+            <td>&nbsp;</td>
           </tr>
-          <tr>
-            <td className="text-center fw-bold">
+          <tr className="summary-row">
+            <td
+              className={`text-center fw-bold ${
+                data.short_term_trend.total >= 2
+                  ? "table-success"
+                  : "table-danger"
+              }`}
+            >
               {data.short_term_trend.total} of {Object.keys(stLabels).length}{" "}
-              <span
-                className={
-                  data.short_term_trend.total >= 2
-                    ? "text-success"
-                    : "text-danger"
-                }
-              >
+              <span>
                 {data.short_term_trend.total >= 2 ? "UPTREND" : "DOWNTREND"}
               </span>
             </td>
-            <td className="text-center fw-bold">
+            <td
+              className={`text-center fw-bold ${
+                data.long_term_trend.total >= 4
+                  ? "table-success"
+                  : "table-danger"
+              }`}
+            >
               {data.long_term_trend.total} of {Object.keys(ltLabels).length}{" "}
-              <span
-                className={
-                  data.long_term_trend.total >= 4
-                    ? "text-success"
-                    : "text-danger"
-                }
-              >
+              <span>
                 {data.long_term_trend.total >= 4 ? "UPTREND" : "DOWNTREND"}
               </span>
             </td>
-            <td className="text-center fw-bold">
+            <td
+              className={`text-center fw-bold ${
+                data.sell_signal.total >= 4 ? "table-danger" : "table-success"
+              }`}
+            >
               ({data.sell_signal.total} of{" "}
               {
                 Object.entries(data.sell_signal).filter(

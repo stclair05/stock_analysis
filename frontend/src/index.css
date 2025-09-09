@@ -105,3 +105,13 @@ h1 {
   background-color: #ffc7ce !important;
   color: #9c0006 !important;
 }
+
+.excel-table td.table-success {
+  border: 1px solid #000 !important;
+  background-color: #c6efce !important;
+  color: #006100 !important;
+}
+
+.excel-table tr.summary-row td {
+  border: 2px solid #000 !important;
+}
