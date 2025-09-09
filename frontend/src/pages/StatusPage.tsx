@@ -7,15 +7,6 @@ type StatusResponse = {
   extended_vol: string[];
 };
 
-interface RowData {
-  symbol: string;
-  below20: boolean;
-  below200: boolean;
-  bearish: boolean;
-  extended: boolean;
-  count: number;
-}
-
 export default function StatusPage() {
   const [data, setData] = useState<StatusResponse | null>(null);
 
@@ -37,36 +28,37 @@ export default function StatusPage() {
     return <div className="container mt-4">Loading...</div>;
   }
 
-  const uniqueSymbols = Array.from(
-    new Set([
-      ...data.below_20dma,
-      ...data.below_200dma,
-      ...data.bearish_candle,
-      ...data.extended_vol,
-    ])
+  const counts: Record<string, number> = {};
+  [
+    ...data.below_20dma,
+    ...data.below_200dma,
+    ...data.bearish_candle,
+    ...data.extended_vol,
+  ].forEach((sym) => {
+    counts[sym] = (counts[sym] || 0) + 1;
+  });
+
+  const maxRows = Math.max(
+    data.below_20dma.length,
+    data.below_200dma.length,
+    data.bearish_candle.length,
+    data.extended_vol.length
   );
 
-  const rows: RowData[] = uniqueSymbols
-    .map((symbol) => {
-      const row = {
-        symbol,
-        below20: data.below_20dma.includes(symbol),
-        below200: data.below_200dma.includes(symbol),
-        bearish: data.bearish_candle.includes(symbol),
-        extended: data.extended_vol.includes(symbol),
-      } as RowData;
-      row.count = [row.below20, row.below200, row.bearish, row.extended].filter(
-        Boolean
-      ).length;
-      return row;
-    })
-    .sort((a, b) => b.count - a.count);
+  const getCellClass = (symbol?: string) =>
+    symbol && counts[symbol] >= 2 ? "table-danger" : undefined;
 
   return (
     <div className="container mt-4" style={{ maxWidth: "60%" }}>
       <h1 className="fw-bold mb-4">Status</h1>
-      <table className="table table-bordered text-center">
-        <thead className="table-light">
+      <table className="table text-center excel-table">
+        <thead>
+          <tr>
+            <th>{data.below_20dma.length}</th>
+            <th>{data.below_200dma.length}</th>
+            <th>{data.bearish_candle.length}</th>
+            <th>{data.extended_vol.length}</th>
+          </tr>
           <tr>
             <th>Below 20 DMA</th>
             <th>Below 200 DMA</th>
@@ -75,23 +67,21 @@ export default function StatusPage() {
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
-            <tr
-              key={row.symbol}
-              className={
-                row.count >= 3
-                  ? "table-danger"
-                  : row.count === 2
-                  ? "table-warning"
-                  : undefined
-              }
-            >
-              <td>{row.below20 ? row.symbol : ""}</td>
-              <td>{row.below200 ? row.symbol : ""}</td>
-              <td>{row.bearish ? row.symbol : ""}</td>
-              <td>{row.extended ? row.symbol : ""}</td>
-            </tr>
-          ))}
+          {Array.from({ length: maxRows }).map((_, idx) => {
+            const b20 = data.below_20dma[idx];
+            const b200 = data.below_200dma[idx];
+            const bc = data.bearish_candle[idx];
+            const ext = data.extended_vol[idx];
+
+            return (
+              <tr key={idx}>
+                <td className={getCellClass(b20)}>{b20 || ""}</td>
+                <td className={getCellClass(b200)}>{b200 || ""}</td>
+                <td className={getCellClass(bc)}>{bc || ""}</td>
+                <td className={getCellClass(ext)}>{ext || ""}</td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

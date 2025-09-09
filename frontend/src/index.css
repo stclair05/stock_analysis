@@ -1,7 +1,7 @@
 body {
   background-color: #f9fafb;
   color: #1e293b;
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
 }
 
 .card {
@@ -38,7 +38,7 @@ h1 {
   --secondary-color: #1e293b;
   --success-color: #15803d;
   --danger-color: #ef4444;
-  --warning-color: 	#f59e0b;
+  --warning-color: #f59e0b;
   --card-bg: #ffffff;
   --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   --table-font-size: 1.05rem;
@@ -86,6 +86,22 @@ h1 {
   font-weight: 500;
 }
 .text-secondary {
-  color: #64748b !important;     /* Slate/grey */
+  color: #64748b !important; /* Slate/grey */
   font-weight: 500;
+}
+
+/* Excel-like table styling for status page */
+.excel-table {
+  border-collapse: collapse;
+}
+
+.excel-table th,
+.excel-table td {
+  border: 1px solid #000 !important;
+}
+
+.excel-table td.table-danger {
+  border: 1px solid #000 !important;
+  background-color: #ffc7ce !important;
+  color: #9c0006 !important;
 }
