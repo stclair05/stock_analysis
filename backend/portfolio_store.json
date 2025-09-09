@@ -475,7 +475,7 @@
     {
       "ticker": "HL",
       "shares": 182000,
-      "average_cost": 8.55,
+      "average_cost": 7.56,
       "sector": "Precious Metals",
       "target": 9.25,
       "player": 8,
@@ -640,9 +640,15 @@
       "shares": 55000,
       "average_cost": 11.94,
       "sector": "Technology",
-      "target": 16,
+      "target": 16.1,
       "player": 4,
-      "technigrade": [4, 1, 2, 11, 5]
+      "technigrade": [4, 1, 2, 11, 5],
+      "invalidation_1": 12.42,
+      "invalidation_2": 11.86,
+      "invalidation_3": 11.27,
+      "target_1": 20.19,
+      "target_2": 28.61,
+      "target_3": -1
     },
     {
       "ticker": "TSLA",
