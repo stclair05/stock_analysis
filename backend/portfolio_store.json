@@ -477,9 +477,15 @@
       "shares": 182000,
       "average_cost": 7.56,
       "sector": "Precious Metals",
-      "target": 9.25,
+      "target": 10.53,
       "player": 8,
-      "technigrade": [2, 2, 2, 2, 10]
+      "technigrade": [2, 2, 2, 2, 10],
+      "invalidation_1": -1,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": 11.29,
+      "target_2": 12.6,
+      "target_3": 14.18
     },
     {
       "ticker": "WDO.TO",
@@ -556,8 +562,14 @@
       "shares": 197000.0,
       "average_cost": 15.55,
       "sector": "Precious Metals",
-      "target": 24,
-      "player": 8
+      "target": 19.81,
+      "player": 8,
+      "invalidation_1": 17.7,
+      "invalidation_2": 16.28,
+      "invalidation_3": -1,
+      "target_1": 19.81,
+      "target_2": 21.43,
+      "target_3": 23.42
     },
     {
       "ticker": "GDXJ",
@@ -592,7 +604,13 @@
       "sector": "Precious Metals",
       "target": 21.5,
       "player": 4,
-      "technigrade": [5, 10, 7, 11, 12]
+      "technigrade": [5, 10, 7, 11, 12],
+      "invalidation_1": 17.81,
+      "invalidation_2": 17.47,
+      "invalidation_3": 15.61,
+      "target_1": 21.5,
+      "target_2": 22.74,
+      "target_3": 23.39
     },
     {
       "ticker": "AYA.TO",
@@ -672,9 +690,15 @@
       "shares": 18000,
       "average_cost": 43.3,
       "sector": "Technology",
-      "target": 46.5,
+      "target": 55.82,
       "player": 2,
-      "technigrade": [19, 17, 12, 8, 5]
+      "technigrade": [19, 19, 17, 12, 8],
+      "invalidation_1": 39.78,
+      "invalidation_2": 36.25,
+      "invalidation_3": 21.53,
+      "target_1": 70.79,
+      "target_2": 103.58,
+      "target_3": -1
     },
     {
       "ticker": "PTON",
@@ -705,9 +729,15 @@
       "shares": 3000.0,
       "average_cost": 83.0,
       "sector": "Technology",
-      "target": 84,
+      "target": 88.5,
       "player": 2,
-      "technigrade": [10, 16, 17, 17, 17]
+      "technigrade": [10, 16, 17, 17, 17],
+      "invalidation_1": 80.74,
+      "invalidation_2": 76.14,
+      "invalidation_3": -1,
+      "target_1": 92.12,
+      "target_2": 96.73,
+      "target_3": 14.18
     },
     {
       "ticker": "MDB",
@@ -733,7 +763,13 @@
       "sector": "Precious Metals",
       "target": 10,
       "player": 8,
-      "technigrade": [3, 4, 6, 10, 11]
+      "technigrade": [3, 4, 6, 10, 11],
+      "invalidation_1": 9.49,
+      "invalidation_2": 8.88,
+      "invalidation_3": 8.33,
+      "target_1": 10.23,
+      "target_2": 10.97,
+      "target_3": -1
     },
     {
       "ticker": "RING",
