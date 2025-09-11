@@ -41,16 +41,6 @@
       "technigrade": [8, 3, 3, 5, 6, 2, 1, 1, 1]
     },
     {
-      "ticker": "WPM",
-      "sector": "",
-      "technigrade": [5, 7, 5, 4, 4, 3, 2, 2, 2]
-    },
-    {
-      "ticker": "RGLD",
-      "sector": "",
-      "technigrade": [19, 18, 17, 9, 7, 5, 4, 5, 3]
-    },
-    {
       "ticker": "AGI",
       "sector": "",
       "technigrade": [14, 15, 10, 9, 10, 6, 4, 5, 4]
@@ -260,16 +250,6 @@
       "technigrade": [13, 15, 13, 10, 9, 5, 4, 4, 3]
     },
     {
-      "ticker": "WDO.TO",
-      "sector": "",
-      "technigrade": [14, 12, 7, 5, 4, 2, 2, 2, 2]
-    },
-    {
-      "ticker": "KNT.TO",
-      "sector": "",
-      "technigrade": [5, 5, 3, 2, 2, 1, 1, 1, 1]
-    },
-    {
       "ticker": "HG=F",
       "sector": ""
     },
@@ -308,11 +288,6 @@
       "technigrade": [1, 1, 1, 2, 2, 4, 7, 7]
     },
     {
-      "ticker": "B",
-      "sector": "",
-      "technigrade": [7, 8, 6, 6, 6, 4, 3, 6]
-    },
-    {
       "ticker": "FTNT",
       "sector": "",
       "technigrade": [12, 11, 16, 11, 11, 12, 11, 8]
@@ -346,11 +321,6 @@
       "ticker": "CAVA",
       "sector": "",
       "technigrade": [15, 15, 12, 17, 19, 20, 20]
-    },
-    {
-      "ticker": "MDGL",
-      "sector": "",
-      "technigrade": [17, 8, 13, 17, 15, 17, 15]
     },
     {
       "ticker": "RKLB",

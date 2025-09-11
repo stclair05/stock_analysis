@@ -7,7 +7,7 @@
       "sector": "Technology",
       "target": 31,
       "player": 1,
-      "technigrade": [20, 20, 17, 16, 10, 4, 8]
+      "technigrade": [20, 20, 20, 17, 16]
     },
     {
       "ticker": "ASML.AS",
@@ -15,7 +15,7 @@
       "average_cost": 921.87,
       "target": 800,
       "player": 1,
-      "technigrade": [13, 12, 13, 15, 16],
+      "technigrade": [10, 14, 13, 12, 13],
       "invalidation_1": 633.5,
       "invalidation_2": 605.3,
       "invalidation_3": -1,
@@ -30,7 +30,7 @@
       "sector": "Energy",
       "target": 131.08,
       "player": 2,
-      "technigrade": [14, 16, 14, 11, 14]
+      "technigrade": [15, 12, 14, 16, 14]
     },
     {
       "ticker": "STO.AX",
@@ -39,7 +39,7 @@
       "sector": "Energy",
       "target": 11.36,
       "player": 2,
-      "technigrade": [6, 5, 4, 4, 4]
+      "technigrade": [7, 5, 6, 5, 4]
     },
     {
       "ticker": "MPC",
@@ -48,7 +48,7 @@
       "sector": "Energy",
       "target": 218.4,
       "player": 2,
-      "technigrade": [10, 11, 10, 7, 7]
+      "technigrade": [7, 7, 10, 11, 10]
     },
     {
       "ticker": "VLO",
@@ -57,7 +57,7 @@
       "sector": "Energy",
       "target": 195.34,
       "player": 2,
-      "technigrade": [9, 11, 11, 10, 9]
+      "technigrade": [6, 6, 9, 11, 11]
     },
     {
       "ticker": "AR",
@@ -66,7 +66,7 @@
       "sector": "Energy",
       "target": 50,
       "player": 2,
-      "technigrade": [20, 19, 18, 18, 20]
+      "technigrade": [19, 19, 20, 19, 18]
     },
     {
       "ticker": "RRC",
@@ -75,7 +75,7 @@
       "sector": "Energy",
       "target": 51,
       "player": 2,
-      "technigrade": [19, 18, 17, 16]
+      "technigrade": [18, 18, 19, 18, 17]
     },
     {
       "ticker": "DK",
@@ -84,7 +84,7 @@
       "sector": "Energy",
       "target": 31,
       "player": 2,
-      "technigrade": [3, 4, 5, 4, 3]
+      "technigrade": [1, 2, 3, 4, 5]
     },
     {
       "ticker": "COP",
@@ -93,7 +93,7 @@
       "sector": "Energy",
       "target": 115,
       "player": 2,
-      "technigrade": [13, 12, 12, 11, 13]
+      "technigrade": [15, 11, 13, 12, 12]
     },
     {
       "ticker": "TALO",
@@ -102,7 +102,7 @@
       "sector": "Energy",
       "target": 19,
       "player": 2,
-      "technigrade": [8, 15, 17, 16, 12]
+      "technigrade": [8, 5, 8, 15, 17]
     },
     {
       "ticker": "OVV",
@@ -111,7 +111,7 @@
       "sector": "Energy",
       "target": 46,
       "player": 2,
-      "technigrade": [12, 13, 11, 10, 10]
+      "technigrade": [11, 10, 12, 13, 11]
     },
     {
       "ticker": "DINO",
@@ -120,7 +120,7 @@
       "sector": "Energy",
       "target": 51,
       "player": 2,
-      "technigrade": [3, 4, 4, 4, 4]
+      "technigrade": [3, 2, 3, 4, 4]
     },
     {
       "ticker": "OXY",
@@ -129,7 +129,7 @@
       "sector": "Energy",
       "target": 53,
       "player": 2,
-      "technigrade": [13, 13, 12, 13, 13]
+      "technigrade": [12, 10, 13, 13, 12]
     },
     {
       "ticker": "FCG",
@@ -146,7 +146,7 @@
       "sector": "Energy",
       "target": 26,
       "player": 2,
-      "technigrade": [6, 8, 8, 12, 13]
+      "technigrade": [5, 4, 6, 8, 8]
     },
     {
       "ticker": "SM",
@@ -155,7 +155,7 @@
       "sector": "Energy",
       "target": 36,
       "player": 2,
-      "technigrade": [11, 14, 13, 11, 12]
+      "technigrade": [13, 9, 11, 14, 13]
     },
     {
       "ticker": "VET",
@@ -164,7 +164,7 @@
       "sector": "Energy",
       "target": 11,
       "player": 2,
-      "technigrade": [13, 15, 11, 7, 7]
+      "technigrade": [15, 13, 13, 15, 11]
     },
     {
       "ticker": "VTLE",
@@ -173,7 +173,7 @@
       "sector": "Energy",
       "target": 30,
       "player": 2,
-      "technigrade": [19, 19, 19, 16, 14]
+      "technigrade": [17, 12, 19, 19, 19]
     },
     {
       "ticker": "CVI",
@@ -182,7 +182,7 @@
       "sector": "Energy",
       "target": 36,
       "player": 2,
-      "technigrade": [6, 5, 5, 5, 3]
+      "technigrade": [3, 3, 6, 5, 5]
     },
     {
       "ticker": "MTDR",
@@ -191,7 +191,7 @@
       "sector": "Energy",
       "target": 57.13,
       "player": 2,
-      "technigrade": [14, 14, 14, 11, 10]
+      "technigrade": [13, 10, 14, 14, 14]
     },
     {
       "ticker": "PR",
@@ -200,7 +200,7 @@
       "sector": "Energy",
       "target": 20.92,
       "player": 2,
-      "technigrade": [13, 13, 13, 10, 12]
+      "technigrade": [13, 11, 13, 13, 13]
     },
     {
       "ticker": "BTE",
@@ -208,7 +208,7 @@
       "average_cost": 3.93,
       "sector": "Energy",
       "target": 2.62,
-      "technigrade": [8, 10, 8, 6, 8]
+      "technigrade": [7, 6, 8, 10, 8]
     },
     {
       "ticker": "CRGY",
@@ -217,7 +217,7 @@
       "sector": "Energy",
       "target": 10.49,
       "player": 2,
-      "technigrade": [11, 13, 14, 16, 18]
+      "technigrade": [17, 13, 11, 13, 14]
     },
     {
       "ticker": "NNRG.NE",
@@ -242,7 +242,7 @@
       "sector": "Energy",
       "target": 32,
       "player": 2,
-      "technigrade": [15, 14, 13, 9, 12]
+      "technigrade": [17, 16, 15, 14, 13]
     },
     {
       "ticker": "CIVI",
@@ -251,7 +251,7 @@
       "sector": "Energy",
       "target": 45,
       "player": 2,
-      "technigrade": [10, 9, 14, 17, 16]
+      "technigrade": [8, 5, 10, 9, 14]
     },
     {
       "ticker": "TXP.TO",
@@ -268,7 +268,7 @@
       "sector": "Energy",
       "target": 11,
       "player": 2,
-      "technigrade": [17, 16, 13, 9, 9]
+      "technigrade": [18, 16, 17, 16, 13]
     },
     {
       "ticker": "YGR.TO",
@@ -293,7 +293,7 @@
       "sector": "Fertilizer",
       "target": 115,
       "player": 3,
-      "technigrade": [15, 14, 16, 7, 9]
+      "technigrade": [17, 15, 15, 14, 16]
     },
     {
       "ticker": "MOS",
@@ -302,7 +302,7 @@
       "sector": "Fertilizer",
       "target": 57,
       "player": 3,
-      "technigrade": [14, 12, 12, 5, 4]
+      "technigrade": [15, 13, 14, 12, 12]
     },
     {
       "ticker": "NTR",
@@ -311,7 +311,7 @@
       "sector": "Fertilizer",
       "target": 73,
       "player": 3,
-      "technigrade": [14, 13, 14, 8, 9]
+      "technigrade": [16, 14, 14, 13, 14]
     },
     {
       "ticker": "0P0000RU80.L",
@@ -345,7 +345,7 @@
       "sector": "Uranium",
       "target": 71,
       "player": 2,
-      "technigrade": [3, 2, 3, 3, 2]
+      "technigrade": [5, 3, 3, 2, 3]
     },
     {
       "ticker": "PBR",
@@ -354,7 +354,7 @@
       "sector": "Energy",
       "target": 24.5,
       "player": 7,
-      "technigrade": [16, 16, 15, 11, 15]
+      "technigrade": [16, 15, 16, 16, 15]
     },
     {
       "ticker": "SGY.TO",
@@ -371,7 +371,7 @@
       "sector": "Energy",
       "target": 227,
       "player": 7,
-      "technigrade": [15, 15, 14, 10, 14]
+      "technigrade": [17, 12, 15, 15, 14]
     },
     {
       "ticker": "DVN",
@@ -380,7 +380,7 @@
       "sector": "Energy",
       "target": 42.55,
       "player": 10,
-      "technigrade": [11, 12, 12, 14, 15]
+      "technigrade": [12, 9, 11, 12, 12]
     },
     {
       "ticker": "IPOOF",
@@ -389,14 +389,6 @@
       "sector": "Energy",
       "target": "",
       "player": 7
-    },
-    {
-      "ticker": "GLD",
-      "shares": 546.0,
-      "average_cost": 148.29,
-      "sector": "Precious Metals",
-      "target": 374,
-      "player": 8
     },
     {
       "ticker": "XAGUSD",
@@ -421,7 +413,7 @@
       "sector": "Technology",
       "target": 66,
       "player": 0,
-      "technigrade": [15, 13, 14, 10, 7]
+      "technigrade": [14, 14, 15, 13, 14]
     },
     {
       "ticker": "ACHR",
@@ -430,7 +422,7 @@
       "sector": "Aerospace & Defense",
       "target": 13.91,
       "player": 4,
-      "technigrade": [14, 11, 10, 10, 4],
+      "technigrade": [19, 18, 14, 11, 10],
       "invalidation_1": 9.1,
       "invalidation_2": 8.86,
       "invalidation_3": -1,
@@ -461,7 +453,7 @@
       "sector": "Healthcare",
       "target": 52,
       "player": 2,
-      "technigrade": [15, 12, 4, 1, 2]
+      "technigrade": [10, 18, 15, 12, 4]
     },
     {
       "ticker": "MDGL",
@@ -470,7 +462,7 @@
       "sector": "Healthcare",
       "target": 470,
       "player": 2,
-      "technigrade": [3, 4, 6, 13, 17]
+      "technigrade": [2, 2, 3, 4, 6]
     },
     {
       "ticker": "HL",
@@ -479,7 +471,7 @@
       "sector": "Precious Metals",
       "target": 10.53,
       "player": 8,
-      "technigrade": [2, 2, 2, 2, 10],
+      "technigrade": [2, 2, 2, 2, 2],
       "invalidation_1": -1,
       "invalidation_2": -1,
       "invalidation_3": -1,
@@ -494,7 +486,7 @@
       "sector": "Precious Metals",
       "target": 20.2,
       "player": 8,
-      "technigrade": [12, 16, 17, 9, 14]
+      "technigrade": [8, 12, 16, 17, 9]
     },
     {
       "ticker": "TMC",
@@ -503,7 +495,7 @@
       "sector": "Precious Metals",
       "target": 5.9,
       "player": 8,
-      "technigrade": [2, 2, 2, 2, 1]
+      "technigrade": [3, 2, 2, 2, 1]
     },
     {
       "ticker": "KNT.TO",
@@ -512,7 +504,7 @@
       "sector": "Precious Metals",
       "target": 17,
       "player": 8,
-      "technigrade": [7, 9, 6, 4, 5]
+      "technigrade": [6, 7, 9, 6, 4]
     },
     {
       "ticker": "ASM",
@@ -529,7 +521,7 @@
       "sector": "Precious Metals",
       "target": 191.7,
       "player": 8,
-      "technigrade": [11, 12, 12, 12, 17]
+      "technigrade": [10, 11, 12, 12, 12]
     },
     {
       "ticker": "WPM",
@@ -538,7 +530,7 @@
       "sector": "Precious Metals",
       "target": 112.6,
       "player": 8,
-      "technigrade": [6, 8, 7, 3, 5]
+      "technigrade": [5, 6, 8, 7, 3]
     },
     {
       "ticker": "EXK",
@@ -547,7 +539,7 @@
       "sector": "Precious Metals",
       "target": 7.49,
       "player": 8,
-      "technigrade": [2, 3, 3, 3, 4]
+      "technigrade": [3, 2, 3, 3, 3]
     },
     {
       "ticker": "SIL",
@@ -572,30 +564,13 @@
       "target_3": 23.42
     },
     {
-      "ticker": "GDXJ",
-      "shares": 5500.0,
-      "average_cost": 60.26,
-      "sector": "Precious Metals",
-      "target": 94,
-      "player": 8
-    },
-    {
-      "ticker": "CDE",
-      "shares": 82044.0,
-      "average_cost": 7.36,
-      "sector": "Precious Metals",
-      "target": 15,
-      "player": 8,
-      "technigrade": [1, 1, 1, 3, 2]
-    },
-    {
       "ticker": "B",
       "shares": 100000,
       "average_cost": 24.38,
       "sector": "Precious Metals",
       "target": 30,
       "player": 4,
-      "technigrade": [3, 4, 4, 6, 7]
+      "technigrade": [2, 3, 3, 4, 4]
     },
     {
       "ticker": "DRD",
@@ -604,7 +579,7 @@
       "sector": "Precious Metals",
       "target": 21.5,
       "player": 4,
-      "technigrade": [5, 10, 7, 11, 12],
+      "technigrade": [2, 3, 5, 10, 7],
       "invalidation_1": 17.81,
       "invalidation_2": 17.47,
       "invalidation_3": 15.61,
@@ -619,7 +594,7 @@
       "sector": "Precious Metals",
       "target": 26.7,
       "player": 8,
-      "technigrade": [6, 12, 10, 8, 8]
+      "technigrade": [4, 6, 12, 10, 8]
     },
     {
       "ticker": "NST.AX",
@@ -627,8 +602,7 @@
       "average_cost": 13.44,
       "sector": "Precious Metals",
       "target": 23,
-      "player": 8,
-      "technigrade": [6, 12, 10, 8, 8]
+      "player": 8
     },
     {
       "ticker": "USAR",
@@ -651,7 +625,7 @@
       "sector": "Technology",
       "target": 214,
       "player": 10,
-      "technigrade": [14, 12, 13, 13, 12]
+      "technigrade": [6, 10, 14, 12, 13]
     },
     {
       "ticker": "SOUN",
@@ -660,7 +634,7 @@
       "sector": "Technology",
       "target": 16.1,
       "player": 4,
-      "technigrade": [4, 1, 2, 11, 5],
+      "technigrade": [2, 4, 4, 1, 2],
       "invalidation_1": 12.42,
       "invalidation_2": 11.86,
       "invalidation_3": 11.27,
@@ -675,7 +649,7 @@
       "sector": "Technology",
       "target": 367,
       "player": 1,
-      "technigrade": [8, 8, 7, 11, 12]
+      "technigrade": [7, 9, 8, 8, 7]
     },
     {
       "ticker": "GEVO",
@@ -692,7 +666,7 @@
       "sector": "Technology",
       "target": 55.82,
       "player": 2,
-      "technigrade": [19, 19, 17, 12, 8],
+      "technigrade": [12, 19, 19, 17, 12],
       "invalidation_1": 39.78,
       "invalidation_2": 36.25,
       "invalidation_3": 21.53,
@@ -707,7 +681,7 @@
       "sector": "Technology",
       "target": 10.4,
       "player": 2,
-      "technigrade": [6, 3, 4, 12, 16]
+      "technigrade": [5, 7, 6, 3, 4]
     },
     {
       "ticker": "AEVA",
@@ -716,7 +690,7 @@
       "sector": "Technology",
       "target": 18.72,
       "player": 2,
-      "technigrade": [2, 2, 2, 1, 1],
+      "technigrade": [5, 2, 2, 2, 2],
       "invalidation_1": 12.28,
       "invalidation_2": 10.88,
       "invalidation_3": -1,
@@ -731,7 +705,7 @@
       "sector": "Technology",
       "target": 88.5,
       "player": 2,
-      "technigrade": [10, 16, 17, 17, 17],
+      "technigrade": [9, 11, 10, 16, 17],
       "invalidation_1": 80.74,
       "invalidation_2": 76.14,
       "invalidation_3": -1,
@@ -746,7 +720,7 @@
       "sector": "Technology",
       "target": 338,
       "player": 2,
-      "technigrade": [1, 9, 8, 10, 6]
+      "technigrade": [1, 1, 9, 8, 10]
     },
     {
       "ticker": "NAK",
@@ -756,21 +730,7 @@
       "target": 1.1,
       "player": 2
     },
-    {
-      "ticker": "IAG",
-      "shares": 60000.0,
-      "average_cost": 7.07,
-      "sector": "Precious Metals",
-      "target": 10,
-      "player": 8,
-      "technigrade": [3, 4, 6, 10, 11],
-      "invalidation_1": 9.49,
-      "invalidation_2": 8.88,
-      "invalidation_3": 8.33,
-      "target_1": 10.23,
-      "target_2": 10.97,
-      "target_3": -1
-    },
+
     {
       "ticker": "RING",
       "shares": 12000.0,
@@ -780,31 +740,13 @@
       "player": 8
     },
     {
-      "ticker": "MC.PA",
-      "shares": 600.0,
-      "average_cost": 580.5,
-      "sector": "Luxury & Cosmetics",
-      "target": 575,
-      "player": 10,
-      "technigrade": [6, 5, 5, 5, 5]
-    },
-    {
-      "ticker": "CDI.PA",
-      "shares": 600.0,
-      "average_cost": 548.84,
-      "sector": "Luxury & Cosmetics",
-      "target": 490,
-      "player": 6,
-      "technigrade": [13, 17, 16, 16, 15]
-    },
-    {
       "ticker": "CHWY",
       "shares": 10000.0,
       "average_cost": 43.51,
       "sector": "Others",
       "target": 334,
       "player": 10,
-      "technigrade": [14, 10, 16, 16, 18]
+      "technigrade": [9, 11, 14, 10, 16]
     },
     {
       "ticker": "IPI",
@@ -813,7 +755,7 @@
       "sector": "Fertilizer",
       "target": 56.9,
       "player": 3,
-      "technigrade": [20, 19, 18, 11, 7]
+      "technigrade": [19, 18, 20, 19, 18]
     },
     {
       "ticker": "GDS",
@@ -854,7 +796,7 @@
       "sector": "Hong Kong and China",
       "target": 640,
       "player": 10,
-      "technigrade": [5, 6, 6, 8, 7]
+      "technigrade": [6, 6, 5, 6, 6]
     },
     {
       "ticker": "9988.HK",
@@ -863,7 +805,7 @@
       "sector": "Hong Kong and China",
       "target": 176,
       "player": 10,
-      "technigrade": [14, 14, 13, 12, 10]
+      "technigrade": [10, 9, 14, 14, 13, 12, 10]
     },
     {
       "ticker": "9618.HK",
@@ -872,7 +814,7 @@
       "sector": "Hong Kong and China",
       "target": 240,
       "player": 10,
-      "technigrade": [18, 18, 18, 18, 18]
+      "technigrade": [18, 19, 18, 18, 18]
     },
     {
       "ticker": "3690.HK",
