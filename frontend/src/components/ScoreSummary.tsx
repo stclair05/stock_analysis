@@ -102,10 +102,21 @@ const ScoreSummary = ({ stockSymbol }: ScoreSummaryProps) => {
   const sellItems = buildItems(data.sell_signal, sellLabels);
   const maxRows = Math.max(stItems.length, ltItems.length, sellItems.length);
 
-  const renderCell = (item?: { label: string; val: number | null }) => {
+  const renderCell = (
+    item?: { label: string; val: number | null },
+    invert = false
+  ) => {
     if (!item) return <td>&nbsp;</td>;
     const cls =
-      item.val === null ? "" : item.val ? "table-success" : "table-danger";
+      item.val === null
+        ? ""
+        : item.val
+        ? invert
+          ? "table-danger"
+          : "table-success"
+        : invert
+        ? "table-success"
+        : "table-danger";
     const style =
       item.val === null ? { backgroundColor: "#e0e0e0" } : undefined;
     return (
@@ -131,7 +142,7 @@ const ScoreSummary = ({ stockSymbol }: ScoreSummaryProps) => {
             <tr key={i}>
               {renderCell(stItems[i])}
               {renderCell(ltItems[i])}
-              {renderCell(sellItems[i])}
+              {renderCell(sellItems[i], true)}
             </tr>
           ))}
           <tr>
