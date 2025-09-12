@@ -118,9 +118,15 @@
       "shares": 4748.0,
       "average_cost": 63.93,
       "sector": "Energy",
-      "target": 51,
+      "target": 57.95,
       "player": 2,
-      "technigrade": [3, 2, 3, 4, 4]
+      "technigrade": [3, 2, 3, 4, 4],
+      "invalidation_1": 51.72,
+      "invalidation_2": 48.91,
+      "invalidation_3": 48.18,
+      "target_1": 57.95,
+      "target_2": 63.93,
+      "target_3": -1
     },
     {
       "ticker": "OXY",
@@ -395,7 +401,7 @@
       "shares": 566809.0,
       "average_cost": 29.42,
       "sector": "Precious Metals",
-      "target": 41,
+      "target": 45,
       "player": 8
     },
     {
@@ -469,7 +475,7 @@
       "shares": 182000,
       "average_cost": 7.56,
       "sector": "Precious Metals",
-      "target": 10.53,
+      "target": 11.29,
       "player": 8,
       "technigrade": [2, 2, 2, 2, 2],
       "invalidation_1": -1,
@@ -664,12 +670,12 @@
       "shares": 18000,
       "average_cost": 43.3,
       "sector": "Technology",
-      "target": 55.82,
+      "target": 70.79,
       "player": 2,
       "technigrade": [12, 19, 19, 17, 12],
-      "invalidation_1": 39.78,
-      "invalidation_2": 36.25,
-      "invalidation_3": 21.53,
+      "invalidation_1": 55.87,
+      "invalidation_2": 39.78,
+      "invalidation_3": 36.25,
       "target_1": 70.79,
       "target_2": 103.58,
       "target_3": -1
@@ -746,7 +752,13 @@
       "sector": "Others",
       "target": 334,
       "player": 10,
-      "technigrade": [9, 11, 14, 10, 16]
+      "technigrade": [9, 11, 14, 10, 16],
+      "invalidation_1": 39.12,
+      "invalidation_2": 33.99,
+      "invalidation_3": 29.81,
+      "target_1": 48.99,
+      "target_2": 52.35,
+      "target_3": 57.06
     },
     {
       "ticker": "IPI",
