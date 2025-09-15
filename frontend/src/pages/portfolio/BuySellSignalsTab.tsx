@@ -195,6 +195,9 @@ export default function BuySellSignalsTab({
   // State to filter by sector when viewing the portfolio list
   const [sectorFilter, setSectorFilter] = useState<string>("ALL");
 
+  // Toggle to display only rows that have breached a level
+  const [showBreachedOnly, setShowBreachedOnly] = useState(false);
+
   // Derive list of available sectors from the loaded portfolio data
   const sectorOptions = useMemo(() => {
     const opts = Array.from(
@@ -257,9 +260,9 @@ export default function BuySellSignalsTab({
     target_1: "Target 1",
     target_2: "Target 2",
     target_3: "Target 3",
-    invalidation_1: "Inv 1",
-    invalidation_2: "Inv 2",
-    invalidation_3: "Inv 3",
+    invalidation_1: "Invalid. 1",
+    invalidation_2: "Invalid. 2",
+    invalidation_3: "Invalid. 3",
     cmf: "Chaikin MF",
     supertrend: "Supertrend",
     current_price: "Current Price",
@@ -413,6 +416,74 @@ export default function BuySellSignalsTab({
   const getLongTermTrendScore = (ticker: string): number | null => {
     const val = meanRevRsi[ticker]?.metrics?.long_term_trend?.total;
     return typeof val === "number" ? val : null;
+  };
+
+  const getLevelsBreachedStatus = (
+    holding: Holding
+  ): {
+    status: string;
+    cls: string;
+    category: "target" | "invalidation" | "neutral";
+  } => {
+    const price = meanRevRsi[holding.ticker]?.currentPrice;
+    const sanitize = (v: number | undefined) =>
+      typeof v === "number" && v > 0 ? v : undefined;
+    const levels = {
+      target: sanitize(holding.target),
+      target_3: sanitize(holding.target_3),
+      target_2: sanitize(holding.target_2),
+      target_1: sanitize(holding.target_1),
+      invalidation_1: sanitize(holding.invalidation_1),
+      invalidation_2: sanitize(holding.invalidation_2),
+      invalidation_3: sanitize(holding.invalidation_3),
+    };
+
+    let status = "NEUTRAL";
+    let cls = "";
+    let category: "target" | "invalidation" | "neutral" = "neutral";
+
+    if (typeof price === "number") {
+      if (levels.target != null && price >= levels.target) {
+        status = "HIT TARGET";
+        cls = "target-hit";
+        category = "target";
+      } else if (levels.target_3 != null && price >= levels.target_3) {
+        status = "TARGET 3";
+        cls = "target-hit";
+        category = "target";
+      } else if (levels.target_2 != null && price >= levels.target_2) {
+        status = "TARGET 2";
+        cls = "target-hit";
+        category = "target";
+      } else if (levels.target_1 != null && price >= levels.target_1) {
+        status = "TARGET 1";
+        cls = "target-hit";
+        category = "target";
+      } else if (
+        levels.invalidation_3 != null &&
+        price <= levels.invalidation_3
+      ) {
+        status = "Breached INVALIDATION 3";
+        cls = "inv-hit";
+        category = "invalidation";
+      } else if (
+        levels.invalidation_2 != null &&
+        price <= levels.invalidation_2
+      ) {
+        status = "Breached INVALIDATION 2";
+        cls = "inv-hit";
+        category = "invalidation";
+      } else if (
+        levels.invalidation_1 != null &&
+        price <= levels.invalidation_1
+      ) {
+        status = "Breached INVALIDATION 1";
+        cls = "inv-hit";
+        category = "invalidation";
+      }
+    }
+
+    return { status, cls, category };
   };
 
   function getVisibleAndOrderedStrategies(timeframe: string) {
@@ -950,6 +1021,10 @@ export default function BuySellSignalsTab({
   }
 
   const handleHeaderClick = (column: string) => {
+    if (column === "levels_breached") {
+      setShowBreachedOnly((prev) => !prev);
+      return;
+    }
     if (sortColumn === column) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else if (sortColumn === "mean_rev_rsi" && column === "price_target") {
@@ -1025,6 +1100,26 @@ export default function BuySellSignalsTab({
         // Include if it has at least one matching signal AND no contradictory signals
         return hasMatchingSignal && !hasContradictorySignal;
       });
+    }
+
+    if (showBreachedOnly) {
+      currentPortfolio = currentPortfolio
+        .filter(
+          (holding) => getLevelsBreachedStatus(holding).category !== "neutral"
+        )
+        .sort((a, b) => {
+          const aInfo = getLevelsBreachedStatus(a);
+          const bInfo = getLevelsBreachedStatus(b);
+          const order: Record<string, number> = {
+            target: 0,
+            invalidation: 1,
+            neutral: 2,
+          };
+          if (order[aInfo.category] !== order[bInfo.category]) {
+            return order[aInfo.category] - order[bInfo.category];
+          }
+          return aInfo.status.localeCompare(bInfo.status);
+        });
     }
 
     if (sortColumn && Object.keys(signalSummary).length > 0) {
@@ -1206,15 +1301,24 @@ export default function BuySellSignalsTab({
     return currentPortfolio;
   }, [
     portfolio,
-    signalSummary,
+    listType,
+    sectorFilter,
+    getVisibleAndOrderedStrategies,
+    selectedTimeframe,
+    filterType,
+    showBreachedOnly,
     sortColumn,
+    signalSummary,
+    meanRevRsi,
+    getLevelsBreachedStatus,
+    getPnlForTicker,
+    getMeanRevRsiScore,
+    getShortTermTrendScore,
+    getLongTermTrendScore,
+    getSellScore,
     sortDirection,
     secondarySortColumn,
     secondarySortDirection,
-    filterType,
-    sectorFilter,
-    listType,
-    selectedTimeframe,
   ]);
 
   // NEW: Memoized calculation for sector summary
@@ -1345,6 +1449,17 @@ export default function BuySellSignalsTab({
                 : " ▼"}
             </span>
           )}
+        </th>
+      );
+    } else if (col === "levels_breached") {
+      return (
+        <th
+          key={col}
+          onClick={() => handleHeaderClick(col)}
+          style={{ cursor: "pointer" }}
+        >
+          {label}
+          {showBreachedOnly && <span className="ms-1">*</span>}
         </th>
       );
     } else if (col === "cmf" || col === "supertrend") {
@@ -1655,62 +1770,7 @@ export default function BuySellSignalsTab({
     }
 
     if (col === "levels_breached") {
-      const price = meanRevRsi[ticker]?.currentPrice;
-      const sanitize = (v: number | undefined) =>
-        typeof v === "number" && v > 0 ? v : undefined;
-      const levels = {
-        target: sanitize(holding.target),
-        target_3: sanitize(holding.target_3),
-        target_2: sanitize(holding.target_2),
-        target_1: sanitize(holding.target_1),
-        invalidation_1: sanitize(holding.invalidation_1),
-        invalidation_2: sanitize(holding.invalidation_2),
-        invalidation_3: sanitize(holding.invalidation_3),
-      };
-      let status = "NEUTRAL";
-      let cls = "";
-      if (typeof price === "number") {
-        if (typeof levels.target === "number" && price >= levels.target) {
-          status = "HIT TARGET";
-          cls = "target-hit";
-        } else if (
-          typeof levels.target_3 === "number" &&
-          price >= levels.target_3
-        ) {
-          status = "TARGET 3";
-          cls = "target-hit";
-        } else if (
-          typeof levels.target_2 === "number" &&
-          price >= levels.target_2
-        ) {
-          status = "TARGET 2";
-          cls = "target-hit";
-        } else if (
-          typeof levels.target_1 === "number" &&
-          price >= levels.target_1
-        ) {
-          status = "TARGET 1";
-          cls = "target-hit";
-        } else if (
-          typeof levels.invalidation_3 === "number" &&
-          price <= levels.invalidation_3
-        ) {
-          status = "Breached INVALIDATION 3";
-          cls = "inv-hit";
-        } else if (
-          typeof levels.invalidation_2 === "number" &&
-          price <= levels.invalidation_2
-        ) {
-          status = "Breached INVALIDATION 2";
-          cls = "inv-hit";
-        } else if (
-          typeof levels.invalidation_1 === "number" &&
-          price <= levels.invalidation_1
-        ) {
-          status = "Breached INVALIDATION 1";
-          cls = "inv-hit";
-        }
-      }
+      const { status, cls } = getLevelsBreachedStatus(holding);
       return (
         <td className={cls} style={{ textAlign: "center" }}>
           {status}
