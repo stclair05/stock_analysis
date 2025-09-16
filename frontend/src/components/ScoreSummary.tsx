@@ -10,6 +10,7 @@ interface AnalysisSummary {
   short_term_trend: TrendScores;
   long_term_trend: TrendScores;
   sell_signal: TrendScores;
+  current_price: number | null;
 }
 
 interface ScoreSummaryProps {
@@ -65,6 +66,10 @@ const ScoreSummary = ({ stockSymbol }: ScoreSummaryProps) => {
             short_term_trend: json.short_term_trend,
             long_term_trend: json.long_term_trend,
             sell_signal: json.sell_signal,
+            current_price:
+              typeof json.current_price === "number"
+                ? json.current_price
+                : null,
           });
         }
       } catch {
@@ -102,6 +107,39 @@ const ScoreSummary = ({ stockSymbol }: ScoreSummaryProps) => {
   const sellItems = buildItems(data.sell_signal, sellLabels);
   const maxRows = Math.max(stItems.length, ltItems.length, sellItems.length);
 
+  const isShortUptrend = data.short_term_trend.total >= 2;
+  const shortTermStatus = isShortUptrend ? "UPTREND" : "DOWNTREND";
+  const isLongUptrend = data.long_term_trend.total >= 4;
+  const longTermStatus = isLongUptrend ? "UPTREND" : "DOWNTREND";
+  const sellSignalCount = Object.entries(data.sell_signal).filter(
+    ([key, val]) => key !== "total" && val !== null
+  ).length;
+  const isSellSignal = data.sell_signal.total >= 4;
+  const sellOrHoldStatus = isSellSignal ? "SELL" : "HOLD";
+
+  let overallSignal: "BUY" | "HOLD" | "SELL";
+  if (sellOrHoldStatus === "SELL") {
+    overallSignal = "SELL";
+  } else if (isShortUptrend && isLongUptrend) {
+    overallSignal = "BUY";
+  } else if (!isShortUptrend && !isLongUptrend) {
+    overallSignal = "SELL";
+  } else {
+    overallSignal = "HOLD";
+  }
+
+  const overallSignalClass =
+    overallSignal === "BUY"
+      ? "text-success"
+      : overallSignal === "SELL"
+      ? "text-danger"
+      : "text-warning";
+
+  const formattedPrice =
+    typeof data.current_price === "number"
+      ? `$${data.current_price.toFixed(2)}`
+      : "N/A";
+
   const renderCell = (
     item?: { label: string; val: number | null },
     invert = false
@@ -129,6 +167,13 @@ const ScoreSummary = ({ stockSymbol }: ScoreSummaryProps) => {
   return (
     <div className="mt-4">
       <h3 className="text-center mb-3">Trend &amp; Signal Summary</h3>
+      <div className="d-flex flex-column flex-md-row justify-content-center align-items-center gap-3 mb-3 text-center">
+        <div className="fw-semibold">Ticker: {stockSymbol}</div>
+        <div>Current Price: {formattedPrice}</div>
+        <div className={`fw-bold ${overallSignalClass}`}>
+          Signal: {overallSignal}
+        </div>
+      </div>
       <table className="table text-center excel-table">
         <thead className="bg-white">
           <tr>
@@ -153,40 +198,26 @@ const ScoreSummary = ({ stockSymbol }: ScoreSummaryProps) => {
           <tr className="summary-row">
             <td
               className={`text-center fw-bold ${
-                data.short_term_trend.total >= 2
-                  ? "table-success"
-                  : "table-danger"
+                isShortUptrend ? "table-success" : "table-danger"
               }`}
             >
               {data.short_term_trend.total} of {Object.keys(stLabels).length}{" "}
-              <span>
-                {data.short_term_trend.total >= 2 ? "UPTREND" : "DOWNTREND"}
-              </span>
+              <span>{shortTermStatus}</span>
             </td>
             <td
               className={`text-center fw-bold ${
-                data.long_term_trend.total >= 4
-                  ? "table-success"
-                  : "table-danger"
+                isLongUptrend ? "table-success" : "table-danger"
               }`}
             >
               {data.long_term_trend.total} of {Object.keys(ltLabels).length}{" "}
-              <span>
-                {data.long_term_trend.total >= 4 ? "UPTREND" : "DOWNTREND"}
-              </span>
+              <span>{longTermStatus}</span>
             </td>
             <td
               className={`text-center fw-bold ${
-                data.sell_signal.total >= 4 ? "table-danger" : "table-success"
+                isSellSignal ? "table-danger" : "table-success"
               }`}
             >
-              ({data.sell_signal.total} of{" "}
-              {
-                Object.entries(data.sell_signal).filter(
-                  ([key, val]) => key !== "total" && val !== null
-                ).length
-              }
-              ) {data.sell_signal.total >= 4 ? "SELL" : "HOLD"}
+              ({data.sell_signal.total} of {sellSignalCount}) {sellOrHoldStatus}
             </td>
           </tr>
         </tbody>
