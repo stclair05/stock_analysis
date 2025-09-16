@@ -13,6 +13,7 @@
       "ticker": "ASML.AS",
       "shares": 240.0,
       "average_cost": 921.87,
+      "sector": "Others",
       "target": 800,
       "player": 1,
       "technigrade": [10, 14, 13, 12, 13],
@@ -577,21 +578,6 @@
       "target": 30,
       "player": 4,
       "technigrade": [2, 3, 3, 4, 4]
-    },
-    {
-      "ticker": "DRD",
-      "shares": 75000,
-      "average_cost": 15.92,
-      "sector": "Precious Metals",
-      "target": 21.5,
-      "player": 4,
-      "technigrade": [2, 3, 5, 10, 7],
-      "invalidation_1": 17.81,
-      "invalidation_2": 17.47,
-      "invalidation_3": 15.61,
-      "target_1": 21.5,
-      "target_2": 22.74,
-      "target_3": 23.39
     },
     {
       "ticker": "AYA.TO",
