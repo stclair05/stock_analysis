@@ -85,7 +85,13 @@
       "sector": "Energy",
       "target": 31,
       "player": 2,
-      "technigrade": [1, 2, 3, 4, 5]
+      "technigrade": [1, 2, 3, 4, 5],
+      "invalidation_1": 26.75,
+      "invalidation_2": 25.2,
+      "invalidation_3": 23.59,
+      "target_1": 31,
+      "target_2": 35.03,
+      "target_3": 49.31
     },
     {
       "ticker": "COP",

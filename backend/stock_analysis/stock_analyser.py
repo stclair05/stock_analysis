@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 import os
 import json
 from pathlib import Path
@@ -86,76 +87,108 @@ def _download_from_fmp(symbol: str) -> pd.DataFrame:
         print(f"[DEBUG] FMP download failed for {symbol}: {e}")
         return pd.DataFrame()
     
+# >>> ADD THIS HELPER (top-level, outside the class)
+_YF_COLS = ["Open", "High", "Low", "Close", "Adj Close", "Volume"]
+
+def _normalize_yf_columns(df: pd.DataFrame) -> pd.DataFrame:
+    if df.empty:
+        return df
+
+    # Drop ticker level if present (common after repair=True)
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = df.columns.droplevel(-1)
+
+    # Remove helper/extraneous columns that sometimes appear
+    for extra in ["Repaired?", "Price"]:
+        if extra in df.columns and extra not in _YF_COLS:
+            df = df.drop(columns=[extra])
+
+    # Ensure canonical columns exist and are ordered
+    for c in _YF_COLS:
+        if c not in df.columns:
+            df[c] = np.nan
+    df = df[_YF_COLS]
+
+    # Index hygiene
+    df = df.sort_index()
+    df.index = pd.to_datetime(df.index)
+    df = df[~df.index.duplicated(keep="last")]
+    return df
+
+    
 class StockAnalyser:
     def __init__(self, symbol: str):
         raw_symbol = symbol.upper().strip()
         self.symbol = SYMBOL_ALIASES.get(raw_symbol, raw_symbol)
         self.df = StockAnalyser.get_price_data(self.symbol)
 
+    # >>> REPLACE _download_data with this normalized version
     def _download_data(self) -> pd.DataFrame:
-        df = yf.download(self.symbol, period='20y', interval='1d', auto_adjust=False)
+        df = yf.download(self.symbol, period='20y', interval='1d', auto_adjust=False, threads=False)
+        df = _normalize_yf_columns(df)
         if df.empty:
             raise HTTPException(status_code=400, detail="Stock symbol not found or data unavailable.")
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = df.columns.droplevel(1)
         return df
+
     
     
 
+    # >>> REPLACE THE ENTIRE _get_price_data_cached WITH THIS
     @staticmethod
     @lru_cache(maxsize=100)
     def _get_price_data_cached(symbol: str) -> pd.DataFrame:
-        with _price_data_lock: 
-            df = yf.download(symbol, period="12y", interval="1d", auto_adjust=False)
-            if df.empty:
-                df = _download_from_fmp(symbol)
-                if df.empty or len(df) < MIN_HISTORY_POINTS:
-                    raise HTTPException(
-                        status_code=400,
-                        detail="Stock symbol not found or data unavailable.",
-                    )
-            # Patch with today’s close (1D)
-            try:
-                live_df = yf.download(symbol, period="1d", interval="1d")
-                if not live_df.empty:
-                    # Align columns and patch
-                    live_df = live_df[df.columns]
-                    for idx in live_df.index:
-                        df.loc[pd.to_datetime(idx)] = live_df.loc[idx]
-            except Exception:
-                pass
-            if isinstance(df.columns, pd.MultiIndex):
-                df.columns = df.columns.droplevel(1)
-            # Clean up index and rows after patch
-            df = df.sort_index()
-            df = df[~df.index.duplicated(keep='last')]
-            df = df[df['Close'].notna()]
-            # If the dataset is unexpectedly short, try a second, longer
-            # download before giving up. This mitigates occasional truncated
-            # results from yfinance that can leave the cache with only a few
-            # weeks of data.
-            if len(df) < MIN_HISTORY_POINTS:
-                df_retry = yf.download(symbol, period="20y", interval="1d", auto_adjust=False)
-                if isinstance(df_retry.columns, pd.MultiIndex):
-                    df_retry.columns = df_retry.columns.droplevel(1)
-                df_retry = df_retry.sort_index()
-                df_retry = df_retry[~df_retry.index.duplicated(keep='last')]
-                df_retry = df_retry[df_retry['Close'].notna()]
+        with _price_data_lock:
+            # 1) Base history (no repair)
+            base = yf.download(symbol, period="12y", interval="1d", auto_adjust=False, threads=False)
+            base = _normalize_yf_columns(base)
 
-                if len(df_retry) >= MIN_HISTORY_POINTS:
-                    df = df_retry
+            if base.empty:
+                # fallback to FMP immediately if base is empty
+                fmp_df = _download_from_fmp(symbol)
+                fmp_df = _normalize_yf_columns(fmp_df)
+                if fmp_df.empty or len(fmp_df) < MIN_HISTORY_POINTS:
+                    raise HTTPException(status_code=400, detail="Stock symbol not found or data unavailable.")
+                return fmp_df
+
+            # 2) Patch last ~7 calendar days with repair=True (end is exclusive → add +1 day)
+            end_dt = datetime.now() + timedelta(days=1)
+            start_dt = datetime.now() - timedelta(days=7)
+            live = yf.download(
+                symbol,
+                start=start_dt.strftime("%Y-%m-%d"),
+                end=end_dt.strftime("%Y-%m-%d"),
+                interval="1d",
+                auto_adjust=False,
+                repair=True,
+                threads=False,
+            )
+            live = _normalize_yf_columns(live)
+
+            # 3) Union merge: keep base where present, fill gaps (like 2025-09-15) from live
+            df = base.combine_first(live)
+
+            # 4) Final tidy (don’t over-eagerly drop rows just on 'Close')
+            df = df.sort_index()
+            df = df[~df.index.duplicated(keep="last")]
+            df = df.dropna(how="all")
+
+            # 5) Sensible fallback if pathologically short (e.g., very new listing)
+            if len(df) < MIN_HISTORY_POINTS:
+                retry = yf.download(symbol, period="20y", interval="1d", auto_adjust=False, threads=False)
+                retry = _normalize_yf_columns(retry)
+                if not retry.empty and len(retry) >= MIN_HISTORY_POINTS:
+                    df = retry.combine_first(df).sort_index()
                 else:
                     fmp_df = _download_from_fmp(symbol)
-                    if len(fmp_df) >= MIN_HISTORY_POINTS:
+                    fmp_df = _normalize_yf_columns(fmp_df)
+                    if not fmp_df.empty and len(fmp_df) >= MIN_HISTORY_POINTS:
                         df = fmp_df
                     else:
-                        raise HTTPException(
-                            status_code=400,
-                            detail="Not enough historical data for analysis.",
-                        )
+                        raise HTTPException(status_code=400, detail="Not enough historical data for analysis.")
 
             return df
-        
+
+
     @staticmethod
     def get_price_data(symbol: str) -> pd.DataFrame:
         """Return a copy of cached price data for the given symbol."""
