@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import os
 import json
 from pathlib import Path
@@ -94,9 +94,17 @@ def _normalize_yf_columns(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty:
         return df
 
-    # Drop ticker level if present (common after repair=True)
+    # --- Fix: drop the *ticker* level, keep the OHLCV field level ---
     if isinstance(df.columns, pd.MultiIndex):
-        df.columns = df.columns.droplevel(-1)
+        lvl0 = set(map(str, df.columns.get_level_values(0)))
+        lvl1 = set(map(str, df.columns.get_level_values(1)))
+        # If level-1 contains OHLCV fields, the ticker is level-0 → drop level-0
+        if any(c in lvl1 for c in _YF_COLS):
+            df.columns = df.columns.droplevel(0)
+        # Else if level-0 contains fields (rare), drop level-1
+        elif any(c in lvl0 for c in _YF_COLS):
+            df.columns = df.columns.droplevel(1)
+        # else: leave as-is (defensive; unlikely)
 
     # Remove helper/extraneous columns that sometimes appear
     for extra in ["Repaired?", "Price"]:
@@ -115,6 +123,11 @@ def _normalize_yf_columns(df: pd.DataFrame) -> pd.DataFrame:
     df = df[~df.index.duplicated(keep="last")]
     return df
 
+
+def _today_key_tzaware() -> str:
+    # Use UTC date for stability; if you prefer US market day, use US/Eastern here.
+    return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
     
 class StockAnalyser:
     def __init__(self, symbol: str):
@@ -130,13 +143,10 @@ class StockAnalyser:
             raise HTTPException(status_code=400, detail="Stock symbol not found or data unavailable.")
         return df
 
-    
-    
-
     # >>> REPLACE THE ENTIRE _get_price_data_cached WITH THIS
     @staticmethod
     @lru_cache(maxsize=100)
-    def _get_price_data_cached(symbol: str) -> pd.DataFrame:
+    def _get_price_data_cached(symbol: str, asof_day: str) -> pd.DataFrame:
         with _price_data_lock:
             # 1) Base history (no repair)
             base = yf.download(symbol, period="12y", interval="1d", auto_adjust=False, threads=False)
@@ -167,6 +177,35 @@ class StockAnalyser:
             # 3) Union merge: keep base where present, fill gaps (like 2025-09-15) from live
             df = base.combine_first(live)
 
+            # 3.5) Fallback: patch the last few sessions from INTRADAY if daily feed lags
+            try:
+                t = yf.Ticker(symbol)
+                intraday = t.history(period="7d", interval="1m", prepost=False, repair=True)
+                if not intraday.empty:
+                    # Align day boundaries to US/Eastern incl. DST
+                    intraday = intraday.tz_convert("America/New_York").between_time("09:30", "16:00")
+                    intraday_daily = intraday.resample("1D").agg({
+                        "Open":  "first",
+                        "High":  "max",
+                        "Low":   "min",
+                        "Close": "last",
+                        "Volume":"sum"
+                    }).dropna(subset=["Close"])
+                    # make the index date-like (no tz, no time)
+                    intraday_daily.index = intraday_daily.index.tz_localize(None)
+
+                    # Only keep very recent days to avoid overwriting older history
+                    # (e.g., last 7 calendar days)
+                    cutoff = pd.Timestamp.today().normalize() - pd.Timedelta(days=7)
+                    intraday_daily = intraday_daily[intraday_daily.index >= cutoff]
+
+                    # Merge: fill missing rows (e.g., 2025-09-16) or empty columns
+                    df = df.combine_first(intraday_daily).sort_index()
+            except Exception:
+                # Non-fatal: if intraday fetch fails, just return df as-is
+                pass
+
+
             # 4) Final tidy (don’t over-eagerly drop rows just on 'Close')
             df = df.sort_index()
             df = df[~df.index.duplicated(keep="last")]
@@ -191,8 +230,8 @@ class StockAnalyser:
 
     @staticmethod
     def get_price_data(symbol: str) -> pd.DataFrame:
-        """Return a copy of cached price data for the given symbol."""
-        return StockAnalyser._get_price_data_cached(symbol).copy()
+        """Return a copy of cached price data for the given symbol, refreshed daily."""
+        return StockAnalyser._get_price_data_cached(symbol, _today_key_tzaware()).copy()
     
     
     @cached_property
