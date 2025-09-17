@@ -352,7 +352,13 @@
       "sector": "Uranium",
       "target": 71,
       "player": 2,
-      "technigrade": [5, 3, 3, 2, 3]
+      "technigrade": [5, 3, 3, 2, 3],
+      "invalidation_1": 15.35,
+      "invalidation_2": 13.57,
+      "invalidation_3": -1,
+      "target_1": 18.76,
+      "target_2": 30,
+      "target_3": 70.11
     },
     {
       "ticker": "PBR",
@@ -460,7 +466,13 @@
       "sector": "Healthcare",
       "target": 52,
       "player": 2,
-      "technigrade": [10, 18, 15, 12, 4]
+      "technigrade": [10, 18, 15, 12, 4],
+      "invalidation_1": 50.49,
+      "invalidation_2": 46.29,
+      "invalidation_3": 40.78,
+      "target_1": 72.6,
+      "target_2": 86.88,
+      "target_3": 98.84
     },
     {
       "ticker": "MDGL",
@@ -641,7 +653,13 @@
       "sector": "Technology",
       "target": 367,
       "player": 1,
-      "technigrade": [7, 9, 8, 8, 7]
+      "technigrade": [7, 9, 8, 8, 7],
+      "invalidation_1": 403.73,
+      "invalidation_2": 365,
+      "invalidation_3": 348,
+      "target_1": 411,
+      "target_2": 441,
+      "target_3": -1
     },
     {
       "ticker": "GEVO",
@@ -649,7 +667,13 @@
       "average_cost": 1.97,
       "sector": "Technology",
       "target": 3.4,
-      "player": 2
+      "player": 2,
+      "invalidation_1": 1.3,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": 2,
+      "target_2": 3.39,
+      "target_3": 5.25
     },
     {
       "ticker": "INOD",
@@ -761,7 +785,13 @@
       "average_cost": 32.35,
       "sector": "Technology",
       "target": 59,
-      "player": 10
+      "player": 10,
+      "invalidation_1": 34.37,
+      "invalidation_2": 32.03,
+      "invalidation_3": -1,
+      "target_1": 39.73,
+      "target_2": 46.72,
+      "target_3": 48.74
     },
     {
       "ticker": "0020.HK",
