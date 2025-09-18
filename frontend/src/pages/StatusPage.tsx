@@ -29,21 +29,23 @@ export default function StatusPage() {
   }
 
   const counts: Record<string, number> = {};
-  [
+  const orderedSymbols = [
     ...data.below_20dma,
     ...data.below_200dma,
     ...data.bearish_candle,
     ...data.extended_vol,
-  ].forEach((sym) => {
+  ];
+
+  orderedSymbols.forEach((sym) => {
     counts[sym] = (counts[sym] || 0) + 1;
   });
 
-  const maxRows = Math.max(
-    data.below_20dma.length,
-    data.below_200dma.length,
-    data.bearish_candle.length,
-    data.extended_vol.length
-  );
+  const uniqueSymbols = Array.from(new Set(orderedSymbols));
+
+  const below20Set = new Set(data.below_20dma);
+  const below200Set = new Set(data.below_200dma);
+  const bearishSet = new Set(data.bearish_candle);
+  const extendedSet = new Set(data.extended_vol);
 
   const getCellClass = (symbol?: string) =>
     symbol && counts[symbol] >= 2 ? "table-danger" : undefined;
@@ -67,18 +69,26 @@ export default function StatusPage() {
           </tr>
         </thead>
         <tbody>
-          {Array.from({ length: maxRows }).map((_, idx) => {
-            const b20 = data.below_20dma[idx];
-            const b200 = data.below_200dma[idx];
-            const bc = data.bearish_candle[idx];
-            const ext = data.extended_vol[idx];
+          {uniqueSymbols.map((symbol) => {
+            const below20Symbol = below20Set.has(symbol) ? symbol : undefined;
+            const below200Symbol = below200Set.has(symbol) ? symbol : undefined;
+            const bearishSymbol = bearishSet.has(symbol) ? symbol : undefined;
+            const extendedSymbol = extendedSet.has(symbol) ? symbol : undefined;
 
             return (
-              <tr key={idx}>
-                <td className={getCellClass(b20)}>{b20 || ""}</td>
-                <td className={getCellClass(b200)}>{b200 || ""}</td>
-                <td className={getCellClass(bc)}>{bc || ""}</td>
-                <td className={getCellClass(ext)}>{ext || ""}</td>
+              <tr key={symbol}>
+                <td className={getCellClass(below20Symbol)}>
+                  {below20Symbol || ""}
+                </td>
+                <td className={getCellClass(below200Symbol)}>
+                  {below200Symbol || ""}
+                </td>
+                <td className={getCellClass(bearishSymbol)}>
+                  {bearishSymbol || ""}
+                </td>
+                <td className={getCellClass(extendedSymbol)}>
+                  {extendedSymbol || ""}
+                </td>
               </tr>
             );
           })}
