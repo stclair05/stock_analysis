@@ -112,6 +112,12 @@ h1 {
   color: #006100 !important;
 }
 
+.excel-table td.table-warning {
+  border: 1px solid #000 !important;
+  background-color: #ffeb9c !important;
+  color: #9c6500 !important;
+}
+
 .excel-table tr.summary-row td {
   border: 2px solid #000 !important;
 }

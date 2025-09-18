@@ -72,13 +72,47 @@ export default function StatusPage() {
 
   const below20Set = new Set(data.below_20dma);
   const below200Set = new Set(data.below_200dma);
-  const candleSet = new Set(Object.keys(data.candle_signals));
   const extendedSet = new Set(data.extended_vol);
-  const superTrendSet = new Set(Object.keys(data.super_trend_daily));
-  const maceSet = new Set(Object.keys(data.mace));
 
   const getCellClass = (symbol?: string) =>
     symbol && counts[symbol] >= 2 ? "table-danger" : undefined;
+
+  const getCandleClass = (candleInfo?: CandleSignal) => {
+    if (!candleInfo) return undefined;
+    return candleInfo.type === "bullish" ? "table-success" : "table-danger";
+  };
+
+  const getSuperTrendClass = (superTrendInfo?: SuperTrendSignal) => {
+    if (!superTrendInfo) return undefined;
+    return superTrendInfo.signal.toLowerCase() === "buy"
+      ? "table-success"
+      : "table-danger";
+  };
+
+  const getMaceClass = (maceInfo?: MaceSignal) => {
+    if (!maceInfo) return undefined;
+    if (maceInfo.label.startsWith("U")) {
+      return "table-success";
+    }
+    if (maceInfo.label.startsWith("D")) {
+      return "table-danger";
+    }
+    return undefined;
+  };
+
+  const getStageClass = (stageInfo?: StageStatus) => {
+    if (!stageInfo) return undefined;
+    if (stageInfo.stage === 1 || stageInfo.stage === 3) {
+      return "table-warning";
+    }
+    if (stageInfo.stage === 2) {
+      return "table-success";
+    }
+    if (stageInfo.stage === 4) {
+      return "table-danger";
+    }
+    return undefined;
+  };
 
   const candleValues = Object.values(data.candle_signals || {});
   const bearishCount = candleValues.filter(
@@ -153,12 +187,7 @@ export default function StatusPage() {
           {uniqueSymbols.map((symbol) => {
             const below20Symbol = below20Set.has(symbol) ? symbol : undefined;
             const below200Symbol = below200Set.has(symbol) ? symbol : undefined;
-            const candleSymbol = candleSet.has(symbol) ? symbol : undefined;
             const extendedSymbol = extendedSet.has(symbol) ? symbol : undefined;
-            const superTrendSymbol = superTrendSet.has(symbol)
-              ? symbol
-              : undefined;
-            const maceSymbol = maceSet.has(symbol) ? symbol : undefined;
             const candleInfo = data.candle_signals?.[symbol];
             const superTrendInfo = data.super_trend_daily?.[symbol];
             const maceInfo = data.mace?.[symbol];
@@ -173,60 +202,32 @@ export default function StatusPage() {
                 <td className={getCellClass(below200Symbol)}>
                   {below200Symbol || ""}
                 </td>
-                <td className={getCellClass(candleSymbol)}>
-                  {candleInfo ? (
-                    <span
-                      className={
-                        candleInfo.type === "bullish"
-                          ? "text-success fw-semibold"
-                          : "text-danger fw-semibold"
-                      }
-                    >
-                      {`${
+                <td className={getCandleClass(candleInfo)}>
+                  {candleInfo
+                    ? `${
                         candleInfo.type === "bullish" ? "Bullish" : "Bearish"
-                      } (${candleInfo.timeframe.charAt(0).toUpperCase()})`}
-                    </span>
-                  ) : (
-                    ""
-                  )}
+                      } (${candleInfo.timeframe.charAt(0).toUpperCase()})`
+                    : ""}
                 </td>
                 <td className={getCellClass(extendedSymbol)}>
                   {extendedSymbol || ""}
                 </td>
-                <td className={getCellClass(superTrendSymbol)}>
-                  {superTrendInfo ? (
-                    <span
-                      className={
-                        superTrendInfo.signal.toLowerCase() === "buy"
-                          ? "text-success fw-semibold"
-                          : "text-danger fw-semibold"
-                      }
-                    >
-                      {superTrendInfo.signal}
-                    </span>
-                  ) : (
-                    ""
-                  )}
+                <td className={getSuperTrendClass(superTrendInfo)}>
+                  {superTrendInfo ? superTrendInfo.signal : ""}
                 </td>
-                <td className={getCellClass(maceSymbol)}>
-                  {maceInfo ? (
-                    <span className="fw-semibold">
-                      {maceInfo.label}
-                      {maceInfo.trend ? ` (${maceInfo.trend})` : ""}
-                    </span>
-                  ) : (
-                    ""
-                  )}
+                <td className={getMaceClass(maceInfo)}>
+                  {maceInfo
+                    ? `${maceInfo.label}${
+                        maceInfo.trend ? ` (${maceInfo.trend})` : ""
+                      }`
+                    : ""}
                 </td>
-                <td className={getCellClass(stageInfo ? symbol : undefined)}>
-                  {stageInfo ? (
-                    <span className="fw-semibold">
-                      Stage {stageInfo.stage}
-                      {stageInfo.weeks ? ` (${stageInfo.weeks}w)` : ""}
-                    </span>
-                  ) : (
-                    ""
-                  )}
+                <td className={getStageClass(stageInfo)}>
+                  {stageInfo
+                    ? `Stage ${stageInfo.stage}${
+                        stageInfo.weeks ? ` (${stageInfo.weeks}w)` : ""
+                      }`
+                    : ""}
                 </td>
               </tr>
             );
