@@ -414,7 +414,7 @@
       "shares": 566809.0,
       "average_cost": 29.42,
       "sector": "Precious Metals",
-      "target": 45,
+      "target": 43,
       "player": 8
     },
     {
@@ -571,8 +571,9 @@
       "shares": 38089,
       "average_cost": 53.54,
       "sector": "Precious Metals",
-      "target": 75,
-      "player": 8
+      "target": 72,
+      "player": 8,
+      "target_1": 72
     },
     {
       "ticker": "SILJ",
@@ -585,7 +586,7 @@
       "invalidation_2": 16.28,
       "invalidation_3": -1,
       "target_1": 19.81,
-      "target_2": 21.43,
+      "target_2": 22,
       "target_3": 23.42
     },
     {
@@ -820,17 +821,20 @@
       "shares": 14256.0,
       "average_cost": 25.54,
       "sector": "Hong Kong and China",
-      "target": 40.35,
-      "player": 10
+      "target": 46,
+      "player": 10,
+      "target_1": 46
     },
     {
       "ticker": "0700.HK",
       "shares": 88515.0,
       "average_cost": 52.62,
       "sector": "Hong Kong and China",
-      "target": 640,
+      "target": 720,
       "player": 10,
-      "technigrade": [6, 6, 5, 6, 6]
+      "technigrade": [6, 6, 5, 6, 6],
+      "target_1": 720,
+      "target_2": 800
     },
     {
       "ticker": "9988.HK",
