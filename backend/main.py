@@ -15,6 +15,7 @@ from stock_analysis.utils import (
     compute_sortino_ratio_cached as compute_sortino_ratio,
     convert_numpy_types,
     compute_wilder_rsi,
+    compute_supertrend_lines,
     safe_value,
 )
 from fastapi.responses import JSONResponse
@@ -130,8 +131,11 @@ def get_portfolio_status():
         return {
             "below_20dma": [],
             "below_200dma": [],
-            "bearish_candle": [],
+            "candle_signals": {},
             "extended_vol": [],
+            "super_trend_daily": {},
+            "mace": {},
+            "stage": {},
         }
 
     with open(json_path, "r") as f:
@@ -141,14 +145,18 @@ def get_portfolio_status():
     results = {
         "below_20dma": [],
         "below_200dma": [],
-        "bearish_candle": [],
+        "candle_signals": {},
         "extended_vol": [],
+        "super_trend_daily": {},
+        "mace": {},
+        "stage": {},
     }
 
     for ticker in equities:
         try:
             analyser = StockAnalyser(ticker)
             price = analyser.get_current_price()
+            flagged = False
 
             twenty = analyser.calculate_20dma().current
             if (
@@ -157,6 +165,7 @@ def get_portfolio_status():
                 and price < twenty
             ):
                 results["below_20dma"].append(ticker)
+                flagged = True
 
             two_hundred = analyser.calculate_200dma().current
             if (
@@ -165,21 +174,78 @@ def get_portfolio_status():
                 and price < two_hundred
             ):
                 results["below_200dma"].append(ticker)
+                flagged = True
 
             engulf = analyser.detect_engulfing()
             daily = engulf.get("daily")
             weekly = engulf.get("weekly")
-            if (
-                isinstance(daily, str) and "bearish" in daily.lower()
-            ) or (
-                isinstance(weekly, str) and "bearish" in weekly.lower()
-            ):
-                results["bearish_candle"].append(ticker)
 
+            candle_signal = None
+
+            for timeframe, pattern in (
+                ("weekly", weekly),
+                ("daily", daily),
+                ("monthly", engulf.get("monthly")),
+            ):
+                if not isinstance(pattern, str):
+                    continue
+                lower = pattern.lower()
+                if "bearish" in lower:
+                    candle_signal = {
+                        "type": "bearish",
+                        "timeframe": timeframe,
+                        "label": pattern,
+                    }
+                    break
+                if "bullish" in lower:
+                    candle_signal = {
+                        "type": "bullish",
+                        "timeframe": timeframe,
+                        "label": pattern,
+                    }
+                    break
+
+            if candle_signal:
+                results["candle_signals"][ticker] = candle_signal
+                flagged = True
             rsi_series = compute_wilder_rsi(analyser.df["Close"])
             rsi_val = safe_value(rsi_series, -1)
             if isinstance(rsi_val, (int, float)) and rsi_val >= 70:
                 results["extended_vol"].append(ticker)
+                flagged = True
+
+            try:
+                daily_super_trend = compute_supertrend_lines(analyser.df)
+                signal = safe_value(daily_super_trend.get("Signal"), -1)
+                if isinstance(signal, str) and signal:
+                    results["super_trend_daily"][ticker] = {"signal": signal}
+                    flagged = True
+            except Exception:
+                pass
+
+            mace_signal = analyser.mace().current
+            if isinstance(mace_signal, str) and mace_signal not in {"", "in progress"}:
+                forty_week = analyser.forty_week_status().current
+                trend_suffix: str | None = None
+                if isinstance(forty_week, str):
+                    parts = forty_week.strip().split()
+                    if parts:
+                        last = parts[-1]
+                        if set(last).issubset({"+", "-"}) and len(last) == 2:
+                            trend_suffix = last
+                results["mace"][ticker] = {
+                    "label": mace_signal,
+                    "trend": trend_suffix,
+                }
+                flagged = True
+
+            if flagged:
+                stage_val, weeks = analyser.stage_analysis()
+                if stage_val is not None:
+                    results["stage"][ticker] = {
+                        "stage": stage_val,
+                        "weeks": weeks,
+                    }
         except Exception:
             continue
 
