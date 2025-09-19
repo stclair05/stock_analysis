@@ -807,14 +807,6 @@
       "target_3": 48.74
     },
     {
-      "ticker": "0020.HK",
-      "shares": 430000.0,
-      "average_cost": 0.24,
-      "sector": "Hong Kong and China",
-      "target": 2.84,
-      "player": 10
-    },
-    {
       "ticker": "2318.HK",
       "shares": 333894.0,
       "average_cost": 10.03,
