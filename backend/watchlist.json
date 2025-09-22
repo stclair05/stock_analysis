@@ -710,6 +710,16 @@
       "technigrade": []
     },
     {
+      "ticker": "LEU",
+      "sector": "Uranium",
+      "technigrade": []
+    },
+    {
+      "ticker": "DML.TO",
+      "sector": "Uranium",
+      "technigrade": []
+    },
+    {
       "ticker": "XSD",
       "sector": "Index",
       "technigrade": []
