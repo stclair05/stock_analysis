@@ -139,7 +139,11 @@ def get_portfolio_status():
 
     with open(json_path, "r") as f:
         data = json.load(f)
-        equities = [item.get("ticker") for item in data.get("equities", []) if "ticker" in item]
+        equities = [
+            item
+            for item in data.get("equities", [])
+            if isinstance(item, dict) and "ticker" in item
+        ]
 
     results = {
         "below_20dma": [],
@@ -149,13 +153,29 @@ def get_portfolio_status():
         "super_trend_daily": {},
         "mace": {},
         "stage": {},
+        "short_term_trend": {},
+        "long_term_trend": {},
+        "breach_hit": {},
     }
 
-    for ticker in equities:
+    for holding in equities:
+        ticker = holding["ticker"]
         try:
             analyser = StockAnalyser(ticker)
             price = analyser.get_current_price()
             flagged = False
+
+            short_trend = analyser.short_term_trend_score()
+            short_total = short_trend.get("total") if isinstance(short_trend, dict) else None
+            results["short_term_trend"][ticker] = (
+                short_total if isinstance(short_total, (int, float)) else None
+            )
+
+            long_trend = analyser.long_term_trend_score()
+            long_total = long_trend.get("total") if isinstance(long_trend, dict) else None
+            results["long_term_trend"][ticker] = (
+                long_total if isinstance(long_total, (int, float)) else None
+            )
 
             twenty = analyser.calculate_20dma().current
             if (
@@ -237,6 +257,58 @@ def get_portfolio_status():
                     "trend": trend_suffix,
                 }
                 flagged = True
+            
+            def _sanitize_level(value):
+                return value if isinstance(value, (int, float)) and value > 0 else None
+
+            def _breach_status(current_price, levels):
+                status = None
+                category = "neutral"
+
+                if not isinstance(current_price, (int, float)):
+                    return status, category
+
+                if levels.get("target") is not None and current_price >= levels["target"]:
+                    return "Hit Target", "target"
+                if levels.get("target_3") is not None and current_price >= levels["target_3"]:
+                    return "Hit Target 3", "target"
+                if levels.get("target_2") is not None and current_price >= levels["target_2"]:
+                    return "Hit Target 2", "target"
+                if levels.get("target_1") is not None and current_price >= levels["target_1"]:
+                    return "Hit Target 1", "target"
+                if (
+                    levels.get("invalidation_3") is not None
+                    and current_price <= levels["invalidation_3"]
+                ):
+                    return "Breached Level 3", "invalidation"
+                if (
+                    levels.get("invalidation_2") is not None
+                    and current_price <= levels["invalidation_2"]
+                ):
+                    return "Breached Level 2", "invalidation"
+                if (
+                    levels.get("invalidation_1") is not None
+                    and current_price <= levels["invalidation_1"]
+                ):
+                    return "Breached Level 1", "invalidation"
+
+                return status, category
+
+            levels = {
+                "target": _sanitize_level(holding.get("target")),
+                "target_3": _sanitize_level(holding.get("target_3")),
+                "target_2": _sanitize_level(holding.get("target_2")),
+                "target_1": _sanitize_level(holding.get("target_1")),
+                "invalidation_1": _sanitize_level(holding.get("invalidation_1")),
+                "invalidation_2": _sanitize_level(holding.get("invalidation_2")),
+                "invalidation_3": _sanitize_level(holding.get("invalidation_3")),
+            }
+
+            status, category = _breach_status(price, levels)
+            results["breach_hit"][ticker] = {
+                "status": status,
+                "category": category,
+            }
 
             if flagged:
                 stage_val, weeks = analyser.stage_analysis()

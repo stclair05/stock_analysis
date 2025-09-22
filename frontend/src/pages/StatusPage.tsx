@@ -20,6 +20,13 @@ type StageStatus = {
   weeks: number;
 };
 
+type BreachHitCategory = "target" | "invalidation" | "neutral";
+
+type BreachHitStatus = {
+  status: string | null;
+  category: BreachHitCategory;
+};
+
 type StatusResponse = {
   below_20dma: string[];
   below_200dma: string[];
@@ -28,6 +35,9 @@ type StatusResponse = {
   super_trend_daily: Record<string, SuperTrendSignal>;
   mace: Record<string, MaceSignal>;
   stage: Record<string, StageStatus>;
+  short_term_trend: Record<string, number | null>;
+  long_term_trend: Record<string, number | null>;
+  breach_hit: Record<string, BreachHitStatus>;
 };
 
 export default function StatusPage() {
@@ -46,6 +56,9 @@ export default function StatusPage() {
           super_trend_daily: {},
           mace: {},
           stage: {},
+          short_term_trend: {},
+          long_term_trend: {},
+          breach_hit: {},
         })
       );
   }, []);
@@ -68,7 +81,15 @@ export default function StatusPage() {
     counts[sym] = (counts[sym] || 0) + 1;
   });
 
-  const uniqueSymbols = Array.from(new Set(orderedSymbols));
+  const trendSymbols = [
+    ...Object.keys(data.short_term_trend || {}),
+    ...Object.keys(data.long_term_trend || {}),
+  ];
+  const breachSymbols = Object.keys(data.breach_hit || {});
+
+  const uniqueSymbols = Array.from(
+    new Set([...orderedSymbols, ...trendSymbols, ...breachSymbols])
+  );
 
   const below20Set = new Set(data.below_20dma);
   const below200Set = new Set(data.below_200dma);
@@ -144,26 +165,52 @@ export default function StatusPage() {
     return acc;
   }, {} as Record<number, number>);
 
+  const shortTrendScores = Object.values(data.short_term_trend || {});
+  const shortUp = shortTrendScores.filter(
+    (score): score is number => typeof score === "number" && score >= 2
+  ).length;
+  const shortDown = shortTrendScores.filter(
+    (score): score is number => typeof score === "number" && score < 2
+  ).length;
+
+  const longTrendScores = Object.values(data.long_term_trend || {});
+  const longUp = longTrendScores.filter(
+    (score): score is number => typeof score === "number" && score >= 4
+  ).length;
+  const longDown = longTrendScores.filter(
+    (score): score is number => typeof score === "number" && score < 4
+  ).length;
+
+  const breachValues = Object.values(data.breach_hit || {});
+  const breachTarget = breachValues.filter(
+    (value) => value?.category === "target"
+  ).length;
+  const breachInvalidation = breachValues.filter(
+    (value) => value?.category === "invalidation"
+  ).length;
+
   return (
     <div className="container mt-4" style={{ maxWidth: "60%" }}>
       <h1 className="fw-bold mb-4">Status</h1>
       <table className="table text-center excel-table">
         <thead>
-          <tr>
-            <th></th>
-            <th>{data.below_20dma.length}</th>
-            <th>{data.below_200dma.length}</th>
-            <th>
+          <tr className="table-secondary" style={{ fontSize: "0.67rem" }}>
+            <th scope="col" className="text-start">
+              Summary
+            </th>
+            <th scope="col">{data.below_20dma.length}</th>
+            <th scope="col">{data.below_200dma.length}</th>
+            <th scope="col">
               {bearishCount}/{bullishCount}
             </th>
-            <th>{data.extended_vol.length}</th>
-            <th>
+            <th scope="col">{data.extended_vol.length}</th>
+            <th scope="col">
               {superTrendSell}/{superTrendBuy}
             </th>
-            <th>
+            <th scope="col">
               {maceUp}/{maceDown}
             </th>
-            <th>
+            <th scope="col">
               {([1, 2, 3, 4] as const)
                 .map(
                   (stageNumber) =>
@@ -171,6 +218,9 @@ export default function StatusPage() {
                 )
                 .join(" ")}
             </th>
+            <th scope="col">{`${shortUp}/${shortDown}`}</th>
+            <th scope="col">{`${longUp}/${longDown}`}</th>
+            <th scope="col">{`${breachTarget}/${breachInvalidation}`}</th>
           </tr>
           <tr>
             <th>Symbol</th>
@@ -181,6 +231,9 @@ export default function StatusPage() {
             <th>Super Trend (D)</th>
             <th>MACE</th>
             <th>Stage</th>
+            <th>Short-Term Trend</th>
+            <th>Long-Term Trend</th>
+            <th>Breach / Hit</th>
           </tr>
         </thead>
         <tbody>
@@ -192,6 +245,9 @@ export default function StatusPage() {
             const superTrendInfo = data.super_trend_daily?.[symbol];
             const maceInfo = data.mace?.[symbol];
             const stageInfo = data.stage?.[symbol];
+            const shortTrendScore = data.short_term_trend?.[symbol];
+            const longTrendScore = data.long_term_trend?.[symbol];
+            const breachInfo = data.breach_hit?.[symbol];
 
             return (
               <tr key={symbol}>
@@ -228,6 +284,47 @@ export default function StatusPage() {
                         stageInfo.weeks ? ` (${stageInfo.weeks}w)` : ""
                       }`
                     : ""}
+                </td>
+                <td
+                  className={
+                    typeof shortTrendScore === "number"
+                      ? shortTrendScore >= 2
+                        ? "table-success"
+                        : "table-danger"
+                      : undefined
+                  }
+                >
+                  {typeof shortTrendScore === "number"
+                    ? `${
+                        shortTrendScore >= 2 ? "Uptrend" : "Downtrend"
+                      } (${shortTrendScore}/3)`
+                    : ""}
+                </td>
+                <td
+                  className={
+                    typeof longTrendScore === "number"
+                      ? longTrendScore >= 4
+                        ? "table-success"
+                        : "table-danger"
+                      : undefined
+                  }
+                >
+                  {typeof longTrendScore === "number"
+                    ? `${
+                        longTrendScore >= 4 ? "Uptrend" : "Downtrend"
+                      } (${longTrendScore}/6)`
+                    : ""}
+                </td>
+                <td
+                  className={
+                    breachInfo?.category === "target"
+                      ? "table-success"
+                      : breachInfo?.category === "invalidation"
+                      ? "table-danger"
+                      : undefined
+                  }
+                >
+                  {breachInfo?.status || ""}
                 </td>
               </tr>
             );
