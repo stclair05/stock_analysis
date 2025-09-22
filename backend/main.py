@@ -123,31 +123,13 @@ def get_portfolio_tickers():
         ]
 
 
-@app.get("/portfolio_status")
-def get_portfolio_status():
-    json_path = Path("portfolio_store.json")
-    if not json_path.exists():
-        return {
-            "below_20dma": [],
-            "below_200dma": [],
-            "candle_signals": {},
-            "extended_vol": [],
-            "super_trend_daily": {},
-            "mace": {},
-            "stage": {},
-        }
-
-    with open(json_path, "r") as f:
-        data = json.load(f)
-        equities = [
-            item
-            for item in data.get("equities", [])
-            if isinstance(item, dict) and "ticker" in item
-        ]
+def _status_for_holdings(holdings, price_direction: str):
+    price_key_20 = "below_20dma" if price_direction == "below" else "above_20dma"
+    price_key_200 = "below_200dma" if price_direction == "below" else "above_200dma"
 
     results = {
-        "below_20dma": [],
-        "below_200dma": [],
+        price_key_20: [],
+        price_key_200: [],
         "candle_signals": {},
         "extended_vol": [],
         "super_trend_daily": {},
@@ -158,8 +140,10 @@ def get_portfolio_status():
         "breach_hit": {},
     }
 
-    for holding in equities:
-        ticker = holding["ticker"]
+    for holding in holdings:
+        ticker = holding.get("ticker")
+        if not ticker:
+            continue
         try:
             analyser = StockAnalyser(ticker)
             price = analyser.get_current_price()
@@ -178,22 +162,22 @@ def get_portfolio_status():
             )
 
             twenty = analyser.calculate_20dma().current
-            if (
-                isinstance(price, (int, float))
-                and isinstance(twenty, (int, float))
-                and price < twenty
-            ):
-                results["below_20dma"].append(ticker)
-                flagged = True
+            if isinstance(price, (int, float)) and isinstance(twenty, (int, float)):
+                if price_direction == "below" and price < twenty:
+                    results[price_key_20].append(ticker)
+                    flagged = True
+                if price_direction == "above" and price >= twenty:
+                    results[price_key_20].append(ticker)
+                    flagged = True
 
             two_hundred = analyser.calculate_200dma().current
-            if (
-                isinstance(price, (int, float))
-                and isinstance(two_hundred, (int, float))
-                and price < two_hundred
-            ):
-                results["below_200dma"].append(ticker)
-                flagged = True
+            if isinstance(price, (int, float)) and isinstance(two_hundred, (int, float)):
+                if price_direction == "below" and price < two_hundred:
+                    results[price_key_200].append(ticker)
+                    flagged = True
+                if price_direction == "above" and price >= two_hundred:
+                    results[price_key_200].append(ticker)
+                    flagged = True
 
             engulf = analyser.detect_engulfing()
             daily = engulf.get("daily")
@@ -227,6 +211,7 @@ def get_portfolio_status():
             if candle_signal:
                 results["candle_signals"][ticker] = candle_signal
                 flagged = True
+
             rsi_series = compute_wilder_rsi(analyser.df["Close"])
             rsi_val = safe_value(rsi_series, -1)
             if isinstance(rsi_val, (int, float)) and rsi_val >= 70:
@@ -321,6 +306,34 @@ def get_portfolio_status():
             continue
 
     return results
+
+@app.get("/portfolio_status")
+def get_portfolio_status():
+    json_path = Path("portfolio_store.json")
+    if not json_path.exists():
+        return {
+            "below_20dma": [],
+            "below_200dma": [],
+            "candle_signals": {},
+            "extended_vol": [],
+            "super_trend_daily": {},
+            "mace": {},
+            "stage": {},
+            "short_term_trend": {},
+            "long_term_trend": {},
+            "breach_hit": {},
+        }
+
+    with open(json_path, "r") as f:
+        data = json.load(f)
+        equities = [
+            item
+            for item in data.get("equities", [])
+            if isinstance(item, dict) and "ticker" in item
+        ]
+
+    return _status_for_holdings(equities, "below")
+
 
 @app.get("/fmp_financials/{symbol}", response_model=FinancialMetrics)
 async def get_fmp_financials(symbol: str):
@@ -621,6 +634,36 @@ def get_buylist():
         elif isinstance(entry, str):
             items.append({"ticker": entry, "sector": "N/A"})
     return items
+
+
+@app.get("/buylist_status")
+def get_buylist_status():
+    """Return technical status for tickers stored in the buylist."""
+    data = load_data()
+    holdings = []
+    for entry in data.get("buylist", []):
+        if isinstance(entry, dict):
+            ticker = entry.get("ticker")
+            if ticker:
+                holdings.append(entry)
+        elif isinstance(entry, str):
+            holdings.append({"ticker": entry})
+
+    if not holdings:
+        return {
+            "above_20dma": [],
+            "above_200dma": [],
+            "candle_signals": {},
+            "extended_vol": [],
+            "super_trend_daily": {},
+            "mace": {},
+            "stage": {},
+            "short_term_trend": {},
+            "long_term_trend": {},
+            "breach_hit": {},
+        }
+
+    return _status_for_holdings(holdings, "above")
 
 @app.delete("/watchlist/{symbol}")
 def remove_from_watchlist(symbol: str):

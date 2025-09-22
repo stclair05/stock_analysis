@@ -440,316 +440,959 @@
   ],
   "buylist": [
     {
-      "ticker": "UUUU",
-      "sector": "Uranium",
-      "target": 9,
+      "ticker": "ETHA",
+      "sector": "Industrials",
       "technigrade": []
     },
     {
-      "ticker": "URA",
-      "sector": "Uranium",
-      "target": 35,
+      "ticker": "EXPE",
+      "sector": "Consumer Cyclical",
       "technigrade": []
     },
     {
-      "ticker": "UEC",
-      "sector": "Uranium",
-      "target": 8,
+      "ticker": "CRCL",
+      "sector": "Industrials",
       "technigrade": []
     },
     {
-      "ticker": "FNV",
-      "sector": "Precious Metals",
-      "target": 150,
+      "ticker": "XYL",
+      "sector": "Industrials",
       "technigrade": []
     },
     {
-      "ticker": "RGLD",
-      "sector": "Precious Metals",
-      "target": 147,
-      "technigrade": []
-    },
-    {
-      "ticker": "GFI",
-      "sector": "Precious Metals",
-      "target": 23,
-      "technigrade": []
-    },
-    {
-      "ticker": "HMY",
-      "sector": "Precious Metals",
-      "target": 12.5,
-      "technigrade": []
-    },
-    {
-      "ticker": "AEM",
-      "sector": "Precious Metals",
-      "target": 113,
-      "technigrade": []
-    },
-    {
-      "ticker": "B",
-      "sector": "Precious Metals",
-      "target": 21.5,
-      "technigrade": []
-    },
-    {
-      "ticker": "GDX",
-      "sector": "Precious Metals",
-      "target": 44,
-      "technigrade": []
-    },
-    {
-      "ticker": "CDE",
-      "sector": "Precious Metals",
-      "target": 7.3,
-      "technigrade": []
-    },
-    {
-      "ticker": "ACHR",
-      "sector": "Aerospace & Defense",
-      "target": 8.4,
-      "technigrade": []
-    },
-    {
-      "ticker": "SOUN",
+      "ticker": "SERV",
       "sector": "Technology",
-      "target": 9.2,
       "technigrade": []
     },
     {
-      "ticker": "PYPL",
-      "sector": "Technology",
-      "target": 68.5,
+      "ticker": "EVO.ST",
+      "sector": "Industrials",
       "technigrade": []
     },
     {
-      "ticker": "ISRG",
+      "ticker": "PACB",
       "sector": "Healthcare",
-      "target": 485,
       "technigrade": []
     },
     {
-      "ticker": "ORCL",
-      "sector": "Technology",
-      "target": 207,
+      "ticker": "ENVX",
+      "sector": "Industrials",
       "technigrade": []
     },
     {
-      "ticker": "AXON",
-      "sector": "Aerospace & Defense",
-      "target": 757,
-      "technigrade": []
-    },
-    {
-      "ticker": "ZTS",
+      "ticker": "RXRX",
       "sector": "Healthcare",
-      "target": 145,
       "technigrade": []
     },
     {
-      "ticker": "DOCS",
-      "sector": "Healthcare",
-      "target": 57,
-      "technigrade": []
-    },
-    {
-      "ticker": "IDXX",
-      "sector": "Healthcare",
-      "target": 578,
-      "technigrade": []
-    },
-    {
-      "ticker": "HOLX",
-      "sector": "Healthcare",
-      "target": 67.5,
-      "technigrade": []
-    },
-    {
-      "ticker": "NTRA",
-      "sector": "Healthcare",
-      "target": 148,
-      "technigrade": []
-    },
-    {
-      "ticker": "XLK",
+      "ticker": "IONQ",
       "sector": "Technology",
-      "target": 242,
       "technigrade": []
     },
     {
-      "ticker": "ARKQ",
-      "sector": "Index",
-      "target": 87,
-      "technigrade": []
-    },
-    {
-      "ticker": "IVES",
-      "sector": "Index",
-      "target": 26,
-      "technigrade": []
-    },
-    {
-      "ticker": "NFLX",
-      "sector": "Technology",
-      "target": 1110,
-      "technigrade": []
-    },
-    {
-      "ticker": "CRM",
-      "sector": "Technology",
-      "target": 275,
-      "technigrade": []
-    },
-    {
-      "ticker": "TSLA",
-      "sector": "Technology",
-      "target": 338,
-      "technigrade": []
-    },
-    {
-      "ticker": "TEM",
-      "sector": "Technology",
-      "target": 52,
-      "technigrade": []
-    },
-    {
-      "ticker": "HOOD",
-      "sector": "Technology",
-      "target": 85,
-      "technigrade": []
-    },
-    {
-      "ticker": "PLTR",
-      "sector": "Technology",
-      "target": 125,
-      "technigrade": []
-    },
-    {
-      "ticker": "AVAV",
-      "sector": "Aerospace & Defense",
-      "target": 215,
-      "technigrade": []
-    },
-    {
-      "ticker": "KTOS",
-      "sector": "Aerospace & Defense",
-      "target": 46,
-      "technigrade": []
-    },
-    {
-      "ticker": "CRDO",
-      "sector": "Technology",
-      "target": 85,
-      "technigrade": []
-    },
-    {
-      "ticker": "SYK",
-      "sector": "Healthcare",
-      "target": 380,
-      "technigrade": []
-    },
-    {
-      "ticker": "SHOP",
-      "sector": "Technology",
-      "target": 110,
+      "ticker": "AMPX",
+      "sector": "Industrials",
       "technigrade": []
     },
     {
       "ticker": "EL",
-      "sector": "Luxury & Cosmetics",
-      "target": 80,
+      "sector": "Consumer Defensive",
       "technigrade": []
     },
     {
-      "ticker": "LTBR",
-      "sector": "Others",
-      "target": 16,
+      "ticker": "HCC",
+      "sector": "Energy",
       "technigrade": []
     },
     {
-      "ticker": "SBSW",
+      "ticker": "NBIS",
+      "sector": "Industrials",
+      "technigrade": []
+    },
+    {
+      "ticker": "GDS",
+      "sector": "Technology",
+      "technigrade": []
+    },
+    {
+      "ticker": "AG",
       "sector": "Precious Metals",
-      "target": 6.3,
-      "technigrade": []
-    },
-    {
-      "ticker": "BA",
-      "sector": "Aerospace & Defense",
-      "target": 215,
       "technigrade": []
     },
     {
       "ticker": "DRD",
       "sector": "Precious Metals",
-      "target": 12.3,
       "technigrade": []
     },
     {
-      "ticker": "KGC",
+      "ticker": "CPNG",
+      "sector": "Consumer Cyclical",
+      "technigrade": []
+    },
+    {
+      "ticker": "ORLA",
       "sector": "Precious Metals",
-      "target": 12.4,
       "technigrade": []
     },
     {
-      "ticker": "MRNA",
+      "ticker": "YMM",
+      "sector": "Industrials",
+      "technigrade": []
+    },
+    {
+      "ticker": "PKX",
+      "sector": "Industrials",
+      "technigrade": []
+    },
+    {
+      "ticker": "TDW",
+      "sector": "Energy",
+      "technigrade": []
+    },
+    {
+      "ticker": "GRRR",
+      "sector": "Industrials",
+      "technigrade": []
+    },
+    {
+      "ticker": "GFI",
+      "sector": "Precious Metals",
+      "technigrade": []
+    },
+    {
+      "ticker": "HMY",
+      "sector": "Precious Metals",
+      "technigrade": []
+    },
+    {
+      "ticker": "FNV",
+      "sector": "Precious Metals",
+      "technigrade": []
+    },
+    {
+      "ticker": "DOCU",
+      "sector": "Technology",
+      "technigrade": []
+    },
+    {
+      "ticker": "1801.HK",
       "sector": "Healthcare",
-      "target": 36,
       "technigrade": []
     },
     {
-      "ticker": "ALB",
-      "sector": "Others",
-      "target": 80,
+      "ticker": "KTOS",
+      "sector": "Aerospace & Defense",
       "technigrade": []
     },
     {
-      "ticker": "REMX",
+      "ticker": "AVAV",
+      "sector": "Aerospace & Defense",
+      "technigrade": []
+    },
+    {
+      "ticker": "TEVA",
+      "sector": "Healthcare",
+      "technigrade": []
+    },
+    {
+      "ticker": "6181.HK",
+      "sector": "Consumer Cyclical",
+      "technigrade": []
+    },
+    {
+      "ticker": "AIR.PA",
+      "sector": "Aerospace & Defense",
+      "technigrade": []
+    },
+    {
+      "ticker": "1810.HK",
+      "sector": "Technology",
+      "technigrade": []
+    },
+    {
+      "ticker": "COPX",
       "sector": "Index",
-      "target": 54,
       "technigrade": []
     },
     {
-      "ticker": "CRSP",
+      "ticker": "ST",
       "sector": "Technology",
-      "target": 60,
       "technigrade": []
     },
     {
-      "ticker": "NOW",
-      "sector": "Technology",
-      "target": 830,
+      "ticker": "RHM.DE",
+      "sector": "Aerospace & Defense",
       "technigrade": []
     },
     {
-      "ticker": "ADBE",
+      "ticker": "HO.PA",
+      "sector": "Aerospace & Defense",
+      "technigrade": []
+    },
+    {
+      "ticker": "AM.PA",
+      "sector": "Aerospace & Defense",
+      "technigrade": []
+    },
+    {
+      "ticker": "BA.L",
+      "sector": "Aerospace & Defense",
+      "technigrade": []
+    },
+    {
+      "ticker": "UBER",
+      "sector": "Consumer Cyclical",
+      "technigrade": []
+    },
+    {
+      "ticker": "C",
+      "sector": "Financial Services",
+      "technigrade": []
+    },
+    {
+      "ticker": "META",
       "sector": "Technology",
-      "target": 418,
+      "technigrade": []
+    },
+    {
+      "ticker": "ARKQ",
+      "sector": "Index",
+      "technigrade": []
+    },
+    {
+      "ticker": "ARKK",
+      "sector": "Index",
+      "technigrade": []
+    },
+    {
+      "ticker": "BBAI",
+      "sector": "Technology",
+      "technigrade": []
+    },
+    {
+      "ticker": "TRMB",
+      "sector": "Technology",
+      "technigrade": []
+    },
+    {
+      "ticker": "XSD",
+      "sector": "Index",
       "technigrade": []
     },
     {
       "ticker": "RCAT",
       "sector": "Technology",
-      "target": 7.5,
       "technigrade": []
     },
     {
-      "ticker": "USAR",
-      "sector": "Others",
-      "target": 14.2,
+      "ticker": "MT",
+      "sector": "Industrials",
       "technigrade": []
     },
     {
-      "ticker": "9992.HK",
-      "sector": "Hong Kong & China",
-      "target": 8,
+      "ticker": "CAVA",
+      "sector": "Consumer Cyclical",
       "technigrade": []
     },
     {
-      "ticker": "ERII",
+      "ticker": "CYTK",
+      "sector": "Healthcare",
+      "technigrade": []
+    },
+    {
+      "ticker": "MDGL",
+      "sector": "Healthcare",
+      "technigrade": []
+    },
+    {
+      "ticker": "FN",
+      "sector": "Financial Services",
+      "technigrade": []
+    },
+    {
+      "ticker": "RKLB",
+      "sector": "Industrials",
+      "technigrade": []
+    },
+    {
+      "ticker": "1318.HK",
+      "sector": "Consumer Defensive",
+      "technigrade": []
+    },
+    {
+      "ticker": "FTNT",
+      "sector": "Technology",
+      "technigrade": []
+    },
+    {
+      "ticker": "CRK",
+      "sector": "Energy",
+      "technigrade": []
+    },
+    {
+      "ticker": "BOX",
+      "sector": "Technology",
+      "technigrade": []
+    },
+    {
+      "ticker": "MBLY",
+      "sector": "Technology",
+      "technigrade": []
+    },
+    {
+      "ticker": "TDOC",
+      "sector": "Healthcare",
+      "technigrade": []
+    },
+    {
+      "ticker": "OSCR",
+      "sector": "Healthcare",
+      "technigrade": []
+    },
+    {
+      "ticker": "MPW",
+      "sector": "Real Estate",
+      "technigrade": []
+    },
+    {
+      "ticker": "NFLX",
+      "sector": "Communication Services",
+      "technigrade": []
+    },
+    {
+      "ticker": "BKNG",
+      "sector": "Consumer Cyclical",
+      "technigrade": []
+    },
+    {
+      "ticker": "DIS",
+      "sector": "Communication Services",
+      "technigrade": []
+    },
+    {
+      "ticker": "SPOT",
+      "sector": "Communication Services",
+      "technigrade": []
+    },
+    {
+      "ticker": "BESI.AS",
+      "sector": "Technology",
+      "technigrade": []
+    },
+    {
+      "ticker": "SPIR",
+      "sector": "Technology",
+      "technigrade": []
+    },
+    {
+      "ticker": "SQM",
+      "sector": "Basic Materials",
+      "technigrade": []
+    },
+    {
+      "ticker": "ALB",
+      "sector": "Basic Materials",
+      "technigrade": []
+    },
+    {
+      "ticker": "REMX",
+      "sector": "Index",
+      "technigrade": []
+    },
+    {
+      "ticker": "DOCS",
+      "sector": "Healthcare",
+      "technigrade": []
+    },
+    {
+      "ticker": "ZTS",
+      "sector": "Healthcare",
+      "technigrade": []
+    },
+    {
+      "ticker": "IDXX",
+      "sector": "Healthcare",
+      "technigrade": []
+    },
+    {
+      "ticker": "BYRN",
+      "sector": "Industrials",
+      "technigrade": []
+    },
+    {
+      "ticker": "ONC",
+      "sector": "Healthcare",
+      "technigrade": []
+    },
+    {
+      "ticker": "002891.SZ",
+      "sector": "Consumer Defensive",
+      "technigrade": []
+    },
+    {
+      "ticker": "SMR",
+      "sector": "Utilities",
+      "technigrade": []
+    },
+    {
+      "ticker": "2343.HK",
+      "sector": "Industrials",
+      "technigrade": []
+    },
+    {
+      "ticker": "20.HK",
+      "sector": "Energy",
+      "technigrade": []
+    },
+    {
+      "ticker": "MRNA",
+      "sector": "Healthcare",
+      "technigrade": []
+    },
+    {
+      "ticker": "AXON",
+      "sector": "Technology",
+      "technigrade": []
+    },
+    {
+      "ticker": "UUUU",
+      "sector": "Energy",
+      "technigrade": []
+    },
+    {
+      "ticker": "AMR",
+      "sector": "Industrials",
+      "technigrade": []
+    },
+    {
+      "ticker": "TOU.TO",
+      "sector": "Energy",
+      "technigrade": []
+    },
+    {
+      "ticker": "NNRG.TO",
+      "sector": "Energy",
+      "technigrade": []
+    },
+    {
+      "ticker": "CPA",
+      "sector": "Industrials",
+      "technigrade": []
+    },
+    {
+      "ticker": "DHT",
+      "sector": "Industrials",
+      "technigrade": []
+    },
+    {
+      "ticker": "SCCO",
+      "sector": "Basic Materials",
+      "technigrade": []
+    },
+    {
+      "ticker": "PLTR",
+      "sector": "Technology",
+      "technigrade": []
+    },
+    {
+      "ticker": "9618.HK",
+      "sector": "Technology",
+      "technigrade": []
+    },
+    {
+      "ticker": "SBSW",
+      "sector": "Basic Materials",
+      "technigrade": []
+    },
+    {
+      "ticker": "IBIT",
+      "sector": "Index",
+      "technigrade": []
+    },
+    {
+      "ticker": "9988.HK",
+      "sector": "Communication Services",
+      "technigrade": []
+    },
+    {
+      "ticker": "FRO",
+      "sector": "Energy",
+      "technigrade": []
+    },
+    {
+      "ticker": "FCX",
+      "sector": "Basic Materials",
+      "technigrade": []
+    },
+    {
+      "ticker": "HOOD",
+      "sector": "Financial Services",
+      "technigrade": []
+    },
+    {
+      "ticker": "FLNG",
+      "sector": "Energy",
+      "technigrade": []
+    },
+    {
+      "ticker": "MOS",
+      "sector": "Basic Materials",
+      "technigrade": []
+    },
+    {
+      "ticker": "IPI",
+      "sector": "Basic Materials",
+      "technigrade": []
+    },
+    {
+      "ticker": "CRM",
+      "sector": "Technology",
+      "technigrade": []
+    },
+    {
+      "ticker": "GDXJ",
+      "sector": "Index",
+      "technigrade": []
+    },
+    {
+      "ticker": "BTU",
+      "sector": "Energy",
+      "technigrade": []
+    },
+    {
+      "ticker": "6690.HK",
+      "sector": "Industrials",
+      "technigrade": []
+    },
+    {
+      "ticker": "XLK",
+      "sector": "Index",
+      "technigrade": []
+    },
+    {
+      "ticker": "TEM",
+      "sector": "Technology",
+      "technigrade": []
+    },
+    {
+      "ticker": "SEI",
+      "sector": "Financial Services",
+      "technigrade": []
+    },
+    {
+      "ticker": "300673.SZ",
+      "sector": "Technology",
+      "technigrade": []
+    },
+    {
+      "ticker": "DE",
+      "sector": "Industrials",
+      "technigrade": []
+    },
+    {
+      "ticker": "CW",
+      "sector": "Technology",
+      "technigrade": []
+    },
+    {
+      "ticker": "CHWY",
+      "sector": "Consumer Cyclical",
+      "technigrade": []
+    },
+    {
+      "ticker": "TRMD",
+      "sector": "Industrials",
+      "technigrade": []
+    },
+    {
+      "ticker": "QQQ",
+      "sector": "Index",
+      "technigrade": []
+    },
+    {
+      "ticker": "GEV",
+      "sector": "Industrials",
+      "technigrade": []
+    },
+    {
+      "ticker": "700.HK",
+      "sector": "Communication Services",
+      "technigrade": []
+    },
+    {
+      "ticker": "MC.PA",
+      "sector": "Consumer Cyclical",
+      "technigrade": []
+    },
+    {
+      "ticker": "CTVA",
+      "sector": "Industrials",
+      "technigrade": []
+    },
+    {
+      "ticker": "ZS",
+      "sector": "Technology",
+      "technigrade": []
+    },
+    {
+      "ticker": "LLY",
+      "sector": "Healthcare",
+      "technigrade": []
+    },
+    {
+      "ticker": "CDI.PA",
+      "sector": "Healthcare",
+      "technigrade": []
+    },
+    {
+      "ticker": "SPY",
+      "sector": "Index",
+      "technigrade": []
+    },
+    {
+      "ticker": "IQV",
+      "sector": "Healthcare",
+      "technigrade": []
+    },
+    {
+      "ticker": "RING",
+      "sector": "Index",
+      "technigrade": []
+    },
+    {
+      "ticker": "ADM",
+      "sector": "Consumer Defensive",
+      "technigrade": []
+    },
+    {
+      "ticker": "RRC",
+      "sector": "Energy",
+      "technigrade": []
+    },
+    {
+      "ticker": "ATI",
+      "sector": "Industrials",
+      "technigrade": []
+    },
+    {
+      "ticker": "B",
+      "sector": "Industrials",
+      "technigrade": []
+    },
+    {
+      "ticker": "BA",
+      "sector": "Aerospace & Defense",
+      "technigrade": []
+    },
+    {
+      "ticker": "NUGT",
+      "sector": "Index",
+      "technigrade": []
+    },
+    {
+      "ticker": "EMBR3.SA",
+      "sector": "Industrials",
+      "technigrade": []
+    },
+    {
+      "ticker": "HBM",
+      "sector": "Basic Materials",
+      "technigrade": []
+    },
+    {
+      "ticker": "SOUN",
+      "sector": "Technology",
+      "technigrade": []
+    },
+    {
+      "ticker": "XME",
+      "sector": "Index",
+      "technigrade": []
+    },
+    {
+      "ticker": "FIX",
+      "sector": "Industrials",
+      "technigrade": []
+    },
+    {
+      "ticker": "ISRG",
+      "sector": "Healthcare",
+      "technigrade": []
+    },
+    {
+      "ticker": "SOHU",
+      "sector": "Communication Services",
+      "technigrade": []
+    },
+    {
+      "ticker": "9660.HK",
+      "sector": "Technology",
+      "technigrade": []
+    },
+    {
+      "ticker": "ACHR",
+      "sector": "Aerospace & Defense",
+      "technigrade": []
+    },
+    {
+      "ticker": "ARQQ",
+      "sector": "Industrials",
+      "technigrade": []
+    },
+    {
+      "ticker": "EL",
+      "sector": "Consumer Defensive",
+      "technigrade": []
+    },
+    {
+      "ticker": "XPEV",
+      "sector": "Consumer Cyclical",
+      "technigrade": []
+    },
+    {
+      "ticker": "TSLA",
+      "sector": "Consumer Cyclical",
+      "technigrade": []
+    },
+    {
+      "ticker": "SAP",
+      "sector": "Technology",
+      "technigrade": []
+    },
+    {
+      "ticker": "ORCL",
+      "sector": "Technology",
+      "technigrade": []
+    },
+    {
+      "ticker": "MP",
+      "sector": "Basic Materials",
+      "technigrade": []
+    },
+    {
+      "ticker": "VKTX",
+      "sector": "Healthcare",
+      "technigrade": []
+    },
+    {
+      "ticker": "MO",
+      "sector": "Consumer Defensive",
+      "technigrade": []
+    },
+    {
+      "ticker": "LYB",
       "sector": "Precious Metals",
-      "target": 8,
-      "technigrade": [13, 11, 11, 10]
+      "technigrade": []
+    },
+    {
+      "ticker": "CSIQ",
+      "sector": "Industrials",
+      "technigrade": []
+    },
+    {
+      "ticker": "KNT.TO",
+      "sector": "Precious Metals",
+      "technigrade": []
+    },
+    {
+      "ticker": "WDO.TO",
+      "sector": "Energy",
+      "technigrade": []
+    },
+    {
+      "ticker": "DYL.AX",
+      "sector": "Energy",
+      "technigrade": []
+    },
+    {
+      "ticker": "LTBR",
+      "sector": "Basic Materials",
+      "technigrade": []
+    },
+    {
+      "ticker": "AEVA",
+      "sector": "Technology",
+      "technigrade": []
+    },
+    {
+      "ticker": "GEVO",
+      "sector": "Energy",
+      "technigrade": []
+    },
+    {
+      "ticker": "PTON",
+      "sector": "Consumer Cyclical",
+      "technigrade": []
+    },
+    {
+      "ticker": "ZM",
+      "sector": "Technology",
+      "technigrade": []
+    },
+    {
+      "ticker": "TMC",
+      "sector": "Basic Materials",
+      "technigrade": []
+    },
+    {
+      "ticker": "MDB",
+      "sector": "Technology",
+      "technigrade": []
+    },
+    {
+      "ticker": "SIL",
+      "sector": "Basic Materials",
+      "technigrade": []
+    },
+    {
+      "ticker": "RGLD",
+      "sector": "Precious Metals",
+      "technigrade": []
+    },
+    {
+      "ticker": "WPM",
+      "sector": "Basic Materials",
+      "technigrade": []
+    },
+    {
+      "ticker": "EXK",
+      "sector": "Basic Materials",
+      "technigrade": []
+    },
+    {
+      "ticker": "AYA.TO",
+      "sector": "Basic Materials",
+      "technigrade": []
+    },
+    {
+      "ticker": "HL",
+      "sector": "Precious Metals",
+      "technigrade": []
+    },
+    {
+      "ticker": "NST.AX",
+      "sector": "Precious Metals",
+      "technigrade": []
+    },
+    {
+      "ticker": "INOD",
+      "sector": "Industrials",
+      "technigrade": []
+    },
+    {
+      "ticker": "U.TO",
+      "sector": "Utilities",
+      "technigrade": []
+    },
+    {
+      "ticker": "JOBY",
+      "sector": "Industrials",
+      "technigrade": []
+    },
+    {
+      "ticker": "HIMS",
+      "sector": "Healthcare",
+      "technigrade": []
+    },
+    {
+      "ticker": "MARA",
+      "sector": "Technology",
+      "technigrade": []
+    },
+    {
+      "ticker": "RIOT",
+      "sector": "Technology",
+      "technigrade": []
+    },
+    {
+      "ticker": "HUT",
+      "sector": "Technology",
+      "technigrade": []
+    },
+    {
+      "ticker": "MSFT",
+      "sector": "Technology",
+      "technigrade": []
+    },
+    {
+      "ticker": "LHX",
+      "sector": "Aerospace & Defense",
+      "technigrade": []
+    },
+    {
+      "ticker": "BG",
+      "sector": "Industrials",
+      "technigrade": []
+    },
+    {
+      "ticker": "SNOW",
+      "sector": "Technology",
+      "technigrade": []
+    },
+    {
+      "ticker": "CRWD",
+      "sector": "Technology",
+      "technigrade": []
+    },
+    {
+      "ticker": "NTRA",
+      "sector": "Healthcare",
+      "technigrade": []
+    },
+    {
+      "ticker": "XMTR",
+      "sector": "Industrials",
+      "technigrade": []
+    },
+    {
+      "ticker": "HALO",
+      "sector": "Healthcare",
+      "technigrade": []
+    },
+    {
+      "ticker": "SCHW",
+      "sector": "Financial Services",
+      "technigrade": []
+    },
+    {
+      "ticker": "ANET",
+      "sector": "Technology",
+      "technigrade": []
+    },
+    {
+      "ticker": "NCLH",
+      "sector": "Consumer Cyclical",
+      "technigrade": []
+    },
+    {
+      "ticker": "FIVN",
+      "sector": "Technology",
+      "technigrade": []
+    },
+    {
+      "ticker": "SPGI",
+      "sector": "Financial Services",
+      "technigrade": []
+    },
+    {
+      "ticker": "ITB",
+      "sector": "Index",
+      "technigrade": []
+    },
+    {
+      "ticker": "AMGN",
+      "sector": "Healthcare",
+      "technigrade": []
+    },
+    {
+      "ticker": "GH",
+      "sector": "Industrials",
+      "technigrade": []
+    },
+    {
+      "ticker": "LYC.AX",
+      "sector": "Basic Materials",
+      "technigrade": []
     }
   ],
   "portfolio": []

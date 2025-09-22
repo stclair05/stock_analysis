@@ -11,6 +11,7 @@ import WatchlistPage from "./pages/WatchlistPage.tsx";
 import QuadrantPage from "./pages/QuandrantPage.tsx";
 import RatioPage from "./pages/RatioPage";
 import StatusPage from "./pages/StatusPage";
+import BuyPage from "./pages/BuyPage";
 import Navbar from "./components/Navbar";
 
 function App() {
@@ -38,6 +39,7 @@ function App() {
         <Route path="/quadrant/:listType" element={<QuadrantPage />} />
         <Route path="/ratios" element={<RatioPage />} />
         <Route path="/status" element={<StatusPage />} />
+        <Route path="/buy" element={<BuyPage />} />
       </Routes>
     </Router>
   );

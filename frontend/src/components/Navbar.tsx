@@ -57,6 +57,12 @@ export default function Navbar() {
         >
           Status
         </Link>
+        <Link
+          to="/buy"
+          className={`nav-link ${location.pathname === "/buy" ? "active" : ""}`}
+        >
+          Buy List
+        </Link>
       </div>
     </nav>
   );
