@@ -111,7 +111,6 @@ def get_portfolio_tickers():
             {
                 "ticker": item["ticker"],
                 "sector": item.get("sector", "N/A"),
-                "target": _sanitize_level(item.get("target")),
                 "target_1": _sanitize_level(item.get("target_1")),
                 "target_2": _sanitize_level(item.get("target_2")),
                 "target_3": _sanitize_level(item.get("target_3")),
@@ -704,7 +703,7 @@ def _get_signals_for_symbol(symbol: str, timeframe: str, strategies: List[str]):
 @app.get("/quadrant_data")
 def get_quadrant_data(list_type: str = Query("portfolio", enum=["portfolio", "watchlist"])):
     """Return MACE x 40-week status table for portfolio or watchlist."""
-    targets: dict[str, float] = {}
+    targets: dict[str, list[float]] = {}
     technigrades: dict[str, list] = {}
     if list_type == "portfolio":
         json_path = Path("portfolio_store.json")
@@ -717,9 +716,13 @@ def get_quadrant_data(list_type: str = Query("portfolio", enum=["portfolio", "wa
             for item in data.get("equities", []):
                 if "ticker" in item:
                     tickers.append(item["ticker"])
-                    t_val = item.get("target")
-                    if isinstance(t_val, (int, float)):
-                        targets[item["ticker"]] = float(t_val)
+                    levels: list[float] = []
+                    for key in ("target_1", "target_2", "target_3"):
+                        t_val = item.get(key)
+                        if isinstance(t_val, (int, float)) and t_val > 0:
+                            levels.append(float(t_val))
+                    if levels:
+                        targets[item["ticker"]] = levels
                     if isinstance(item.get("technigrade"), list):
                         technigrades[item["ticker"]] = item["technigrade"]
     else:
@@ -794,18 +797,23 @@ def get_quadrant_data(list_type: str = Query("portfolio", enum=["portfolio", "wa
             if mace_key and fw_key:
                 near_target = False
                 if list_type == "portfolio":
-                    target_price = targets.get(symbol)
+                    target_levels = targets.get(symbol)
                     if (
-                        target_price is not None
-                        and isinstance(target_price, (int, float))
+                        target_levels
                         and price_now is not None
-                        and target_price != 0
                     ):
-                        within_range = (
-                            abs(price_now - target_price) / target_price <= 0.05
-                        )
-                        if price_now >= target_price or within_range:
-                            near_target = True
+                        selected = target_levels[0]
+                        for idx, level in enumerate(target_levels):
+                            if idx == len(target_levels) - 1:
+                                break
+                            if price_now >= level:
+                                selected = target_levels[idx + 1]
+                            else:
+                                break
+                        if selected:
+                            within_range = abs(price_now - selected) / selected <= 0.05
+                            if price_now >= selected or within_range:
+                                near_target = True
 
                 table[fw_key][mace_key]["tickers"].append(
                     {

@@ -27,6 +27,39 @@ type Holding = {
   invalidation_3?: number;
 };
 
+type TargetKey = "target_1" | "target_2" | "target_3";
+
+type TargetLevel = {
+  key: TargetKey;
+  value: number;
+};
+
+const TARGET_PRIORITY: TargetKey[] = ["target_1", "target_2", "target_3"];
+
+const isValidLevel = (value: number | undefined): value is number =>
+  typeof value === "number" && value > 0;
+
+const getTargetLevels = (holding: Holding): TargetLevel[] =>
+  TARGET_PRIORITY.map((key) => {
+    const level = holding[key];
+    return isValidLevel(level) ? { key, value: level } : null;
+  }).filter((item): item is TargetLevel => item !== null);
+
+const selectActiveTargetLevel = (
+  holding: Holding,
+  price: number | null | undefined
+): TargetLevel | undefined => {
+  const levels = getTargetLevels(holding);
+  if (levels.length === 0) return undefined;
+  if (typeof price !== "number") return levels[0];
+
+  let index = 0;
+  while (index < levels.length - 1 && price >= levels[index].value) {
+    index += 1;
+  }
+  return levels[index];
+};
+
 // Additional metrics available for optional columns
 const METRIC_COLUMNS = [
   "current_price",
@@ -429,7 +462,6 @@ export default function BuySellSignalsTab({
     const sanitize = (v: number | undefined) =>
       typeof v === "number" && v > 0 ? v : undefined;
     const levels = {
-      target: sanitize(holding.target),
       target_3: sanitize(holding.target_3),
       target_2: sanitize(holding.target_2),
       target_1: sanitize(holding.target_1),
@@ -443,11 +475,7 @@ export default function BuySellSignalsTab({
     let category: "target" | "invalidation" | "neutral" = "neutral";
 
     if (typeof price === "number") {
-      if (levels.target != null && price >= levels.target) {
-        status = "HIT TARGET";
-        cls = "target-hit";
-        category = "target";
-      } else if (levels.target_3 != null && price >= levels.target_3) {
+      if (levels.target_3 != null && price >= levels.target_3) {
         status = "TARGET 3";
         cls = "target-hit";
         category = "target";
@@ -1131,38 +1159,47 @@ export default function BuySellSignalsTab({
       ) => {
         if (col === "price_target") {
           const priceA = meanRevRsi[a.ticker]?.currentPrice;
-          const targetA = a.target;
           const priceB = meanRevRsi[b.ticker]?.currentPrice;
-          const targetB = b.target;
+          let diffA: number | null = null;
+          let diffB: number | null = null;
 
-          const isValidA =
-            typeof priceA === "number" &&
-            typeof targetA === "number" &&
-            !isNaN(targetA) &&
-            targetA > 0;
-          const isValidB =
-            typeof priceB === "number" &&
-            typeof targetB === "number" &&
-            !isNaN(targetB) &&
-            targetB > 0;
-
-          if (!isValidA && !isValidB) return 0;
-          if (!isValidA) return 1; // push A to bottom
-          if (!isValidB) return -1; // push B to bottom
-
-          let diffA: number;
-          let diffB: number;
           if (listType === "buylist") {
-            // Sort by the absolute percentage move required to reach the buy price
-            diffA = Math.abs(((targetA - priceA) / priceA) * 100);
-            diffB = Math.abs(((targetB - priceB) / priceB) * 100);
-          } else {
-            // Portfolio/Watchlist view keeps the signed difference relative to the target
-            diffA = ((priceA - targetA) / targetA) * 100;
-            diffB = ((priceB - targetB) / targetB) * 100;
-          }
+            const targetA = isValidLevel(a.target) ? a.target : undefined;
+            const targetB = isValidLevel(b.target) ? b.target : undefined;
 
-          return dir === "asc" ? diffA - diffB : diffB - diffA;
+            if (typeof priceA === "number" && targetA) {
+              diffA = Math.abs(((targetA - priceA) / priceA) * 100);
+            }
+            if (typeof priceB === "number" && targetB) {
+              diffB = Math.abs(((targetB - priceB) / priceB) * 100);
+            }
+          } else {
+            const activeA = selectActiveTargetLevel(
+              a,
+              typeof priceA === "number" ? priceA : null
+            );
+            const activeB = selectActiveTargetLevel(
+              b,
+              typeof priceB === "number" ? priceB : null
+            );
+
+            if (typeof priceA === "number" && activeA) {
+              diffA = ((priceA - activeA.value) / activeA.value) * 100;
+            }
+            if (typeof priceB === "number" && activeB) {
+              diffB = ((priceB - activeB.value) / activeB.value) * 100;
+            }
+          }
+          const hasA = typeof diffA === "number" && !Number.isNaN(diffA);
+          const hasB = typeof diffB === "number" && !Number.isNaN(diffB);
+
+          if (!hasA && !hasB) return 0;
+          if (!hasA) return 1; // push A to bottom
+          if (!hasB) return -1; // push B to bottom
+
+          return dir === "asc"
+            ? (diffA as number) - (diffB as number)
+            : (diffB as number) - (diffA as number);
         } else if (["target_1", "target_2", "target_3"].includes(col)) {
           const priceA = meanRevRsi[a.ticker]?.currentPrice;
           const levelA = (a as any)[col];
@@ -1694,19 +1731,12 @@ export default function BuySellSignalsTab({
 
     if (col === "price_target") {
       const price = meanRevRsi[ticker]?.currentPrice;
-      const target = holding.target;
-      if (
-        typeof price === "number" &&
-        typeof target === "number" &&
-        target > 0
-      ) {
-        if (listType === "buylist") {
-          // Calculate how much the current price must change to reach the
-          // desired buy price. The percentage difference is relative to the
-          // current price so that a move from $90 to $100 shows 11.11% and a
-          // drop from $105 to $100 shows 4.76%.
+      if (listType === "buylist") {
+        const target = isValidLevel(holding.target)
+          ? holding.target
+          : undefined;
+        if (typeof price === "number" && target) {
           const diff = Math.abs(((target - price) / price) * 100);
-          // Highlight when the required move is 3% or less
           const cellClass = diff <= 3 ? "price-diff-highlight" : "";
           return (
             <td className={cellClass} style={{ textAlign: "center" }}>
@@ -1715,15 +1745,24 @@ export default function BuySellSignalsTab({
               )}%)`}
             </td>
           );
-        } else {
-          const diff = ((price - target) / target) * 100;
+        }
+      } else if (typeof price === "number") {
+        const activeTarget = selectActiveTargetLevel(holding, price);
+        if (activeTarget) {
+          const diff =
+            ((price - activeTarget.value) / activeTarget.value) * 100;
           const diffStr =
             diff >= 0 ? `+${diff.toFixed(2)}%` : `${diff.toFixed(2)}%`;
           const cellClass =
             diff >= 0 ? "price-target-positive" : "price-target-negative";
+          const targetLabel = activeTarget.key.replace("target_", "T");
           return (
             <td className={cellClass} style={{ textAlign: "center" }}>
-              {`${price.toFixed(2)} | ${target.toFixed(2)} (${diffStr})`}
+              {`${price.toFixed(
+                2
+              )} | ${targetLabel} ${activeTarget.value.toFixed(
+                2
+              )} (${diffStr})`}
             </td>
           );
         }
