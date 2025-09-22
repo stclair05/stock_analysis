@@ -675,6 +675,41 @@
       "technigrade": []
     },
     {
+      "ticker": "EU",
+      "sector": "Energy",
+      "technigrade": []
+    },
+    {
+      "ticker": "TER",
+      "sector": "Technology",
+      "technigrade": []
+    },
+    {
+      "ticker": "SYM",
+      "sector": "Technology",
+      "technigrade": []
+    },
+    {
+      "ticker": "ASTS",
+      "sector": "Technology",
+      "technigrade": []
+    },
+    {
+      "ticker": "INTU",
+      "sector": "Energy",
+      "technigrade": []
+    },
+    {
+      "ticker": "OKLO",
+      "sector": "Others",
+      "technigrade": []
+    },
+    {
+      "ticker": "CCJ",
+      "sector": "Uranium",
+      "technigrade": []
+    },
+    {
       "ticker": "XSD",
       "sector": "Index",
       "technigrade": []

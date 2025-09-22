@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 type CandleSignal = {
   type: "bullish" | "bearish";
@@ -20,6 +20,11 @@ type StageStatus = {
   weeks: number;
 };
 
+type MansfieldDailyStatus = {
+  status: string | null;
+  new_buy?: boolean;
+};
+
 type BreachHitCategory = "target" | "invalidation" | "neutral";
 
 type BreachHitStatus = {
@@ -33,6 +38,7 @@ type BuyStatusResponse = {
   candle_signals: Record<string, CandleSignal>;
   extended_vol: string[];
   super_trend_daily: Record<string, SuperTrendSignal>;
+  mansfield_daily: Record<string, MansfieldDailyStatus>;
   mace: Record<string, MaceSignal>;
   stage: Record<string, StageStatus>;
   short_term_trend: Record<string, number | null>;
@@ -46,12 +52,27 @@ const FALLBACK_DATA: BuyStatusResponse = {
   candle_signals: {},
   extended_vol: [],
   super_trend_daily: {},
+  mansfield_daily: {},
   mace: {},
   stage: {},
   short_term_trend: {},
   long_term_trend: {},
   breach_hit: {},
 };
+
+type SortColumn =
+  | "symbol"
+  | "above20"
+  | "above200"
+  | "candle"
+  | "extended"
+  | "superTrend"
+  | "mansfield"
+  | "mace"
+  | "stage"
+  | "shortTrend"
+  | "longTrend"
+  | "breach";
 
 export default function BuyPage() {
   const [data, setData] = useState<BuyStatusResponse | null>(null);
@@ -65,6 +86,32 @@ export default function BuyPage() {
 
   const resolvedData = data ?? FALLBACK_DATA;
 
+  const [sortColumn, setSortColumn] = useState<SortColumn | null>(null);
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+
+  const sortStyle = { cursor: "pointer", userSelect: "none" as const };
+
+  const handleSort = (column: SortColumn) => {
+    if (sortColumn === column) {
+      if (sortDirection === "desc") {
+        setSortDirection("asc");
+      } else {
+        setSortColumn(null);
+        setSortDirection("desc");
+      }
+    } else {
+      setSortColumn(column);
+      setSortDirection("desc");
+    }
+  };
+
+  const renderSortIndicator = (column: SortColumn) => {
+    if (sortColumn !== column) {
+      return "";
+    }
+    return sortDirection === "asc" ? " ▲" : " ▼";
+  };
+
   const above20Set = useMemo(
     () => new Set(resolvedData.above_20dma),
     [resolvedData.above_20dma]
@@ -76,6 +123,86 @@ export default function BuyPage() {
   const extendedSet = useMemo(
     () => new Set(resolvedData.extended_vol),
     [resolvedData.extended_vol]
+  );
+
+  const getSortValue = useCallback(
+    (symbol: string, column: SortColumn): number | string => {
+      const candleInfo = resolvedData.candle_signals?.[symbol];
+      const superTrendInfo = resolvedData.super_trend_daily?.[symbol];
+      const mansfieldInfo = resolvedData.mansfield_daily?.[symbol];
+      const maceInfo = resolvedData.mace?.[symbol];
+      const stageInfo = resolvedData.stage?.[symbol];
+      const shortTrendScore = resolvedData.short_term_trend?.[symbol];
+      const longTrendScore = resolvedData.long_term_trend?.[symbol];
+      const breachInfo = resolvedData.breach_hit?.[symbol];
+
+      switch (column) {
+        case "symbol":
+          return symbol;
+        case "above20":
+          return above20Set.has(symbol) ? 1 : 0;
+        case "above200":
+          return above200Set.has(symbol) ? 1 : 0;
+        case "candle":
+          if (!candleInfo) return 0;
+          return candleInfo.type === "bullish" ? 2 : -2;
+        case "extended":
+          return extendedSet.has(symbol) ? 0 : 1;
+        case "superTrend": {
+          const value = superTrendInfo?.signal?.toLowerCase();
+          if (value === "buy") return 2;
+          if (value === "sell") return -2;
+          return value ? 1 : 0;
+        }
+        case "mansfield": {
+          if (!mansfieldInfo) return 0;
+          const status = mansfieldInfo.status?.toUpperCase();
+          if (status === "BUY") return mansfieldInfo.new_buy ? 3 : 2;
+          if (status === "NEUTRAL") return 1;
+          if (status === "SELL") return -2;
+          return mansfieldInfo.new_buy ? 0.5 : 0;
+        }
+        case "mace": {
+          const label = maceInfo?.label ?? "";
+          if (label.startsWith("U")) return 2;
+          if (label.startsWith("D")) return -2;
+          return label ? 1 : 0;
+        }
+        case "stage": {
+          const stage = stageInfo?.stage;
+          if (stage === 2) return 2;
+          if (stage === 1 || stage === 3) return 1;
+          if (stage === 4) return -2;
+          return 0;
+        }
+        case "shortTrend":
+          if (typeof shortTrendScore !== "number") return 0;
+          return shortTrendScore >= 2 ? 2 : -2;
+        case "longTrend":
+          if (typeof longTrendScore !== "number") return 0;
+          return longTrendScore >= 4 ? 2 : -2;
+        case "breach":
+          if (!breachInfo) return 0;
+          if (breachInfo.category === "target") return 2;
+          if (breachInfo.category === "invalidation") return -2;
+          return 1;
+        default:
+          return 0;
+      }
+    },
+    [
+      above20Set,
+      above200Set,
+      extendedSet,
+      resolvedData.breach_hit,
+      resolvedData.candle_signals,
+      resolvedData.long_term_trend,
+      resolvedData.mace,
+      resolvedData.mansfield_daily,
+      resolvedData.short_term_trend,
+      resolvedData.stage,
+      resolvedData.super_trend_daily,
+    ]
   );
 
   const trendSymbols = useMemo(
@@ -116,7 +243,7 @@ export default function BuyPage() {
     [baseSymbols, trendSymbols, breachSymbols]
   );
 
-  const sortedSymbols = useMemo(() => {
+  const baseSortedSymbols = useMemo(() => {
     return [...uniqueSymbols].sort((a, b) => {
       const candleA = resolvedData.candle_signals?.[a];
       const candleB = resolvedData.candle_signals?.[b];
@@ -136,6 +263,36 @@ export default function BuyPage() {
     });
   }, [uniqueSymbols, resolvedData.candle_signals, above20Set, above200Set]);
 
+  const sortedSymbols = useMemo(() => {
+    if (!sortColumn) {
+      return baseSortedSymbols;
+    }
+
+    const sorted = [...baseSortedSymbols];
+    sorted.sort((a, b) => {
+      const aValue = getSortValue(a, sortColumn);
+      const bValue = getSortValue(b, sortColumn);
+
+      if (typeof aValue === "string" && typeof bValue === "string") {
+        const comparison = aValue.localeCompare(bValue);
+        return sortDirection === "asc" ? comparison : -comparison;
+      }
+
+      const aNum =
+        typeof aValue === "number" ? aValue : Number.NEGATIVE_INFINITY;
+      const bNum =
+        typeof bValue === "number" ? bValue : Number.NEGATIVE_INFINITY;
+
+      if (aNum !== bNum) {
+        return sortDirection === "asc" ? aNum - bNum : bNum - aNum;
+      }
+
+      return a.localeCompare(b);
+    });
+
+    return sorted;
+  }, [baseSortedSymbols, getSortValue, sortColumn, sortDirection]);
+
   const candleValues = Object.values(resolvedData.candle_signals || {});
   const bearishCount = candleValues.filter(
     (signal) => signal.type === "bearish"
@@ -150,6 +307,17 @@ export default function BuyPage() {
   ).length;
   const superTrendBuy = superTrendValues.filter(
     (signal) => signal.signal.toLowerCase() === "buy"
+  ).length;
+
+  const mansfieldValues = Object.values(resolvedData.mansfield_daily || {});
+  const mansfieldSell = mansfieldValues.filter(
+    (signal) => signal?.status?.toLowerCase() === "sell"
+  ).length;
+  const mansfieldBuy = mansfieldValues.filter(
+    (signal) => signal?.status?.toLowerCase() === "buy"
+  ).length;
+  const mansfieldNeutral = mansfieldValues.filter(
+    (signal) => signal?.status?.toLowerCase() === "neutral"
   ).length;
 
   const maceValues = Object.values(resolvedData.mace || {});
@@ -216,6 +384,9 @@ export default function BuyPage() {
               {superTrendSell}/{superTrendBuy}
             </th>
             <th scope="col">
+              {`${mansfieldSell}/${mansfieldBuy}/${mansfieldNeutral}`}
+            </th>
+            <th scope="col">
               {([1, 2, 3, 4] as const)
                 .map(
                   (stageNumber) =>
@@ -228,28 +399,73 @@ export default function BuyPage() {
             <th scope="col">{`${breachTarget}/${breachInvalidation}`}</th>
           </tr>
           <tr>
-            <th>Symbol</th>
-            <th>Above 20 DMA</th>
-            <th>Above 200 DMA</th>
-            <th>Bearish / Bullish Candle</th>
-            <th>Extended / Vol</th>
-            <th>Super Trend (D)</th>
-            <th>MACE</th>
-            <th>Stage</th>
-            <th>Short-Term Trend</th>
-            <th>Long-Term Trend</th>
-            <th>Breach / Hit</th>
+            <th onClick={() => handleSort("symbol")} style={sortStyle}>
+              Symbol{renderSortIndicator("symbol")}
+            </th>
+            <th onClick={() => handleSort("above20")} style={sortStyle}>
+              Above 20 DMA{renderSortIndicator("above20")}
+            </th>
+            <th onClick={() => handleSort("above200")} style={sortStyle}>
+              Above 200 DMA{renderSortIndicator("above200")}
+            </th>
+            <th onClick={() => handleSort("candle")} style={sortStyle}>
+              Bearish / Bullish Candle{renderSortIndicator("candle")}
+            </th>
+            <th onClick={() => handleSort("extended")} style={sortStyle}>
+              Extended / Vol{renderSortIndicator("extended")}
+            </th>
+            <th onClick={() => handleSort("superTrend")} style={sortStyle}>
+              Super Trend (D){renderSortIndicator("superTrend")}
+            </th>
+            <th onClick={() => handleSort("mansfield")} style={sortStyle}>
+              Mansfield (D){renderSortIndicator("mansfield")}
+            </th>
+            <th onClick={() => handleSort("mace")} style={sortStyle}>
+              MACE{renderSortIndicator("mace")}
+            </th>
+            <th onClick={() => handleSort("stage")} style={sortStyle}>
+              Stage{renderSortIndicator("stage")}
+            </th>
+            <th onClick={() => handleSort("shortTrend")} style={sortStyle}>
+              Short-Term Trend{renderSortIndicator("shortTrend")}
+            </th>
+            <th onClick={() => handleSort("longTrend")} style={sortStyle}>
+              Long-Term Trend{renderSortIndicator("longTrend")}
+            </th>
+            <th onClick={() => handleSort("breach")} style={sortStyle}>
+              Breach / Hit{renderSortIndicator("breach")}
+            </th>
           </tr>
         </thead>
         <tbody>
           {sortedSymbols.map((symbol) => {
             const candleInfo = resolvedData.candle_signals?.[symbol];
             const superTrendInfo = resolvedData.super_trend_daily?.[symbol];
+            const mansfieldDaily = resolvedData.mansfield_daily?.[symbol];
             const maceInfo = resolvedData.mace?.[symbol];
             const stageInfo = resolvedData.stage?.[symbol];
             const shortTrendScore = resolvedData.short_term_trend?.[symbol];
             const longTrendScore = resolvedData.long_term_trend?.[symbol];
             const breachInfo = resolvedData.breach_hit?.[symbol];
+
+            const mansfieldStatus = mansfieldDaily?.status?.toLowerCase() ?? "";
+            const mansfieldBaseClass = mansfieldStatus
+              ? mansfieldStatus === "buy"
+                ? "table-success"
+                : mansfieldStatus === "sell"
+                ? "table-danger"
+                : mansfieldStatus === "neutral"
+                ? "table-warning"
+                : undefined
+              : undefined;
+            const mansfieldClassNames = [
+              mansfieldBaseClass,
+              mansfieldDaily?.new_buy ? "mansfield-new-buy" : undefined,
+            ]
+              .filter(Boolean)
+              .join(" ");
+            const mansfieldCellClass =
+              mansfieldClassNames.length > 0 ? mansfieldClassNames : undefined;
 
             return (
               <tr key={symbol}>
@@ -300,6 +516,9 @@ export default function BuyPage() {
                   }
                 >
                   {superTrendInfo ? superTrendInfo.signal : ""}
+                </td>
+                <td className={mansfieldCellClass}>
+                  {mansfieldDaily?.status || ""}
                 </td>
                 <td
                   className={

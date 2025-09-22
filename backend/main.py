@@ -133,6 +133,7 @@ def _status_for_holdings(holdings, price_direction: str):
         "candle_signals": {},
         "extended_vol": [],
         "super_trend_daily": {},
+        "mansfield_daily": {},
         "mace": {},
         "stage": {},
         "short_term_trend": {},
@@ -227,6 +228,12 @@ def _status_for_holdings(holdings, price_direction: str):
             except Exception:
                 pass
 
+            mansfield_status = analyser.get_mansfield_status()
+            if isinstance(mansfield_status, dict):
+                results["mansfield_daily"][ticker] = mansfield_status
+                if mansfield_status.get("status"):
+                    flagged = True
+
             mace_signal = analyser.mace().current
             if isinstance(mace_signal, str) and mace_signal not in {"", "in progress"}:
                 forty_week = analyser.forty_week_status().current
@@ -317,6 +324,7 @@ def get_portfolio_status():
             "candle_signals": {},
             "extended_vol": [],
             "super_trend_daily": {},
+            "mansfield_daily": {},
             "mace": {},
             "stage": {},
             "short_term_trend": {},
@@ -656,6 +664,7 @@ def get_buylist_status():
             "candle_signals": {},
             "extended_vol": [],
             "super_trend_daily": {},
+            "mansfield_daily": {},
             "mace": {},
             "stage": {},
             "short_term_trend": {},

@@ -121,3 +121,9 @@ h1 {
 .excel-table tr.summary-row td {
   border: 2px solid #000 !important;
 }
+
+.mansfield-new-buy {
+  outline: 3px solid #90caf9 !important;
+  outline-offset: -3px;
+  border-radius: 4px;
+}
