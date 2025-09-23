@@ -672,17 +672,35 @@
     {
       "ticker": "TRMB",
       "sector": "Technology",
-      "technigrade": []
+      "technigrade": [],
+      "invalidation_1": 77.88,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": 87.5,
+      "target_2": 91.64,
+      "target_3": 103.55
     },
     {
       "ticker": "EU",
       "sector": "Energy",
-      "technigrade": []
+      "technigrade": [],
+      "invalidation_1": 2.05,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": 3.88,
+      "target_2": 4.95,
+      "target_3": 9.2
     },
     {
       "ticker": "TER",
       "sector": "Technology",
-      "technigrade": []
+      "technigrade": [],
+      "invalidation_1": 105.27,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": 122,
+      "target_2": 163.24,
+      "target_3": -1
     },
     {
       "ticker": "SYM",
@@ -692,7 +710,13 @@
     {
       "ticker": "ASTS",
       "sector": "Technology",
-      "technigrade": []
+      "technigrade": [],
+      "invalidation_1": 36.08,
+      "invalidation_2": 32.86,
+      "invalidation_3": -1,
+      "target_1": 54.05,
+      "target_2": 64.25,
+      "target_3": 73.23
     },
     {
       "ticker": "INTU",
@@ -717,6 +741,11 @@
     {
       "ticker": "DML.TO",
       "sector": "Uranium",
+      "technigrade": []
+    },
+    {
+      "ticker": "UEC",
+      "sector": "Technology",
       "technigrade": []
     },
     {
@@ -885,7 +914,7 @@
       "technigrade": []
     },
     {
-      "ticker": "20.HK",
+      "ticker": "0020.HK",
       "sector": "Energy",
       "technigrade": []
     },
@@ -1060,7 +1089,7 @@
       "technigrade": []
     },
     {
-      "ticker": "700.HK",
+      "ticker": "0700.HK",
       "sector": "Communication Services",
       "technigrade": []
     },
