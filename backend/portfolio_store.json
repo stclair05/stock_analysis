@@ -913,9 +913,14 @@
       "shares": 1500.0,
       "average_cost": 310.0,
       "sector": "Technology",
-      "target_1": 338,
       "player": 2,
-      "technigrade": [2, 1, 1, 1, 9]
+      "technigrade": [2, 1, 1, 1, 9],
+      "invalidation_1": 275.7,
+      "invalidation_2": 251.2,
+      "invalidation_3": -1,
+      "target_1": 338,
+      "target_2": 499,
+      "target_3": -1
     },
     {
       "ticker": "NAK",
