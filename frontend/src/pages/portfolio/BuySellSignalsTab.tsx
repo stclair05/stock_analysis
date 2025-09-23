@@ -607,6 +607,7 @@ export default function BuySellSignalsTab({
         setSortColumn(null);
         setSecondarySortColumn(null);
         setFilterType("ALL");
+        setShowBreachedOnly(false);
         return;
       }
 
@@ -674,6 +675,7 @@ export default function BuySellSignalsTab({
         setSecondarySortColumn(null);
         setFilterType("ALL");
         setSectorFilter("ALL");
+        setShowBreachedOnly(false);
       } catch (error) {
         console.error(`Error fetching ${listType} tickers:`, error);
         setPortfolio([]); // Clear portfolio on error
@@ -684,6 +686,7 @@ export default function BuySellSignalsTab({
         setSecondarySortColumn(null);
         setFilterType("ALL");
         setSectorFilter("ALL");
+        setShowBreachedOnly(false);
       } finally {
         setSignalsLoading(false); // End loading indicator
       }
@@ -1049,10 +1052,6 @@ export default function BuySellSignalsTab({
   }
 
   const handleHeaderClick = (column: string) => {
-    if (column === "levels_breached") {
-      setShowBreachedOnly((prev) => !prev);
-      return;
-    }
     if (sortColumn === column) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else if (sortColumn === "mean_rev_rsi" && column === "price_target") {
@@ -1150,7 +1149,12 @@ export default function BuySellSignalsTab({
         });
     }
 
-    if (sortColumn && Object.keys(signalSummary).length > 0) {
+    const canSortWithoutSignals = sortColumn === "levels_breached";
+
+    if (
+      sortColumn &&
+      (Object.keys(signalSummary).length > 0 || canSortWithoutSignals)
+    ) {
       const compareByColumn = (
         col: string,
         dir: "asc" | "desc",
@@ -1243,6 +1247,26 @@ export default function BuySellSignalsTab({
 
           return dir === "asc" ? diffA - diffB : diffB - diffA;
         } else if (col === "levels_breached") {
+          const aInfo = getLevelsBreachedStatus(a);
+          const bInfo = getLevelsBreachedStatus(b);
+          const categoryOrder: Record<string, number> = {
+            target: 0,
+            invalidation: 1,
+            neutral: 2,
+          };
+
+          const diffCategory =
+            (categoryOrder[aInfo.category] ?? 3) -
+            (categoryOrder[bInfo.category] ?? 3);
+          if (diffCategory !== 0) {
+            return dir === "asc" ? diffCategory : -diffCategory;
+          }
+
+          const statusCompare = aInfo.status.localeCompare(bInfo.status);
+          if (statusCompare !== 0) {
+            return dir === "asc" ? statusCompare : -statusCompare;
+          }
+
           return 0;
         } else if (col === "pnl" && listType === "portfolio") {
           const pnlA = getPnlForTicker(a.ticker);
@@ -1487,6 +1511,11 @@ export default function BuySellSignalsTab({
         >
           {label}
           {showBreachedOnly && <span className="ms-1">*</span>}
+          {sortColumn === col && (
+            <span className="ms-1">
+              {sortDirection === "asc" ? " ▲" : " ▼"}
+            </span>
+          )}
         </th>
       );
     } else if (col === "cmf" || col === "supertrend") {
@@ -2073,6 +2102,7 @@ export default function BuySellSignalsTab({
                 | "watchlist"
                 | "buylist";
               setListType(val);
+              setShowBreachedOnly(false);
               onListTypeChange?.(val);
             }}
             className="me-4"
@@ -2091,6 +2121,7 @@ export default function BuySellSignalsTab({
               setSortColumn(null);
               setSecondarySortColumn(null);
               setFilterType("ALL");
+              setShowBreachedOnly(false);
             }}
           >
             <option value="weekly">Weekly</option>
@@ -2168,6 +2199,25 @@ export default function BuySellSignalsTab({
             <option value="SELL">SELL Only</option>
             <option value="MIXED">Mixed</option>
           </select>
+
+          <div className="form-check form-switch ms-4">
+            <input
+              className="form-check-input"
+              type="checkbox"
+              role="switch"
+              id="showBreachedOnlyToggle"
+              checked={showBreachedOnly}
+              onChange={(e) => {
+                setShowBreachedOnly(e.target.checked);
+              }}
+            />
+            <label
+              className="form-check-label"
+              htmlFor="showBreachedOnlyToggle"
+            >
+              Breaches only
+            </label>
+          </div>
         </div>
 
         {/* Sector Filter Dropdown - for portfolio and buylist views */}

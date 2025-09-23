@@ -595,11 +595,6 @@
       "technigrade": []
     },
     {
-      "ticker": "6181.HK",
-      "sector": "Consumer Cyclical",
-      "technigrade": []
-    },
-    {
       "ticker": "AIR.PA",
       "sector": "Aerospace & Defense",
       "technigrade": []
@@ -944,11 +939,6 @@
       "technigrade": []
     },
     {
-      "ticker": "NNRG.TO",
-      "sector": "Energy",
-      "technigrade": []
-    },
-    {
       "ticker": "CPA",
       "sector": "Industrials",
       "technigrade": []
@@ -1214,11 +1204,6 @@
       "technigrade": []
     },
     {
-      "ticker": "EL",
-      "sector": "Consumer Defensive",
-      "technigrade": []
-    },
-    {
       "ticker": "XPEV",
       "sector": "Consumer Cyclical",
       "technigrade": []
@@ -1274,83 +1259,13 @@
       "technigrade": []
     },
     {
-      "ticker": "DYL.AX",
-      "sector": "Energy",
-      "technigrade": []
-    },
-    {
-      "ticker": "LTBR",
-      "sector": "Basic Materials",
-      "technigrade": []
-    },
-    {
-      "ticker": "AEVA",
-      "sector": "Technology",
-      "technigrade": []
-    },
-    {
-      "ticker": "GEVO",
-      "sector": "Energy",
-      "technigrade": []
-    },
-    {
-      "ticker": "PTON",
-      "sector": "Consumer Cyclical",
-      "technigrade": []
-    },
-    {
-      "ticker": "ZM",
-      "sector": "Technology",
-      "technigrade": []
-    },
-    {
       "ticker": "TMC",
-      "sector": "Basic Materials",
-      "technigrade": []
-    },
-    {
-      "ticker": "MDB",
-      "sector": "Technology",
-      "technigrade": []
-    },
-    {
-      "ticker": "SIL",
-      "sector": "Basic Materials",
-      "technigrade": []
-    },
-    {
-      "ticker": "RGLD",
-      "sector": "Precious Metals",
-      "technigrade": []
-    },
-    {
-      "ticker": "WPM",
-      "sector": "Basic Materials",
-      "technigrade": []
-    },
-    {
-      "ticker": "EXK",
       "sector": "Basic Materials",
       "technigrade": []
     },
     {
       "ticker": "AYA.TO",
       "sector": "Basic Materials",
-      "technigrade": []
-    },
-    {
-      "ticker": "HL",
-      "sector": "Precious Metals",
-      "technigrade": []
-    },
-    {
-      "ticker": "NST.AX",
-      "sector": "Precious Metals",
-      "technigrade": []
-    },
-    {
-      "ticker": "INOD",
-      "sector": "Industrials",
       "technigrade": []
     },
     {
