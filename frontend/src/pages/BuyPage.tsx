@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type CandleSignal = {
   type: "bullish" | "bearish";
@@ -74,6 +74,12 @@ type SortColumn =
   | "longTrend"
   | "breach";
 
+type SortRule = {
+  id: number;
+  column: SortColumn;
+  direction: "asc" | "desc";
+};
+
 export default function BuyPage() {
   const [data, setData] = useState<BuyStatusResponse | null>(null);
 
@@ -86,30 +92,120 @@ export default function BuyPage() {
 
   const resolvedData = data ?? FALLBACK_DATA;
 
-  const [sortColumn, setSortColumn] = useState<SortColumn | null>(null);
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const [sortRules, setSortRules] = useState<SortRule[]>([]);
+  const sortIdRef = useRef(0);
 
   const sortStyle = { cursor: "pointer", userSelect: "none" as const };
 
   const handleSort = (column: SortColumn) => {
-    if (sortColumn === column) {
-      if (sortDirection === "desc") {
-        setSortDirection("asc");
-      } else {
-        setSortColumn(null);
-        setSortDirection("desc");
+    setSortRules((prev) => {
+      const existingIndex = prev.findIndex((rule) => rule.column === column);
+
+      if (existingIndex === 0) {
+        const currentDirection = prev[0].direction;
+        if (currentDirection === "desc") {
+          const updated = [...prev];
+          updated[0] = { ...updated[0], direction: "asc" };
+          return updated;
+        }
+        return prev.slice(1);
       }
-    } else {
-      setSortColumn(column);
-      setSortDirection("desc");
-    }
+
+      if (existingIndex > 0) {
+        const updated = [...prev];
+        const [rule] = updated.splice(existingIndex, 1);
+        return [rule, ...updated];
+      }
+
+      const newRule: SortRule = {
+        id: sortIdRef.current++,
+        column,
+        direction: "desc",
+      };
+
+      return [newRule, ...prev];
+    });
   };
 
   const renderSortIndicator = (column: SortColumn) => {
-    if (sortColumn !== column) {
+    const index = sortRules.findIndex((rule) => rule.column === column);
+    if (index === -1) {
       return "";
     }
-    return sortDirection === "asc" ? " ▲" : " ▼";
+    const directionSymbol = sortRules[index].direction === "asc" ? " ▲" : " ▼";
+    return `${directionSymbol}${index + 1}`;
+  };
+
+  const handleAddSortRule = () => {
+    const allColumns: SortColumn[] = [
+      "symbol",
+      "above20",
+      "above200",
+      "candle",
+      "extended",
+      "superTrend",
+      "mansfield",
+      "mace",
+      "stage",
+      "shortTrend",
+      "longTrend",
+      "breach",
+    ];
+
+    const usedColumns = new Set(sortRules.map((rule) => rule.column));
+    const nextColumn =
+      allColumns.find((column) => !usedColumns.has(column)) ?? "symbol";
+
+    setSortRules((prev) => [
+      ...prev,
+      {
+        id: sortIdRef.current++,
+        column: nextColumn,
+        direction: "desc",
+      },
+    ]);
+  };
+
+  const handleRemoveSortRule = (id: number) => {
+    setSortRules((prev) => prev.filter((rule) => rule.id !== id));
+  };
+
+  const handleSortRuleColumnChange = (id: number, column: SortColumn) => {
+    setSortRules((prev) =>
+      prev.map((rule) => (rule.id === id ? { ...rule, column } : rule))
+    );
+  };
+
+  const handleSortRuleDirectionChange = (
+    id: number,
+    direction: "asc" | "desc"
+  ) => {
+    setSortRules((prev) =>
+      prev.map((rule) => (rule.id === id ? { ...rule, direction } : rule))
+    );
+  };
+
+  const handleMoveSortRule = (id: number, direction: "up" | "down") => {
+    setSortRules((prev) => {
+      const index = prev.findIndex((rule) => rule.id === id);
+      if (index === -1) {
+        return prev;
+      }
+
+      const targetIndex = direction === "up" ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= prev.length) {
+        return prev;
+      }
+
+      const updated = [...prev];
+      const [movedRule] = updated.splice(index, 1);
+      updated.splice(targetIndex, 0, movedRule);
+      return updated;
+    });
+  };
+
+  const handleResetSortRules = () => {
+    setSortRules([]);
   };
 
   const above20Set = useMemo(
@@ -264,34 +360,54 @@ export default function BuyPage() {
   }, [uniqueSymbols, resolvedData.candle_signals, above20Set, above200Set]);
 
   const sortedSymbols = useMemo(() => {
-    if (!sortColumn) {
+    if (sortRules.length === 0) {
       return baseSortedSymbols;
     }
 
     const sorted = [...baseSortedSymbols];
     sorted.sort((a, b) => {
-      const aValue = getSortValue(a, sortColumn);
-      const bValue = getSortValue(b, sortColumn);
+      for (const rule of sortRules) {
+        const aValue = getSortValue(a, rule.column);
+        const bValue = getSortValue(b, rule.column);
 
-      if (typeof aValue === "string" && typeof bValue === "string") {
-        const comparison = aValue.localeCompare(bValue);
-        return sortDirection === "asc" ? comparison : -comparison;
-      }
+        if (typeof aValue === "string" && typeof bValue === "string") {
+          const comparison = aValue.localeCompare(bValue);
+          if (comparison !== 0) {
+            return rule.direction === "asc" ? comparison : -comparison;
+          }
+          continue;
+        }
 
-      const aNum =
-        typeof aValue === "number" ? aValue : Number.NEGATIVE_INFINITY;
-      const bNum =
-        typeof bValue === "number" ? bValue : Number.NEGATIVE_INFINITY;
+        const aNum =
+          typeof aValue === "number" ? aValue : Number.NEGATIVE_INFINITY;
+        const bNum =
+          typeof bValue === "number" ? bValue : Number.NEGATIVE_INFINITY;
 
-      if (aNum !== bNum) {
-        return sortDirection === "asc" ? aNum - bNum : bNum - aNum;
+        if (aNum !== bNum) {
+          return rule.direction === "asc" ? aNum - bNum : bNum - aNum;
+        }
       }
 
       return a.localeCompare(b);
     });
 
     return sorted;
-  }, [baseSortedSymbols, getSortValue, sortColumn, sortDirection]);
+  }, [baseSortedSymbols, getSortValue, sortRules]);
+
+  const sortOptions: { value: SortColumn; label: string }[] = [
+    { value: "symbol", label: "Symbol" },
+    { value: "above20", label: "Above 20 DMA" },
+    { value: "above200", label: "Above 200 DMA" },
+    { value: "candle", label: "Bearish / Bullish Candle" },
+    { value: "extended", label: "Extended / Vol" },
+    { value: "superTrend", label: "Super Trend (D)" },
+    { value: "mansfield", label: "Mansfield (D)" },
+    { value: "mace", label: "MACE" },
+    { value: "stage", label: "Stage" },
+    { value: "shortTrend", label: "Short-Term Trend" },
+    { value: "longTrend", label: "Long-Term Trend" },
+    { value: "breach", label: "Breach / Hit" },
+  ];
 
   const candleValues = Object.values(resolvedData.candle_signals || {});
   const bearishCount = candleValues.filter(
@@ -368,6 +484,108 @@ export default function BuyPage() {
   return (
     <div className="container mt-4" style={{ maxWidth: "60%" }}>
       <h1 className="fw-bold mb-4">Buy List Status</h1>
+      <div className="card mb-4">
+        <div className="card-body">
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <h5 className="card-title mb-0">Sorting Priority</h5>
+            <div className="d-flex gap-2">
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-secondary"
+                onClick={handleAddSortRule}
+              >
+                Add Sort Level
+              </button>
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-danger"
+                onClick={handleResetSortRules}
+                disabled={sortRules.length === 0}
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+          {sortRules.length === 0 ? (
+            <p className="text-muted mb-0">
+              No custom sorting applied. Click "Add Sort Level" to define your
+              preferred priority.
+            </p>
+          ) : (
+            <div className="d-flex flex-column gap-2">
+              {sortRules.map((rule, index) => (
+                <div
+                  className="row g-2 align-items-center"
+                  key={rule.id}
+                  style={{ fontSize: "0.85rem" }}
+                >
+                  <div className="col-auto">
+                    <span className="badge text-bg-secondary">{index + 1}</span>
+                  </div>
+                  <div className="col">
+                    <select
+                      className="form-select form-select-sm"
+                      value={rule.column}
+                      onChange={(event) =>
+                        handleSortRuleColumnChange(
+                          rule.id,
+                          event.target.value as SortColumn
+                        )
+                      }
+                    >
+                      {sortOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-auto">
+                    <select
+                      className="form-select form-select-sm"
+                      value={rule.direction}
+                      onChange={(event) =>
+                        handleSortRuleDirectionChange(
+                          rule.id,
+                          event.target.value as "asc" | "desc"
+                        )
+                      }
+                    >
+                      <option value="desc">Descending</option>
+                      <option value="asc">Ascending</option>
+                    </select>
+                  </div>
+                  <div className="col-auto d-flex gap-1">
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-secondary"
+                      onClick={() => handleMoveSortRule(rule.id, "up")}
+                      disabled={index === 0}
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-secondary"
+                      onClick={() => handleMoveSortRule(rule.id, "down")}
+                      disabled={index === sortRules.length - 1}
+                    >
+                      ↓
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-danger"
+                      onClick={() => handleRemoveSortRule(rule.id)}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
       <table className="table text-center excel-table">
         <thead>
           <tr className="table-secondary" style={{ fontSize: "0.67rem" }}>
