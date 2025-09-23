@@ -700,7 +700,13 @@
     {
       "ticker": "SYM",
       "sector": "Technology",
-      "technigrade": []
+      "technigrade": [],
+      "invalidation_1": 42.38,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": 63,
+      "target_2": 73,
+      "target_3": 78
     },
     {
       "ticker": "ASTS",

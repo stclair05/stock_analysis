@@ -306,27 +306,42 @@
       "shares": 10000.0,
       "average_cost": 89.9,
       "sector": "Fertilizer",
-      "target_1": 115,
       "player": 3,
-      "technigrade": [16, 16, 17, 15, 15]
+      "technigrade": [16, 16, 17, 15, 15],
+      "invalidation_1": 85.11,
+      "invalidation_2": 81.89,
+      "invalidation_3": 80.64,
+      "target_1": 90.39,
+      "target_2": 98.08,
+      "target_3": 104.24
     },
     {
       "ticker": "MOS",
       "shares": 72200.0,
       "average_cost": 37.16,
       "sector": "Fertilizer",
-      "target_1": 57,
       "player": 3,
-      "technigrade": [13, 13, 15, 13, 14]
+      "technigrade": [13, 13, 15, 13, 14],
+      "invalidation_1": 33.43,
+      "invalidation_2": 32.15,
+      "invalidation_3": 30.09,
+      "target_1": 37.38,
+      "target_2": 42,
+      "target_3": 47
     },
     {
       "ticker": "NTR",
       "shares": 29000.0,
       "average_cost": 56.77,
       "sector": "Fertilizer",
-      "target_1": 73,
       "player": 3,
-      "technigrade": [15, 15, 16, 14, 14]
+      "technigrade": [15, 15, 16, 14, 14],
+      "invalidation_1": 55.79,
+      "invalidation_2": 54.66,
+      "invalidation_3": -1,
+      "target_1": 60.55,
+      "target_2": 65.08,
+      "target_3": 71
     },
     {
       "ticker": "0P0000RU80.L",
@@ -341,17 +356,27 @@
       "shares": 19000.0,
       "average_cost": 21.47,
       "sector": "Uranium",
-      "target_1": 37.5,
-      "player": 5
+      "player": 5,
+      "invalidation_1": 26,
+      "invalidation_2": 23.15,
+      "invalidation_3": -1,
+      "target_1": 33.84,
+      "target_2": 37.52,
+      "target_3": 41.92
     },
     {
       "ticker": "DYL.AX",
       "shares": 200000,
       "average_cost": 1.13,
       "sector": "Uranium",
-      "target_1": 3.3,
       "player": 5,
-      "technigrade": []
+      "technigrade": [],
+      "invalidation_1": 1.87,
+      "invalidation_2": 1.45,
+      "invalidation_3": -1,
+      "target_1": 3.3,
+      "target_2": 4.4,
+      "target_3": 8.56
     },
     {
       "ticker": "LTBR",
@@ -366,6 +391,34 @@
       "target_1": 18.76,
       "target_2": 30,
       "target_3": 70.11
+    },
+    {
+      "ticker": "LEU",
+      "shares": 1500,
+      "average_cost": 296.88,
+      "sector": "Uranium",
+      "player": 2,
+      "technigrade": [1, 1, 1, 1, 1],
+      "invalidation_1": 247.49,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": 483.54,
+      "target_2": 850,
+      "target_3": -1
+    },
+    {
+      "ticker": "DML.TO",
+      "shares": 60000,
+      "average_cost": 2.7,
+      "sector": "Uranium",
+      "player": 2,
+      "technigrade": [],
+      "invalidation_1": 3.37,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": 4.31,
+      "target_2": 5.59,
+      "target_3": 6.23
     },
     {
       "ticker": "PBR",
@@ -531,22 +584,46 @@
       "technigrade": [10, 8, 8, 12, 16]
     },
     {
+      "ticker": "FCX",
+      "shares": 11000,
+      "average_cost": 49.81,
+      "sector": "Precious Metals",
+      "player": 8,
+      "technigrade": [9, 9, 7, 9, 10],
+      "invalidation_1": 44.8,
+      "invalidation_2": 42.89,
+      "invalidation_3": -1,
+      "target_1": 47.84,
+      "target_2": 49,
+      "target_3": 51
+    },
+    {
       "ticker": "TMC",
       "shares": 100000.0,
       "average_cost": 5.37,
       "sector": "Precious Metals",
-      "target_1": 5.9,
       "player": 8,
-      "technigrade": [3, 3, 3, 2, 2]
+      "technigrade": [3, 3, 3, 2, 2],
+      "invalidation_1": 5.42,
+      "invalidation_2": 4.93,
+      "invalidation_3": 4.37,
+      "target_1": 8.03,
+      "target_2": 11,
+      "target_3": 11.96
     },
     {
       "ticker": "KNT.TO",
       "shares": 25000.0,
       "average_cost": 11.27,
       "sector": "Precious Metals",
-      "target_1": 17,
       "player": 8,
-      "technigrade": [9, 6, 6, 7, 9]
+      "technigrade": [9, 6, 6, 7, 9],
+      "invalidation_1": 16.22,
+      "invalidation_2": 14.35,
+      "invalidation_3": -1,
+      "target_1": 17.39,
+      "target_2": 17.65,
+      "target_3": 18.9
     },
     {
       "ticker": "ASM",
@@ -561,18 +638,28 @@
       "shares": 10000.0,
       "average_cost": 182.15,
       "sector": "Precious Metals",
-      "target_1": 191.7,
       "player": 8,
-      "technigrade": [8, 8, 10, 11, 12]
+      "technigrade": [8, 8, 10, 11, 12],
+      "invalidation_1": 183.55,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": 206.72,
+      "target_2": 216,
+      "target_3": 222
     },
     {
       "ticker": "WPM",
       "shares": 15000.0,
       "average_cost": 102.19,
       "sector": "Precious Metals",
-      "target_1": 112.6,
       "player": 8,
-      "technigrade": [5, 5, 5, 6, 8]
+      "technigrade": [5, 5, 5, 6, 8],
+      "invalidation_1": 103.81,
+      "invalidation_2": 95.23,
+      "invalidation_3": 91.02,
+      "target_1": 109,
+      "target_2": 112.5,
+      "target_3": 124.96
     },
     {
       "ticker": "EXK",
@@ -593,9 +680,13 @@
       "shares": 38089,
       "average_cost": 53.54,
       "sector": "Precious Metals",
-      "target": 72,
       "player": 8,
-      "target_1": 72
+      "invalidation_1": 67.86,
+      "invalidation_2": 62.47,
+      "invalidation_3": -1,
+      "target_1": 72,
+      "target_2": 74.5,
+      "target_3": -2
     },
     {
       "ticker": "SILJ",
@@ -611,22 +702,18 @@
       "target_3": 23.42
     },
     {
-      "ticker": "B",
-      "shares": 70000,
-      "average_cost": 24.38,
-      "sector": "Precious Metals",
-      "target_1": 30,
-      "player": 4,
-      "technigrade": [2, 2, 2, 3, 3]
-    },
-    {
       "ticker": "AYA.TO",
       "shares": 120000,
       "average_cost": 8.72,
       "sector": "Precious Metals",
-      "target_1": 26.7,
       "player": 8,
-      "technigrade": [3, 3, 4, 6, 12]
+      "technigrade": [3, 3, 4, 6, 12],
+      "invalidation_1": 15.46,
+      "invalidation_2": 11.51,
+      "invalidation_3": -1,
+      "target_1": 18.22,
+      "target_2": 20.81,
+      "target_3": 24
     },
     {
       "ticker": "NST.AX",
@@ -659,9 +746,14 @@
       "shares": 25054.0,
       "average_cost": 154.77,
       "sector": "Technology",
-      "target_1": 214,
       "player": 10,
-      "technigrade": [2, 3, 6, 10, 14]
+      "technigrade": [2, 3, 6, 10, 14],
+      "invalidation_1": 122.22,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": 143,
+      "target_2": 158,
+      "target_3": 226
     },
     {
       "ticker": "SOUN",
@@ -689,6 +781,62 @@
       "invalidation_3": 348,
       "target_1": 411,
       "target_2": 441,
+      "target_3": -1
+    },
+    {
+      "ticker": "RKLB",
+      "shares": 7000.0,
+      "average_cost": 48.83,
+      "sector": "Aerospace & Defense",
+      "player": 1,
+      "technigrade": [2, 1, 1, 1, 1],
+      "invalidation_1": 47.85,
+      "invalidation_2": 46.32,
+      "invalidation_3": -1,
+      "target_1": 51.4,
+      "target_2": 55,
+      "target_3": 57
+    },
+    {
+      "ticker": "LYB",
+      "shares": 2000.0,
+      "average_cost": 54.21,
+      "sector": "Others",
+      "player": 1,
+      "technigrade": [19, 17, 18, 18, 17],
+      "invalidation_1": 47.55,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": 54.18,
+      "target_2": 59.03,
+      "target_3": 65.26
+    },
+    {
+      "ticker": "CSIQ",
+      "shares": 30000.0,
+      "average_cost": 12.29,
+      "sector": "Others",
+      "player": 1,
+      "technigrade": [9, 13, 12, 18, 13],
+      "invalidation_1": 47.55,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": 14.09,
+      "target_2": 17.08,
+      "target_3": 17.94
+    },
+    {
+      "ticker": "AMPX",
+      "shares": 30000.0,
+      "average_cost": 10.51,
+      "sector": "Technology",
+      "player": 1,
+      "technigrade": [],
+      "invalidation_1": 9.5,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": 12.75,
+      "target_2": 17.25,
       "target_3": -1
     },
     {
@@ -774,17 +922,13 @@
       "shares": 100000.0,
       "average_cost": 0.92,
       "sector": "Others",
-      "target_1": 1.1,
-      "player": 2
-    },
-
-    {
-      "ticker": "RING",
-      "shares": 12000.0,
-      "average_cost": 43.7,
-      "sector": "Precious Metals",
-      "target_1": 64,
-      "player": 8
+      "player": 2,
+      "invalidation_1": 0.921,
+      "invalidation_2": 0.7911,
+      "invalidation_3": 0.7525,
+      "target_1": 1.09,
+      "target_2": -1,
+      "target_3": -1
     },
     {
       "ticker": "CHWY",
@@ -805,9 +949,14 @@
       "shares": 7000.0,
       "average_cost": 37.4,
       "sector": "Fertilizer",
-      "target_1": 56.9,
       "player": 3,
-      "technigrade": [19, 19, 19, 18, 20]
+      "technigrade": [19, 19, 19, 18, 20],
+      "invalidation_1": 28.04,
+      "invalidation_2": 27.25,
+      "invalidation_3": -1,
+      "target_1": 34,
+      "target_2": 48,
+      "target_3": 50
     },
     {
       "ticker": "GDS",
@@ -827,8 +976,13 @@
       "shares": 333894.0,
       "average_cost": 10.03,
       "sector": "Hong Kong and China",
-      "target_1": 66,
-      "player": 10
+      "player": 10,
+      "invalidation_1": 52.4,
+      "invalidation_2": 47.5,
+      "invalidation_3": -1,
+      "target_1": 60,
+      "target_2": 66,
+      "target_3": 72.2
     },
     {
       "ticker": "KWEB",
@@ -836,7 +990,12 @@
       "average_cost": 25.54,
       "sector": "Hong Kong and China",
       "player": 10,
-      "target_1": 46
+      "invalidation_1": 39.17,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": 43.39,
+      "target_2": 46,
+      "target_3": 47.6
     },
     {
       "ticker": "0700.HK",
@@ -845,42 +1004,66 @@
       "sector": "Hong Kong and China",
       "player": 10,
       "technigrade": [5, 4, 6, 6, 5],
-      "target_1": 720,
-      "target_2": 800
+      "invalidation_1": 621,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": 712,
+      "target_2": 795,
+      "target_3": -1
     },
     {
       "ticker": "9988.HK",
       "shares": 441137.0,
       "average_cost": 27.18,
       "sector": "Hong Kong and China",
-      "target_1": 176,
       "player": 10,
-      "technigrade": [3, 4, 10, 9, 14]
+      "technigrade": [3, 4, 10, 9, 14],
+      "invalidation_1": 145.8,
+      "invalidation_2": 132,
+      "invalidation_3": 118.5,
+      "target_1": 171.6,
+      "target_2": 185,
+      "target_3": 201
     },
     {
       "ticker": "9618.HK",
       "shares": 6411.0,
       "average_cost": 0.0,
       "sector": "Hong Kong and China",
-      "target_1": 240,
       "player": 10,
-      "technigrade": [11, 14, 18, 19, 18]
+      "technigrade": [11, 14, 18, 19, 18],
+      "invalidation_1": 127.8,
+      "invalidation_2": 122.4,
+      "invalidation_3": 115,
+      "target_1": 170,
+      "target_2": 192.3,
+      "target_3": 211.0
     },
     {
       "ticker": "3690.HK",
       "shares": 11022.0,
       "average_cost": 0.0,
       "sector": "Hong Kong and China",
-      "target_1": 234,
-      "player": 10
+      "player": 10,
+      "invalidation_1": 106.4,
+      "invalidation_2": 94.7,
+      "invalidation_3": -1,
+      "target_1": 191,
+      "target_2": 216,
+      "target_3": 252
     },
     {
       "ticker": "6181.HK",
       "shares": 4000,
       "average_cost": 138.08,
       "sector": "Hong Kong and China",
+      "player": 10,
+      "invalidation_1": 711,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
       "target_1": 1392,
-      "player": 10
+      "target_2": -1,
+      "target_3": -1
     },
     {
       "ticker": "9698.HK",
@@ -888,7 +1071,7 @@
       "average_cost": 4.12,
       "sector": "Hong Kong and China",
       "player": 6,
-      "invalidation_1": 34.64,
+      "invalidation_1": 35.08,
       "invalidation_2": 30.08,
       "invalidation_3": -1,
       "target_1": 48.9,
