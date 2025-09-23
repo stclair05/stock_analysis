@@ -412,8 +412,8 @@
     },
     {
       "ticker": "XAGUSD",
-      "shares": 566809.0,
-      "average_cost": 29.42,
+      "shares": 576809,
+      "average_cost": 29.66,
       "sector": "Precious Metals",
       "target_1": 43,
       "player": 8
@@ -437,8 +437,8 @@
     },
     {
       "ticker": "ACHR",
-      "shares": 90000.0,
-      "average_cost": 11.19,
+      "shares": 130000,
+      "average_cost": 10.73,
       "sector": "Aerospace & Defense",
       "player": 4,
       "technigrade": [12, 18, 19, 18, 14],
@@ -720,8 +720,8 @@
     },
     {
       "ticker": "PTON",
-      "shares": 20000.0,
-      "average_cost": 8.49,
+      "shares": 40000,
+      "average_cost": 8.35,
       "sector": "Technology",
       "player": 2,
       "technigrade": [5, 8, 5, 7, 6],

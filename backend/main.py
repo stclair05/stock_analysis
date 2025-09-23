@@ -96,6 +96,10 @@ def get_portfolio_live_data():
         return {"error": str(e)}
     
 
+def _sanitize_level(val):
+    return val if isinstance(val, (int, float)) and val > 0 else None
+
+
 @app.get("/portfolio_tickers")
 def get_portfolio_tickers():
     json_path = Path("portfolio_store.json")
@@ -105,8 +109,6 @@ def get_portfolio_tickers():
         data = json.load(f)
         equities = data.get("equities", [])
          # Return ticker, sector, and optional levels for each equity
-        def _sanitize_level(val):
-            return val if isinstance(val, (int, float)) and val > 0 else None
         return [
             {
                 "ticker": item["ticker"],
@@ -625,20 +627,30 @@ def add_to_watchlist(symbol: str):
 
 @app.get("/buylist")
 def get_buylist():
-    """Return buylist tickers with sector and target info."""
+    """Return buylist tickers with sector and level information."""
     data = load_data()
     items = []
     for entry in data.get("buylist", []):
         if isinstance(entry, dict):
-            t = entry.get("ticker")
-            if t:
-                items.append(
-                    {
-                        "ticker": t,
-                        "sector": entry.get("sector", "N/A"),
-                        "target": entry.get("target"),
-                    }
-                )
+            ticker = entry.get("ticker")
+            if ticker:
+                sector = entry.get("sector") or "N/A"
+                target_1 = _sanitize_level(entry.get("target_1"))
+                fallback_target = _sanitize_level(entry.get("target"))
+                if target_1 is None and fallback_target is not None:
+                    target_1 = fallback_target
+                item = {
+                    "ticker": ticker,
+                    "sector": sector,
+                    "target": fallback_target,
+                    "target_1": target_1,
+                    "target_2": _sanitize_level(entry.get("target_2")),
+                    "target_3": _sanitize_level(entry.get("target_3")),
+                    "invalidation_1": _sanitize_level(entry.get("invalidation_1")),
+                    "invalidation_2": _sanitize_level(entry.get("invalidation_2")),
+                    "invalidation_3": _sanitize_level(entry.get("invalidation_3")),
+                }
+                items.append(item)
         elif isinstance(entry, str):
             items.append({"ticker": entry, "sector": "N/A"})
     return items

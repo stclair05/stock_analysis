@@ -39,11 +39,18 @@ const TARGET_PRIORITY: TargetKey[] = ["target_1", "target_2", "target_3"];
 const isValidLevel = (value: number | undefined): value is number =>
   typeof value === "number" && value > 0;
 
-const getTargetLevels = (holding: Holding): TargetLevel[] =>
-  TARGET_PRIORITY.map((key) => {
+const getTargetLevels = (holding: Holding): TargetLevel[] => {
+  const levels = TARGET_PRIORITY.map((key) => {
     const level = holding[key];
     return isValidLevel(level) ? { key, value: level } : null;
   }).filter((item): item is TargetLevel => item !== null);
+
+  if (levels.length === 0 && isValidLevel(holding.target)) {
+    levels.push({ key: "target_1", value: holding.target });
+  }
+
+  return levels;
+};
 
 const selectActiveTargetLevel = (
   holding: Holding,
@@ -322,9 +329,11 @@ export default function BuySellSignalsTab({
 
   const baseColumns = useMemo(() => {
     const cols = ["mean_rev_rsi"] as string[];
-    if (listType === "portfolio") {
+    if (listType === "portfolio" || listType === "buylist") {
+      if (listType === "portfolio") {
+        cols.push("pnl");
+      }
       cols.push(
-        "pnl",
         "daily_change",
         "price_target",
         "levels_breached",
@@ -335,8 +344,6 @@ export default function BuySellSignalsTab({
         "invalidation_2",
         "invalidation_3"
       );
-    } else if (listType === "buylist") {
-      cols.push("daily_change", "price_target");
     } else {
       cols.push("daily_change");
     }
@@ -469,6 +476,17 @@ export default function BuySellSignalsTab({
       invalidation_2: sanitize(holding.invalidation_2),
       invalidation_3: sanitize(holding.invalidation_3),
     };
+
+    if (
+      levels.target_1 == null &&
+      levels.target_2 == null &&
+      levels.target_3 == null
+    ) {
+      const fallbackTarget = sanitize(holding.target);
+      if (fallbackTarget != null) {
+        levels.target_1 = fallbackTarget;
+      }
+    }
 
     let status = "NEUTRAL";
     let cls = "";
@@ -607,57 +625,39 @@ export default function BuySellSignalsTab({
         }
         const data = await res.json();
 
-        // MODIFIED: Safely format tickers, expecting { ticker, sector, levels } objects
+        const sanitizeLevel = (value: unknown): number | undefined =>
+          typeof value === "number" && value > 0 ? value : undefined;
+
+        // Safely format tickers, expecting { ticker, sector, levels } objects
         const formattedTickers: Holding[] = Array.isArray(data)
           ? data
               .map((item: any) => {
-                // Handle both string (old backend) and object (new backend) formats
                 if (typeof item === "string") {
-                  return { ticker: item, sector: "N/A" }; // Default sector if only ticker string is returned
-                } else if (
-                  item &&
-                  typeof item === "object" &&
-                  "ticker" in item
-                ) {
+                  return { ticker: item, sector: "N/A" };
+                }
+                if (item && typeof item === "object" && "ticker" in item) {
+                  const sector =
+                    typeof item.sector === "string" && item.sector.trim()
+                      ? item.sector
+                      : "N/A";
+                  const fallbackTarget = sanitizeLevel(item.target);
+                  const target1 =
+                    sanitizeLevel(item.target_1) ?? fallbackTarget ?? undefined;
                   return {
                     ticker: item.ticker,
-                    sector: item.sector || "N/A",
-                    target:
-                      typeof item.target === "number" && item.target > 0
-                        ? item.target
-                        : undefined,
-                    target_1:
-                      typeof item.target_1 === "number" && item.target_1 > 0
-                        ? item.target_1
-                        : undefined,
-                    target_2:
-                      typeof item.target_2 === "number" && item.target_2 > 0
-                        ? item.target_2
-                        : undefined,
-                    target_3:
-                      typeof item.target_3 === "number" && item.target_3 > 0
-                        ? item.target_3
-                        : undefined,
-                    invalidation_1:
-                      typeof item.invalidation_1 === "number" &&
-                      item.invalidation_1 > 0
-                        ? item.invalidation_1
-                        : undefined,
-                    invalidation_2:
-                      typeof item.invalidation_2 === "number" &&
-                      item.invalidation_2 > 0
-                        ? item.invalidation_2
-                        : undefined,
-                    invalidation_3:
-                      typeof item.invalidation_3 === "number" &&
-                      item.invalidation_3 > 0
-                        ? item.invalidation_3
-                        : undefined,
-                  }; // Use provided sector or default
+                    sector,
+                    target: fallbackTarget ?? target1,
+                    target_1: target1,
+                    target_2: sanitizeLevel(item.target_2),
+                    target_3: sanitizeLevel(item.target_3),
+                    invalidation_1: sanitizeLevel(item.invalidation_1),
+                    invalidation_2: sanitizeLevel(item.invalidation_2),
+                    invalidation_3: sanitizeLevel(item.invalidation_3),
+                  };
                 }
-                return { ticker: "", sector: "N/A" }; // Fallback for malformed data
+                return { ticker: "", sector: "N/A" };
               })
-              .filter((item) => item.ticker !== "") // Filter out any empty tickers resulting from malformed data
+              .filter((item) => item.ticker !== "")
           : [];
 
         // Store in cache
@@ -1163,32 +1163,26 @@ export default function BuySellSignalsTab({
           let diffA: number | null = null;
           let diffB: number | null = null;
 
-          if (listType === "buylist") {
-            const targetA = isValidLevel(a.target) ? a.target : undefined;
-            const targetB = isValidLevel(b.target) ? b.target : undefined;
+          const activeA =
+            typeof priceA === "number"
+              ? selectActiveTargetLevel(a, priceA) ||
+                (isValidLevel(a.target)
+                  ? ({ key: "target_1", value: a.target } as TargetLevel)
+                  : undefined)
+              : undefined;
+          const activeB =
+            typeof priceB === "number"
+              ? selectActiveTargetLevel(b, priceB) ||
+                (isValidLevel(b.target)
+                  ? ({ key: "target_1", value: b.target } as TargetLevel)
+                  : undefined)
+              : undefined;
 
-            if (typeof priceA === "number" && targetA) {
-              diffA = Math.abs(((targetA - priceA) / priceA) * 100);
-            }
-            if (typeof priceB === "number" && targetB) {
-              diffB = Math.abs(((targetB - priceB) / priceB) * 100);
-            }
-          } else {
-            const activeA = selectActiveTargetLevel(
-              a,
-              typeof priceA === "number" ? priceA : null
-            );
-            const activeB = selectActiveTargetLevel(
-              b,
-              typeof priceB === "number" ? priceB : null
-            );
-
-            if (typeof priceA === "number" && activeA) {
-              diffA = ((priceA - activeA.value) / activeA.value) * 100;
-            }
-            if (typeof priceB === "number" && activeB) {
-              diffB = ((priceB - activeB.value) / activeB.value) * 100;
-            }
+          if (typeof priceA === "number" && activeA) {
+            diffA = ((priceA - activeA.value) / activeA.value) * 100;
+          }
+          if (typeof priceB === "number" && activeB) {
+            diffB = ((priceB - activeB.value) / activeB.value) * 100;
           }
           const hasA = typeof diffA === "number" && !Number.isNaN(diffA);
           const hasB = typeof diffB === "number" && !Number.isNaN(diffB);
@@ -1415,13 +1409,9 @@ export default function BuySellSignalsTab({
   }, [sectorSummary]);
 
   const renderHeader = (col: string) => {
-    const baseLabel =
+    const label =
       COLUMN_LABELS[col] ||
       col.replace(/_/g, " ").replace("longterm", " LongTerm");
-    const label =
-      col === "price_target" && listType === "buylist"
-        ? "Price vs Buy Price"
-        : baseLabel;
     if (col === "mean_rev_rsi") {
       return (
         <th
@@ -1731,23 +1721,16 @@ export default function BuySellSignalsTab({
 
     if (col === "price_target") {
       const price = meanRevRsi[ticker]?.currentPrice;
-      if (listType === "buylist") {
-        const target = isValidLevel(holding.target)
+      if (typeof price === "number") {
+        const fallbackTarget = isValidLevel(holding.target)
           ? holding.target
           : undefined;
-        if (typeof price === "number" && target) {
-          const diff = Math.abs(((target - price) / price) * 100);
-          const cellClass = diff <= 3 ? "price-diff-highlight" : "";
-          return (
-            <td className={cellClass} style={{ textAlign: "center" }}>
-              {`${price.toFixed(2)} | ${target.toFixed(2)} (${diff.toFixed(
-                2
-              )}%)`}
-            </td>
-          );
-        }
-      } else if (typeof price === "number") {
-        const activeTarget = selectActiveTargetLevel(holding, price);
+        const activeTarget =
+          selectActiveTargetLevel(holding, price) ||
+          (fallbackTarget
+            ? ({ key: "target_1", value: fallbackTarget } as TargetLevel)
+            : undefined);
+
         if (activeTarget) {
           const diff =
             ((price - activeTarget.value) / activeTarget.value) * 100;
