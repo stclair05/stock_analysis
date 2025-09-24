@@ -720,6 +720,28 @@
       "target_3": 73.23
     },
     {
+      "ticker": "GRAL",
+      "sector": "Healthcare",
+      "technigrade": [],
+      "invalidation_1": 43.72,
+      "invalidation_2": 38.1,
+      "invalidation_3": -1,
+      "target_1": 45.22,
+      "target_2": 52.56,
+      "target_3": 58
+    },
+    {
+      "ticker": "SOLV",
+      "sector": "Healthcare",
+      "technigrade": [],
+      "invalidation_1": 72.6,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": 76.78,
+      "target_2": 78.5,
+      "target_3": 85
+    },
+    {
       "ticker": "INTU",
       "sector": "Energy",
       "technigrade": []
