@@ -450,18 +450,8 @@
       "technigrade": []
     },
     {
-      "ticker": "CRCL",
-      "sector": "Industrials",
-      "technigrade": []
-    },
-    {
       "ticker": "XYL",
       "sector": "Industrials",
-      "technigrade": []
-    },
-    {
-      "ticker": "SERV",
-      "sector": "Technology",
       "technigrade": []
     },
     {
@@ -487,11 +477,6 @@
     {
       "ticker": "IONQ",
       "sector": "Technology",
-      "technigrade": []
-    },
-    {
-      "ticker": "AMPX",
-      "sector": "Industrials",
       "technigrade": []
     },
     {
@@ -797,18 +782,8 @@
       "technigrade": []
     },
     {
-      "ticker": "MDGL",
-      "sector": "Healthcare",
-      "technigrade": []
-    },
-    {
       "ticker": "FN",
       "sector": "Financial Services",
-      "technigrade": []
-    },
-    {
-      "ticker": "RKLB",
-      "sector": "Industrials",
       "technigrade": []
     },
     {
@@ -937,11 +912,6 @@
       "technigrade": []
     },
     {
-      "ticker": "0020.HK",
-      "sector": "Energy",
-      "technigrade": []
-    },
-    {
       "ticker": "MRNA",
       "sector": "Healthcare",
       "technigrade": []
@@ -1012,11 +982,6 @@
       "technigrade": []
     },
     {
-      "ticker": "FCX",
-      "sector": "Basic Materials",
-      "technigrade": []
-    },
-    {
       "ticker": "HOOD",
       "sector": "Financial Services",
       "technigrade": []
@@ -1024,16 +989,6 @@
     {
       "ticker": "FLNG",
       "sector": "Energy",
-      "technigrade": []
-    },
-    {
-      "ticker": "MOS",
-      "sector": "Basic Materials",
-      "technigrade": []
-    },
-    {
-      "ticker": "IPI",
-      "sector": "Basic Materials",
       "technigrade": []
     },
     {
@@ -1087,11 +1042,6 @@
       "technigrade": []
     },
     {
-      "ticker": "CHWY",
-      "sector": "Consumer Cyclical",
-      "technigrade": []
-    },
-    {
       "ticker": "TRMD",
       "sector": "Industrials",
       "technigrade": []
@@ -1104,11 +1054,6 @@
     {
       "ticker": "GEV",
       "sector": "Industrials",
-      "technigrade": []
-    },
-    {
-      "ticker": "0700.HK",
-      "sector": "Communication Services",
       "technigrade": []
     },
     {
@@ -1157,11 +1102,6 @@
       "technigrade": []
     },
     {
-      "ticker": "RRC",
-      "sector": "Energy",
-      "technigrade": []
-    },
-    {
       "ticker": "ATI",
       "sector": "Industrials",
       "technigrade": []
@@ -1192,11 +1132,6 @@
       "technigrade": []
     },
     {
-      "ticker": "SOUN",
-      "sector": "Technology",
-      "technigrade": []
-    },
-    {
       "ticker": "XME",
       "sector": "Index",
       "technigrade": []
@@ -1222,22 +1157,12 @@
       "technigrade": []
     },
     {
-      "ticker": "ACHR",
-      "sector": "Aerospace & Defense",
-      "technigrade": []
-    },
-    {
       "ticker": "ARQQ",
       "sector": "Industrials",
       "technigrade": []
     },
     {
       "ticker": "XPEV",
-      "sector": "Consumer Cyclical",
-      "technigrade": []
-    },
-    {
-      "ticker": "TSLA",
       "sector": "Consumer Cyclical",
       "technigrade": []
     },
@@ -1282,28 +1207,13 @@
       "technigrade": []
     },
     {
-      "ticker": "WDO.TO",
-      "sector": "Energy",
-      "technigrade": []
-    },
-    {
       "ticker": "TMC",
-      "sector": "Basic Materials",
-      "technigrade": []
-    },
-    {
-      "ticker": "AYA.TO",
       "sector": "Basic Materials",
       "technigrade": []
     },
     {
       "ticker": "U.TO",
       "sector": "Utilities",
-      "technigrade": []
-    },
-    {
-      "ticker": "JOBY",
-      "sector": "Industrials",
       "technigrade": []
     },
     {
