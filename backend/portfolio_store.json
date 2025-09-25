@@ -83,20 +83,6 @@
       "technigrade": [18, 17, 18, 18, 19]
     },
     {
-      "ticker": "DK",
-      "shares": 9400.0,
-      "average_cost": 31.57,
-      "sector": "Energy",
-      "player": 2,
-      "technigrade": [2, 2, 1, 2, 3],
-      "invalidation_1": 26.75,
-      "invalidation_2": 25.2,
-      "invalidation_3": 23.59,
-      "target_1": 31,
-      "target_2": 35.03,
-      "target_3": 49.31
-    },
-    {
       "ticker": "COP",
       "shares": 36595.0,
       "average_cost": 106.84,
@@ -353,8 +339,8 @@
     },
     {
       "ticker": "U-UN.TO",
-      "shares": 19000.0,
-      "average_cost": 21.47,
+      "shares": 29000,
+      "average_cost": 20.91,
       "sector": "Uranium",
       "player": 5,
       "invalidation_1": 26,
@@ -363,6 +349,19 @@
       "target_1": 33.84,
       "target_2": 37.52,
       "target_3": 41.92
+    },
+    {
+      "ticker": "EU",
+      "shares": 10000,
+      "average_cost": 3,
+      "sector": "Energy",
+      "technigrade": [],
+      "invalidation_1": 2.05,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": 3.88,
+      "target_2": 4.95,
+      "target_3": 9.2
     },
     {
       "ticker": "DYL.AX",
@@ -517,6 +516,19 @@
       "target_3": 25.1
     },
     {
+      "ticker": "ASTS",
+      "shares": 7000.0,
+      "average_cost": 48.85,
+      "sector": "Aerospace & Defense",
+      "technigrade": [4, 9, 4, 2, 2],
+      "invalidation_1": 36.08,
+      "invalidation_2": 32.86,
+      "invalidation_3": -1,
+      "target_1": 54.05,
+      "target_2": 64.25,
+      "target_3": 73.23
+    },
+    {
       "ticker": "CRCL",
       "shares": 3000,
       "average_cost": 224.64,
@@ -561,6 +573,20 @@
       "technigrade": [3, 3, 2, 2, 3]
     },
     {
+      "ticker": "GRAL",
+      "shares": 5000,
+      "average_cost": 45.96,
+      "sector": "Others",
+      "player": 1,
+      "technigrade": [6, 10, 12, 18, 17],
+      "invalidation_1": 43.72,
+      "invalidation_2": 38.1,
+      "invalidation_3": -1,
+      "target_1": 52.56,
+      "target_2": 58.06,
+      "target_3": 64.12
+    },
+    {
       "ticker": "HL",
       "shares": 182000,
       "average_cost": 7.56,
@@ -579,9 +605,14 @@
       "shares": 40000,
       "average_cost": 12.91,
       "sector": "Precious Metals",
-      "target_1": 20.2,
       "player": 8,
-      "technigrade": [10, 8, 8, 12, 16]
+      "technigrade": [10, 8, 8, 12, 16],
+      "invalidation_1": 19.69,
+      "invalidation_2": 18.07,
+      "invalidation_3": 15.88,
+      "target_1": 23.21,
+      "target_2": 25.13,
+      "target_3": 43.83
     },
     {
       "ticker": "FCX",
@@ -757,8 +788,8 @@
     },
     {
       "ticker": "SOUN",
-      "shares": 55000,
-      "average_cost": 11.94,
+      "shares": 75000,
+      "average_cost": 13.49,
       "sector": "Technology",
       "player": 4,
       "technigrade": [2, 3, 2, 4, 4],
@@ -813,8 +844,8 @@
     },
     {
       "ticker": "CSIQ",
-      "shares": 30000.0,
-      "average_cost": 12.29,
+      "shares": 37000,
+      "average_cost": 12.4,
       "sector": "Others",
       "player": 1,
       "technigrade": [9, 13, 12, 18, 13],
@@ -920,6 +951,20 @@
       "invalidation_3": -1,
       "target_1": 338,
       "target_2": 499,
+      "target_3": -1
+    },
+    {
+      "ticker": "ANET",
+      "shares": 2000.0,
+      "average_cost": 145.12,
+      "sector": "Technology",
+      "player": 2,
+      "technigrade": [2, 2, 2, 2, 2],
+      "invalidation_1": -1,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": -1,
+      "target_2": -1,
       "target_3": -1
     },
     {

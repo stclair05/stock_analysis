@@ -661,17 +661,6 @@
       "target_3": 103.55
     },
     {
-      "ticker": "EU",
-      "sector": "Energy",
-      "technigrade": [],
-      "invalidation_1": 2.05,
-      "invalidation_2": -1,
-      "invalidation_3": -1,
-      "target_1": 3.88,
-      "target_2": 4.95,
-      "target_3": 9.2
-    },
-    {
       "ticker": "TER",
       "sector": "Technology",
       "technigrade": [],
@@ -694,28 +683,6 @@
       "target_3": 78
     },
     {
-      "ticker": "ASTS",
-      "sector": "Technology",
-      "technigrade": [],
-      "invalidation_1": 36.08,
-      "invalidation_2": 32.86,
-      "invalidation_3": -1,
-      "target_1": 54.05,
-      "target_2": 64.25,
-      "target_3": 73.23
-    },
-    {
-      "ticker": "GRAL",
-      "sector": "Healthcare",
-      "technigrade": [],
-      "invalidation_1": 43.72,
-      "invalidation_2": 38.1,
-      "invalidation_3": -1,
-      "target_1": 45.22,
-      "target_2": 52.56,
-      "target_3": 58
-    },
-    {
       "ticker": "SOLV",
       "sector": "Healthcare",
       "technigrade": [],
@@ -728,8 +695,47 @@
     },
     {
       "ticker": "INTU",
-      "sector": "Energy",
-      "technigrade": []
+      "sector": "Healthcare",
+      "technigrade": [],
+      "invalidation_1": -1,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": 469.11,
+      "target_2": 476,
+      "target_3": -1
+    },
+    {
+      "ticker": "RDDT",
+      "sector": "Technology",
+      "technigrade": [],
+      "invalidation_1": 229,
+      "invalidation_2": 209,
+      "invalidation_3": -1,
+      "target_1": 253,
+      "target_2": 333,
+      "target_3": -1
+    },
+    {
+      "ticker": "NVMI",
+      "sector": "Others",
+      "technigrade": [],
+      "invalidation_1": 289.57,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": 397,
+      "target_2": 422,
+      "target_3": -1
+    },
+    {
+      "ticker": "QCOM",
+      "sector": "Technology",
+      "technigrade": [],
+      "invalidation_1": 164.37,
+      "invalidation_2": 152.95,
+      "invalidation_3": -1,
+      "target_1": 175.36,
+      "target_2": 188.4,
+      "target_3": 230
     },
     {
       "ticker": "OKLO",
