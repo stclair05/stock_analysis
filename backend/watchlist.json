@@ -475,11 +475,6 @@
       "technigrade": []
     },
     {
-      "ticker": "IONQ",
-      "sector": "Technology",
-      "technigrade": []
-    },
-    {
       "ticker": "EL",
       "sector": "Consumer Defensive",
       "technigrade": []
@@ -562,16 +557,6 @@
     {
       "ticker": "1801.HK",
       "sector": "Healthcare",
-      "technigrade": []
-    },
-    {
-      "ticker": "KTOS",
-      "sector": "Aerospace & Defense",
-      "technigrade": []
-    },
-    {
-      "ticker": "AVAV",
-      "sector": "Aerospace & Defense",
       "technigrade": []
     },
     {
@@ -695,14 +680,8 @@
     },
     {
       "ticker": "INTU",
-      "sector": "Healthcare",
-      "technigrade": [],
-      "invalidation_1": -1,
-      "invalidation_2": -1,
-      "invalidation_3": -1,
-      "target_1": 469.11,
-      "target_2": 476,
-      "target_3": -1
+      "sector": "Technology",
+      "technigrade": []
     },
     {
       "ticker": "RDDT",
@@ -738,17 +717,78 @@
       "target_3": 230
     },
     {
+      "ticker": "ISRG",
+      "sector": "Healthcare",
+      "technigrade": [],
+      "invalidation_1": -1,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": 469.11,
+      "target_2": 476,
+      "target_3": -1
+    },
+    {
+      "ticker": "IONQ",
+      "sector": "Technology",
+      "technigrade": [],
+      "invalidation_1": 66.54,
+      "invalidation_2": 58.67,
+      "invalidation_3": -1,
+      "target_1": 75.14,
+      "target_2": 88.79,
+      "target_3": -1
+    },
+    {
+      "ticker": "NTRA",
+      "sector": "Healthcare",
+      "technigrade": [],
+      "invalidation_1": 167,
+      "invalidation_2": 154,
+      "invalidation_3": -1,
+      "target_1": 183,
+      "target_2": 230,
+      "target_3": 251
+    },
+    {
+      "ticker": "KTOS",
+      "sector": "Aerospace & Defense",
+      "technigrade": [],
+      "invalidation_1": 81,
+      "invalidation_2": 72,
+      "invalidation_3": 65,
+      "target_1": 85,
+      "target_2": 97,
+      "target_3": -1
+    },
+    {
+      "ticker": "AVAV",
+      "sector": "Aerospace & Defense",
+      "technigrade": [],
+      "invalidation_1": 260,
+      "invalidation_2": 242,
+      "invalidation_3": 221,
+      "target_1": 334,
+      "target_2": 354,
+      "target_3": 391
+    },
+    {
+      "ticker": "ENTG",
+      "sector": "Others",
+      "technigrade": [],
+      "invalidation_1": -1,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": 104,
+      "target_2": 113,
+      "target_3": 146
+    },
+    {
       "ticker": "OKLO",
       "sector": "Others",
       "technigrade": []
     },
     {
       "ticker": "CCJ",
-      "sector": "Uranium",
-      "technigrade": []
-    },
-    {
-      "ticker": "LEU",
       "sector": "Uranium",
       "technigrade": []
     },
@@ -963,11 +1003,6 @@
       "technigrade": []
     },
     {
-      "ticker": "9618.HK",
-      "sector": "Technology",
-      "technigrade": []
-    },
-    {
       "ticker": "SBSW",
       "sector": "Basic Materials",
       "technigrade": []
@@ -975,11 +1010,6 @@
     {
       "ticker": "IBIT",
       "sector": "Index",
-      "technigrade": []
-    },
-    {
-      "ticker": "9988.HK",
-      "sector": "Communication Services",
       "technigrade": []
     },
     {
@@ -1148,11 +1178,6 @@
       "technigrade": []
     },
     {
-      "ticker": "ISRG",
-      "sector": "Healthcare",
-      "technigrade": []
-    },
-    {
       "ticker": "SOHU",
       "sector": "Communication Services",
       "technigrade": []
@@ -1203,31 +1228,6 @@
       "technigrade": []
     },
     {
-      "ticker": "CSIQ",
-      "sector": "Industrials",
-      "technigrade": []
-    },
-    {
-      "ticker": "KNT.TO",
-      "sector": "Precious Metals",
-      "technigrade": []
-    },
-    {
-      "ticker": "TMC",
-      "sector": "Basic Materials",
-      "technigrade": []
-    },
-    {
-      "ticker": "U.TO",
-      "sector": "Utilities",
-      "technigrade": []
-    },
-    {
-      "ticker": "HIMS",
-      "sector": "Healthcare",
-      "technigrade": []
-    },
-    {
       "ticker": "MARA",
       "sector": "Technology",
       "technigrade": []
@@ -1268,11 +1268,6 @@
       "technigrade": []
     },
     {
-      "ticker": "NTRA",
-      "sector": "Healthcare",
-      "technigrade": []
-    },
-    {
       "ticker": "XMTR",
       "sector": "Industrials",
       "technigrade": []
@@ -1285,11 +1280,6 @@
     {
       "ticker": "SCHW",
       "sector": "Financial Services",
-      "technigrade": []
-    },
-    {
-      "ticker": "ANET",
-      "sector": "Technology",
       "technigrade": []
     },
     {
