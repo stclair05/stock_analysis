@@ -641,6 +641,7 @@
       "invalidation_1": 77.88,
       "invalidation_2": -1,
       "invalidation_3": -1,
+      "break_out": 81,
       "target_1": 87.5,
       "target_2": 91.64,
       "target_3": 103.55
@@ -652,6 +653,7 @@
       "invalidation_1": 105.27,
       "invalidation_2": -1,
       "invalidation_3": -1,
+      "break_out": 119,
       "target_1": 122,
       "target_2": 163.24,
       "target_3": -1
@@ -663,6 +665,7 @@
       "invalidation_1": 42.38,
       "invalidation_2": -1,
       "invalidation_3": -1,
+      "break_out": 46,
       "target_1": 63,
       "target_2": 73,
       "target_3": 78
@@ -674,6 +677,7 @@
       "invalidation_1": 72.6,
       "invalidation_2": -1,
       "invalidation_3": -1,
+      "break_out": 74,
       "target_1": 76.78,
       "target_2": 78.5,
       "target_3": 85
@@ -687,11 +691,13 @@
       "ticker": "RDDT",
       "sector": "Technology",
       "technigrade": [],
-      "invalidation_1": 229,
-      "invalidation_2": 209,
+      "invalidation_1": 205,
+      "invalidation_2": -1,
       "invalidation_3": -1,
-      "target_1": 253,
-      "target_2": 333,
+      "break_out": 253,
+      "ready_price": 215,
+      "target_1": 333,
+      "target_2": -1,
       "target_3": -1
     },
     {
@@ -701,6 +707,7 @@
       "invalidation_1": 289.57,
       "invalidation_2": -1,
       "invalidation_3": -1,
+      "break_out": 289,
       "target_1": 397,
       "target_2": 422,
       "target_3": -1
@@ -712,6 +719,7 @@
       "invalidation_1": 164.37,
       "invalidation_2": 152.95,
       "invalidation_3": -1,
+      "break_out": 164,
       "target_1": 175.36,
       "target_2": 188.4,
       "target_3": 230
@@ -720,11 +728,24 @@
       "ticker": "ISRG",
       "sector": "Healthcare",
       "technigrade": [],
-      "invalidation_1": -1,
+      "invalidation_1": 430,
       "invalidation_2": -1,
       "invalidation_3": -1,
+      "break_out": 448,
       "target_1": 469.11,
       "target_2": 476,
+      "target_3": -1
+    },
+    {
+      "ticker": "TEM",
+      "sector": "Technology",
+      "technigrade": [],
+      "invalidation_1": 74.9,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "break_out": 82,
+      "target_1": 136,
+      "target_2": -1,
       "target_3": -1
     },
     {
@@ -734,20 +755,10 @@
       "invalidation_1": 66.54,
       "invalidation_2": 58.67,
       "invalidation_3": -1,
+      "break_out": 49,
       "target_1": 75.14,
       "target_2": 88.79,
       "target_3": -1
-    },
-    {
-      "ticker": "NTRA",
-      "sector": "Healthcare",
-      "technigrade": [],
-      "invalidation_1": 167,
-      "invalidation_2": 154,
-      "invalidation_3": -1,
-      "target_1": 183,
-      "target_2": 230,
-      "target_3": 251
     },
     {
       "ticker": "KTOS",
@@ -756,6 +767,7 @@
       "invalidation_1": 81,
       "invalidation_2": 72,
       "invalidation_3": 65,
+      "break_out": 72,
       "target_1": 85,
       "target_2": 97,
       "target_3": -1
@@ -767,6 +779,7 @@
       "invalidation_1": 260,
       "invalidation_2": 242,
       "invalidation_3": 221,
+      "break_out": 254,
       "target_1": 334,
       "target_2": 354,
       "target_3": 391
@@ -778,6 +791,7 @@
       "invalidation_1": -1,
       "invalidation_2": -1,
       "invalidation_3": -1,
+      "break_out": 104,
       "target_1": 104,
       "target_2": 113,
       "target_3": 146
@@ -786,19 +800,40 @@
       "ticker": "FIVN",
       "sector": "Technology",
       "technigrade": [],
-      "target_1": 29
+      "target_1": 51,
+      "break_out": 29,
+      "invalidation_1": 21
     },
     {
       "ticker": "LW",
       "sector": "Others",
       "technigrade": [],
-      "target_1": 60
+      "target_1": 84,
+      "break_out": 60,
+      "invalidation_1": 47
+    },
+    {
+      "ticker": "MTZ",
+      "sector": "Others",
+      "technigrade": [],
+      "target_1": 230,
+      "target_2": 240,
+      "break_out": 184,
+      "invalidation_1": 194
+    },
+    {
+      "ticker": "U-UN.TO",
+      "sector": "Energy",
+      "technigrade": [],
+      "break_out": 26,
+      "target_1": 33,
+      "target_2": 36,
+      "invalidation_1": 26
     },
     {
       "ticker": "GWW",
       "sector": "Others",
-      "technigrade": [],
-      "target_1": 991
+      "technigrade": []
     },
     {
       "ticker": "CRUS",
@@ -817,7 +852,10 @@
       "ticker": "MP",
       "sector": "Materials",
       "technigrade": [],
-      "invalidation_1": 60
+      "invalidation_1": 61,
+      "break_out": 60,
+      "target_1": 99,
+      "target_2": 109
     },
     {
       "ticker": "OKLO",
@@ -1089,11 +1127,7 @@
       "sector": "Index",
       "technigrade": []
     },
-    {
-      "ticker": "TEM",
-      "sector": "Technology",
-      "technigrade": []
-    },
+
     {
       "ticker": "SEI",
       "sector": "Financial Services",
