@@ -783,6 +783,43 @@
       "target_3": 146
     },
     {
+      "ticker": "FIVN",
+      "sector": "Technology",
+      "technigrade": [],
+      "target_1": 29
+    },
+    {
+      "ticker": "LW",
+      "sector": "Others",
+      "technigrade": [],
+      "target_1": 60
+    },
+    {
+      "ticker": "GWW",
+      "sector": "Others",
+      "technigrade": [],
+      "target_1": 991
+    },
+    {
+      "ticker": "CRUS",
+      "sector": "Others",
+      "technigrade": [],
+      "target_1": 119
+    },
+    {
+      "ticker": "HALO",
+      "sector": "Healthcare",
+      "technigrade": [],
+      "target_1": 75,
+      "invalidation_1": 65
+    },
+    {
+      "ticker": "MP",
+      "sector": "Materials",
+      "technigrade": [],
+      "invalidation_1": 60
+    },
+    {
       "ticker": "OKLO",
       "sector": "Others",
       "technigrade": []
@@ -1208,11 +1245,6 @@
       "technigrade": []
     },
     {
-      "ticker": "MP",
-      "sector": "Basic Materials",
-      "technigrade": []
-    },
-    {
       "ticker": "VKTX",
       "sector": "Healthcare",
       "technigrade": []
@@ -1272,11 +1304,7 @@
       "sector": "Industrials",
       "technigrade": []
     },
-    {
-      "ticker": "HALO",
-      "sector": "Healthcare",
-      "technigrade": []
-    },
+
     {
       "ticker": "SCHW",
       "sector": "Financial Services",
@@ -1285,11 +1313,6 @@
     {
       "ticker": "NCLH",
       "sector": "Consumer Cyclical",
-      "technigrade": []
-    },
-    {
-      "ticker": "FIVN",
-      "sector": "Technology",
       "technigrade": []
     },
     {
