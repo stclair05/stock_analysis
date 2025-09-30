@@ -858,6 +858,35 @@
       "target_2": 109
     },
     {
+      "ticker": "ADBE",
+      "sector": "Materials",
+      "technigrade": [],
+      "invalidation_1": -1,
+      "break_out": 375,
+      "target_1": 417,
+      "target_2": 575
+    },
+    {
+      "ticker": "SCHW",
+      "sector": "Others",
+      "technigrade": [],
+      "invalidation_1": 89,
+      "break_out": 96,
+      "target_1": 120,
+      "target_2": 130,
+      "target_3": 154
+    },
+    {
+      "ticker": "CTVA",
+      "sector": "Fertilizers",
+      "technigrade": [],
+      "invalidation_1": 66,
+      "break_out": 69,
+      "target_1": 77,
+      "target_2": 85,
+      "target_3": 85
+    },
+    {
       "ticker": "OKLO",
       "sector": "Others",
       "technigrade": []
