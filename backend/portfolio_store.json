@@ -184,9 +184,14 @@
       "shares": 19000.0,
       "average_cost": 33.53,
       "sector": "Energy",
-      "target_1": 36,
       "player": 2,
-      "technigrade": [3, 4, 3, 3, 6]
+      "technigrade": [3, 4, 3, 3, 6],
+      "invalidation_1": 36,
+      "invalidation_2": 33.1,
+      "invalidation_3": 32.2,
+      "target_1": 37.79,
+      "target_2": 43.47,
+      "target_3": 48.68
     },
     {
       "ticker": "MTDR",

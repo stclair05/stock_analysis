@@ -25,6 +25,7 @@ type Holding = {
   invalidation_1?: number;
   invalidation_2?: number;
   invalidation_3?: number;
+  breakout_price?: number;
 };
 
 type TargetKey = "target_1" | "target_2" | "target_3";
@@ -238,6 +239,9 @@ export default function BuySellSignalsTab({
   // Toggle to display only rows that have breached a level
   const [showBreachedOnly, setShowBreachedOnly] = useState(false);
 
+  // Toggle to display only buy list entries with breakout targets
+  const [showBreakoutOnly, setShowBreakoutOnly] = useState(false);
+
   // Derive list of available sectors from the loaded portfolio data
   const sectorOptions = useMemo(() => {
     const opts = Array.from(
@@ -323,6 +327,7 @@ export default function BuySellSignalsTab({
     short_term_trend: "Short Term Trend",
     long_term_trend: "Long Term Trend",
     sell_signal: "Sell Signal",
+    ready_to_buy: "Ready to Buy",
   };
 
   const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
@@ -333,9 +338,11 @@ export default function BuySellSignalsTab({
       if (listType === "portfolio") {
         cols.push("pnl");
       }
+      cols.push("daily_change", "price_target");
+      if (listType === "buylist") {
+        cols.push("ready_to_buy");
+      }
       cols.push(
-        "daily_change",
-        "price_target",
         "levels_breached",
         "target_1",
         "target_2",
@@ -608,6 +615,7 @@ export default function BuySellSignalsTab({
         setSecondarySortColumn(null);
         setFilterType("ALL");
         setShowBreachedOnly(false);
+        setShowBreakoutOnly(false);
         return;
       }
 
@@ -654,6 +662,7 @@ export default function BuySellSignalsTab({
                     invalidation_1: sanitizeLevel(item.invalidation_1),
                     invalidation_2: sanitizeLevel(item.invalidation_2),
                     invalidation_3: sanitizeLevel(item.invalidation_3),
+                    breakout_price: sanitizeLevel(item.breakout_price),
                   };
                 }
                 return { ticker: "", sector: "N/A" };
@@ -676,6 +685,7 @@ export default function BuySellSignalsTab({
         setFilterType("ALL");
         setSectorFilter("ALL");
         setShowBreachedOnly(false);
+        setShowBreakoutOnly(false);
       } catch (error) {
         console.error(`Error fetching ${listType} tickers:`, error);
         setPortfolio([]); // Clear portfolio on error
@@ -687,6 +697,7 @@ export default function BuySellSignalsTab({
         setFilterType("ALL");
         setSectorFilter("ALL");
         setShowBreachedOnly(false);
+        setShowBreakoutOnly(false);
       } finally {
         setSignalsLoading(false); // End loading indicator
       }
@@ -1082,6 +1093,14 @@ export default function BuySellSignalsTab({
         (h) => h.sector === sectorFilter
       );
     }
+
+    if (listType === "buylist" && showBreakoutOnly) {
+      currentPortfolio = currentPortfolio.filter(
+        (h) =>
+          typeof h.breakout_price === "number" &&
+          !Number.isNaN(h.breakout_price)
+      );
+    }
     const visibleAndOrderedStrategies =
       getVisibleAndOrderedStrategies(selectedTimeframe);
 
@@ -1198,6 +1217,31 @@ export default function BuySellSignalsTab({
           return dir === "asc"
             ? (diffA as number) - (diffB as number)
             : (diffB as number) - (diffA as number);
+        } else if (col === "ready_to_buy") {
+          const priceA = meanRevRsi[a.ticker]?.currentPrice;
+          const breakoutA = (a as any).breakout_price;
+          const priceB = meanRevRsi[b.ticker]?.currentPrice;
+          const breakoutB = (b as any).breakout_price;
+
+          const validA =
+            typeof priceA === "number" &&
+            typeof breakoutA === "number" &&
+            breakoutA > 0 &&
+            !Number.isNaN(breakoutA);
+          const validB =
+            typeof priceB === "number" &&
+            typeof breakoutB === "number" &&
+            breakoutB > 0 &&
+            !Number.isNaN(breakoutB);
+
+          if (!validA && !validB) return 0;
+          if (!validA) return 1;
+          if (!validB) return -1;
+
+          const diffA = (((priceA as number) - breakoutA) / breakoutA) * 100;
+          const diffB = (((priceB as number) - breakoutB) / breakoutB) * 100;
+
+          return dir === "asc" ? diffA - diffB : diffB - diffA;
         } else if (["target_1", "target_2", "target_3"].includes(col)) {
           const priceA = meanRevRsi[a.ticker]?.currentPrice;
           const levelA = (a as any)[col];
@@ -1362,6 +1406,7 @@ export default function BuySellSignalsTab({
     selectedTimeframe,
     filterType,
     showBreachedOnly,
+    showBreakoutOnly,
     sortColumn,
     signalSummary,
     meanRevRsi,
@@ -1502,6 +1547,21 @@ export default function BuySellSignalsTab({
           )}
         </th>
       );
+    } else if (col === "ready_to_buy") {
+      return (
+        <th
+          key={col}
+          style={{ cursor: "pointer" }}
+          onClick={() => handleHeaderClick(col)}
+        >
+          {label}
+          {sortColumn === col && (
+            <span className="ms-1">
+              {sortDirection === "asc" ? " ▲" : " ▼"}
+            </span>
+          )}
+        </th>
+      );
     } else if (col === "levels_breached") {
       return (
         <th
@@ -1581,6 +1641,14 @@ export default function BuySellSignalsTab({
 
     if (col === "price_target") {
       return meanRevRsi[t]?.currentPrice != null;
+    }
+
+    if (col === "ready_to_buy") {
+      const breakout = (holding as any).breakout_price;
+      if (typeof breakout === "number" && breakout > 0) {
+        return meanRevRsi[t]?.currentPrice != null;
+      }
+      return true;
     }
 
     if (["target_1", "target_2", "target_3"].includes(col)) {
@@ -1784,6 +1852,27 @@ export default function BuySellSignalsTab({
           {price != null ? price.toFixed(2) : "-"}
         </td>
       );
+    }
+
+    if (col === "ready_to_buy") {
+      const price = meanRevRsi[ticker]?.currentPrice;
+      const breakout = holding.breakout_price;
+      if (typeof price === "number" && typeof breakout === "number") {
+        const diff = ((price - breakout) / breakout) * 100;
+        const diffStr =
+          diff >= 0 ? `+${diff.toFixed(2)}%` : `${diff.toFixed(2)}%`;
+        const action = price >= breakout ? "BUY" : "SELL";
+        const actionColor = action === "BUY" ? "#4caf50" : "#f44336";
+        return (
+          <td style={{ textAlign: "center" }}>
+            <div>{`${price.toFixed(2)} | ${breakout.toFixed(
+              2
+            )} (${diffStr})`}</div>
+            <div style={{ color: actionColor, fontWeight: 600 }}>{action}</div>
+          </td>
+        );
+      }
+      return <td style={{ textAlign: "center" }} />;
     }
 
     if (["target_1", "target_2", "target_3"].includes(col)) {
@@ -2103,6 +2192,7 @@ export default function BuySellSignalsTab({
                 | "buylist";
               setListType(val);
               setShowBreachedOnly(false);
+              setShowBreakoutOnly(false);
               onListTypeChange?.(val);
             }}
             className="me-4"
@@ -2122,6 +2212,7 @@ export default function BuySellSignalsTab({
               setSecondarySortColumn(null);
               setFilterType("ALL");
               setShowBreachedOnly(false);
+              setShowBreakoutOnly(false);
             }}
           >
             <option value="weekly">Weekly</option>
@@ -2218,6 +2309,27 @@ export default function BuySellSignalsTab({
               Breaches only
             </label>
           </div>
+
+          {listType === "buylist" && (
+            <div className="form-check form-switch ms-4">
+              <input
+                className="form-check-input"
+                type="checkbox"
+                role="switch"
+                id="showBreakoutOnlyToggle"
+                checked={showBreakoutOnly}
+                onChange={(e) => {
+                  setShowBreakoutOnly(e.target.checked);
+                }}
+              />
+              <label
+                className="form-check-label"
+                htmlFor="showBreakoutOnlyToggle"
+              >
+                Breakout targets only
+              </label>
+            </div>
+          )}
         </div>
 
         {/* Sector Filter Dropdown - for portfolio and buylist views */}

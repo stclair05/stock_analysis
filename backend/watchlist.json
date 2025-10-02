@@ -887,6 +887,16 @@
       "target_3": 85
     },
     {
+      "ticker": "ERO",
+      "sector": "Precious Metals",
+      "technigrade": [],
+      "invalidation_1": -1,
+      "break_out": -1,
+      "target_1": 29,
+      "target_2": 33,
+      "target_3": -1
+    },
+    {
       "ticker": "OKLO",
       "sector": "Others",
       "technigrade": []
@@ -1198,11 +1208,6 @@
       "technigrade": []
     },
     {
-      "ticker": "CTVA",
-      "sector": "Industrials",
-      "technigrade": []
-    },
-    {
       "ticker": "ZS",
       "sector": "Technology",
       "technigrade": []
@@ -1365,12 +1370,6 @@
     {
       "ticker": "XMTR",
       "sector": "Industrials",
-      "technigrade": []
-    },
-
-    {
-      "ticker": "SCHW",
-      "sector": "Financial Services",
       "technigrade": []
     },
     {

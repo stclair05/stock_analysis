@@ -639,6 +639,7 @@ def get_buylist():
                 fallback_target = _sanitize_level(entry.get("target"))
                 if target_1 is None and fallback_target is not None:
                     target_1 = fallback_target
+                breakout_price = _sanitize_level(entry.get("break_out"))
                 item = {
                     "ticker": ticker,
                     "sector": sector,
@@ -650,6 +651,8 @@ def get_buylist():
                     "invalidation_2": _sanitize_level(entry.get("invalidation_2")),
                     "invalidation_3": _sanitize_level(entry.get("invalidation_3")),
                 }
+                if breakout_price is not None:
+                    item["breakout_price"] = breakout_price
                 items.append(item)
         elif isinstance(entry, str):
             items.append({"ticker": entry, "sector": "N/A"})
