@@ -533,8 +533,8 @@
       "invalidation_2": 32.86,
       "invalidation_3": -1,
       "target_1": 54.05,
-      "target_2": 64.25,
-      "target_3": 73.23
+      "target_2": 74.52,
+      "target_3": 84.41
     },
     {
       "ticker": "CRCL",
@@ -605,8 +605,8 @@
       "invalidation_2": 74.91,
       "invalidation_3": 55,
       "target_1": 107,
-      "target_2": 135,
-      "target_3": -1
+      "target_2": 120,
+      "target_3": 135
     },
     {
       "ticker": "HL",
@@ -903,7 +903,7 @@
       "invalidation_3": 36.25,
       "target_1": 70.79,
       "target_2": 103.58,
-      "target_3": -1
+      "target_3": 120
     },
     {
       "ticker": "PTON",
@@ -944,8 +944,8 @@
       "invalidation_2": 251.2,
       "invalidation_3": -1,
       "target_1": 338,
-      "target_2": 499,
-      "target_3": -1
+      "target_2": 420,
+      "target_3": 499
     },
     {
       "ticker": "ANET",

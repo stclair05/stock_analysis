@@ -1241,6 +1241,16 @@ export default function BuySellSignalsTab({
           const diffA = (((priceA as number) - breakoutA) / breakoutA) * 100;
           const diffB = (((priceB as number) - breakoutB) / breakoutB) * 100;
 
+          const valueA = listType === "buylist" ? Math.abs(diffA) : diffA;
+          const valueB = listType === "buylist" ? Math.abs(diffB) : diffB;
+
+          if (valueA !== valueB) {
+            return dir === "asc" ? valueA - valueB : valueB - valueA;
+          }
+
+          // When absolute values are equal (or when not in the buy list view),
+          // fall back to the signed percentage difference to keep a stable order.
+
           return dir === "asc" ? diffA - diffB : diffB - diffA;
         } else if (["target_1", "target_2", "target_3"].includes(col)) {
           const priceA = meanRevRsi[a.ticker]?.currentPrice;
