@@ -694,7 +694,7 @@
       "invalidation_1": 205,
       "invalidation_2": -1,
       "invalidation_3": -1,
-      "break_out": 253,
+      "break_out": 230,
       "ready_price": 215,
       "target_1": 333,
       "target_2": -1,
@@ -817,6 +817,60 @@
       "target_1": 33,
       "target_2": 36,
       "invalidation_1": 26
+    },
+    {
+      "ticker": "PYPL",
+      "sector": "Technology",
+      "technigrade": [],
+      "break_out": 72.89,
+      "target_1": 92,
+      "target_2": -1,
+      "invalidation_1": -1
+    },
+    {
+      "ticker": "MRVL",
+      "sector": "Technology",
+      "technigrade": [],
+      "break_out": 87.58,
+      "target_1": 126,
+      "target_2": -1,
+      "invalidation_1": -1
+    },
+    {
+      "ticker": "FSLR",
+      "sector": "Others",
+      "technigrade": [],
+      "break_out": 232,
+      "target_1": 255,
+      "target_2": -1,
+      "invalidation_1": -1
+    },
+    {
+      "ticker": "ENPH",
+      "sector": "Energy",
+      "technigrade": [],
+      "break_out": 37.8,
+      "target_1": 58,
+      "target_2": -1,
+      "invalidation_1": -1
+    },
+    {
+      "ticker": "MELI",
+      "sector": "Others",
+      "technigrade": [],
+      "break_out": 2300,
+      "target_1": 3010,
+      "target_2": -1,
+      "invalidation_1": 2130
+    },
+    {
+      "ticker": "SHAK",
+      "sector": "Others",
+      "technigrade": [],
+      "break_out": 98,
+      "target_1": 108,
+      "target_2": -1,
+      "invalidation_1": 91
     },
     {
       "ticker": "GWW",
