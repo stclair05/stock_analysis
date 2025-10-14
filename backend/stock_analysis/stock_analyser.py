@@ -134,6 +134,15 @@ class StockAnalyser:
         raw_symbol = symbol.upper().strip()
         self.symbol = SYMBOL_ALIASES.get(raw_symbol, raw_symbol)
         self.df = StockAnalyser.get_price_data(self.symbol)
+    
+    @staticmethod
+    def _last_days(df: pd.DataFrame, days: int) -> pd.DataFrame:
+        """Return the trailing ``days`` worth of rows from a datetime indexed frame."""
+        if df.empty:
+            return df
+
+        cutoff = df.index.max() - pd.Timedelta(days=days)
+        return df.loc[df.index >= cutoff]
 
     # >>> REPLACE _download_data with this normalized version
     def _download_data(self) -> pd.DataFrame:
@@ -373,7 +382,7 @@ class StockAnalyser:
         )
 
     def ichimoku_cloud(self) -> TimeSeriesMetric:
-        df_weekly = self.weekly_df.last('600D')
+        df_weekly = self._last_days(self.weekly_df, 600)
 
         if len(df_weekly) < 30 or df_weekly.empty:  # ~30 weeks
             return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
@@ -405,7 +414,7 @@ class StockAnalyser:
 
 
     def super_trend(self) -> TimeSeriesMetric:
-        df_weekly = self.weekly_df.last('600D')
+        df_weekly = self._last_days(self.weekly_df, 600)
 
         if len(df_weekly) < 30 or df_weekly.empty:  # ~30 weeks
             return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
@@ -421,7 +430,7 @@ class StockAnalyser:
 
 
     def adx(self) -> TimeSeriesMetric:
-        df_weekly = self.weekly_df.last('600D')
+        df_weekly = self._last_days(self.weekly_df, 600)
 
         if len(df_weekly) < 20 or df_weekly.empty:  # ~20 weeks
             return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
@@ -453,9 +462,10 @@ class StockAnalyser:
             Wilder's smoothing (RMA) as used in ADX, ATR, etc.
             Starts with the average of the first 'period' values.
             """
-            result = [np.nan] * (period - 1)
             if len(values) < period:
-                return pd.Series(result + [np.nan] * (len(values) - (period - 1)), index=values.index)
+                return pd.Series([np.nan] * len(values), index=values.index)
+
+            result = [np.nan] * (period - 1)
 
             # Use average instead of sum
             smoothed = values.iloc[:period].mean()
@@ -495,7 +505,7 @@ class StockAnalyser:
 
 
     def mace(self) -> TimeSeriesMetric:
-        df_weekly = self.weekly_df.last('600D')
+        df_weekly = self._last_days(self.weekly_df, 600)
 
         if len(df_weekly) < 30 or df_weekly.empty:  # ~30 weeks
             return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
@@ -515,7 +525,7 @@ class StockAnalyser:
         )
 
     def forty_week_status(self) -> TimeSeriesMetric:
-        df_weekly = self.weekly_df.last('600D')
+        df_weekly = self._last_days(self.weekly_df, 600)
 
         if len(df_weekly) < 30 or df_weekly.empty:  # ~30 weeks
             return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})

@@ -547,19 +547,6 @@
       "player": 0
     },
     {
-      "ticker": "SERV",
-      "shares": 42000,
-      "average_cost": 12.3,
-      "sector": "Technology",
-      "player": 2,
-      "invalidation_1": 11.62,
-      "invalidation_2": 9.96,
-      "invalidation_3": 8.87,
-      "target_1": 19.14,
-      "target_2": 21.42,
-      "target_3": 26.37
-    },
-    {
       "ticker": "HIMS",
       "shares": 27000,
       "average_cost": 43.43,
