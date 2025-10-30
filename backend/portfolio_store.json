@@ -614,20 +614,6 @@
       "target_3": 135
     },
     {
-      "ticker": "ISRG",
-      "shares": 2500,
-      "average_cost": 492.84,
-      "sector": "Healthcare",
-      "player": 2,
-      "technigrade": [6, 17, 18, 18, 19],
-      "invalidation_1": 435.28,
-      "invalidation_2": 424,
-      "invalidation_3": -1,
-      "target_1": 613,
-      "target_2": 706,
-      "target_3": 768
-    },
-    {
       "ticker": "HL",
       "shares": 182000,
       "average_cost": 7.56,
@@ -998,6 +984,20 @@
       "target_3": 133.9
     },
     {
+      "ticker": "RDDT",
+      "shares": 2000.0,
+      "average_cost": 213.28,
+      "sector": "Technology",
+      "player": 2,
+      "technigrade": [3, 4, 3, 3, 1],
+      "invalidation_1": 194.62,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": 320,
+      "target_2": 355,
+      "target_3": -1
+    },
+    {
       "ticker": "VST",
       "shares": 2000.0,
       "average_cost": 209.76,
@@ -1013,8 +1013,8 @@
     },
     {
       "ticker": "MRVL",
-      "shares": 4000.0,
-      "average_cost": 92.84,
+      "shares": 7000,
+      "average_cost": 91.17,
       "sector": "Others",
       "player": 2,
       "technigrade": [5, 3, 3, 4, 4],
