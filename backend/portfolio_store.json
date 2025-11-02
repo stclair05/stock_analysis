@@ -195,8 +195,8 @@
     },
     {
       "ticker": "CVI",
-      "shares": 19000.0,
-      "average_cost": 33.53,
+      "shares": 28500,
+      "average_cost": 35.79,
       "sector": "Energy",
       "player": 2,
       "technigrade": [2, 4, 3, 2, 2],
@@ -523,7 +523,7 @@
     },
     {
       "ticker": "ACHR",
-      "shares": 80000,
+      "shares": 40000,
       "average_cost": 10.73,
       "sector": "Aerospace & Defense",
       "player": 4,
@@ -929,8 +929,8 @@
     },
     {
       "ticker": "ANET",
-      "shares": 2000.0,
-      "average_cost": 145.12,
+      "shares": 8000,
+      "average_cost": 157.78,
       "sector": "Technology",
       "player": 2,
       "technigrade": [3, 3, 2, 3, 3],
@@ -970,20 +970,6 @@
       "target_3": -1
     },
     {
-      "ticker": "RBRK",
-      "shares": 7000.0,
-      "average_cost": 86,
-      "sector": "Technology",
-      "player": 2,
-      "technigrade": [18, 17, 12, 14, 14],
-      "invalidation_1": 84.52,
-      "invalidation_2": 76.84,
-      "invalidation_3": 73,
-      "target_1": 103,
-      "target_2": 121,
-      "target_3": 133.9
-    },
-    {
       "ticker": "RDDT",
       "shares": 2000.0,
       "average_cost": 213.28,
@@ -1013,8 +999,8 @@
     },
     {
       "ticker": "MRVL",
-      "shares": 7000,
-      "average_cost": 91.17,
+      "shares": 9000,
+      "average_cost": 90.77,
       "sector": "Others",
       "player": 2,
       "technigrade": [5, 3, 3, 4, 4],
@@ -1038,20 +1024,6 @@
       "target_1": 37.8,
       "target_2": 58.33,
       "target_3": 74
-    },
-    {
-      "ticker": "CHWY",
-      "shares": 10000.0,
-      "average_cost": 43.51,
-      "sector": "Others",
-      "player": 10,
-      "technigrade": [19, 15, 12, 17, 13],
-      "invalidation_1": 39.12,
-      "invalidation_2": 33.99,
-      "invalidation_3": 29.81,
-      "target_1": 48.99,
-      "target_2": 52.35,
-      "target_3": 57.06
     },
     {
       "ticker": "IPI",
