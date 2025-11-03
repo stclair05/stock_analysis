@@ -40,8 +40,13 @@ type StatusResponse = {
   breach_hit: Record<string, BreachHitStatus>;
 };
 
+type RatioStatus = "above" | "below" | "equal" | "unknown";
+
 export default function StatusPage() {
   const [data, setData] = useState<StatusResponse | null>(null);
+  const [ratioStatus, setRatioStatus] = useState<Record<string, RatioStatus>>(
+    {}
+  );
 
   useEffect(() => {
     fetch("http://localhost:8000/portfolio_status")
@@ -62,6 +67,115 @@ export default function StatusPage() {
         })
       );
   }, []);
+
+  useEffect(() => {
+    if (!data) return;
+
+    const orderedSymbols = [
+      ...data.below_20dma,
+      ...data.below_200dma,
+      ...Object.keys(data.candle_signals),
+      ...data.extended_vol,
+      ...Object.keys(data.super_trend_daily),
+      ...Object.keys(data.mace),
+    ];
+
+    const trendSymbols = [
+      ...Object.keys(data.short_term_trend || {}),
+      ...Object.keys(data.long_term_trend || {}),
+    ];
+    const breachSymbols = Object.keys(data.breach_hit || {});
+
+    const uniqueSymbols = Array.from(
+      new Set([...orderedSymbols, ...trendSymbols, ...breachSymbols])
+    );
+
+    if (uniqueSymbols.length === 0) {
+      setRatioStatus({});
+      return;
+    }
+
+    let isCancelled = false;
+
+    const fetchRatioStatuses = async () => {
+      const entries = await Promise.all(
+        uniqueSymbols.map(async (symbol) => {
+          try {
+            const res = await fetch(
+              `http://localhost:8000/compare_ratio?symbol1=${encodeURIComponent(
+                symbol
+              )}&symbol2=SPX&timeframe=weekly`
+            );
+
+            if (!res.ok) {
+              throw new Error(`Failed to fetch ratio for ${symbol}`);
+            }
+
+            const json = await res.json();
+            const ratios = Array.isArray(json?.ratio) ? json.ratio : [];
+            const maSeries = Array.isArray(json?.ratio_ma_36)
+              ? json.ratio_ma_36
+              : [];
+
+            if (ratios.length === 0 || maSeries.length === 0) {
+              return [symbol, "unknown"] as const;
+            }
+
+            const latestRatioPoint = ratios[ratios.length - 1];
+            const ratioValue = Number(latestRatioPoint?.value);
+            const ratioTime = Number(latestRatioPoint?.time);
+
+            if (!Number.isFinite(ratioValue) || !Number.isFinite(ratioTime)) {
+              return [symbol, "unknown"] as const;
+            }
+
+            const latestMAPoint = [...maSeries].reverse().find((point) => {
+              const maTime = Number(point?.time);
+              const maValue = Number(point?.value);
+              return (
+                Number.isFinite(maTime) &&
+                Number.isFinite(maValue) &&
+                maTime <= ratioTime
+              );
+            });
+
+            if (!latestMAPoint) {
+              return [symbol, "unknown"] as const;
+            }
+
+            const maValue = Number(latestMAPoint.value);
+
+            if (!Number.isFinite(maValue)) {
+              return [symbol, "unknown"] as const;
+            }
+
+            if (ratioValue > maValue) {
+              return [symbol, "above"] as const;
+            }
+
+            if (ratioValue < maValue) {
+              return [symbol, "below"] as const;
+            }
+
+            return [symbol, "equal"] as const;
+          } catch (error) {
+            console.error(error);
+            return [symbol, "unknown"] as const;
+          }
+        })
+      );
+
+      if (!isCancelled) {
+        setRatioStatus(Object.fromEntries(entries));
+      }
+    };
+
+    fetchRatioStatuses();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [data]);
 
   if (!data) {
     return <div className="container mt-4">Loading...</div>;
@@ -97,6 +211,14 @@ export default function StatusPage() {
 
   const getCellClass = (symbol?: string) =>
     symbol && counts[symbol] >= 2 ? "table-danger" : undefined;
+
+  const getSymbolClass = (symbol: string) => {
+    const status = ratioStatus[symbol];
+    if (status === "above") return "table-success";
+    if (status === "below") return "table-danger";
+    if (status === "equal") return "table-warning";
+    return undefined;
+  };
 
   const getCandleClass = (candleInfo?: CandleSignal) => {
     if (!candleInfo) return undefined;
@@ -251,7 +373,9 @@ export default function StatusPage() {
 
             return (
               <tr key={symbol}>
-                <th scope="row">{symbol}</th>
+                <th scope="row" className={getSymbolClass(symbol)}>
+                  {symbol}
+                </th>
                 <td className={getCellClass(below20Symbol)}>
                   {below20Symbol || ""}
                 </td>
