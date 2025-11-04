@@ -942,20 +942,6 @@
       "target_3": 228
     },
     {
-      "ticker": "WIX",
-      "shares": 3500,
-      "average_cost": 140.68,
-      "sector": "Technology",
-      "player": 2,
-      "technigrade": [17, 19, 18, 15, 6],
-      "invalidation_1": 147.8,
-      "invalidation_2": 134.77,
-      "invalidation_3": 114.89,
-      "target_1": 171.37,
-      "target_2": 189.24,
-      "target_3": 243
-    },
-    {
       "ticker": "FIVN",
       "shares": 15000.0,
       "average_cost": 23.11,
