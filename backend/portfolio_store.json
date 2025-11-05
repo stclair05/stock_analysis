@@ -845,6 +845,20 @@
       "target_3": -1
     },
     {
+      "ticker": "DHT",
+      "shares": 25000.0,
+      "average_cost": 13.27,
+      "sector": "Others",
+      "player": 1,
+      "technigrade": [8, 9, 12, 12, 9],
+      "invalidation_1": 12.31,
+      "invalidation_2": 10.83,
+      "invalidation_3": -1,
+      "target_1": 16.2,
+      "target_2": -1,
+      "target_3": -1
+    },
+    {
       "ticker": "XPEL",
       "shares": 10000.0,
       "average_cost": 34.61,
@@ -970,6 +984,34 @@
       "target_3": -1
     },
     {
+      "ticker": "AMZN",
+      "shares": 2500.0,
+      "average_cost": 255,
+      "sector": "Technology",
+      "player": 2,
+      "technigrade": [11, 13, 11, 13, 13],
+      "invalidation_1": 213,
+      "invalidation_2": 161.38,
+      "invalidation_3": 151.61,
+      "target_1": 283,
+      "target_2": 311,
+      "target_3": -1
+    },
+    {
+      "ticker": "AMPX",
+      "shares": 35000.0,
+      "average_cost": 14.46,
+      "sector": "Technology",
+      "player": 2,
+      "technigrade": [],
+      "invalidation_1": 11.49,
+      "invalidation_2": 9.5,
+      "invalidation_3": -1,
+      "target_1": 15.7,
+      "target_2": 17.2,
+      "target_3": -1
+    },
+    {
       "ticker": "VST",
       "shares": 2000.0,
       "average_cost": 209.76,
@@ -1058,7 +1100,7 @@
       "sector": "Hong Kong and China",
       "player": 10,
       "invalidation_1": 39.17,
-      "invalidation_2": -1,
+      "invalidation_2": 38.1,
       "invalidation_3": -1,
       "target_1": 43.39,
       "target_2": 46,
