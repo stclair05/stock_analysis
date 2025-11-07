@@ -614,20 +614,6 @@
       "target_3": 135
     },
     {
-      "ticker": "HL",
-      "shares": 182000,
-      "average_cost": 7.56,
-      "sector": "Precious Metals",
-      "player": 8,
-      "technigrade": [1, 1, 1, 1, 1],
-      "invalidation_1": -1,
-      "invalidation_2": -1,
-      "invalidation_3": -1,
-      "target_1": 11.29,
-      "target_2": 12.6,
-      "target_3": 14.18
-    },
-    {
       "ticker": "WDO.TO",
       "shares": 40000,
       "average_cost": 12.91,
@@ -758,20 +744,6 @@
       "invalidation_3": -1,
       "target_1": 23.3,
       "target_2": 31.95,
-      "target_3": -1
-    },
-    {
-      "ticker": "IAG",
-      "shares": 20000,
-      "average_cost": 12.28,
-      "sector": "Precious Metals",
-      "player": 8,
-      "technigrade": [2, 1, 2, 1, 1],
-      "invalidation_1": 11.39,
-      "invalidation_2": 10.43,
-      "invalidation_3": -1,
-      "target_1": 14.55,
-      "target_2": 16.85,
       "target_3": -1
     },
     {
