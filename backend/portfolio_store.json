@@ -15,20 +15,6 @@
       "target_3": 35.6
     },
     {
-      "ticker": "ASML.AS",
-      "shares": 240.0,
-      "average_cost": 921.87,
-      "sector": "Others",
-      "player": 1,
-      "technigrade": [3, 3, 4, 3, 4],
-      "invalidation_1": 633.5,
-      "invalidation_2": 605.3,
-      "invalidation_3": -1,
-      "target_1": 812.4,
-      "target_2": 946.2,
-      "target_3": 1156
-    },
-    {
       "ticker": "XOM",
       "shares": 8000.0,
       "average_cost": 102.0,

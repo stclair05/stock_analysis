@@ -846,6 +846,15 @@
       "invalidation_1": -1
     },
     {
+      "ticker": "EWZ",
+      "sector": "Others",
+      "technigrade": [],
+      "break_out": 32.6,
+      "target_1": 48,
+      "target_2": -1,
+      "invalidation_1": -1
+    },
+    {
       "ticker": "ENPH",
       "sector": "Energy",
       "technigrade": [],
