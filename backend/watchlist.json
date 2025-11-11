@@ -635,6 +635,11 @@
       "technigrade": []
     },
     {
+      "ticker": "ESTA",
+      "sector": "Others",
+      "technigrade": []
+    },
+    {
       "ticker": "TRMB",
       "sector": "Technology",
       "technigrade": [],
@@ -697,6 +702,19 @@
       "break_out": 230,
       "ready_price": 215,
       "target_1": 333,
+      "target_2": -1,
+      "target_3": -1
+    },
+    {
+      "ticker": "NXST",
+      "sector": "Others",
+      "technigrade": [],
+      "invalidation_1": 184,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "break_out": 230,
+      "ready_price": 195,
+      "target_1": 240,
       "target_2": -1,
       "target_3": -1
     },

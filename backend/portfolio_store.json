@@ -481,22 +481,6 @@
       "player": 7
     },
     {
-      "ticker": "XAGUSD",
-      "shares": 20434,
-      "average_cost": 30.24,
-      "sector": "Precious Metals",
-      "target_1": 55,
-      "player": 8
-    },
-    {
-      "ticker": "XAUUSD",
-      "shares": 600,
-      "average_cost": 3411.47,
-      "sector": "Precious Metals",
-      "target_1": 4100,
-      "player": 7
-    },
-    {
       "ticker": "1810.HK",
       "shares": 30000,
       "average_cost": 7.85,
@@ -706,19 +690,6 @@
       "target_3": 24
     },
     {
-      "ticker": "NST.AX",
-      "shares": 30000,
-      "average_cost": 13.44,
-      "sector": "Precious Metals",
-      "player": 8,
-      "invalidation_1": 18.27,
-      "invalidation_2": 15.26,
-      "invalidation_3": -1,
-      "target_1": 30.52,
-      "target_2": 33.46,
-      "target_3": 36
-    },
-    {
       "ticker": "CDE",
       "shares": 20000,
       "average_cost": 19.49,
@@ -834,7 +805,7 @@
       "ticker": "GEVO",
       "shares": 75000.0,
       "average_cost": 1.97,
-      "sector": "Technology",
+      "sector": "Others",
       "player": 2,
       "invalidation_1": 1.3,
       "invalidation_2": -1,
@@ -861,7 +832,7 @@
       "ticker": "PTON",
       "shares": 40000,
       "average_cost": 8.35,
-      "sector": "Technology",
+      "sector": "Others",
       "player": 2,
       "technigrade": [8, 9, 13, 4, 4],
       "invalidation_1": 7.19,
