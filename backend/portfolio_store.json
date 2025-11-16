@@ -216,7 +216,9 @@
       "shares": 277000.0,
       "average_cost": 3.93,
       "sector": "Energy",
-      "target_1": 2.62,
+      "target_1": 2.82,
+      "target_2": 3.45,
+      "target_3": 3.65,
       "technigrade": [5, 6, 4, 5, 3]
     },
     {
@@ -406,11 +408,11 @@
     },
     {
       "ticker": "NNE",
-      "shares": 31000,
-      "average_cost": 45.82,
+      "shares": 36000,
+      "average_cost": 45.13,
       "sector": "Uranium",
       "player": 2,
-      "technigrade": [3, 2, 2, 3, 4],
+      "technigrade": [7, 3, 3, 2, 2],
       "invalidation_1": 39.9,
       "invalidation_2": 36.7,
       "invalidation_3": 34.23,
@@ -420,8 +422,8 @@
     },
     {
       "ticker": "OKLO",
-      "shares": 8000,
-      "average_cost": 136.58,
+      "shares": 10000,
+      "average_cost": 130.75,
       "sector": "Uranium",
       "player": 2,
       "technigrade": [1, 1, 1, 1, 1],
@@ -520,20 +522,6 @@
       "target_3": 25.1
     },
     {
-      "ticker": "ASTS",
-      "shares": 4000.0,
-      "average_cost": 81.2,
-      "sector": "Aerospace & Defense",
-      "player": 4,
-      "technigrade": [1, 1, 1, 1, 1],
-      "invalidation_1": 73.57,
-      "invalidation_2": 60.55,
-      "invalidation_3": -1,
-      "target_1": 84.41,
-      "target_2": 102.51,
-      "target_3": -1
-    },
-    {
       "ticker": "CRCL",
       "shares": 3000,
       "average_cost": 224.64,
@@ -571,8 +559,8 @@
     },
     {
       "ticker": "TEM",
-      "shares": 37000,
-      "average_cost": 84.21,
+      "shares": 40000,
+      "average_cost": 83.51,
       "sector": "Healthcare",
       "player": 2,
       "technigrade": [3, 3, 2, 2, 4],
@@ -582,20 +570,6 @@
       "target_1": 107,
       "target_2": 120,
       "target_3": 135
-    },
-    {
-      "ticker": "WDO.TO",
-      "shares": 40000,
-      "average_cost": 12.91,
-      "sector": "Precious Metals",
-      "player": 8,
-      "technigrade": [6, 4, 4, 5, 6],
-      "invalidation_1": 19.69,
-      "invalidation_2": 18.07,
-      "invalidation_3": 15.88,
-      "target_1": 23.21,
-      "target_2": 25.13,
-      "target_3": 43.83
     },
     {
       "ticker": "FCX",
@@ -636,22 +610,8 @@
       "player": 8
     },
     {
-      "ticker": "RGLD",
-      "shares": 10000.0,
-      "average_cost": 182.15,
-      "sector": "Precious Metals",
-      "player": 8,
-      "technigrade": [11, 7, 6, 7, 7],
-      "invalidation_1": 183.55,
-      "invalidation_2": -1,
-      "invalidation_3": -1,
-      "target_1": 206.72,
-      "target_2": 216,
-      "target_3": 222
-    },
-    {
       "ticker": "SIL",
-      "shares": 38089,
+      "shares": 19089,
       "average_cost": 53.54,
       "sector": "Precious Metals",
       "player": 8,
@@ -661,33 +621,6 @@
       "target_1": 72,
       "target_2": 74.5,
       "target_3": 85
-    },
-    {
-      "ticker": "SILJ",
-      "shares": 197000.0,
-      "average_cost": 15.55,
-      "sector": "Precious Metals",
-      "player": 8,
-      "invalidation_1": 17.7,
-      "invalidation_2": 16.28,
-      "invalidation_3": -1,
-      "target_1": 19.81,
-      "target_2": 22,
-      "target_3": 23.42
-    },
-    {
-      "ticker": "AYA.TO",
-      "shares": 120000,
-      "average_cost": 8.72,
-      "sector": "Precious Metals",
-      "player": 8,
-      "technigrade": [7, 3, 4, 3, 6],
-      "invalidation_1": 15.46,
-      "invalidation_2": 11.51,
-      "invalidation_3": -1,
-      "target_1": 18.22,
-      "target_2": 20.81,
-      "target_3": 24
     },
     {
       "ticker": "CDE",
@@ -794,11 +727,24 @@
       "sector": "Others",
       "player": 1,
       "technigrade": [11, 12, 12, 15, 17],
-      "invalidation_1": 32.9,
-      "invalidation_2": 31.3,
+      "invalidation_1": 31.51,
+      "invalidation_2": -1,
       "invalidation_3": -1,
       "target_1": 39,
-      "target_2": 47,
+      "target_2": 45.9,
+      "target_3": 50
+    },
+    {
+      "ticker": "EWZ",
+      "shares": 10000.0,
+      "average_cost": 33.44,
+      "sector": "Others",
+      "player": 1,
+      "invalidation_1": 31.46,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": 48,
+      "target_2": 58,
       "target_3": -1
     },
     {
@@ -815,18 +761,46 @@
       "target_3": 5.25
     },
     {
+      "ticker": "MP",
+      "shares": 6000.0,
+      "average_cost": 61.47,
+      "sector": "Others",
+      "player": 2,
+      "technigrade": [4, 3, 1, 1, 1],
+      "invalidation_1": 50.5,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": 82.5,
+      "target_2": 100,
+      "target_3": -1
+    },
+    {
       "ticker": "INOD",
-      "shares": 29000,
+      "shares": 32000,
       "average_cost": 66.77,
       "sector": "Technology",
       "player": 2,
-      "technigrade": [2, 1, 1, 1, 1],
+      "technigrade": [3, 2, 1, 1, 1],
       "invalidation_1": 55.87,
       "invalidation_2": 39.78,
       "invalidation_3": 36.25,
       "target_1": 70.79,
       "target_2": 103.58,
       "target_3": 120
+    },
+    {
+      "ticker": "META",
+      "shares": 1000,
+      "average_cost": 624.4,
+      "sector": "Technology",
+      "player": 2,
+      "technigrade": [18, 17, 10, 11, 10],
+      "invalidation_1": -1,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": 706,
+      "target_2": 794,
+      "target_3": -1
     },
     {
       "ticker": "PTON",
@@ -952,6 +926,19 @@
       "invalidation_3": -1,
       "target_1": 223,
       "target_2": 244,
+      "target_3": -1
+    },
+    {
+      "ticker": "URA",
+      "shares": 8000.0,
+      "average_cost": 49.89,
+      "sector": "Uranium",
+      "player": 2,
+      "invalidation_1": 44.45,
+      "invalidation_2": 42.16,
+      "invalidation_3": -1,
+      "target_1": 64,
+      "target_2": -1,
       "target_3": -1
     },
     {
