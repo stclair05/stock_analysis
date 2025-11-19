@@ -10,7 +10,7 @@ type CandleSignal = {
   timeframes: CandleTimeframe[];
 };
 
-type MovingAverageKey = "20dma" | "200dma" | "40wma" | "70wma";
+type MovingAverageKey = "20dma" | "200dma" | "40wma" | "70wma" | "3yma";
 type MovingAverageDirection = "above" | "below";
 type MovingAverageCrossovers = Record<
   string,
@@ -105,7 +105,7 @@ const DATA_COLUMN_META: { key: DataColumn; label: string }[] = [
   { key: "above200", label: "200DMA" },
   { key: "above40", label: "40WMA" },
   { key: "above70", label: "70WMA" },
-  { key: "above3y", label: "Above 3 YMA" },
+  { key: "above3y", label: "3YMA" },
   { key: "candle", label: "Bearish / Bullish Candle" },
   { key: "extended", label: "Extended / Vol" },
   { key: "superTrend", label: "Super Trend (D)" },
@@ -684,10 +684,7 @@ export default function BuyPage({
         }
         case "above3y": {
           const isAbove = above3ySet.has(symbol);
-          return {
-            className: isAbove ? "table-success" : undefined,
-            content: isAbove ? symbol : "",
-          };
+          return maCell(isAbove, maCrossovers?.["3yma"]);
         }
         case "candle": {
           const signals = candleSignals ?? [];

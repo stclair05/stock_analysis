@@ -179,7 +179,7 @@ def _status_for_holdings(holdings, price_direction: str):
 
             ma_40, ma_40_prev = _latest_weekly_ma(40)
             ma_70, ma_70_prev = _latest_weekly_ma(70)
-            ma_3y, _ = _latest_weekly_ma(156)
+            ma_3y, ma_3y_prev = _latest_weekly_ma(156)
 
             ma20_series = closes.rolling(window=20).mean()
             ma200_series = closes.rolling(window=200).mean()
@@ -255,6 +255,7 @@ def _status_for_holdings(holdings, price_direction: str):
                 ("200dma", two_hundred, ma200_prev),
                 ("40wma", ma_40, ma_40_prev),
                 ("70wma", ma_70, ma_70_prev),
+                ("3yma", ma_3y, ma_3y_prev),
             ):
                 direction = _detect_cross(current, previous)
                 if direction:
