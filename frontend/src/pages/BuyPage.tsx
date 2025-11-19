@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 
 type CandleSignal = {
   type: "bullish" | "bearish";
   timeframe: "daily" | "weekly" | "monthly";
   label: string;
 };
+
+type ExtendedStatus = "overbought" | "oversold";
 
 type SuperTrendSignal = {
   signal: string;
@@ -35,8 +38,11 @@ type BreachHitStatus = {
 type BuyStatusResponse = {
   above_20dma: string[];
   above_200dma: string[];
+  above_40wma: string[];
+  above_70wma: string[];
+  above_3yma: string[];
   candle_signals: Record<string, CandleSignal>;
-  extended_vol: string[];
+  extended_vol: Record<string, ExtendedStatus>;
   super_trend_daily: Record<string, SuperTrendSignal>;
   mansfield_daily: Record<string, MansfieldDailyStatus>;
   mace: Record<string, MaceSignal>;
@@ -49,8 +55,11 @@ type BuyStatusResponse = {
 const FALLBACK_DATA: BuyStatusResponse = {
   above_20dma: [],
   above_200dma: [],
+  above_40wma: [],
+  above_70wma: [],
+  above_3yma: [],
   candle_signals: {},
-  extended_vol: [],
+  extended_vol: {},
   super_trend_daily: {},
   mansfield_daily: {},
   mace: {},
@@ -64,6 +73,9 @@ type SortColumn =
   | "symbol"
   | "above20"
   | "above200"
+  | "above40"
+  | "above70"
+  | "above3y"
   | "candle"
   | "extended"
   | "superTrend"
@@ -74,10 +86,56 @@ type SortColumn =
   | "longTrend"
   | "breach";
 
+type DataColumn = Exclude<SortColumn, "symbol">;
+
+const DATA_COLUMN_META: { key: DataColumn; label: string }[] = [
+  { key: "above20", label: "Above 20 DMA" },
+  { key: "above200", label: "Above 200 DMA" },
+  { key: "above40", label: "Above 40 WMA" },
+  { key: "above70", label: "Above 70 WMA" },
+  { key: "above3y", label: "Above 3 YMA" },
+  { key: "candle", label: "Bearish / Bullish Candle" },
+  { key: "extended", label: "Extended / Vol" },
+  { key: "superTrend", label: "Super Trend (D)" },
+  { key: "mansfield", label: "Mansfield (D)" },
+  { key: "mace", label: "MACE" },
+  { key: "stage", label: "Stage" },
+  { key: "shortTrend", label: "Short-Term Trend" },
+  { key: "longTrend", label: "Long-Term Trend" },
+  { key: "breach", label: "Breach / Hit" },
+];
+
+const SORT_OPTIONS: { value: SortColumn; label: string }[] = [
+  { value: "symbol", label: "Symbol" },
+  ...DATA_COLUMN_META.map((meta) => ({ value: meta.key, label: meta.label })),
+];
+
+const ALL_SORT_COLUMNS: SortColumn[] = SORT_OPTIONS.map(
+  (option) => option.value
+);
+const DATA_COLUMN_KEYS: DataColumn[] = DATA_COLUMN_META.map((meta) => meta.key);
+
 type SortRule = {
   id: number;
   column: SortColumn;
   direction: "asc" | "desc";
+};
+
+type RowContext = {
+  symbol: string;
+  candleInfo?: CandleSignal;
+  superTrendInfo?: SuperTrendSignal;
+  mansfieldDaily?: MansfieldDailyStatus;
+  maceInfo?: MaceSignal;
+  stageInfo?: StageStatus;
+  shortTrendScore?: number | null;
+  longTrendScore?: number | null;
+  breachInfo?: BreachHitStatus;
+};
+
+type CellDisplay = {
+  className?: string;
+  content: ReactNode;
 };
 
 type BuyPageProps = {
@@ -104,6 +162,30 @@ export default function BuyPage({
   const sortIdRef = useRef(0);
 
   const sortStyle = { cursor: "pointer", userSelect: "none" as const };
+
+  const [visibleColumns, setVisibleColumns] = useState<Set<DataColumn>>(
+    () => new Set<DataColumn>(DATA_COLUMN_KEYS)
+  );
+
+  const toggleColumnVisibility = (column: DataColumn) => {
+    setVisibleColumns((prev) => {
+      const next = new Set(prev);
+      if (next.has(column)) {
+        next.delete(column);
+      } else {
+        next.add(column);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAllColumns = () => {
+    setVisibleColumns(new Set<DataColumn>(DATA_COLUMN_KEYS));
+  };
+
+  const handleClearColumns = () => {
+    setVisibleColumns(new Set<DataColumn>());
+  };
 
   const handleSort = (column: SortColumn) => {
     setSortRules((prev) => {
@@ -145,24 +227,9 @@ export default function BuyPage({
   };
 
   const handleAddSortRule = () => {
-    const allColumns: SortColumn[] = [
-      "symbol",
-      "above20",
-      "above200",
-      "candle",
-      "extended",
-      "superTrend",
-      "mansfield",
-      "mace",
-      "stage",
-      "shortTrend",
-      "longTrend",
-      "breach",
-    ];
-
     const usedColumns = new Set(sortRules.map((rule) => rule.column));
     const nextColumn =
-      allColumns.find((column) => !usedColumns.has(column)) ?? "symbol";
+      ALL_SORT_COLUMNS.find((column) => !usedColumns.has(column)) ?? "symbol";
 
     setSortRules((prev) => [
       ...prev,
@@ -224,10 +291,19 @@ export default function BuyPage({
     () => new Set(resolvedData.above_200dma),
     [resolvedData.above_200dma]
   );
-  const extendedSet = useMemo(
-    () => new Set(resolvedData.extended_vol),
-    [resolvedData.extended_vol]
+  const above40Set = useMemo(
+    () => new Set(resolvedData.above_40wma),
+    [resolvedData.above_40wma]
   );
+  const above70Set = useMemo(
+    () => new Set(resolvedData.above_70wma),
+    [resolvedData.above_70wma]
+  );
+  const above3ySet = useMemo(
+    () => new Set(resolvedData.above_3yma),
+    [resolvedData.above_3yma]
+  );
+  const extendedStatusMap = resolvedData.extended_vol || {};
 
   const getSortValue = useCallback(
     (symbol: string, column: SortColumn): number | string => {
@@ -247,11 +323,21 @@ export default function BuyPage({
           return above20Set.has(symbol) ? 1 : 0;
         case "above200":
           return above200Set.has(symbol) ? 1 : 0;
+        case "above40":
+          return above40Set.has(symbol) ? 1 : 0;
+        case "above70":
+          return above70Set.has(symbol) ? 1 : 0;
+        case "above3y":
+          return above3ySet.has(symbol) ? 1 : 0;
         case "candle":
           if (!candleInfo) return 0;
           return candleInfo.type === "bullish" ? 2 : -2;
-        case "extended":
-          return extendedSet.has(symbol) ? 0 : 1;
+        case "extended": {
+          const status = extendedStatusMap[symbol];
+          if (status === "oversold") return 2;
+          if (status === "overbought") return 0;
+          return 1;
+        }
         case "superTrend": {
           const value = superTrendInfo?.signal?.toLowerCase();
           if (value === "buy") return 2;
@@ -297,7 +383,10 @@ export default function BuyPage({
     [
       above20Set,
       above200Set,
-      extendedSet,
+      above40Set,
+      above70Set,
+      above3ySet,
+      resolvedData.extended_vol,
       resolvedData.breach_hit,
       resolvedData.candle_signals,
       resolvedData.long_term_trend,
@@ -326,14 +415,20 @@ export default function BuyPage({
     () => [
       ...resolvedData.above_20dma,
       ...resolvedData.above_200dma,
+      ...resolvedData.above_40wma,
+      ...resolvedData.above_70wma,
+      ...resolvedData.above_3yma,
       ...Object.keys(resolvedData.candle_signals || {}),
-      ...resolvedData.extended_vol,
+      ...Object.keys(resolvedData.extended_vol || {}),
       ...Object.keys(resolvedData.super_trend_daily || {}),
       ...Object.keys(resolvedData.mace || {}),
     ],
     [
       resolvedData.above_20dma,
       resolvedData.above_200dma,
+      resolvedData.above_40wma,
+      resolvedData.above_70wma,
+      resolvedData.above_3yma,
       resolvedData.candle_signals,
       resolvedData.extended_vol,
       resolvedData.super_trend_daily,
@@ -402,21 +497,6 @@ export default function BuyPage({
     return sorted;
   }, [baseSortedSymbols, getSortValue, sortRules]);
 
-  const sortOptions: { value: SortColumn; label: string }[] = [
-    { value: "symbol", label: "Symbol" },
-    { value: "above20", label: "Above 20 DMA" },
-    { value: "above200", label: "Above 200 DMA" },
-    { value: "candle", label: "Bearish / Bullish Candle" },
-    { value: "extended", label: "Extended / Vol" },
-    { value: "superTrend", label: "Super Trend (D)" },
-    { value: "mansfield", label: "Mansfield (D)" },
-    { value: "mace", label: "MACE" },
-    { value: "stage", label: "Stage" },
-    { value: "shortTrend", label: "Short-Term Trend" },
-    { value: "longTrend", label: "Long-Term Trend" },
-    { value: "breach", label: "Breach / Hit" },
-  ];
-
   const candleValues = Object.values(resolvedData.candle_signals || {});
   const bearishCount = candleValues.filter(
     (signal) => signal.type === "bearish"
@@ -477,6 +557,14 @@ export default function BuyPage({
     (score): score is number => typeof score === "number" && score < 4
   ).length;
 
+  const extendedValues = Object.values(extendedStatusMap || {});
+  const overboughtCount = extendedValues.filter(
+    (status) => status === "overbought"
+  ).length;
+  const oversoldCount = extendedValues.filter(
+    (status) => status === "oversold"
+  ).length;
+
   const breachValues = Object.values(resolvedData.breach_hit || {});
   const breachTarget = breachValues.filter(
     (value) => value?.category === "target"
@@ -484,6 +572,226 @@ export default function BuyPage({
   const breachInvalidation = breachValues.filter(
     (value) => value?.category === "invalidation"
   ).length;
+
+  const stageSummary = ([1, 2, 3, 4] as const)
+    .map((stageNumber) => `${stageNumber}:${stageCounts[stageNumber] || 0}`)
+    .join(" ");
+
+  const columnSummaryMap: Record<DataColumn, ReactNode> = {
+    above20: resolvedData.above_20dma.length,
+    above200: resolvedData.above_200dma.length,
+    above40: resolvedData.above_40wma.length,
+    above70: resolvedData.above_70wma.length,
+    above3y: resolvedData.above_3yma.length,
+    candle: `${bearishCount}/${bullishCount}`,
+    extended: `${overboughtCount}/${oversoldCount}`,
+    superTrend: `${superTrendSell}/${superTrendBuy}`,
+    mansfield: `${mansfieldSell}/${mansfieldBuy}/${mansfieldNeutral}`,
+    mace: `${maceUp}/${maceDown}`,
+    stage: stageSummary,
+    shortTrend: `${shortUp}/${shortDown}`,
+    longTrend: `${longUp}/${longDown}`,
+    breach: `${breachTarget}/${breachInvalidation}`,
+  };
+
+  const getCellDisplay = useCallback(
+    (context: RowContext, column: DataColumn): CellDisplay => {
+      const {
+        symbol,
+        candleInfo,
+        superTrendInfo,
+        mansfieldDaily,
+        maceInfo,
+        stageInfo,
+        shortTrendScore,
+        longTrendScore,
+        breachInfo,
+      } = context;
+
+      switch (column) {
+        case "above20": {
+          const isAbove = above20Set.has(symbol);
+          return {
+            className: isAbove ? "table-success" : undefined,
+            content: isAbove ? symbol : "",
+          };
+        }
+        case "above200": {
+          const isAbove = above200Set.has(symbol);
+          return {
+            className: isAbove ? "table-success" : undefined,
+            content: isAbove ? symbol : "",
+          };
+        }
+        case "above40": {
+          const isAbove = above40Set.has(symbol);
+          return {
+            className: isAbove ? "table-success" : undefined,
+            content: isAbove ? symbol : "",
+          };
+        }
+        case "above70": {
+          const isAbove = above70Set.has(symbol);
+          return {
+            className: isAbove ? "table-success" : undefined,
+            content: isAbove ? symbol : "",
+          };
+        }
+        case "above3y": {
+          const isAbove = above3ySet.has(symbol);
+          return {
+            className: isAbove ? "table-success" : undefined,
+            content: isAbove ? symbol : "",
+          };
+        }
+        case "candle":
+          return {
+            className: candleInfo
+              ? candleInfo.type === "bullish"
+                ? "table-success"
+                : "table-danger"
+              : undefined,
+            content: candleInfo
+              ? `${
+                  candleInfo.type === "bullish" ? "Bullish" : "Bearish"
+                } (${candleInfo.timeframe.charAt(0).toUpperCase()})`
+              : "",
+          };
+        case "extended": {
+          const status = extendedStatusMap[symbol];
+          if (!status) {
+            return { className: undefined, content: "" };
+          }
+          const isOverbought = status === "overbought";
+          return {
+            className: isOverbought
+              ? "table-danger text-danger fw-semibold"
+              : "table-success text-success fw-semibold",
+            content: isOverbought ? "Over bought" : "Over sold",
+          };
+        }
+        case "superTrend":
+          return {
+            className: superTrendInfo
+              ? superTrendInfo.signal.toLowerCase() === "buy"
+                ? "table-success"
+                : "table-danger"
+              : undefined,
+            content: superTrendInfo ? superTrendInfo.signal : "",
+          };
+        case "mansfield": {
+          const status = mansfieldDaily?.status?.toLowerCase() ?? "";
+          const baseClass = status
+            ? status === "buy"
+              ? "table-success"
+              : status === "sell"
+              ? "table-danger"
+              : status === "neutral"
+              ? "table-warning"
+              : undefined
+            : undefined;
+          const classNames = [
+            baseClass,
+            mansfieldDaily?.new_buy ? "mansfield-new-buy" : undefined,
+          ]
+            .filter(Boolean)
+            .join(" ");
+
+          return {
+            className: classNames || undefined,
+            content: mansfieldDaily?.status || "",
+          };
+        }
+        case "mace":
+          return {
+            className: maceInfo
+              ? maceInfo.label.startsWith("U")
+                ? "table-success"
+                : maceInfo.label.startsWith("D")
+                ? "table-danger"
+                : undefined
+              : undefined,
+            content: maceInfo
+              ? `${maceInfo.label}${
+                  maceInfo.trend ? ` (${maceInfo.trend})` : ""
+                }`
+              : "",
+          };
+        case "stage":
+          return {
+            className: stageInfo
+              ? stageInfo.stage === 2
+                ? "table-success"
+                : stageInfo.stage === 1 || stageInfo.stage === 3
+                ? "table-warning"
+                : stageInfo.stage === 4
+                ? "table-danger"
+                : undefined
+              : undefined,
+            content: stageInfo
+              ? `Stage ${stageInfo.stage}${
+                  stageInfo.weeks ? ` (${stageInfo.weeks}w)` : ""
+                }`
+              : "",
+          };
+        case "shortTrend":
+          return {
+            className:
+              typeof shortTrendScore === "number"
+                ? shortTrendScore >= 2
+                  ? "table-success"
+                  : "table-danger"
+                : undefined,
+            content:
+              typeof shortTrendScore === "number"
+                ? `${
+                    shortTrendScore >= 2 ? "Uptrend" : "Downtrend"
+                  } (${shortTrendScore}/3)`
+                : "",
+          };
+        case "longTrend":
+          return {
+            className:
+              typeof longTrendScore === "number"
+                ? longTrendScore >= 4
+                  ? "table-success"
+                  : "table-danger"
+                : undefined,
+            content:
+              typeof longTrendScore === "number"
+                ? `${
+                    longTrendScore >= 4 ? "Uptrend" : "Downtrend"
+                  } (${longTrendScore}/6)`
+                : "",
+          };
+        case "breach":
+          return {
+            className:
+              breachInfo?.category === "target"
+                ? "table-success"
+                : breachInfo?.category === "invalidation"
+                ? "table-danger"
+                : undefined,
+            content: breachInfo?.status || "",
+          };
+        default:
+          return { className: undefined, content: "" };
+      }
+    },
+    [
+      above20Set,
+      above200Set,
+      above40Set,
+      above70Set,
+      above3ySet,
+      resolvedData.extended_vol,
+    ]
+  );
+
+  const visibleColumnMeta = useMemo(
+    () => DATA_COLUMN_META.filter((meta) => visibleColumns.has(meta.key)),
+    [visibleColumns]
+  );
 
   if (!data) {
     return <div className="container mt-4">Loading...</div>;
@@ -541,7 +849,7 @@ export default function BuyPage({
                         )
                       }
                     >
-                      {sortOptions.map((option) => (
+                      {SORT_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value}>
                           {option.label}
                         </option>
@@ -594,73 +902,76 @@ export default function BuyPage({
           )}
         </div>
       </div>
+      <div className="card mb-4">
+        <div className="card-body">
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <h5 className="card-title mb-0">Column Visibility</h5>
+            <div className="d-flex gap-2">
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-secondary"
+                onClick={handleSelectAllColumns}
+                disabled={visibleColumns.size === DATA_COLUMN_KEYS.length}
+              >
+                Show All
+              </button>
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-secondary"
+                onClick={handleClearColumns}
+                disabled={visibleColumns.size === 0}
+              >
+                Hide All
+              </button>
+            </div>
+          </div>
+          <div className="d-flex flex-wrap gap-3">
+            {DATA_COLUMN_META.map((column) => (
+              <div className="form-check form-check-inline" key={column.key}>
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  id={`column-toggle-${column.key}`}
+                  checked={visibleColumns.has(column.key)}
+                  onChange={() => toggleColumnVisibility(column.key)}
+                />
+                <label
+                  className="form-check-label"
+                  htmlFor={`column-toggle-${column.key}`}
+                >
+                  {column.label}
+                </label>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
       <table className="table text-center excel-table">
         <thead>
           <tr className="table-secondary" style={{ fontSize: "0.67rem" }}>
             <th scope="col" className="text-start">
               Summary
             </th>
-            <th scope="col">{resolvedData.above_20dma.length}</th>
-            <th scope="col">{resolvedData.above_200dma.length}</th>
-            <th scope="col">
-              {bearishCount}/{bullishCount}
-            </th>
-            <th scope="col">{resolvedData.extended_vol.length}</th>
-            <th scope="col">
-              {superTrendSell}/{superTrendBuy}
-            </th>
-            <th scope="col">
-              {`${mansfieldSell}/${mansfieldBuy}/${mansfieldNeutral}`}
-            </th>
-            <th scope="col">
-              {([1, 2, 3, 4] as const)
-                .map(
-                  (stageNumber) =>
-                    `${stageNumber}:${stageCounts[stageNumber] || 0}`
-                )
-                .join(" ")}
-            </th>
-            <th scope="col">{`${shortUp}/${shortDown}`}</th>
-            <th scope="col">{`${longUp}/${longDown}`}</th>
-            <th scope="col">{`${breachTarget}/${breachInvalidation}`}</th>
+            {visibleColumnMeta.map((column) => (
+              <th scope="col" key={`summary-${column.key}`}>
+                {columnSummaryMap[column.key]}
+              </th>
+            ))}
           </tr>
           <tr>
             <th onClick={() => handleSort("symbol")} style={sortStyle}>
               Symbol{renderSortIndicator("symbol")}
             </th>
-            <th onClick={() => handleSort("above20")} style={sortStyle}>
-              Above 20 DMA{renderSortIndicator("above20")}
-            </th>
-            <th onClick={() => handleSort("above200")} style={sortStyle}>
-              Above 200 DMA{renderSortIndicator("above200")}
-            </th>
-            <th onClick={() => handleSort("candle")} style={sortStyle}>
-              Bearish / Bullish Candle{renderSortIndicator("candle")}
-            </th>
-            <th onClick={() => handleSort("extended")} style={sortStyle}>
-              Extended / Vol{renderSortIndicator("extended")}
-            </th>
-            <th onClick={() => handleSort("superTrend")} style={sortStyle}>
-              Super Trend (D){renderSortIndicator("superTrend")}
-            </th>
-            <th onClick={() => handleSort("mansfield")} style={sortStyle}>
-              Mansfield (D){renderSortIndicator("mansfield")}
-            </th>
-            <th onClick={() => handleSort("mace")} style={sortStyle}>
-              MACE{renderSortIndicator("mace")}
-            </th>
-            <th onClick={() => handleSort("stage")} style={sortStyle}>
-              Stage{renderSortIndicator("stage")}
-            </th>
-            <th onClick={() => handleSort("shortTrend")} style={sortStyle}>
-              Short-Term Trend{renderSortIndicator("shortTrend")}
-            </th>
-            <th onClick={() => handleSort("longTrend")} style={sortStyle}>
-              Long-Term Trend{renderSortIndicator("longTrend")}
-            </th>
-            <th onClick={() => handleSort("breach")} style={sortStyle}>
-              Breach / Hit{renderSortIndicator("breach")}
-            </th>
+            {visibleColumnMeta.map((column) => (
+              <th
+                key={`header-${column.key}`}
+                onClick={() => handleSort(column.key)}
+                style={sortStyle}
+              >
+                {column.label}
+                {renderSortIndicator(column.key)}
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>
@@ -673,156 +984,31 @@ export default function BuyPage({
             const shortTrendScore = resolvedData.short_term_trend?.[symbol];
             const longTrendScore = resolvedData.long_term_trend?.[symbol];
             const breachInfo = resolvedData.breach_hit?.[symbol];
-
-            const mansfieldStatus = mansfieldDaily?.status?.toLowerCase() ?? "";
-            const mansfieldBaseClass = mansfieldStatus
-              ? mansfieldStatus === "buy"
-                ? "table-success"
-                : mansfieldStatus === "sell"
-                ? "table-danger"
-                : mansfieldStatus === "neutral"
-                ? "table-warning"
-                : undefined
-              : undefined;
-            const mansfieldClassNames = [
-              mansfieldBaseClass,
-              mansfieldDaily?.new_buy ? "mansfield-new-buy" : undefined,
-            ]
-              .filter(Boolean)
-              .join(" ");
-            const mansfieldCellClass =
-              mansfieldClassNames.length > 0 ? mansfieldClassNames : undefined;
-
+            const rowContext: RowContext = {
+              symbol,
+              candleInfo,
+              superTrendInfo,
+              mansfieldDaily,
+              maceInfo,
+              stageInfo,
+              shortTrendScore,
+              longTrendScore,
+              breachInfo,
+            };
             return (
               <tr key={symbol}>
                 <th scope="row">{symbol}</th>
-                <td
-                  className={
-                    above20Set.has(symbol) ? "table-success" : undefined
-                  }
-                >
-                  {above20Set.has(symbol) ? symbol : ""}
-                </td>
-                <td
-                  className={
-                    above200Set.has(symbol) ? "table-success" : undefined
-                  }
-                >
-                  {above200Set.has(symbol) ? symbol : ""}
-                </td>
-                <td
-                  className={
-                    candleInfo
-                      ? candleInfo.type === "bullish"
-                        ? "table-success"
-                        : "table-danger"
-                      : undefined
-                  }
-                >
-                  {candleInfo
-                    ? `${
-                        candleInfo.type === "bullish" ? "Bullish" : "Bearish"
-                      } (${candleInfo.timeframe.charAt(0).toUpperCase()})`
-                    : ""}
-                </td>
-                <td
-                  className={
-                    extendedSet.has(symbol) ? "table-danger" : undefined
-                  }
-                >
-                  {extendedSet.has(symbol) ? symbol : ""}
-                </td>
-                <td
-                  className={
-                    superTrendInfo
-                      ? superTrendInfo.signal.toLowerCase() === "buy"
-                        ? "table-success"
-                        : "table-danger"
-                      : undefined
-                  }
-                >
-                  {superTrendInfo ? superTrendInfo.signal : ""}
-                </td>
-                <td className={mansfieldCellClass}>
-                  {mansfieldDaily?.status || ""}
-                </td>
-                <td
-                  className={
-                    maceInfo
-                      ? maceInfo.label.startsWith("U")
-                        ? "table-success"
-                        : maceInfo.label.startsWith("D")
-                        ? "table-danger"
-                        : undefined
-                      : undefined
-                  }
-                >
-                  {maceInfo
-                    ? `${maceInfo.label}${
-                        maceInfo.trend ? ` (${maceInfo.trend})` : ""
-                      }`
-                    : ""}
-                </td>
-                <td
-                  className={
-                    stageInfo
-                      ? stageInfo.stage === 2
-                        ? "table-success"
-                        : stageInfo.stage === 1 || stageInfo.stage === 3
-                        ? "table-warning"
-                        : stageInfo.stage === 4
-                        ? "table-danger"
-                        : undefined
-                      : undefined
-                  }
-                >
-                  {stageInfo
-                    ? `Stage ${stageInfo.stage}${
-                        stageInfo.weeks ? ` (${stageInfo.weeks}w)` : ""
-                      }`
-                    : ""}
-                </td>
-                <td
-                  className={
-                    typeof shortTrendScore === "number"
-                      ? shortTrendScore >= 2
-                        ? "table-success"
-                        : "table-danger"
-                      : undefined
-                  }
-                >
-                  {typeof shortTrendScore === "number"
-                    ? `${
-                        shortTrendScore >= 2 ? "Uptrend" : "Downtrend"
-                      } (${shortTrendScore}/3)`
-                    : ""}
-                </td>
-                <td
-                  className={
-                    typeof longTrendScore === "number"
-                      ? longTrendScore >= 4
-                        ? "table-success"
-                        : "table-danger"
-                      : undefined
-                  }
-                >
-                  {typeof longTrendScore === "number"
-                    ? `${
-                        longTrendScore >= 4 ? "Uptrend" : "Downtrend"
-                      } (${longTrendScore}/6)`
-                    : ""}
-                </td>
-                <td
-                  className={
-                    breachInfo?.category === "target"
-                      ? "table-success"
-                      : breachInfo?.category === "invalidation"
-                      ? "table-danger"
-                      : undefined
-                  }
-                >
-                  {breachInfo?.status || ""}
-                </td>
+                {visibleColumnMeta.map((column) => {
+                  const cell = getCellDisplay(rowContext, column.key);
+                  return (
+                    <td
+                      key={`${symbol}-${column.key}`}
+                      className={cell.className}
+                    >
+                      {cell.content}
+                    </td>
+                  );
+                })}
               </tr>
             );
           })}

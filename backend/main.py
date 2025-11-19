@@ -128,12 +128,19 @@ def get_portfolio_tickers():
 def _status_for_holdings(holdings, price_direction: str):
     price_key_20 = "below_20dma" if price_direction == "below" else "above_20dma"
     price_key_200 = "below_200dma" if price_direction == "below" else "above_200dma"
+    ma_prefix = "below" if price_direction == "below" else "above"
+    ma40_key = f"{ma_prefix}_40wma"
+    ma70_key = f"{ma_prefix}_70wma"
+    ma3y_key = f"{ma_prefix}_3yma"
 
     results = {
         price_key_20: [],
         price_key_200: [],
+        ma40_key: [],
+        ma70_key: [],
+        ma3y_key: [],
         "candle_signals": {},
-        "extended_vol": [],
+        "extended_vol": {},
         "super_trend_daily": {},
         "mansfield_daily": {},
         "mace": {},
@@ -151,6 +158,22 @@ def _status_for_holdings(holdings, price_direction: str):
             analyser = StockAnalyser(ticker)
             price = analyser.get_current_price()
             flagged = False
+
+            def _latest_weekly_ma(period: int):
+                try:
+                    weekly_close = analyser.weekly_df["Close"]
+                except Exception:
+                    return None
+                if isinstance(weekly_close, pd.DataFrame):
+                    weekly_close = weekly_close.iloc[:, 0]
+                if len(weekly_close) < period:
+                    return None
+                ma_series = weekly_close.rolling(window=period).mean()
+                return safe_value(ma_series, -1)
+
+            ma_40 = _latest_weekly_ma(40)
+            ma_70 = _latest_weekly_ma(70)
+            ma_3y = _latest_weekly_ma(156)
 
             short_trend = analyser.short_term_trend_score()
             short_total = short_trend.get("total") if isinstance(short_trend, dict) else None
@@ -181,6 +204,23 @@ def _status_for_holdings(holdings, price_direction: str):
                 if price_direction == "above" and price >= two_hundred:
                     results[price_key_200].append(ticker)
                     flagged = True
+
+            def _compare_price(ma_value, key):
+                nonlocal flagged
+                if not (
+                    isinstance(price, (int, float)) and isinstance(ma_value, (int, float))
+                ):
+                    return
+                if price_direction == "below" and price < ma_value:
+                    results[key].append(ticker)
+                    flagged = True
+                if price_direction == "above" and price >= ma_value:
+                    results[key].append(ticker)
+                    flagged = True
+
+            _compare_price(ma_40, ma40_key)
+            _compare_price(ma_70, ma70_key)
+            _compare_price(ma_3y, ma3y_key)
 
             engulf = analyser.detect_engulfing()
             daily = engulf.get("daily")
@@ -217,9 +257,13 @@ def _status_for_holdings(holdings, price_direction: str):
 
             rsi_series = compute_wilder_rsi(analyser.df["Close"])
             rsi_val = safe_value(rsi_series, -1)
-            if isinstance(rsi_val, (int, float)) and rsi_val >= 70:
-                results["extended_vol"].append(ticker)
-                flagged = True
+            if isinstance(rsi_val, (int, float)):
+                if rsi_val >= 70:
+                    results["extended_vol"][ticker] = "overbought"
+                    flagged = True
+                elif rsi_val <= 30:
+                    results["extended_vol"][ticker] = "oversold"
+                    flagged = True
 
             try:
                 daily_super_trend = compute_supertrend_lines(analyser.df)
@@ -323,13 +367,20 @@ def get_portfolio_status(
     json_path = Path("portfolio_store.json")
     price_key_20 = "below_20dma" if direction == "below" else "above_20dma"
     price_key_200 = "below_200dma" if direction == "below" else "above_200dma"
+    ma_prefix = "below" if direction == "below" else "above"
+    ma40_key = f"{ma_prefix}_40wma"
+    ma70_key = f"{ma_prefix}_70wma"
+    ma3y_key = f"{ma_prefix}_3yma"
 
     if not json_path.exists():
         return {
             price_key_20: [],
             price_key_200: [],
+            ma40_key: [],
+            ma70_key: [],
+            ma3y_key: [],
             "candle_signals": {},
-            "extended_vol": [],
+            "extended_vol": {},
             "super_trend_daily": {},
             "mansfield_daily": {},
             "mace": {},
@@ -681,8 +732,11 @@ def get_buylist_status():
         return {
             "above_20dma": [],
             "above_200dma": [],
+            "above_40wma": [],
+            "above_70wma": [],
+            "above_3yma": [],
             "candle_signals": {},
-            "extended_vol": [],
+            "extended_vol": {},
             "super_trend_daily": {},
             "mansfield_daily": {},
             "mace": {},
