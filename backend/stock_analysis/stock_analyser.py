@@ -313,6 +313,60 @@ class StockAnalyser:
             "weekly": weekly_pattern,
             "monthly": monthly_pattern,
         }
+    
+    def detect_harami(self) -> dict[str, str]:
+        """Detect bullish or bearish harami patterns for multiple timeframes."""
+
+        def _pattern(df: pd.DataFrame) -> str:
+            if df is None or len(df) < 2:
+                return "none"
+            prev = df.iloc[-2]
+            curr = df.iloc[-1]
+
+            prev_bullish = prev["Close"] > prev["Open"]
+            prev_bearish = prev["Close"] < prev["Open"]
+            curr_bullish = curr["Close"] > curr["Open"]
+            curr_bearish = curr["Close"] < curr["Open"]
+
+            prev_body_high = max(prev["Open"], prev["Close"])
+            prev_body_low = min(prev["Open"], prev["Close"])
+            curr_body_high = max(curr["Open"], curr["Close"])
+            curr_body_low = min(curr["Open"], curr["Close"])
+
+            if (
+                prev_bearish
+                and curr_bullish
+                and curr_body_high <= prev_body_high
+                and curr_body_low >= prev_body_low
+            ):
+                return "bullish harami"
+
+            if (
+                prev_bullish
+                and curr_bearish
+                and curr_body_high <= prev_body_high
+                and curr_body_low >= prev_body_low
+            ):
+                return "bearish harami"
+
+            return "none"
+
+        daily_pattern = _pattern(self.df)
+        weekly_pattern = _pattern(self.weekly_df)
+        monthly_ohlc = self.df.resample("M").agg({
+            "Open": "first",
+            "High": "max",
+            "Low": "min",
+            "Close": "last",
+            "Volume": "sum" if "Volume" in self.df.columns else "first",
+        }).dropna()
+        monthly_pattern = _pattern(monthly_ohlc)
+
+        return {
+            "daily": daily_pattern,
+            "weekly": weekly_pattern,
+            "monthly": monthly_pattern,
+        }
 
     def get_current_price(self) -> float | None:
         return safe_value(self.df['Close'], -1)

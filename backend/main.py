@@ -148,6 +148,7 @@ def _status_for_holdings(holdings, price_direction: str):
         "short_term_trend": {},
         "long_term_trend": {},
         "breach_hit": {},
+        "ma_crossovers": {},
     }
 
     for holding in holdings:
@@ -159,21 +160,33 @@ def _status_for_holdings(holdings, price_direction: str):
             price = analyser.get_current_price()
             flagged = False
 
+            closes = analyser.df["Close"]
+            if isinstance(closes, pd.DataFrame):
+                closes = closes.iloc[:, 0]
+
+            last_close = safe_value(closes, -1)
+            prev_close = safe_value(closes, -2)
+
             def _latest_weekly_ma(period: int):
                 try:
                     weekly_close = analyser.weekly_df["Close"]
                 except Exception:
-                    return None
+                    return None, None
                 if isinstance(weekly_close, pd.DataFrame):
                     weekly_close = weekly_close.iloc[:, 0]
-                if len(weekly_close) < period:
-                    return None
                 ma_series = weekly_close.rolling(window=period).mean()
-                return safe_value(ma_series, -1)
+                return safe_value(ma_series, -1), safe_value(ma_series, -2)
 
-            ma_40 = _latest_weekly_ma(40)
-            ma_70 = _latest_weekly_ma(70)
-            ma_3y = _latest_weekly_ma(156)
+            ma_40, ma_40_prev = _latest_weekly_ma(40)
+            ma_70, ma_70_prev = _latest_weekly_ma(70)
+            ma_3y, _ = _latest_weekly_ma(156)
+
+            ma20_series = closes.rolling(window=20).mean()
+            ma200_series = closes.rolling(window=200).mean()
+            twenty = safe_value(ma20_series, -1)
+            ma20_prev = safe_value(ma20_series, -2)
+            two_hundred = safe_value(ma200_series, -1)
+            ma200_prev = safe_value(ma200_series, -2)
 
             short_trend = analyser.short_term_trend_score()
             short_total = short_trend.get("total") if isinstance(short_trend, dict) else None
@@ -187,7 +200,6 @@ def _status_for_holdings(holdings, price_direction: str):
                 long_total if isinstance(long_total, (int, float)) else None
             )
 
-            twenty = analyser.calculate_20dma().current
             if isinstance(price, (int, float)) and isinstance(twenty, (int, float)):
                 if price_direction == "below" and price < twenty:
                     results[price_key_20].append(ticker)
@@ -196,7 +208,6 @@ def _status_for_holdings(holdings, price_direction: str):
                     results[price_key_20].append(ticker)
                     flagged = True
 
-            two_hundred = analyser.calculate_200dma().current
             if isinstance(price, (int, float)) and isinstance(two_hundred, (int, float)):
                 if price_direction == "below" and price < two_hundred:
                     results[price_key_200].append(ticker)
@@ -204,6 +215,22 @@ def _status_for_holdings(holdings, price_direction: str):
                 if price_direction == "above" and price >= two_hundred:
                     results[price_key_200].append(ticker)
                     flagged = True
+            
+            def _detect_cross(ma_current, ma_previous=None):
+                if not (
+                    isinstance(last_close, (int, float))
+                    and isinstance(prev_close, (int, float))
+                    and isinstance(ma_current, (int, float))
+                ):
+                    return None
+                prev_ma_val = ma_previous if isinstance(ma_previous, (int, float)) else ma_current
+                prev_diff = prev_close - prev_ma_val
+                curr_diff = last_close - ma_current
+                if prev_diff < 0 <= curr_diff:
+                    return "above"
+                if prev_diff >= 0 > curr_diff:
+                    return "below"
+                return None
 
             def _compare_price(ma_value, key):
                 nonlocal flagged
@@ -222,38 +249,63 @@ def _status_for_holdings(holdings, price_direction: str):
             _compare_price(ma_70, ma70_key)
             _compare_price(ma_3y, ma3y_key)
 
-            engulf = analyser.detect_engulfing()
-            daily = engulf.get("daily")
-            weekly = engulf.get("weekly")
-
-            candle_signal = None
-
-            for timeframe, pattern in (
-                ("weekly", weekly),
-                ("daily", daily),
-                ("monthly", engulf.get("monthly")),
+            ma_cross = {}
+            for cross_key, current, previous in (
+                ("20dma", twenty, ma20_prev),
+                ("200dma", two_hundred, ma200_prev),
+                ("40wma", ma_40, ma_40_prev),
+                ("70wma", ma_70, ma_70_prev),
             ):
-                if not isinstance(pattern, str):
-                    continue
-                lower = pattern.lower()
-                if "bearish" in lower:
-                    candle_signal = {
-                        "type": "bearish",
-                        "timeframe": timeframe,
-                        "label": pattern,
-                    }
-                    break
-                if "bullish" in lower:
-                    candle_signal = {
-                        "type": "bullish",
-                        "timeframe": timeframe,
-                        "label": pattern,
-                    }
-                    break
+                direction = _detect_cross(current, previous)
+                if direction:
+                    ma_cross[cross_key] = direction
 
-            if candle_signal:
-                results["candle_signals"][ticker] = candle_signal
-                flagged = True
+            if ma_cross:
+                results["ma_crossovers"][ticker] = ma_cross
+
+            timeframe_order = {"daily": 0, "weekly": 1, "monthly": 2}
+
+            def _collect_patterns(
+                name: str, patterns: dict | None, store: dict[tuple[str, str], set[str]]
+            ):
+                if not isinstance(patterns, dict):
+                    return
+                for timeframe, pattern in patterns.items():
+                    if not isinstance(pattern, str):
+                        continue
+                    lower = pattern.lower()
+                    pattern_type = None
+                    if "bullish" in lower:
+                        pattern_type = "bullish"
+                    elif "bearish" in lower:
+                        pattern_type = "bearish"
+                    if not pattern_type:
+                        continue
+                    key = (name, pattern_type)
+                    store.setdefault(key, set()).add(timeframe)
+
+            candle_patterns: dict[tuple[str, str], set[str]] = {}
+            _collect_patterns("engulfing", analyser.detect_engulfing(), candle_patterns)
+            _collect_patterns("harami", analyser.detect_harami(), candle_patterns)
+
+            if candle_patterns:
+                summary = []
+                for (pattern_name, pattern_type), frames in candle_patterns.items():
+                    if not frames:
+                        continue
+                    ordered_frames = sorted(
+                        frames, key=lambda tf: timeframe_order.get(tf, 99)
+                    )
+                    summary.append(
+                        {
+                            "pattern": pattern_name,
+                            "type": pattern_type,
+                            "timeframes": ordered_frames,
+                        }
+                    )
+                if summary:
+                    results["candle_signals"][ticker] = summary
+                    flagged = True
 
             rsi_series = compute_wilder_rsi(analyser.df["Close"])
             rsi_val = safe_value(rsi_series, -1)
@@ -388,6 +440,7 @@ def get_portfolio_status(
             "short_term_trend": {},
             "long_term_trend": {},
             "breach_hit": {},
+            "ma_crossovers": {},
         }
 
     with open(json_path, "r") as f:
@@ -744,6 +797,7 @@ def get_buylist_status():
             "short_term_trend": {},
             "long_term_trend": {},
             "breach_hit": {},
+            "ma_crossovers": {},
         }
 
     return _status_for_holdings(holdings, "above")

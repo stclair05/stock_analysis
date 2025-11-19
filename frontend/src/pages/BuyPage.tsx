@@ -1,11 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
+
+type CandleTimeframe = "daily" | "weekly" | "monthly";
+type CandlePattern = "engulfing" | "harami";
 
 type CandleSignal = {
+  pattern: CandlePattern;
   type: "bullish" | "bearish";
-  timeframe: "daily" | "weekly" | "monthly";
-  label: string;
+  timeframes: CandleTimeframe[];
 };
+
+type MovingAverageKey = "20dma" | "200dma" | "40wma" | "70wma";
+type MovingAverageDirection = "above" | "below";
+type MovingAverageCrossovers = Record<
+  string,
+  Partial<Record<MovingAverageKey, MovingAverageDirection>>
+>;
 
 type ExtendedStatus = "overbought" | "oversold";
 
@@ -41,7 +51,7 @@ type BuyStatusResponse = {
   above_40wma: string[];
   above_70wma: string[];
   above_3yma: string[];
-  candle_signals: Record<string, CandleSignal>;
+  candle_signals: Record<string, CandleSignal[]>;
   extended_vol: Record<string, ExtendedStatus>;
   super_trend_daily: Record<string, SuperTrendSignal>;
   mansfield_daily: Record<string, MansfieldDailyStatus>;
@@ -50,6 +60,7 @@ type BuyStatusResponse = {
   short_term_trend: Record<string, number | null>;
   long_term_trend: Record<string, number | null>;
   breach_hit: Record<string, BreachHitStatus>;
+  ma_crossovers: MovingAverageCrossovers;
 };
 
 const FALLBACK_DATA: BuyStatusResponse = {
@@ -67,6 +78,7 @@ const FALLBACK_DATA: BuyStatusResponse = {
   short_term_trend: {},
   long_term_trend: {},
   breach_hit: {},
+  ma_crossovers: {},
 };
 
 type SortColumn =
@@ -89,10 +101,10 @@ type SortColumn =
 type DataColumn = Exclude<SortColumn, "symbol">;
 
 const DATA_COLUMN_META: { key: DataColumn; label: string }[] = [
-  { key: "above20", label: "Above 20 DMA" },
-  { key: "above200", label: "Above 200 DMA" },
-  { key: "above40", label: "Above 40 WMA" },
-  { key: "above70", label: "Above 70 WMA" },
+  { key: "above20", label: "20DMA" },
+  { key: "above200", label: "200DMA" },
+  { key: "above40", label: "40WMA" },
+  { key: "above70", label: "70WMA" },
   { key: "above3y", label: "Above 3 YMA" },
   { key: "candle", label: "Bearish / Bullish Candle" },
   { key: "extended", label: "Extended / Vol" },
@@ -123,7 +135,7 @@ type SortRule = {
 
 type RowContext = {
   symbol: string;
-  candleInfo?: CandleSignal;
+  candleSignals?: CandleSignal[];
   superTrendInfo?: SuperTrendSignal;
   mansfieldDaily?: MansfieldDailyStatus;
   maceInfo?: MaceSignal;
@@ -131,11 +143,13 @@ type RowContext = {
   shortTrendScore?: number | null;
   longTrendScore?: number | null;
   breachInfo?: BreachHitStatus;
+  maCrossovers?: Partial<Record<MovingAverageKey, MovingAverageDirection>>;
 };
 
 type CellDisplay = {
   className?: string;
   content: ReactNode;
+  style?: CSSProperties;
 };
 
 type BuyPageProps = {
@@ -307,7 +321,7 @@ export default function BuyPage({
 
   const getSortValue = useCallback(
     (symbol: string, column: SortColumn): number | string => {
-      const candleInfo = resolvedData.candle_signals?.[symbol];
+      const candleSignals = resolvedData.candle_signals?.[symbol] ?? [];
       const superTrendInfo = resolvedData.super_trend_daily?.[symbol];
       const mansfieldInfo = resolvedData.mansfield_daily?.[symbol];
       const maceInfo = resolvedData.mace?.[symbol];
@@ -329,9 +343,17 @@ export default function BuyPage({
           return above70Set.has(symbol) ? 1 : 0;
         case "above3y":
           return above3ySet.has(symbol) ? 1 : 0;
-        case "candle":
-          if (!candleInfo) return 0;
-          return candleInfo.type === "bullish" ? 2 : -2;
+        case "candle": {
+          if (candleSignals.length === 0) return 0;
+          const hasBullish = candleSignals.some(
+            (signal) => signal.type === "bullish"
+          );
+          const hasBearish = candleSignals.some(
+            (signal) => signal.type === "bearish"
+          );
+          if (hasBullish && hasBearish) return 1;
+          return hasBullish ? 2 : -2;
+        }
         case "extended": {
           const status = extendedStatusMap[symbol];
           if (status === "oversold") return 2;
@@ -422,6 +444,7 @@ export default function BuyPage({
       ...Object.keys(resolvedData.extended_vol || {}),
       ...Object.keys(resolvedData.super_trend_daily || {}),
       ...Object.keys(resolvedData.mace || {}),
+      ...Object.keys(resolvedData.ma_crossovers || {}),
     ],
     [
       resolvedData.above_20dma,
@@ -433,6 +456,7 @@ export default function BuyPage({
       resolvedData.extended_vol,
       resolvedData.super_trend_daily,
       resolvedData.mace,
+      resolvedData.ma_crossovers,
     ]
   );
 
@@ -444,16 +468,18 @@ export default function BuyPage({
 
   const baseSortedSymbols = useMemo(() => {
     return [...uniqueSymbols].sort((a, b) => {
-      const candleA = resolvedData.candle_signals?.[a];
-      const candleB = resolvedData.candle_signals?.[b];
+      const candleA = resolvedData.candle_signals?.[a] ?? [];
+      const candleB = resolvedData.candle_signals?.[b] ?? [];
+      const hasBullishA = candleA.some((signal) => signal.type === "bullish");
+      const hasBullishB = candleB.some((signal) => signal.type === "bullish");
       const aScore =
         (above20Set.has(a) ? 1 : 0) +
         (above200Set.has(a) ? 1 : 0) +
-        (candleA?.type === "bullish" ? 1 : 0);
+        (hasBullishA ? 1 : 0);
       const bScore =
         (above20Set.has(b) ? 1 : 0) +
         (above200Set.has(b) ? 1 : 0) +
-        (candleB?.type === "bullish" ? 1 : 0);
+        (hasBullishB ? 1 : 0);
 
       if (bScore !== aScore) {
         return bScore - aScore;
@@ -498,11 +524,11 @@ export default function BuyPage({
   }, [baseSortedSymbols, getSortValue, sortRules]);
 
   const candleValues = Object.values(resolvedData.candle_signals || {});
-  const bearishCount = candleValues.filter(
-    (signal) => signal.type === "bearish"
+  const bearishCount = candleValues.filter((signals) =>
+    signals?.some((signal) => signal.type === "bearish")
   ).length;
-  const bullishCount = candleValues.filter(
-    (signal) => signal.type === "bullish"
+  const bullishCount = candleValues.filter((signals) =>
+    signals?.some((signal) => signal.type === "bullish")
   ).length;
 
   const superTrendValues = Object.values(resolvedData.super_trend_daily || {});
@@ -598,7 +624,7 @@ export default function BuyPage({
     (context: RowContext, column: DataColumn): CellDisplay => {
       const {
         symbol,
-        candleInfo,
+        candleSignals,
         superTrendInfo,
         mansfieldDaily,
         maceInfo,
@@ -606,36 +632,55 @@ export default function BuyPage({
         shortTrendScore,
         longTrendScore,
         breachInfo,
+        maCrossovers,
       } = context;
+
+      const formatTimeframes = (timeframes: CandleTimeframe[]) =>
+        timeframes.map((tf) => tf.charAt(0).toUpperCase()).join("/");
+
+      const formatPatternLabel = (signal: CandleSignal) => {
+        const label =
+          signal.pattern.charAt(0).toUpperCase() + signal.pattern.slice(1);
+        const direction = signal.type === "bullish" ? "Bullish" : "Bearish";
+        return `${direction} ${label} (${formatTimeframes(signal.timeframes)})`;
+      };
+
+      const maCell = (
+        isAbove: boolean,
+        crossover?: MovingAverageDirection
+      ): CellDisplay => {
+        const baseClass = isAbove
+          ? "table-success text-success fw-semibold"
+          : "table-danger text-danger fw-semibold";
+        const borderClass =
+          crossover === "above"
+            ? "border border-success border-2"
+            : crossover === "below"
+            ? "border border-danger border-2"
+            : "";
+        const className = [baseClass, borderClass].filter(Boolean).join(" ");
+        return {
+          className: className || undefined,
+          content: isAbove ? "Above" : "Below",
+        };
+      };
 
       switch (column) {
         case "above20": {
           const isAbove = above20Set.has(symbol);
-          return {
-            className: isAbove ? "table-success" : undefined,
-            content: isAbove ? symbol : "",
-          };
+          return maCell(isAbove, maCrossovers?.["20dma"]);
         }
         case "above200": {
           const isAbove = above200Set.has(symbol);
-          return {
-            className: isAbove ? "table-success" : undefined,
-            content: isAbove ? symbol : "",
-          };
+          return maCell(isAbove, maCrossovers?.["200dma"]);
         }
         case "above40": {
           const isAbove = above40Set.has(symbol);
-          return {
-            className: isAbove ? "table-success" : undefined,
-            content: isAbove ? symbol : "",
-          };
+          return maCell(isAbove, maCrossovers?.["40wma"]);
         }
         case "above70": {
           const isAbove = above70Set.has(symbol);
-          return {
-            className: isAbove ? "table-success" : undefined,
-            content: isAbove ? symbol : "",
-          };
+          return maCell(isAbove, maCrossovers?.["70wma"]);
         }
         case "above3y": {
           const isAbove = above3ySet.has(symbol);
@@ -644,19 +689,32 @@ export default function BuyPage({
             content: isAbove ? symbol : "",
           };
         }
-        case "candle":
+        case "candle": {
+          const signals = candleSignals ?? [];
+          if (signals.length === 0) {
+            return { className: undefined, content: "" };
+          }
+          const hasBullish = signals.some(
+            (signal) => signal.type === "bullish"
+          );
+          const hasBearish = signals.some(
+            (signal) => signal.type === "bearish"
+          );
+          let className: string | undefined;
+          if (hasBullish && hasBearish) {
+            className = "table-warning";
+          } else if (hasBullish) {
+            className = "table-success";
+          } else if (hasBearish) {
+            className = "table-danger";
+          }
           return {
-            className: candleInfo
-              ? candleInfo.type === "bullish"
-                ? "table-success"
-                : "table-danger"
-              : undefined,
-            content: candleInfo
-              ? `${
-                  candleInfo.type === "bullish" ? "Bullish" : "Bearish"
-                } (${candleInfo.timeframe.charAt(0).toUpperCase()})`
-              : "",
+            className,
+            content: signals
+              .map((signal) => formatPatternLabel(signal))
+              .join("; "),
           };
+        }
         case "extended": {
           const status = extendedStatusMap[symbol];
           if (!status) {
@@ -976,7 +1034,7 @@ export default function BuyPage({
         </thead>
         <tbody>
           {sortedSymbols.map((symbol) => {
-            const candleInfo = resolvedData.candle_signals?.[symbol];
+            const candleSignals = resolvedData.candle_signals?.[symbol];
             const superTrendInfo = resolvedData.super_trend_daily?.[symbol];
             const mansfieldDaily = resolvedData.mansfield_daily?.[symbol];
             const maceInfo = resolvedData.mace?.[symbol];
@@ -984,9 +1042,10 @@ export default function BuyPage({
             const shortTrendScore = resolvedData.short_term_trend?.[symbol];
             const longTrendScore = resolvedData.long_term_trend?.[symbol];
             const breachInfo = resolvedData.breach_hit?.[symbol];
+            const maCrossovers = resolvedData.ma_crossovers?.[symbol];
             const rowContext: RowContext = {
               symbol,
-              candleInfo,
+              candleSignals,
               superTrendInfo,
               mansfieldDaily,
               maceInfo,
@@ -994,6 +1053,7 @@ export default function BuyPage({
               shortTrendScore,
               longTrendScore,
               breachInfo,
+              maCrossovers,
             };
             return (
               <tr key={symbol}>
@@ -1004,6 +1064,7 @@ export default function BuyPage({
                     <td
                       key={`${symbol}-${column.key}`}
                       className={cell.className}
+                      style={cell.style}
                     >
                       {cell.content}
                     </td>
