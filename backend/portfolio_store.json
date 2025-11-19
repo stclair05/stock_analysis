@@ -64,7 +64,7 @@
       "invalidation_2": -1,
       "invalidation_3": -1,
       "target_1": 11.52,
-      "target_2": -1,
+      "target_2": 15,
       "target_3": -1
     },
     {
@@ -361,7 +361,7 @@
       "invalidation_2": -1,
       "invalidation_3": -1,
       "target_1": 3.88,
-      "target_2": 4.95,
+      "target_2": 4.85,
       "target_3": 9.2
     },
     {
@@ -403,8 +403,8 @@
       "invalidation_2": -1,
       "invalidation_3": -1,
       "target_1": 483.54,
-      "target_2": 850,
-      "target_3": -1
+      "target_2": 605,
+      "target_3": 850
     },
     {
       "ticker": "NNE",
@@ -555,8 +555,8 @@
       "invalidation_2": -1,
       "invalidation_3": -1,
       "target_1": 471,
-      "target_2": 665,
-      "target_3": -1
+      "target_2": 581,
+      "target_3": 665
     },
     {
       "ticker": "TEM",
@@ -596,7 +596,7 @@
       "invalidation_1": 5.42,
       "invalidation_2": 4.93,
       "invalidation_3": 4.37,
-      "target_1": 8.03,
+      "target_1": 7,
       "target_2": 11,
       "target_3": 11.96
     },
@@ -689,8 +689,8 @@
       "invalidation_1": 116,
       "invalidation_2": 91.91,
       "invalidation_3": 75.76,
-      "target_1": 147.27,
-      "target_2": -1,
+      "target_1": 123,
+      "target_2": 147,
       "target_3": -1
     },
     {
@@ -732,7 +732,7 @@
       "invalidation_2": -1,
       "invalidation_3": -1,
       "target_1": 39,
-      "target_2": 45.9,
+      "target_2": 45,
       "target_3": 50
     },
     {
@@ -852,7 +852,7 @@
       "sector": "Technology",
       "player": 2,
       "technigrade": [6, 3, 3, 3, 2],
-      "invalidation_1": 113.57,
+      "invalidation_1": 133.31,
       "invalidation_2": 127.58,
       "invalidation_3": 119.25,
       "target_1": 206,
@@ -869,9 +869,9 @@
       "invalidation_1": 21.04,
       "invalidation_2": -1,
       "invalidation_3": -1,
-      "target_1": 29,
-      "target_2": 50,
-      "target_3": -1
+      "target_1": 20,
+      "target_2": 29,
+      "target_3": 50
     },
     {
       "ticker": "RDDT",
@@ -883,9 +883,9 @@
       "invalidation_1": 194.62,
       "invalidation_2": -1,
       "invalidation_3": -1,
-      "target_1": 320,
-      "target_2": 355,
-      "target_3": -1
+      "target_1": 230,
+      "target_2": 320,
+      "target_3": 355
     },
     {
       "ticker": "AMZN",
@@ -953,7 +953,7 @@
       "invalidation_2": 78.79,
       "invalidation_3": -1,
       "target_1": 103.5,
-      "target_2": 126.18,
+      "target_2": 126,
       "target_3": -1
     },
     {
@@ -967,7 +967,7 @@
       "invalidation_2": -1,
       "invalidation_3": -1,
       "target_1": 37.8,
-      "target_2": 58.33,
+      "target_2": 53,
       "target_3": 74
     },
     {
@@ -1006,7 +1006,7 @@
       "invalidation_1": 52.4,
       "invalidation_2": 47.5,
       "invalidation_3": -1,
-      "target_1": 60,
+      "target_1": 59,
       "target_2": 66,
       "target_3": 72.2
     },
