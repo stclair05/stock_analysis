@@ -18,6 +18,7 @@ from stock_analysis.utils import (
     compute_supertrend_lines,
     safe_value,
 )
+from stock_analysis.sector_momentum import sector_relative_momentum_zscore
 from fastapi.responses import JSONResponse
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -149,6 +150,7 @@ def _status_for_holdings(holdings, price_direction: str):
         "long_term_trend": {},
         "breach_hit": {},
         "ma_crossovers": {},
+        "momentum": {},
     }
 
     for holding in holdings:
@@ -199,6 +201,10 @@ def _status_for_holdings(holdings, price_direction: str):
             results["long_term_trend"][ticker] = (
                 long_total if isinstance(long_total, (int, float)) else None
             )
+
+            momentum_score = sector_relative_momentum_zscore(ticker, closes)
+            if isinstance(momentum_score, (int, float)):
+                results["momentum"][ticker] = momentum_score
 
             if isinstance(price, (int, float)) and isinstance(twenty, (int, float)):
                 if price_direction == "below" and price < twenty:
@@ -442,6 +448,7 @@ def get_portfolio_status(
             "long_term_trend": {},
             "breach_hit": {},
             "ma_crossovers": {},
+            "momentum": {},
         }
 
     with open(json_path, "r") as f:
@@ -799,6 +806,7 @@ def get_buylist_status():
             "long_term_trend": {},
             "breach_hit": {},
             "ma_crossovers": {},
+            "momentum": {},
         }
 
     return _status_for_holdings(holdings, "above")

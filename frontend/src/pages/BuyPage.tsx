@@ -61,6 +61,7 @@ type BuyStatusResponse = {
   long_term_trend: Record<string, number | null>;
   breach_hit: Record<string, BreachHitStatus>;
   ma_crossovers: MovingAverageCrossovers;
+  momentum: Record<string, number>;
 };
 
 const FALLBACK_DATA: BuyStatusResponse = {
@@ -79,6 +80,7 @@ const FALLBACK_DATA: BuyStatusResponse = {
   long_term_trend: {},
   breach_hit: {},
   ma_crossovers: {},
+  momentum: {},
 };
 
 type SortColumn =
@@ -94,6 +96,7 @@ type SortColumn =
   | "mansfield"
   | "mace"
   | "stage"
+  | "momentum"
   | "shortTrend"
   | "longTrend"
   | "breach";
@@ -112,6 +115,7 @@ const DATA_COLUMN_META: { key: DataColumn; label: string }[] = [
   { key: "mansfield", label: "Mansfield (D)" },
   { key: "mace", label: "MACE" },
   { key: "stage", label: "Stage" },
+  { key: "momentum", label: "Momentum" },
   { key: "shortTrend", label: "Short-Term Trend" },
   { key: "longTrend", label: "Long-Term Trend" },
   { key: "breach", label: "Breach / Hit" },
@@ -144,6 +148,7 @@ type RowContext = {
   longTrendScore?: number | null;
   breachInfo?: BreachHitStatus;
   maCrossovers?: Partial<Record<MovingAverageKey, MovingAverageDirection>>;
+  momentumScore?: number;
 };
 
 type CellDisplay = {
@@ -329,6 +334,7 @@ export default function BuyPage({
       const shortTrendScore = resolvedData.short_term_trend?.[symbol];
       const longTrendScore = resolvedData.long_term_trend?.[symbol];
       const breachInfo = resolvedData.breach_hit?.[symbol];
+      const momentumScore = resolvedData.momentum?.[symbol];
 
       switch (column) {
         case "symbol":
@@ -387,6 +393,10 @@ export default function BuyPage({
           if (stage === 4) return -2;
           return 0;
         }
+        case "momentum":
+          return typeof momentumScore === "number"
+            ? momentumScore
+            : Number.NEGATIVE_INFINITY;
         case "shortTrend":
           if (typeof shortTrendScore !== "number") return 0;
           return shortTrendScore >= 2 ? 2 : -2;
@@ -412,6 +422,7 @@ export default function BuyPage({
       resolvedData.breach_hit,
       resolvedData.candle_signals,
       resolvedData.long_term_trend,
+      resolvedData.momentum,
       resolvedData.mace,
       resolvedData.mansfield_daily,
       resolvedData.short_term_trend,
@@ -445,6 +456,7 @@ export default function BuyPage({
       ...Object.keys(resolvedData.super_trend_daily || {}),
       ...Object.keys(resolvedData.mace || {}),
       ...Object.keys(resolvedData.ma_crossovers || {}),
+      ...Object.keys(resolvedData.momentum || {}),
     ],
     [
       resolvedData.above_20dma,
@@ -457,6 +469,7 @@ export default function BuyPage({
       resolvedData.super_trend_daily,
       resolvedData.mace,
       resolvedData.ma_crossovers,
+      resolvedData.momentum,
     ]
   );
 
@@ -603,6 +616,16 @@ export default function BuyPage({
     .map((stageNumber) => `${stageNumber}:${stageCounts[stageNumber] || 0}`)
     .join(" ");
 
+  const momentumValues = Object.values(resolvedData.momentum || {}).filter(
+    (value): value is number =>
+      typeof value === "number" && Number.isFinite(value)
+  );
+  const avgMomentum =
+    momentumValues.length > 0
+      ? momentumValues.reduce((sum, value) => sum + value, 0) /
+        momentumValues.length
+      : null;
+
   const columnSummaryMap: Record<DataColumn, ReactNode> = {
     above20: resolvedData.above_20dma.length,
     above200: resolvedData.above_200dma.length,
@@ -615,6 +638,7 @@ export default function BuyPage({
     mansfield: `${mansfieldSell}/${mansfieldBuy}/${mansfieldNeutral}`,
     mace: `${maceUp}/${maceDown}`,
     stage: stageSummary,
+    momentum: avgMomentum !== null ? avgMomentum.toFixed(2) : "—",
     shortTrend: `${shortUp}/${shortDown}`,
     longTrend: `${longUp}/${longDown}`,
     breach: `${breachTarget}/${breachInvalidation}`,
@@ -633,6 +657,7 @@ export default function BuyPage({
         longTrendScore,
         breachInfo,
         maCrossovers,
+        momentumScore,
       } = context;
 
       const formatTimeframes = (timeframes: CandleTimeframe[]) =>
@@ -789,6 +814,23 @@ export default function BuyPage({
                 }`
               : "",
           };
+        case "momentum": {
+          if (
+            typeof momentumScore !== "number" ||
+            Number.isNaN(momentumScore)
+          ) {
+            return { className: "text-muted", content: "—" };
+          }
+          let className: string | undefined;
+          if (momentumScore >= 1) {
+            className = "table-success text-success fw-semibold";
+          } else if (momentumScore <= -1) {
+            className = "table-danger text-danger fw-semibold";
+          } else {
+            className = "table-warning text-warning";
+          }
+          return { className, content: momentumScore.toFixed(2) };
+        }
         case "shortTrend":
           return {
             className:
@@ -1040,6 +1082,7 @@ export default function BuyPage({
             const longTrendScore = resolvedData.long_term_trend?.[symbol];
             const breachInfo = resolvedData.breach_hit?.[symbol];
             const maCrossovers = resolvedData.ma_crossovers?.[symbol];
+            const momentumScore = resolvedData.momentum?.[symbol];
             const rowContext: RowContext = {
               symbol,
               candleSignals,
@@ -1051,6 +1094,7 @@ export default function BuyPage({
               longTrendScore,
               breachInfo,
               maCrossovers,
+              momentumScore,
             };
             return (
               <tr key={symbol}>
