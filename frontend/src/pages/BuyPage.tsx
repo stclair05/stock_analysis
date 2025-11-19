@@ -80,15 +80,23 @@ type SortRule = {
   direction: "asc" | "desc";
 };
 
-export default function BuyPage() {
+type BuyPageProps = {
+  statusEndpoint?: string;
+  title?: string;
+};
+
+export default function BuyPage({
+  statusEndpoint = "http://localhost:8000/buylist_status",
+  title = "Buy List Status",
+}: BuyPageProps) {
   const [data, setData] = useState<BuyStatusResponse | null>(null);
 
   useEffect(() => {
-    fetch("http://localhost:8000/buylist_status")
+    fetch(statusEndpoint)
       .then((res) => res.json())
       .then((json) => setData(json))
       .catch(() => setData(FALLBACK_DATA));
-  }, []);
+  }, [statusEndpoint]);
 
   const resolvedData = data ?? FALLBACK_DATA;
 
@@ -483,7 +491,7 @@ export default function BuyPage() {
 
   return (
     <div className="container mt-4" style={{ maxWidth: "60%" }}>
-      <h1 className="fw-bold mb-4">Buy List Status</h1>
+      <h1 className="fw-bold mb-4">{title}</h1>
       <div className="card mb-4">
         <div className="card-body">
           <div className="d-flex justify-content-between align-items-center mb-3">

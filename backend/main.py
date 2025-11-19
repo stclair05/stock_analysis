@@ -26,7 +26,7 @@ from aliases import SYMBOL_ALIASES
 import yfinance as yf
 import asyncio
 import json
-from typing import List 
+from typing import List, Literal
 import boto3
 import os
 import pandas as pd
@@ -317,12 +317,17 @@ def _status_for_holdings(holdings, price_direction: str):
     return results
 
 @app.get("/portfolio_status")
-def get_portfolio_status():
+def get_portfolio_status(
+    direction: Literal["above", "below"] = Query("below")
+):
     json_path = Path("portfolio_store.json")
+    price_key_20 = "below_20dma" if direction == "below" else "above_20dma"
+    price_key_200 = "below_200dma" if direction == "below" else "above_200dma"
+
     if not json_path.exists():
         return {
-            "below_20dma": [],
-            "below_200dma": [],
+            price_key_20: [],
+            price_key_200: [],
             "candle_signals": {},
             "extended_vol": [],
             "super_trend_daily": {},
@@ -342,7 +347,7 @@ def get_portfolio_status():
             if isinstance(item, dict) and "ticker" in item
         ]
 
-    return _status_for_holdings(equities, "below")
+    return _status_for_holdings(equities, direction)
 
 
 @app.get("/fmp_financials/{symbol}", response_model=FinancialMetrics)
