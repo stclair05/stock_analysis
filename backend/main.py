@@ -18,7 +18,10 @@ from stock_analysis.utils import (
     compute_supertrend_lines,
     safe_value,
 )
-from stock_analysis.sector_momentum import sector_relative_momentum_zscore
+from stock_analysis.sector_momentum import (
+    get_fmp_peers,
+    sector_relative_momentum_zscore,
+)
 from fastapi.responses import JSONResponse
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -51,6 +54,10 @@ _fundamentals_cache = {}
 def analyse(stock_request: StockRequest):
     analyser = StockAnalyser(stock_request.symbol)
     change_amt, change_pct = analyser.get_daily_change()
+    momentum_score = sector_relative_momentum_zscore(
+        stock_request.symbol, analyser.df.get("Close")
+    )
+    peers = get_fmp_peers(stock_request.symbol)
     return StockAnalysisResponse(
         current_price=analyser.get_current_price(),
         daily_change=change_amt,
@@ -73,6 +80,8 @@ def analyse(stock_request: StockRequest):
         short_term_trend=analyser.short_term_trend_score(),
         long_term_trend=analyser.long_term_trend_score(),
         sell_signal=analyser.sell_signal_score(),
+        sector_momentum_zscore=momentum_score,
+        sector_peers=peers,
     )
 
 @app.post("/elliott", response_model=ElliottWaveScenariosResponse)
