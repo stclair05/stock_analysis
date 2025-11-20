@@ -1366,18 +1366,13 @@ def get_etf_holdings(symbol: str):
 
 @app.get("/stock_peers/{symbol}")
 def get_stock_peers(symbol: str):
+    """Return peers from FMP's live API with peers_bulk.json as fallback."""
+
+    from stock_analysis.sector_momentum import get_fmp_peers
+
     target = symbol.upper()
     try:
-        with open("peers_bulk.json", "r") as f:
-            data = json.load(f)  # ← this is a list, not a dict
-
-        for entry in data:
-            if entry["symbol"].upper() == target:
-                return {"symbol": target, "peers": entry["peers"]}
-
-        # Optional: Fallback to online fetch
-        return fetch_peers_from_csv_online(target)
-
+        return {"symbol": target, "peers": get_fmp_peers(target)}
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
 
