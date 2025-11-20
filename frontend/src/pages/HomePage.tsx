@@ -24,6 +24,45 @@ function HomePage() {
 
   const [isETF, setIsETF] = useState<boolean | null>(null);
 
+  const momentumBadgeStyle = (score: number) => {
+    if (score >= 2) {
+      return { background: "#d1fae5", color: "#065f46" }; // strong positive
+    }
+    if (score >= 1) {
+      return { background: "#e0f2fe", color: "#075985" }; // positive
+    }
+    if (score <= -2) {
+      return { background: "#fee2e2", color: "#991b1b" }; // very weak
+    }
+    if (score <= -1) {
+      return { background: "#fff4e6", color: "#9a3412" }; // weak
+    }
+    return { background: "#f1f3f5", color: "#495057" }; // neutral
+  };
+
+  const momentumLegend = [
+    {
+      key: "very-strong",
+      text: "z > +2.0 → very strong outlier to the upside.",
+      style: { background: "#d1fae5", color: "#065f46" },
+    },
+    {
+      key: "strong",
+      text: "z > +1.0 → top performer vs peers (≈ 1σ above).",
+      style: { background: "#e0f2fe", color: "#075985" },
+    },
+    {
+      key: "weak",
+      text: "z < -1.0 → clear underperformer.",
+      style: { background: "#fff4e6", color: "#9a3412" },
+    },
+    {
+      key: "very-weak",
+      text: "z < -2.0 → very weak relative momentum.",
+      style: { background: "#fee2e2", color: "#991b1b" },
+    },
+  ];
+
   // Sync state with URL param
   useEffect(() => {
     if (symbol) {
@@ -110,6 +149,11 @@ function HomePage() {
     };
   }, [stockSymbol]);
 
+  const momentumStyle =
+    typeof momentumScore === "number"
+      ? momentumBadgeStyle(momentumScore)
+      : null;
+
   return (
     <div className="app-container">
       <h1 className="mb-5 text-center fw-bold">Analysis</h1>
@@ -165,11 +209,26 @@ function HomePage() {
           >
             <div className="card-body">
               <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2">
-                <div className="fw-semibold">
-                  Sector momentum score:{" "}
-                  {typeof momentumScore === "number"
-                    ? momentumScore.toFixed(2)
-                    : "N/A"}
+                <div className="fw-semibold d-flex align-items-center gap-2">
+                  <span>Sector momentum score:</span>
+                  {typeof momentumScore === "number" ? (
+                    <span
+                      className="badge rounded-pill"
+                      style={{
+                        backgroundColor: momentumStyle?.background,
+                        color: momentumStyle?.color,
+                        fontSize: "0.95rem",
+                        padding: "0.55rem 0.8rem",
+                        minWidth: "4.5rem",
+                        textAlign: "center",
+                        boxShadow: "0 2px 6px rgba(0, 0, 0, 0.08)",
+                      }}
+                    >
+                      {momentumScore.toFixed(2)}
+                    </span>
+                  ) : (
+                    "N/A"
+                  )}
                 </div>
                 <div className="small text-muted fst-italic">
                   Peers:{" "}
@@ -184,11 +243,20 @@ function HomePage() {
                   </div>
                 </div>
               ) : (
-                <div className="mt-3 small text-muted fst-italic">
-                  <div>z &gt; +1.0 → top performer vs peers (≈ 1σ above).</div>
-                  <div>z &gt; +2.0 → very strong outlier to the upside.</div>
-                  <div>z &lt; -1.0 → clear underperformer.</div>
-                  <div>z &lt; -2.0 → very weak relative momentum.</div>
+                <div className="mt-3 small fst-italic">
+                  {momentumLegend.map((item) => (
+                    <div
+                      key={item.key}
+                      className="d-inline-flex align-items-center rounded px-2 py-1 me-2 mb-2"
+                      style={{
+                        backgroundColor: item.style.background,
+                        color: item.style.color,
+                        fontWeight: 600,
+                      }}
+                    >
+                      {item.text}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
