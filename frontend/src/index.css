@@ -127,3 +127,15 @@ h1 {
   outline-offset: -3px;
   border-radius: 4px;
 }
+
+.ma-crossed-above {
+  outline: 3px solid #4caf50 !important;
+  outline-offset: -3px;
+  border-radius: 4px;
+}
+
+.ma-crossed-below {
+  outline: 3px solid #f44336 !important;
+  outline-offset: -3px;
+  border-radius: 4px;
+}

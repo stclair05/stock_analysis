@@ -151,6 +151,7 @@ def _status_for_holdings(holdings, price_direction: str):
         "breach_hit": {},
         "ma_crossovers": {},
         "momentum": {},
+        "divergence": {},
     }
 
     for holding in holdings:
@@ -269,6 +270,18 @@ def _status_for_holdings(holdings, price_direction: str):
 
             if ma_cross:
                 results["ma_crossovers"][ticker] = ma_cross
+
+            divergence = {
+                "daily": analyser.simple_divergence_daily(),
+                "weekly": analyser.simple_divergence_weekly(),
+                "monthly": analyser.simple_divergence_monthly(),
+            }
+            if any(
+                isinstance(val, str) and val != "No Divergence"
+                for val in divergence.values()
+            ):
+                results["divergence"][ticker] = divergence
+                flagged = True    
 
             timeframe_order = {"daily": 0, "weekly": 1, "monthly": 2}
 
@@ -449,6 +462,7 @@ def get_portfolio_status(
             "breach_hit": {},
             "ma_crossovers": {},
             "momentum": {},
+            "divergence": {},
         }
 
     with open(json_path, "r") as f:
@@ -807,6 +821,7 @@ def get_buylist_status():
             "breach_hit": {},
             "ma_crossovers": {},
             "momentum": {},
+            "divergence": {},
         }
 
     return _status_for_holdings(holdings, "above")

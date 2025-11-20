@@ -38,6 +38,12 @@ type MansfieldDailyStatus = {
   new_buy?: boolean;
 };
 
+type DivergenceInfo = {
+  daily?: string;
+  weekly?: string;
+  monthly?: string;
+};
+
 type BreachHitCategory = "target" | "invalidation" | "neutral";
 
 type BreachHitStatus = {
@@ -62,6 +68,7 @@ type BuyStatusResponse = {
   breach_hit: Record<string, BreachHitStatus>;
   ma_crossovers: MovingAverageCrossovers;
   momentum: Record<string, number>;
+  divergence: Record<string, DivergenceInfo>;
 };
 
 const FALLBACK_DATA: BuyStatusResponse = {
@@ -81,6 +88,7 @@ const FALLBACK_DATA: BuyStatusResponse = {
   breach_hit: {},
   ma_crossovers: {},
   momentum: {},
+  divergence: {},
 };
 
 type SortColumn =
@@ -97,6 +105,7 @@ type SortColumn =
   | "mace"
   | "stage"
   | "momentum"
+  | "divergence"
   | "shortTrend"
   | "longTrend"
   | "breach";
@@ -116,6 +125,7 @@ const DATA_COLUMN_META: { key: DataColumn; label: string }[] = [
   { key: "mace", label: "MACE" },
   { key: "stage", label: "Stage" },
   { key: "momentum", label: "Momentum" },
+  { key: "divergence", label: "Divergence" },
   { key: "shortTrend", label: "Short-Term Trend" },
   { key: "longTrend", label: "Long-Term Trend" },
   { key: "breach", label: "Breach / Hit" },
@@ -149,6 +159,7 @@ type RowContext = {
   breachInfo?: BreachHitStatus;
   maCrossovers?: Partial<Record<MovingAverageKey, MovingAverageDirection>>;
   momentumScore?: number;
+  divergenceInfo?: DivergenceInfo;
 };
 
 type CellDisplay = {
@@ -335,6 +346,27 @@ export default function BuyPage({
       const longTrendScore = resolvedData.long_term_trend?.[symbol];
       const breachInfo = resolvedData.breach_hit?.[symbol];
       const momentumScore = resolvedData.momentum?.[symbol];
+      const divergenceInfo = resolvedData.divergence?.[symbol];
+
+      const getDivergenceScore = (info?: DivergenceInfo) => {
+        if (!info) return 0;
+        const weights: Record<keyof DivergenceInfo, number> = {
+          daily: 1,
+          weekly: 2,
+          monthly: 3,
+        };
+        return (Object.keys(info) as (keyof DivergenceInfo)[]).reduce(
+          (sum, key) => {
+            const value = info[key];
+            if (typeof value !== "string") return sum;
+            const lower = value.toLowerCase();
+            if (lower.includes("bullish")) return sum + weights[key];
+            if (lower.includes("bearish")) return sum - weights[key];
+            return sum;
+          },
+          0
+        );
+      };
 
       switch (column) {
         case "symbol":
@@ -408,6 +440,8 @@ export default function BuyPage({
           if (breachInfo.category === "target") return 2;
           if (breachInfo.category === "invalidation") return -2;
           return 1;
+        case "divergence":
+          return getDivergenceScore(divergenceInfo);
         default:
           return 0;
       }
@@ -425,6 +459,7 @@ export default function BuyPage({
       resolvedData.momentum,
       resolvedData.mace,
       resolvedData.mansfield_daily,
+      resolvedData.divergence,
       resolvedData.short_term_trend,
       resolvedData.stage,
       resolvedData.super_trend_daily,
@@ -457,6 +492,7 @@ export default function BuyPage({
       ...Object.keys(resolvedData.mace || {}),
       ...Object.keys(resolvedData.ma_crossovers || {}),
       ...Object.keys(resolvedData.momentum || {}),
+      ...Object.keys(resolvedData.divergence || {}),
     ],
     [
       resolvedData.above_20dma,
@@ -470,6 +506,7 @@ export default function BuyPage({
       resolvedData.mace,
       resolvedData.ma_crossovers,
       resolvedData.momentum,
+      resolvedData.divergence,
     ]
   );
 
@@ -626,6 +663,20 @@ export default function BuyPage({
         momentumValues.length
       : null;
 
+  const divergenceValues = Object.values(resolvedData.divergence || {});
+  const divergenceCounts = divergenceValues.reduce(
+    (acc, info) => {
+      (Object.values(info) as string[]).forEach((value) => {
+        if (typeof value !== "string") return;
+        const lower = value.toLowerCase();
+        if (lower.includes("bullish")) acc.bullish += 1;
+        if (lower.includes("bearish")) acc.bearish += 1;
+      });
+      return acc;
+    },
+    { bearish: 0, bullish: 0 }
+  );
+
   const columnSummaryMap: Record<DataColumn, ReactNode> = {
     above20: resolvedData.above_20dma.length,
     above200: resolvedData.above_200dma.length,
@@ -639,6 +690,7 @@ export default function BuyPage({
     mace: `${maceUp}/${maceDown}`,
     stage: stageSummary,
     momentum: avgMomentum !== null ? avgMomentum.toFixed(2) : "—",
+    divergence: `${divergenceCounts.bearish}/${divergenceCounts.bullish}`,
     shortTrend: `${shortUp}/${shortDown}`,
     longTrend: `${longUp}/${longDown}`,
     breach: `${breachTarget}/${breachInvalidation}`,
@@ -658,6 +710,7 @@ export default function BuyPage({
         breachInfo,
         maCrossovers,
         momentumScore,
+        divergenceInfo,
       } = context;
 
       const formatTimeframes = (timeframes: CandleTimeframe[]) =>
@@ -677,13 +730,13 @@ export default function BuyPage({
         const baseClass = isAbove
           ? "table-success text-success fw-semibold"
           : "table-danger text-danger fw-semibold";
-        const borderClass =
+        const crossoverClass =
           crossover === "above"
-            ? "border border-success border-2"
+            ? "ma-crossed-above"
             : crossover === "below"
-            ? "border border-danger border-2"
+            ? "ma-crossed-below"
             : "";
-        const className = [baseClass, borderClass].filter(Boolean).join(" ");
+        const className = [baseClass, crossoverClass].filter(Boolean).join(" ");
         return {
           className: className || undefined,
           content: isAbove ? "Above" : "Below",
@@ -831,6 +884,49 @@ export default function BuyPage({
           }
           return { className, content: momentumScore.toFixed(2) };
         }
+        case "divergence": {
+          const divergenceTimeframes: (keyof DivergenceInfo)[] = [
+            "daily",
+            "weekly",
+            "monthly",
+          ];
+          const entries = divergenceTimeframes
+            .map((tf) => {
+              const value = divergenceInfo?.[tf];
+              if (!value || value === "No Divergence") return null;
+              const lower = value.toLowerCase();
+              const isBullish = lower.includes("bullish");
+              const timeframeLabel = tf.charAt(0).toUpperCase() + tf.slice(1);
+              return {
+                label: `${timeframeLabel} ${isBullish ? "Bullish" : "Bearish"}`,
+                isBullish,
+              };
+            })
+            .filter((entry): entry is { label: string; isBullish: boolean } =>
+              Boolean(entry)
+            );
+
+          if (entries.length === 0) {
+            return { className: undefined, content: "" };
+          }
+
+          const hasBullish = entries.some((entry) => entry.isBullish);
+          const hasBearish = entries.some((entry) => !entry.isBullish);
+          let className: string | undefined;
+
+          if (hasBullish && hasBearish) {
+            className = "table-warning";
+          } else if (hasBullish) {
+            className = "table-success text-success fw-semibold";
+          } else if (hasBearish) {
+            className = "table-danger text-danger fw-semibold";
+          }
+
+          return {
+            className,
+            content: entries.map((entry) => entry.label).join("; "),
+          };
+        }
         case "shortTrend":
           return {
             className:
@@ -882,6 +978,7 @@ export default function BuyPage({
       above70Set,
       above3ySet,
       resolvedData.extended_vol,
+      resolvedData.divergence,
     ]
   );
 
@@ -1083,6 +1180,7 @@ export default function BuyPage({
             const breachInfo = resolvedData.breach_hit?.[symbol];
             const maCrossovers = resolvedData.ma_crossovers?.[symbol];
             const momentumScore = resolvedData.momentum?.[symbol];
+            const divergenceInfo = resolvedData.divergence?.[symbol];
             const rowContext: RowContext = {
               symbol,
               candleSignals,
@@ -1095,6 +1193,7 @@ export default function BuyPage({
               breachInfo,
               maCrossovers,
               momentumScore,
+              divergenceInfo,
             };
             return (
               <tr key={symbol}>
