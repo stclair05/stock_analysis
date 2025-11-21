@@ -28,7 +28,7 @@ import SecondaryChart from "./SecondaryChart";
 import S3Gallery from "../S3Gallery";
 import GraphingChart from "./GraphingChart";
 
-const StockChart = ({ stockSymbol }: StockChartProps) => {
+const StockChart = ({ stockSymbol, peersOverride }: StockChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
@@ -1128,6 +1128,14 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
   */
   useEffect(() => {
     if (!stockSymbol) return;
+    const normalizedPeers = (peersOverride || [])
+      .filter((p): p is string => typeof p === "string" && p.trim())
+      .map((p) => p.trim().toUpperCase());
+
+    if (normalizedPeers.length > 0) {
+      setPeerSymbols(normalizedPeers.slice(0, 3));
+      return;
+    }
     async function fetchPeers() {
       try {
         const res = await fetch(
@@ -1141,7 +1149,7 @@ const StockChart = ({ stockSymbol }: StockChartProps) => {
       }
     }
     fetchPeers();
-  }, [stockSymbol]);
+  }, [stockSymbol, peersOverride]);
 
   useEffect(() => {
     const allSymbols = peerSymbols.concat("XAUUSD", "SPX");

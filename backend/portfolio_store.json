@@ -7,6 +7,7 @@
       "sector": "Technology",
       "player": 1,
       "technigrade": [19, 18, 19, 19, 19],
+      "peers": ["PLTR", "BBAI", "VERI", "RAMP", "SEMR", "IOT"],
       "invalidation_1": 16.88,
       "invalidation_2": 14.7,
       "invalidation_3": -1,
@@ -22,6 +23,7 @@
       "target_1": 140,
       "player": 2,
       "technigrade": [8, 9, 10, 11, 11],
+      "peers": ["CVX", "BP", "SHEL", "COP", "TOT", "PBR"],
       "invalidation_1": 114,
       "invalidation_2": 107,
       "invalidation_3": -1
@@ -33,7 +35,8 @@
       "sector": "Energy",
       "target_1": 11.36,
       "player": 2,
-      "technigrade": [17, 18, 19, 19, 17]
+      "technigrade": [17, 18, 19, 19, 17],
+      "peers": ["WDS.AX", "BPT.AX", "ORG.AX", "COE.AX", "STX.AX", "KAR.AX"]
     },
     {
       "ticker": "MPC",
@@ -42,7 +45,8 @@
       "sector": "Energy",
       "target_1": 218.4,
       "player": 2,
-      "technigrade": [6, 6, 6, 7, 7]
+      "technigrade": [6, 6, 6, 7, 7],
+      "peers": ["VLO", "PSX", "DINO", "PBF", "CVI", "DK"]
     },
     {
       "ticker": "VLO",
@@ -51,7 +55,8 @@
       "sector": "Energy",
       "target_1": 195.34,
       "player": 2,
-      "technigrade": [4, 5, 5, 6, 5]
+      "technigrade": [4, 5, 5, 6, 5],
+      "peers": ["MPC", "PSX", "DINO", "PBF", "CVI", "DK"]
     },
     {
       "ticker": "ISOU",
@@ -60,6 +65,7 @@
       "sector": "Uranium",
       "player": 2,
       "technigrade": [],
+      "peers": ["CCJ", "NXE", "UEC", "DNN", "UUUU", "UROY"],
       "invalidation_1": 8.3,
       "invalidation_2": -1,
       "invalidation_3": -1,
@@ -74,7 +80,8 @@
       "sector": "Energy",
       "target_1": 50,
       "player": 2,
-      "technigrade": [12, 17, 16, 18, 17]
+      "technigrade": [12, 17, 16, 18, 17],
+      "peers": ["RRC", "SWN", "EQT", "CNX", "CTRA", "CHRD"]
     },
     {
       "ticker": "RRC",
@@ -83,7 +90,8 @@
       "sector": "Energy",
       "target_1": 51,
       "player": 2,
-      "technigrade": [10, 14, 11, 13, 12]
+      "technigrade": [10, 14, 11, 13, 12],
+      "peers": ["AR", "SWN", "EQT", "CTRA", "CNX", "CHK"]
     },
     {
       "ticker": "COP",
@@ -92,7 +100,8 @@
       "sector": "Energy",
       "target_1": 115,
       "player": 2,
-      "technigrade": [15, 14, 16, 16, 15]
+      "technigrade": [15, 14, 16, 16, 15],
+      "peers": ["EOG", "PXD", "FANG", "OXY", "MRO", "HES"]
     },
     {
       "ticker": "TALO",
@@ -101,7 +110,8 @@
       "sector": "Energy",
       "target_1": 19,
       "player": 2,
-      "technigrade": [4, 6, 7, 9, 9]
+      "technigrade": [4, 6, 7, 9, 9],
+      "peers": ["WTI", "SM", "MTDR", "OXY", "APA", "CIVI"]
     },
     {
       "ticker": "OVV",
@@ -110,7 +120,8 @@
       "sector": "Energy",
       "target_1": 46,
       "player": 2,
-      "technigrade": [12, 15, 16, 17, 16]
+      "technigrade": [12, 15, 16, 17, 16],
+      "peers": ["CTRA", "MRO", "FANG", "PXD", "DVN", "EOG"]
     },
     {
       "ticker": "DINO",
@@ -119,6 +130,7 @@
       "sector": "Energy",
       "player": 2,
       "technigrade": [4, 5, 4, 4, 4],
+      "peers": ["MPC", "VLO", "PSX", "PBF", "CVI", "DK"],
       "invalidation_1": 51.19,
       "invalidation_2": 48.91,
       "invalidation_3": 48.18,
@@ -133,7 +145,8 @@
       "sector": "Energy",
       "target_1": 53,
       "player": 2,
-      "technigrade": [15, 16, 16, 17, 15]
+      "technigrade": [15, 16, 16, 17, 15],
+      "peers": ["COP", "CVX", "XOM", "EOG", "PXD", "FANG"]
     },
     {
       "ticker": "FCG",
@@ -141,7 +154,8 @@
       "average_cost": 26.1,
       "sector": "Energy",
       "target_1": "",
-      "player": 2
+      "player": 2,
+      "peers": ["CTRA", "EQT", "AR", "RRC", "SWN", "CHK"]
     },
     {
       "ticker": "APA",
@@ -150,7 +164,8 @@
       "sector": "Energy",
       "target_1": 26,
       "player": 2,
-      "technigrade": [5, 7, 5, 6, 6]
+      "technigrade": [5, 7, 5, 6, 6],
+      "peers": ["MRO", "DVN", "FANG", "EOG", "COP", "OXY"]
     },
     {
       "ticker": "SM",
@@ -159,7 +174,8 @@
       "sector": "Energy",
       "target_1": 36,
       "player": 2,
-      "technigrade": [20, 19, 20, 20, 18]
+      "technigrade": [20, 19, 20, 20, 18],
+      "peers": ["MTDR", "CPE", "MRO", "DVN", "FANG", "EOG"]
     },
     {
       "ticker": "VET",
@@ -168,7 +184,8 @@
       "sector": "Energy",
       "target_1": 11,
       "player": 2,
-      "technigrade": [6, 12, 12, 14, 10]
+      "technigrade": [6, 12, 12, 14, 10],
+      "peers": ["MTDR", "CPE", "MRO", "DVN", "FANG", "EOG"]
     },
     {
       "ticker": "VTLE",
@@ -177,7 +194,8 @@
       "sector": "Energy",
       "target_1": 30,
       "player": 2,
-      "technigrade": [11, 15, 17, 17, 16]
+      "technigrade": [11, 15, 17, 17, 16],
+      "peers": ["MTDR", "FANG", "DVN", "OXY", "SM", "CRGY"]
     },
     {
       "ticker": "CVI",
@@ -186,6 +204,7 @@
       "sector": "Energy",
       "player": 2,
       "technigrade": [3, 4, 2, 4, 3],
+      "peers": ["MPC", "PSX", "VLO", "PBF", "DK", "DINO"],
       "invalidation_1": 36,
       "invalidation_2": 33.1,
       "invalidation_3": 32.2,
@@ -200,7 +219,8 @@
       "sector": "Energy",
       "target_1": 57.13,
       "player": 2,
-      "technigrade": [18, 19, 20, 17, 18]
+      "technigrade": [18, 19, 20, 17, 18],
+      "peers": ["FANG", "DVN", "PR", "SM", "CRGY", "MGY"]
     },
     {
       "ticker": "PR",
@@ -209,7 +229,8 @@
       "sector": "Energy",
       "target_1": 20.92,
       "player": 2,
-      "technigrade": [12, 15, 17, 17, 17, 18]
+      "technigrade": [12, 15, 17, 17, 17, 18],
+      "peers": ["FANG", "DVN", "MTDR", "SM", "CRGY", "MGY"]
     },
     {
       "ticker": "BTE",
@@ -219,7 +240,8 @@
       "target_1": 2.82,
       "target_2": 3.45,
       "target_3": 3.65,
-      "technigrade": [4, 5, 5, 6, 4]
+      "technigrade": [4, 5, 5, 6, 4],
+      "peers": ["VET", "WCP", "POU", "AAV", "HWX", "ATH"]
     },
     {
       "ticker": "CRGY",
@@ -228,7 +250,8 @@
       "sector": "Energy",
       "target_1": 10.49,
       "player": 2,
-      "technigrade": [12, 15, 17, 17, 18]
+      "technigrade": [12, 15, 17, 17, 18],
+      "peers": ["VTLE", "MGY", "MTDR", "SM", "NOG", "APA"]
     },
     {
       "ticker": "NNRG.NE",
@@ -253,7 +276,8 @@
       "sector": "Energy",
       "target_1": 45,
       "player": 2,
-      "technigrade": [17, 16, 18, 18, 15]
+      "technigrade": [17, 16, 18, 18, 15],
+      "peers": ["SM", "NOG", "CHRD", "MGY", "PR", "VTLE"]
     },
     {
       "ticker": "TXP.TO",
@@ -261,7 +285,8 @@
       "average_cost": 0.51,
       "sector": "Energy",
       "target_1": 0.7,
-      "player": 2
+      "player": 2,
+      "peers": ["CNE.TO", "AXL.TO", "YGR.TO", "JOY.TO", "VET.TO", "BTE.TO"]
     },
     {
       "ticker": "BIR.TO",
@@ -270,7 +295,8 @@
       "sector": "Energy",
       "target_1": 11,
       "player": 2,
-      "technigrade": [9, 10, 14, 17, 18]
+      "technigrade": [9, 10, 14, 17, 18],
+      "peers": ["AAV.TO", "WCP.TO", "TOU.TO", "NVA.TO", "PEY.TO", "BTE.TO"]
     },
     {
       "ticker": "YGR.TO",
@@ -278,7 +304,8 @@
       "average_cost": 0.9,
       "sector": "Energy",
       "target_1": 3.79,
-      "player": 2
+      "player": 2,
+      "peers": ["AAV.TO", "NVA.TO", "TOU.TO", "POU.TO", "BIR.TO", "KLT.TO"]
     },
     {
       "ticker": "BNE.TO",
@@ -286,7 +313,8 @@
       "average_cost": 4.27,
       "sector": "Energy",
       "target_1": 13.8,
-      "player": 2
+      "player": 2,
+      "peers": ["OBE.TO", "YGR.TO", "CNE.TO", "QEC.TO", "BIR.TO", "TOU.TO"]
     },
     {
       "ticker": "CF",
@@ -295,6 +323,7 @@
       "sector": "Fertilizer",
       "player": 3,
       "technigrade": [16, 15, 15, 16, 12],
+      "peers": ["NTR", "MOS", "ICL", "UAN", "SMG", "CTVA"],
       "invalidation_1": 85.11,
       "invalidation_2": 81.89,
       "invalidation_3": 80.64,
@@ -309,6 +338,7 @@
       "sector": "Fertilizer",
       "player": 3,
       "technigrade": [19, 19, 19, 19, 17],
+      "peers": ["NTR", "CF", "ICL", "SMG", "UAN", "CMP"],
       "invalidation_1": 33.43,
       "invalidation_2": 32.15,
       "invalidation_3": 30.09,
@@ -323,6 +353,7 @@
       "sector": "Fertilizer",
       "player": 3,
       "technigrade": [13, 16, 14, 13, 9],
+      "peers": ["MOS", "CF", "ICL", "SMG", "UAN", "CTVA"],
       "invalidation_1": 55.79,
       "invalidation_2": 54.66,
       "invalidation_3": -1,
@@ -349,7 +380,8 @@
       "invalidation_3": -1,
       "target_1": 33.84,
       "target_2": 37.52,
-      "target_3": 41.92
+      "target_3": 41.92,
+      "peers": ["U.U", "SRUUF", "URNJ", "URA", "DNN", "UEC"]
     },
     {
       "ticker": "EU",
@@ -357,6 +389,7 @@
       "average_cost": 3.16,
       "sector": "Uranium",
       "technigrade": [],
+      "peers": ["UEC", "URG", "UUUU", "DNN", "UROY", "CCJ"],
       "invalidation_1": 2.05,
       "invalidation_2": -1,
       "invalidation_3": -1,
@@ -371,6 +404,7 @@
       "sector": "Uranium",
       "player": 5,
       "technigrade": [],
+      "peers": ["PDN.AX", "BMN.AX", "NXG.AX", "BOE.AX", "LOT.AX", "ERA.AX"],
       "invalidation_1": 1.87,
       "invalidation_2": 1.45,
       "invalidation_3": -1,
@@ -385,6 +419,7 @@
       "sector": "Uranium",
       "player": 2,
       "technigrade": [4, 1, 1, 1, 1],
+      "peers": ["LEU", "SMR", "BWXT", "CCJ", "UEC", "NXE"],
       "invalidation_1": 15.35,
       "invalidation_2": 13.57,
       "invalidation_3": -1,
@@ -399,6 +434,7 @@
       "sector": "Uranium",
       "player": 2,
       "technigrade": [2, 1, 1, 1, 1],
+      "peers": ["LTBR", "BWXT", "SMR", "CCJ", "UEC", "NXE"],
       "invalidation_1": 247.49,
       "invalidation_2": -1,
       "invalidation_3": -1,
@@ -413,6 +449,7 @@
       "sector": "Uranium",
       "player": 2,
       "technigrade": [7, 3, 3, 2, 2],
+      "peers": ["SMR", "LEU", "OKLO", "LTBR", "BWXT", "EU"],
       "invalidation_1": 39.9,
       "invalidation_2": 36.7,
       "invalidation_3": 34.23,
@@ -427,6 +464,7 @@
       "sector": "Uranium",
       "player": 2,
       "technigrade": [1, 1, 1, 1, 1],
+      "peers": ["SMR", "LEU", "NNE", "LTBR", "BWXT", "CCJ"],
       "invalidation_1": 114,
       "invalidation_2": 108,
       "invalidation_3": -1,
@@ -441,6 +479,7 @@
       "sector": "Uranium",
       "player": 2,
       "technigrade": [],
+      "peers": ["NXE.TO", "UEC", "UUUU", "CCJ", "EU", "U.UN.TO"],
       "invalidation_1": 3.37,
       "invalidation_2": -1,
       "invalidation_3": -1,
@@ -454,7 +493,8 @@
       "average_cost": 6.01,
       "sector": "Energy",
       "target_1": 18.67,
-      "player": 7
+      "player": 7,
+      "peers": ["WCP.TO", "BTE.TO", "OBE.TO", "BIR.TO", "MEG.TO", "TOU.TO"]
     },
     {
       "ticker": "FANG",
@@ -463,7 +503,8 @@
       "sector": "Energy",
       "target_1": 227,
       "player": 7,
-      "technigrade": [11, 11, 13, 12, 11]
+      "technigrade": [11, 11, 13, 12, 11],
+      "peers": ["DVN", "EOG", "MTDR", "PR", "MGY", "OXY"]
     },
     {
       "ticker": "DVN",
@@ -480,7 +521,8 @@
       "average_cost": 2.2,
       "sector": "Energy",
       "target_1": "",
-      "player": 7
+      "player": 7,
+      "peers": ["FANG", "EOG", "MTDR", "OXY", "HES", "MRO"]
     },
     {
       "ticker": "1810.HK",
@@ -490,6 +532,7 @@
       "target_1": 66,
       "player": 0,
       "technigrade": [19, 19, 19, 18, 16],
+      "peers": ["0700.HK", "9988.HK", "2018.HK", "AAPL", "SSNLF", "HMI"],
       "invalidation_1": 50.1,
       "invalidation_2": 45,
       "invalidation_3": 41.2
@@ -501,6 +544,7 @@
       "sector": "Aerospace & Defense",
       "player": 4,
       "technigrade": [19, 6, 7, 6, 4],
+      "peers": ["JOBY", "EVEX", "EVTL", "EH", "KRMN"],
       "invalidation_1": 9.1,
       "invalidation_2": 8.86,
       "invalidation_3": -1,
@@ -515,6 +559,7 @@
       "sector": "Aerospace & Defense",
       "player": 4,
       "technigrade": [4, 2, 3, 2, 2],
+      "peers": ["ACHR", "LILM", "EVEX", "EVTL", "EH", "BLDE"],
       "invalidation_1": 14.15,
       "invalidation_2": 12.72,
       "invalidation_3": -1,
@@ -528,7 +573,8 @@
       "average_cost": 224.64,
       "sector": "Bitcoin",
       "target_1": 387,
-      "player": 0
+      "player": 0,
+      "peers": ["COIN", "HOOD", "PYPL", "FI", "ETOR", "BMNR"]
     },
     {
       "ticker": "HIMS",
@@ -537,6 +583,7 @@
       "sector": "Healthcare",
       "player": 2,
       "technigrade": [19, 18, 16, 13, 6],
+      "peers": ["TDOC", "AMWL", "LMDX", "CI", "DVA", "OPCH"],
       "invalidation_1": 50.49,
       "invalidation_2": 46.29,
       "invalidation_3": 40.78,
@@ -551,6 +598,7 @@
       "sector": "Healthcare",
       "player": 2,
       "technigrade": [2, 5, 5, 3, 3],
+      "peers": ["VKTX", "ICPT", "GLMD", "89BIO", "NVO", "LLY"],
       "invalidation_1": 383.4,
       "invalidation_2": -1,
       "invalidation_3": -1,
@@ -565,6 +613,7 @@
       "sector": "Healthcare",
       "player": 2,
       "technigrade": [13, 3, 3, 3, 2],
+      "peers": ["DOCS", "VEEV", "HQY", "QGEN", "TXG", "SDGR"],
       "invalidation_1": 80.62,
       "invalidation_2": 74.91,
       "invalidation_3": 55,
@@ -579,6 +628,7 @@
       "sector": "Precious Metals",
       "player": 8,
       "technigrade": [14, 12, 14, 13, 12],
+      "peers": ["SCCO", "BHP", "RIO", "VALE", "TECK", "ERO"],
       "invalidation_1": 44.8,
       "invalidation_2": 42.89,
       "invalidation_3": -1,
@@ -593,6 +643,7 @@
       "sector": "Precious Metals",
       "player": 8,
       "technigrade": [13, 3, 3, 2, 1],
+      "peers": ["IONR", "MP", "BHP", "VALE", "CCJ", "TECK"],
       "invalidation_1": 5.42,
       "invalidation_2": 4.93,
       "invalidation_3": 4.37,
@@ -605,6 +656,7 @@
       "shares": 25000,
       "average_cost": 4.31,
       "sector": "Precious Metals",
+      "peers": ["AG", "EXK", "CDE", "PAAS", "MUX", "GGD"],
       "target_1": 5.5,
       "target_2": 6.42,
       "target_3": 7.15,
@@ -615,6 +667,7 @@
       "shares": 19089,
       "average_cost": 53.54,
       "sector": "Precious Metals",
+      "peers": ["AG", "EXK", "PAAS", "CDE", "GGD", "FSM"],
       "player": 8,
       "invalidation_1": 67.86,
       "invalidation_2": 62.47,
@@ -630,6 +683,7 @@
       "sector": "Precious Metals",
       "player": 8,
       "technigrade": [3, 2, 1, 1, 1],
+      "peers": ["HL", "AG", "PAAS", "EXK", "FSM", "MUX"],
       "invalidation_1": 16.7,
       "invalidation_2": 12.48,
       "invalidation_3": -1,
@@ -644,6 +698,7 @@
       "sector": "Technology",
       "player": 10,
       "technigrade": [3, 4, 3, 3, 3],
+      "peers": ["0700.HK", "BABA", "PDD", "JD", "GOOGL", "MSFT"],
       "invalidation_1": 129.22,
       "invalidation_2": 122.31,
       "invalidation_3": -1,
@@ -658,6 +713,7 @@
       "sector": "Others",
       "player": 1,
       "technigrade": [19, 19, 19, 19, 20],
+      "peers": ["DOW", "WLK", "CE", "HUN", "OLN", "EMN"],
       "invalidation_1": 52.68,
       "invalidation_2": 47.55,
       "invalidation_3": -1,
@@ -672,6 +728,7 @@
       "sector": "Others",
       "player": 1,
       "technigrade": [4, 4, 4, 7, 7, 6],
+      "peers": ["SXC", "ZEUS", "CLF", "X", "FRD", "MT"],
       "invalidation_1": 33.28,
       "invalidation_2": 29.81,
       "invalidation_3": -1,
@@ -686,6 +743,7 @@
       "sector": "Others",
       "player": 1,
       "technigrade": [8, 4, 5, 5, 7],
+      "peers": ["QCOM", "TXN", "ADI", "SWKS", "MPWR", "MCHP"],
       "invalidation_1": 116,
       "invalidation_2": 91.91,
       "invalidation_3": 75.76,
@@ -700,6 +758,7 @@
       "sector": "Others",
       "player": 1,
       "technigrade": [6, 7, 5, 4, 5],
+      "peers": ["CAG", "GIS", "CPB", "POST", "SJM", "KHC"],
       "invalidation_1": 60.36,
       "invalidation_2": 58.63,
       "invalidation_3": 50.23,
@@ -714,6 +773,7 @@
       "sector": "Others",
       "player": 1,
       "technigrade": [5, 5, 8, 9, 12],
+      "peers": ["FRO", "TNK", "NAT", "INSW", "EURN", "STNG"],
       "invalidation_1": 12.31,
       "invalidation_2": 10.83,
       "invalidation_3": -1,
@@ -728,6 +788,7 @@
       "sector": "Others",
       "player": 1,
       "technigrade": [7, 13, 11, 12, 12],
+      "peers": ["RPM", "PPG", "SHW", "AXTA", "CLH", "MNTX"],
       "invalidation_1": 31.51,
       "invalidation_2": -1,
       "invalidation_3": -1,
@@ -740,6 +801,7 @@
       "shares": 10000.0,
       "average_cost": 33.44,
       "sector": "Others",
+      "peers": ["FLBR", "EWZS", "ILF", "BRF", "EEM", "VWO"],
       "player": 1,
       "invalidation_1": 31.46,
       "invalidation_2": -1,
@@ -753,6 +815,7 @@
       "shares": 75000.0,
       "average_cost": 1.97,
       "sector": "Others",
+      "peers": ["AMTX", "GPRE", "CLNE", "OPAL", "VLO", "REGI"],
       "player": 2,
       "invalidation_1": 1.3,
       "invalidation_2": -1,
@@ -768,6 +831,7 @@
       "sector": "Others",
       "player": 2,
       "technigrade": [4, 3, 1, 1, 1],
+      "peers": ["LYSDY", "UUUU", "IOC", "NTR", "TECK", "VALE"],
       "invalidation_1": 50.5,
       "invalidation_2": -1,
       "invalidation_3": -1,
@@ -782,6 +846,7 @@
       "sector": "Technology",
       "player": 2,
       "technigrade": [3, 2, 2, 1, 1],
+      "peers": ["SOUN", "IONQ", "DWAC", "SDGR", "DOCS"],
       "invalidation_1": 55.87,
       "invalidation_2": 39.78,
       "invalidation_3": 36.25,
@@ -796,6 +861,7 @@
       "sector": "Technology",
       "player": 2,
       "technigrade": [18, 17, 10, 11, 10],
+      "peers": ["GOOG", "AMZN", "MSFT", "SNAP", "PINS", "BABA"],
       "invalidation_1": -1,
       "invalidation_2": -1,
       "invalidation_3": -1,
@@ -810,6 +876,7 @@
       "sector": "Others",
       "player": 2,
       "technigrade": [8, 12, 8, 9, 13],
+      "peers": ["PLNT", "LULU", "YETI", "TRNR", "XPOF", "MODG"],
       "invalidation_1": 7.19,
       "invalidation_2": 6.97,
       "invalidation_3": 6.04,
@@ -824,6 +891,7 @@
       "sector": "Technology",
       "player": 2,
       "technigrade": [10, 7, 9, 11, 10],
+      "peers": ["MSFT", "GOOGL", "CSCO", "TEAM", "RING", "TWLO"],
       "invalidation_1": 80.74,
       "invalidation_2": 76.14,
       "invalidation_3": -1,
@@ -838,6 +906,7 @@
       "sector": "Technology",
       "player": 2,
       "technigrade": [2, 2, 2, 2, 2],
+      "peers": ["DDOG", "SNOW", "ORCL", "MSFT", "CRM", "CRWD"],
       "invalidation_1": 275.7,
       "invalidation_2": 251.2,
       "invalidation_3": -1,
@@ -852,6 +921,7 @@
       "sector": "Technology",
       "player": 2,
       "technigrade": [6, 3, 3, 3, 2],
+      "peers": ["CSCO", "JNPR", "DELL", "HPE", "MSFT", "AVGO"],
       "invalidation_1": 133.31,
       "invalidation_2": 127.58,
       "invalidation_3": 119.25,
@@ -866,6 +936,7 @@
       "sector": "Technology",
       "player": 2,
       "technigrade": [19, 14, 18, 19, 20],
+      "peers": ["ZM", "RING", "TWLO", "CRM", "ASPN", "CSCO"],
       "invalidation_1": 21.04,
       "invalidation_2": -1,
       "invalidation_3": -1,
@@ -880,6 +951,7 @@
       "sector": "Technology",
       "player": 2,
       "technigrade": [6, 4, 3, 4, 3],
+      "peers": ["META", "PINS", "SNAP", "GOOG", "TWLO", "DDOG"],
       "invalidation_1": 194.62,
       "invalidation_2": -1,
       "invalidation_3": -1,
@@ -894,6 +966,7 @@
       "sector": "Technology",
       "player": 2,
       "technigrade": [6, 6, 11, 13, 11],
+      "peers": ["MSFT", "GOOGL", "AAPL", "META", "BABA", "WMT"],
       "invalidation_1": 213,
       "invalidation_2": 161.38,
       "invalidation_3": 151.61,
@@ -908,6 +981,7 @@
       "sector": "Technology",
       "player": 2,
       "technigrade": [],
+      "peers": ["ENVX", "SES", "SLDP", "KULR", "PLUG", "EOSE"],
       "invalidation_1": 11.49,
       "invalidation_2": 9.5,
       "invalidation_3": -1,
@@ -922,6 +996,7 @@
       "sector": "Uranium",
       "player": 2,
       "technigrade": [11, 12, 8, 7, 6],
+      "peers": ["PEG", "NRG", "DYN", "ETR", "CEG", "CVA"],
       "invalidation_1": 191.7,
       "invalidation_2": 178.7,
       "invalidation_3": -1,
@@ -934,6 +1009,7 @@
       "shares": 8000.0,
       "average_cost": 49.89,
       "sector": "Uranium",
+      "peers": ["URNM", "NLR", "SRUUF", "URAN", "XME"],
       "player": 2,
       "invalidation_1": 44.45,
       "invalidation_2": 42.16,
@@ -949,6 +1025,7 @@
       "sector": "Others",
       "player": 2,
       "technigrade": [3, 3, 5, 3, 3],
+      "peers": ["NVDA", "AVGO", "AMD", "CSCO", "MU", "ANET"],
       "invalidation_1": 85.27,
       "invalidation_2": 78.79,
       "invalidation_3": -1,
@@ -963,6 +1040,7 @@
       "sector": "Others",
       "player": 2,
       "technigrade": [19, 20, 17, 16, 18],
+      "peers": ["SEDG", "RUN", "SPWR", "FSLR", "PLUG", "SOL"],
       "invalidation_1": 29.89,
       "invalidation_2": -1,
       "invalidation_3": -1,
@@ -977,6 +1055,7 @@
       "sector": "Fertilizer",
       "player": 3,
       "technigrade": [19, 19, 19, 19, 19],
+      "peers": ["MOS", "NTR", "CF", "CMP", "SMG", "SQM"],
       "invalidation_1": 28.04,
       "invalidation_2": 27.25,
       "invalidation_3": -1,
@@ -989,6 +1068,7 @@
       "shares": 45000,
       "average_cost": 32.35,
       "sector": "Technology",
+      "peers": ["VNET", "KC", "DLR", "EQIX", "CDAT"],
       "player": 10,
       "invalidation_1": 34.37,
       "invalidation_2": 32.03,
@@ -1002,6 +1082,14 @@
       "shares": 333894.0,
       "average_cost": 10.03,
       "sector": "Hong Kong and China",
+      "peers": [
+        "2628.HK",
+        "2601.HK",
+        "1336.HK",
+        "1299.HK",
+        "601628.SS",
+        "601318.SS"
+      ],
       "player": 10,
       "invalidation_1": 52.4,
       "invalidation_2": 47.5,
@@ -1015,6 +1103,7 @@
       "shares": 14256.0,
       "average_cost": 25.54,
       "sector": "Hong Kong and China",
+      "peers": ["CQQQ", "GCH", "CHIN", "EEM", "VWO"],
       "player": 10,
       "invalidation_1": 39.17,
       "invalidation_2": 38.1,
@@ -1030,6 +1119,7 @@
       "sector": "Hong Kong and China",
       "player": 10,
       "technigrade": [6, 6, 6, 6, 5],
+      "peers": ["BIDU", "BABA", "PDD", "JD", "MSFT", "META"],
       "invalidation_1": 621,
       "invalidation_2": -1,
       "invalidation_3": -1,
@@ -1044,6 +1134,7 @@
       "sector": "Hong Kong and China",
       "player": 10,
       "technigrade": [4, 3, 3, 3, 3],
+      "peers": ["0700.HK", "BIDU", "PDD", "JD", "AMZN", "MSFT"],
       "invalidation_1": 145.8,
       "invalidation_2": 132,
       "invalidation_3": 118.5,
@@ -1058,6 +1149,7 @@
       "sector": "Hong Kong and China",
       "player": 10,
       "technigrade": [13, 11, 12, 11, 14],
+      "peers": ["JD", "9988.HK", "0700.HK", "PDD", "AMZN", "3690.HK"],
       "invalidation_1": 127.8,
       "invalidation_2": 122.4,
       "invalidation_3": 115,
@@ -1070,6 +1162,7 @@
       "shares": 11022.0,
       "average_cost": 0.0,
       "sector": "Hong Kong and China",
+      "peers": ["0700.HK", "9988.HK", "JD", "PDD", "UBER", "TCOM"],
       "player": 10,
       "invalidation_1": 106.4,
       "invalidation_2": 94.7,
@@ -1083,6 +1176,14 @@
       "shares": 4000,
       "average_cost": 138.08,
       "sector": "Hong Kong and China",
+      "peers": [
+        "1929.HK",
+        "1913.HK",
+        "0590.HK",
+        "6168.HK",
+        "3306.HK",
+        "1299.HK"
+      ],
       "player": 10,
       "invalidation_1": 711,
       "invalidation_2": -1,
@@ -1096,6 +1197,7 @@
       "shares": 45000,
       "average_cost": 4.12,
       "sector": "Hong Kong and China",
+      "peers": ["VNET", "DLR", "EQIX", "0960.HK", "9988.HK", "0700.HK"],
       "player": 6,
       "invalidation_1": 35.08,
       "invalidation_2": 30.08,

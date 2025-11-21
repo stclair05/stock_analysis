@@ -131,7 +131,7 @@ function HomePage() {
         const peers = Array.isArray(json.sector_peers)
           ? json.sector_peers
               .filter((p: unknown) => typeof p === "string" && p.trim())
-              .map((p: string) => p.trim())
+              .map((p: string) => p.trim().toUpperCase())
           : [];
 
         setMomentumScore(score);
@@ -276,7 +276,10 @@ function HomePage() {
             </div>
 
             <div className="chart-card">
-              <StockChart stockSymbol={stockSymbol} />
+              <StockChart
+                stockSymbol={stockSymbol}
+                peersOverride={momentumPeers}
+              />
             </div>
 
             <div className="fundamental-card">

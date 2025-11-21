@@ -17,6 +17,7 @@ from .stock_analyser import StockAnalyser
 FMP_API_KEY = os.getenv("FMP_API_KEY")
 _FMP_PEERS_URL = "https://financialmodelingprep.com/api/v4/stock_peers"
 _PEERS_BULK_PATH = Path(__file__).resolve().parent.parent / "peers_bulk.json"
+_PORTFOLIO_STORE_PATH = Path(__file__).resolve().parent.parent / "portfolio_store.json"
 _MAX_PEERS = 15
 
 
@@ -73,10 +74,42 @@ def _load_bulk_peers() -> dict[str, list[str]]:
     return lookup
 
 
+@lru_cache(maxsize=1)
+def _load_portfolio_peers() -> dict[str, list[str]]:
+    if not _PORTFOLIO_STORE_PATH.exists():
+        return {}
+    try:
+        with open(_PORTFOLIO_STORE_PATH, "r") as handle:
+            data = json.load(handle)
+    except Exception as exc:
+        print(f"[momentum] Failed to load portfolio_store.json: {exc}")
+        return {}
+
+    equities = data.get("equities") if isinstance(data, dict) else None
+    if not isinstance(equities, list):
+        return {}
+
+    lookup: dict[str, list[str]] = {}
+    for entry in equities:
+        if not isinstance(entry, dict):
+            continue
+        symbol = entry.get("ticker")
+        peers = entry.get("peers")
+        if isinstance(symbol, str) and isinstance(peers, list):
+            cleaned_symbol = _sanitize_symbol(symbol)
+            cleaned_peers = [p for p in peers if isinstance(p, str)]
+            if cleaned_peers:
+                lookup[cleaned_symbol] = cleaned_peers
+    return lookup
+
+
 @lru_cache(maxsize=512)
 def get_fmp_peers(symbol: str) -> list[str]:
-    """Return peers for *symbol*, preferring live API data."""
+    """Return peers for *symbol*, preferring custom list, then FMP data."""
     cleaned = _sanitize_symbol(symbol)
+    portfolio_peers = _load_portfolio_peers().get(cleaned)
+    if portfolio_peers:
+        return portfolio_peers
     peers = _fetch_peers_via_api(cleaned)
     if peers:
         return peers

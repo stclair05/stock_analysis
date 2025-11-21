@@ -28,6 +28,7 @@ export type Drawing = DrawingLine | DrawingHorizontal | DrawingSixPoint;
 
 export interface StockChartProps {
   stockSymbol: string;
+  peersOverride?: string[];
 }
 
 export type Point = { time: UTCTimestamp; value: number };
