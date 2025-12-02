@@ -622,6 +622,21 @@
       "target_3": -1
     },
     {
+      "ticker": "XAUUSD",
+      "shares": 500,
+      "average_cost": 4231.8,
+      "sector": "Precious Metals",
+      "player": 8
+    },
+    {
+      "ticker": "XAGUSD",
+      "shares": 110000,
+      "average_cost": 57.1993,
+      "sector": "Precious Metals",
+      "player": 8
+    },
+
+    {
       "ticker": "FCX",
       "shares": 21000,
       "average_cost": 45.16,
@@ -652,20 +667,9 @@
       "target_3": 11.96
     },
     {
-      "ticker": "ASM",
-      "shares": 25000,
-      "average_cost": 4.31,
-      "sector": "Precious Metals",
-      "peers": ["AG", "EXK", "CDE", "PAAS", "MUX", "GGD"],
-      "target_1": 5.5,
-      "target_2": 6.42,
-      "target_3": 7.15,
-      "player": 8
-    },
-    {
       "ticker": "SIL",
-      "shares": 19089,
-      "average_cost": 53.54,
+      "shares": 44089,
+      "average_cost": 68.25,
       "sector": "Precious Metals",
       "peers": ["AG", "EXK", "PAAS", "CDE", "GGD", "FSM"],
       "player": 8,
@@ -677,9 +681,38 @@
       "target_3": 85
     },
     {
+      "ticker": "SILJ",
+      "shares": 30000,
+      "average_cost": 26.62,
+      "sector": "Precious Metals",
+      "peers": ["SIL", "SLVP", "PSLV", "SIVR"],
+      "player": 8,
+      "invalidation_1": 25.43,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": 32,
+      "target_2": -1,
+      "target_3": -1
+    },
+    {
+      "ticker": "HL",
+      "shares": 80000,
+      "average_cost": 16.99,
+      "sector": "Precious Metals",
+      "player": 8,
+      "technigrade": [1, 1, 1, 1, 1],
+      "peers": ["AG", "PAAS", "CDE", "EXK", "FSM"],
+      "invalidation_1": 16.09,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": 21,
+      "target_2": -1,
+      "target_3": -1
+    },
+    {
       "ticker": "CDE",
-      "shares": 20000,
-      "average_cost": 19.49,
+      "shares": 50000,
+      "average_cost": 17.694,
       "sector": "Precious Metals",
       "player": 8,
       "technigrade": [5, 3, 3, 2, 1],
@@ -689,6 +722,20 @@
       "invalidation_3": -1,
       "target_1": 23.3,
       "target_2": 31.95,
+      "target_3": -1
+    },
+    {
+      "ticker": "ASM",
+      "shares": 45000,
+      "average_cost": 5.81,
+      "sector": "Precious Metals",
+      "player": 8,
+      "peers": ["AG", "EXK", "FSM", "CDE", "PAAS"],
+      "invalidation_1": 5.5,
+      "invalidation_2": 5.16,
+      "invalidation_3": -1,
+      "target_1": 6.42,
+      "target_2": 7,
       "target_3": -1
     },
     {
@@ -783,8 +830,8 @@
     },
     {
       "ticker": "EWZ",
-      "shares": 10000.0,
-      "average_cost": 33.44,
+      "shares": 20000,
+      "average_cost": 33.51,
       "sector": "Others",
       "peers": ["FLBR", "EWZS", "ILF", "BRF", "EEM", "VWO"],
       "player": 1,
@@ -811,8 +858,8 @@
     },
     {
       "ticker": "MP",
-      "shares": 6000.0,
-      "average_cost": 61.47,
+      "shares": 14000,
+      "average_cost": 60.911,
       "sector": "Others",
       "player": 2,
       "technigrade": [8, 4, 4, 3, 1],
@@ -930,21 +977,6 @@
       "target_3": 50
     },
     {
-      "ticker": "RDDT",
-      "shares": 2000.0,
-      "average_cost": 213.28,
-      "sector": "Technology",
-      "player": 2,
-      "technigrade": [11, 7, 6, 4, 3],
-      "peers": ["META", "PINS", "SNAP", "GOOG", "TWLO", "DDOG"],
-      "invalidation_1": 194.62,
-      "invalidation_2": -1,
-      "invalidation_3": -1,
-      "target_1": 230,
-      "target_2": 320,
-      "target_3": 355
-    },
-    {
       "ticker": "AMZN",
       "shares": 2500.0,
       "average_cost": 255,
@@ -972,6 +1004,21 @@
       "invalidation_3": -1,
       "target_1": 15.7,
       "target_2": 17.2,
+      "target_3": -1
+    },
+    {
+      "ticker": "MU",
+      "shares": 25000.0,
+      "average_cost": 235.5,
+      "sector": "Technology",
+      "player": 2,
+      "technigrade": [],
+      "peers": ["SKHYY", "SSNLF", "WDC", "KLAC", "AMAT"],
+      "invalidation_1": 192.06,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": 280,
+      "target_2": -1,
       "target_3": -1
     },
     {
@@ -1064,8 +1111,8 @@
     },
     {
       "ticker": "NBIS",
-      "shares": 5000,
-      "average_cost": 99.4,
+      "shares": 10000,
+      "average_cost": 97.95,
       "sector": "Technology",
       "technigrade": [4, 3, 1, 1, 1],
       "peers": ["NVDA", "ORCL", "CRWV", "IREN", "MSFT", "AMD"],
