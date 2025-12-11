@@ -19,6 +19,9 @@ function HomePage() {
   const [error, setError] = useState<string | null>(null);
 
   const [momentumScore, setMomentumScore] = useState<number | null>(null);
+  const [portfolioMomentumScore, setPortfolioMomentumScore] = useState<
+    number | null
+  >(null);
   const [momentumPeers, setMomentumPeers] = useState<string[]>([]);
   const [momentumLoading, setMomentumLoading] = useState(false);
 
@@ -110,6 +113,7 @@ function HomePage() {
     let cancelled = false;
     setMomentumLoading(true);
     setMomentumScore(null);
+    setPortfolioMomentumScore(null);
     setMomentumPeers([]);
 
     const fetchMomentum = async () => {
@@ -128,6 +132,10 @@ function HomePage() {
           typeof json.sector_momentum_zscore === "number"
             ? json.sector_momentum_zscore
             : null;
+        const portfolioScore =
+          typeof json.portfolio_momentum_zscore === "number"
+            ? json.portfolio_momentum_zscore
+            : null;
         const peers = Array.isArray(json.sector_peers)
           ? json.sector_peers
               .filter((p: unknown) => typeof p === "string" && p.trim())
@@ -135,6 +143,7 @@ function HomePage() {
           : [];
 
         setMomentumScore(score);
+        setPortfolioMomentumScore(portfolioScore);
         setMomentumPeers(peers);
       } catch (err) {
         console.error("Failed to fetch sector momentum", err);
@@ -152,6 +161,10 @@ function HomePage() {
   const momentumStyle =
     typeof momentumScore === "number"
       ? momentumBadgeStyle(momentumScore)
+      : null;
+  const portfolioMomentumStyle =
+    typeof portfolioMomentumScore === "number"
+      ? momentumBadgeStyle(portfolioMomentumScore)
       : null;
 
   return (
@@ -205,34 +218,64 @@ function HomePage() {
         {stockSymbol && (
           <div
             className="card shadow-sm border-0 flex-grow-1"
-            style={{ maxWidth: "450px" }}
+            style={{ maxWidth: "520px" }}
           >
             <div className="card-body">
-              <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2">
-                <div className="fw-semibold d-flex align-items-center gap-2">
-                  <span>Sector momentum score:</span>
-                  {typeof momentumScore === "number" ? (
-                    <span
-                      className="badge rounded-pill"
-                      style={{
-                        backgroundColor: momentumStyle?.background,
-                        color: momentumStyle?.color,
-                        fontSize: "0.95rem",
-                        padding: "0.55rem 0.8rem",
-                        minWidth: "4.5rem",
-                        textAlign: "center",
-                        boxShadow: "0 2px 6px rgba(0, 0, 0, 0.08)",
-                      }}
-                    >
-                      {momentumScore.toFixed(2)}
-                    </span>
-                  ) : (
-                    "N/A"
-                  )}
+              <div className="d-flex flex-column gap-3">
+                <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2">
+                  <div className="fw-semibold d-flex align-items-center gap-2">
+                    <span>Sector momentum score:</span>
+                    {typeof momentumScore === "number" ? (
+                      <span
+                        className="badge rounded-pill"
+                        style={{
+                          backgroundColor: momentumStyle?.background,
+                          color: momentumStyle?.color,
+                          fontSize: "0.95rem",
+                          padding: "0.55rem 0.8rem",
+                          minWidth: "4.5rem",
+                          textAlign: "center",
+                          boxShadow: "0 2px 6px rgba(0, 0, 0, 0.08)",
+                        }}
+                      >
+                        {momentumScore.toFixed(2)}
+                      </span>
+                    ) : (
+                      "N/A"
+                    )}
+                  </div>
+                  <div className="small text-muted fst-italic">
+                    Peers:{" "}
+                    {momentumPeers.length > 0
+                      ? momentumPeers.join(", ")
+                      : "N/A"}
+                  </div>
                 </div>
-                <div className="small text-muted fst-italic">
-                  Peers:{" "}
-                  {momentumPeers.length > 0 ? momentumPeers.join(", ") : "N/A"}
+                <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2">
+                  <div className="fw-semibold d-flex align-items-center gap-2">
+                    <span>Portfolio momentum score:</span>
+                    {typeof portfolioMomentumScore === "number" ? (
+                      <span
+                        className="badge rounded-pill"
+                        style={{
+                          backgroundColor: portfolioMomentumStyle?.background,
+                          color: portfolioMomentumStyle?.color,
+                          fontSize: "0.95rem",
+                          padding: "0.55rem 0.8rem",
+                          minWidth: "4.5rem",
+                          textAlign: "center",
+                          boxShadow: "0 2px 6px rgba(0, 0, 0, 0.08)",
+                        }}
+                      >
+                        {portfolioMomentumScore.toFixed(2)}
+                      </span>
+                    ) : (
+                      "N/A"
+                    )}
+                  </div>
+                  <div className="small text-muted fst-italic text-md-end">
+                    Compared against full portfolio momentum distribution
+                  </div>
                 </div>
               </div>
 

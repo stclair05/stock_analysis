@@ -35,6 +35,7 @@ class StockAnalysisResponse(BaseModel):
     sell_signal: dict[str, int | None] | None = None
     sector_momentum_zscore: float | None = None
     sector_peers: list[str] | None = None
+    portfolio_momentum_zscore: float | None = None
 
 class WaveLabel(BaseModel):
     index: int

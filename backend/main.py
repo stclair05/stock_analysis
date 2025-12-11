@@ -28,6 +28,7 @@ from fastapi.responses import JSONResponse
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from time import time
+import math
 from aliases import SYMBOL_ALIASES
 import yfinance as yf
 import asyncio
@@ -51,15 +52,100 @@ app.add_middleware(
 
 # Symbol → (Fundamentals, timestamp)
 _fundamentals_cache = {}
+PORTFOLIO_RETURNS_CACHE: dict[str, float] = {}
+PORTFOLIO_RETURNS_LAST_UPDATED = 0.0
+PORTFOLIO_RETURNS_TTL_SECONDS = 15 * 60  # 15 minutes cache
+
+
+def _get_portfolio_equities():
+    json_path = Path("portfolio_store.json")
+    if not json_path.exists():
+        return []
+    with open(json_path, "r") as f:
+        data = json.load(f)
+        equities = data.get("equities", [])
+        return [
+            item for item in equities if isinstance(item, dict) and "ticker" in item
+        ]
+
+
+def _blended_return_for_symbol(symbol: str) -> tuple[str, float | None]:
+    try:
+        analyser = StockAnalyser(symbol)
+        closes = analyser.df.get("Close")
+        if closes is None:
+            return symbol, None
+        if isinstance(closes, pd.DataFrame):
+            closes = closes.iloc[:, 0]
+        blended = blended_return(closes)
+        blended_val = float(blended)
+        if math.isfinite(blended_val):
+            return symbol, blended_val
+    except Exception:
+        return symbol, None
+    return symbol, None
+
+
+def _portfolio_blended_returns() -> dict[str, float]:
+    global PORTFOLIO_RETURNS_CACHE, PORTFOLIO_RETURNS_LAST_UPDATED
+
+    now = time()
+    if (
+        PORTFOLIO_RETURNS_CACHE
+        and now - PORTFOLIO_RETURNS_LAST_UPDATED < PORTFOLIO_RETURNS_TTL_SECONDS
+    ):
+        return PORTFOLIO_RETURNS_CACHE
+
+    equities = _get_portfolio_equities()
+    symbols = [item["ticker"] for item in equities if isinstance(item.get("ticker"), str)]
+    if not symbols:
+        PORTFOLIO_RETURNS_CACHE = {}
+        PORTFOLIO_RETURNS_LAST_UPDATED = now
+        return PORTFOLIO_RETURNS_CACHE
+
+    returns: dict[str, float] = {}
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        futures = {
+            executor.submit(_blended_return_for_symbol, symbol): symbol
+            for symbol in symbols
+        }
+        for future in as_completed(futures):
+            symbol, value = future.result()
+            if value is not None:
+                returns[symbol] = value
+
+    PORTFOLIO_RETURNS_CACHE = returns
+    PORTFOLIO_RETURNS_LAST_UPDATED = now
+    return PORTFOLIO_RETURNS_CACHE
 
 @app.post("/analyse", response_model=StockAnalysisResponse)
 def analyse(stock_request: StockRequest):
     analyser = StockAnalyser(stock_request.symbol)
     change_amt, change_pct = analyser.get_daily_change()
-    momentum_score = sector_relative_momentum_zscore(
-        stock_request.symbol, analyser.df.get("Close")
+    closes = analyser.df.get("Close")
+    if closes is not None and isinstance(closes, pd.DataFrame):
+        closes = closes.iloc[:, 0]
+
+    momentum_score = (
+        sector_relative_momentum_zscore(stock_request.symbol, closes)
+        if closes is not None
+        else None
     )
     peers = get_fmp_peers(stock_request.symbol)
+
+    portfolio_momentum_score = None
+    try:
+        blended = blended_return(closes) if closes is not None else None
+        if blended is not None:
+            blended_val = float(blended)
+            if math.isfinite(blended_val):
+                portfolio_returns = _portfolio_blended_returns()
+                combined_returns = {**portfolio_returns, stock_request.symbol: blended_val}
+                zscores = portfolio_relative_momentum_zscores(combined_returns)
+                portfolio_momentum_score = zscores.get(stock_request.symbol)
+    except Exception:
+        portfolio_momentum_score = None
+
     return StockAnalysisResponse(
         current_price=analyser.get_current_price(),
         daily_change=change_amt,
@@ -84,6 +170,7 @@ def analyse(stock_request: StockRequest):
         sell_signal=analyser.sell_signal_score(),
         sector_momentum_zscore=momentum_score,
         sector_peers=peers,
+        portfolio_momentum_zscore=portfolio_momentum_score,
     )
 
 @app.post("/elliott", response_model=ElliottWaveScenariosResponse)
@@ -114,27 +201,22 @@ def _sanitize_level(val):
 
 @app.get("/portfolio_tickers")
 def get_portfolio_tickers():
-    json_path = Path("portfolio_store.json")
-    if not json_path.exists():
-        return []
-    with open(json_path, "r") as f:
-        data = json.load(f)
-        equities = data.get("equities", [])
-         # Return ticker, sector, and optional levels for each equity
-        return [
-            {
-                "ticker": item["ticker"],
-                "sector": item.get("sector", "N/A"),
-                "target_1": _sanitize_level(item.get("target_1")),
-                "target_2": _sanitize_level(item.get("target_2")),
-                "target_3": _sanitize_level(item.get("target_3")),
-                "invalidation_1": _sanitize_level(item.get("invalidation_1")),
-                "invalidation_2": _sanitize_level(item.get("invalidation_2")),
-                "invalidation_3": _sanitize_level(item.get("invalidation_3")),
-            }
-            for item in equities
-            if "ticker" in item
-        ]
+    equities = _get_portfolio_equities()
+    # Return ticker, sector, and optional levels for each equity
+    return [
+        {
+            "ticker": item["ticker"],
+            "sector": item.get("sector", "N/A"),
+            "target_1": _sanitize_level(item.get("target_1")),
+            "target_2": _sanitize_level(item.get("target_2")),
+            "target_3": _sanitize_level(item.get("target_3")),
+            "invalidation_1": _sanitize_level(item.get("invalidation_1")),
+            "invalidation_2": _sanitize_level(item.get("invalidation_2")),
+            "invalidation_3": _sanitize_level(item.get("invalidation_3")),
+        }
+        for item in equities
+        if "ticker" in item
+    ]
 
 
 def _status_for_holdings(holdings, price_direction: str):

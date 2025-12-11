@@ -81,7 +81,7 @@
       "target_1": 50,
       "player": 2,
       "technigrade": [7, 11, 10, 12, 17],
-      "peers": ["RRC", "SWN", "EQT", "CNX", "CTRA", "CHRD"]
+      "peers": ["RRC", "EQT", "CNX", "CTRA", "CHRD"]
     },
     {
       "ticker": "RRC",
@@ -155,7 +155,7 @@
       "sector": "Energy",
       "target_1": "",
       "player": 2,
-      "peers": ["CTRA", "EQT", "AR", "RRC", "SWN", "CHK"]
+      "peers": ["CTRA", "EQT", "AR", "RRC", "CHK"]
     },
     {
       "ticker": "APA",
