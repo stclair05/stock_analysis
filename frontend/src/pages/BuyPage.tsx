@@ -68,6 +68,7 @@ type BuyStatusResponse = {
   breach_hit: Record<string, BreachHitStatus>;
   ma_crossovers: MovingAverageCrossovers;
   momentum: Record<string, number>;
+  portfolio_momentum: Record<string, number>;
   divergence: Record<string, DivergenceInfo>;
 };
 
@@ -88,6 +89,7 @@ const FALLBACK_DATA: BuyStatusResponse = {
   breach_hit: {},
   ma_crossovers: {},
   momentum: {},
+  portfolio_momentum: {},
   divergence: {},
 };
 
@@ -105,6 +107,7 @@ type SortColumn =
   | "mace"
   | "stage"
   | "momentum"
+  | "portfolioMomentum"
   | "divergence"
   | "shortTrend"
   | "longTrend"
@@ -124,7 +127,8 @@ const DATA_COLUMN_META: { key: DataColumn; label: string }[] = [
   { key: "mansfield", label: "Mansfield (D)" },
   { key: "mace", label: "MACE" },
   { key: "stage", label: "Stage" },
-  { key: "momentum", label: "Momentum" },
+  { key: "momentum", label: "Momentum (Sector)" },
+  { key: "portfolioMomentum", label: "Momentum (Portfolio)" },
   { key: "divergence", label: "Divergence" },
   { key: "shortTrend", label: "Short-Term Trend" },
   { key: "longTrend", label: "Long-Term Trend" },
@@ -159,6 +163,7 @@ type RowContext = {
   breachInfo?: BreachHitStatus;
   maCrossovers?: Partial<Record<MovingAverageKey, MovingAverageDirection>>;
   momentumScore?: number;
+  portfolioMomentumScore?: number;
   divergenceInfo?: DivergenceInfo;
 };
 
@@ -346,6 +351,7 @@ export default function BuyPage({
       const longTrendScore = resolvedData.long_term_trend?.[symbol];
       const breachInfo = resolvedData.breach_hit?.[symbol];
       const momentumScore = resolvedData.momentum?.[symbol];
+      const portfolioMomentumScore = resolvedData.portfolio_momentum?.[symbol];
       const divergenceInfo = resolvedData.divergence?.[symbol];
 
       const getDivergenceScore = (info?: DivergenceInfo) => {
@@ -429,6 +435,10 @@ export default function BuyPage({
           return typeof momentumScore === "number"
             ? momentumScore
             : Number.NEGATIVE_INFINITY;
+        case "portfolioMomentum":
+          return typeof portfolioMomentumScore === "number"
+            ? portfolioMomentumScore
+            : Number.NEGATIVE_INFINITY;
         case "shortTrend":
           if (typeof shortTrendScore !== "number") return 0;
           return shortTrendScore >= 2 ? 2 : -2;
@@ -457,6 +467,7 @@ export default function BuyPage({
       resolvedData.candle_signals,
       resolvedData.long_term_trend,
       resolvedData.momentum,
+      resolvedData.portfolio_momentum,
       resolvedData.mace,
       resolvedData.mansfield_daily,
       resolvedData.divergence,
@@ -492,6 +503,7 @@ export default function BuyPage({
       ...Object.keys(resolvedData.mace || {}),
       ...Object.keys(resolvedData.ma_crossovers || {}),
       ...Object.keys(resolvedData.momentum || {}),
+      ...Object.keys(resolvedData.portfolio_momentum || {}),
       ...Object.keys(resolvedData.divergence || {}),
     ],
     [
@@ -506,6 +518,7 @@ export default function BuyPage({
       resolvedData.mace,
       resolvedData.ma_crossovers,
       resolvedData.momentum,
+      resolvedData.portfolio_momentum,
       resolvedData.divergence,
     ]
   );
@@ -663,6 +676,18 @@ export default function BuyPage({
         momentumValues.length
       : null;
 
+  const portfolioMomentumValues = Object.values(
+    resolvedData.portfolio_momentum || {}
+  ).filter(
+    (value): value is number =>
+      typeof value === "number" && Number.isFinite(value)
+  );
+  const avgPortfolioMomentum =
+    portfolioMomentumValues.length > 0
+      ? portfolioMomentumValues.reduce((sum, value) => sum + value, 0) /
+        portfolioMomentumValues.length
+      : null;
+
   const divergenceValues = Object.values(resolvedData.divergence || {});
   const divergenceCounts = divergenceValues.reduce(
     (acc, info) => {
@@ -690,6 +715,8 @@ export default function BuyPage({
     mace: `${maceUp}/${maceDown}`,
     stage: stageSummary,
     momentum: avgMomentum !== null ? avgMomentum.toFixed(2) : "—",
+    portfolioMomentum:
+      avgPortfolioMomentum !== null ? avgPortfolioMomentum.toFixed(2) : "—",
     divergence: `${divergenceCounts.bearish}/${divergenceCounts.bullish}`,
     shortTrend: `${shortUp}/${shortDown}`,
     longTrend: `${longUp}/${longDown}`,
@@ -710,6 +737,7 @@ export default function BuyPage({
         breachInfo,
         maCrossovers,
         momentumScore,
+        portfolioMomentumScore,
         divergenceInfo,
       } = context;
 
@@ -741,6 +769,23 @@ export default function BuyPage({
           className: className || undefined,
           content: isAbove ? "Above" : "Below",
         };
+      };
+
+      const momentumCell = (score?: number): CellDisplay => {
+        if (typeof score !== "number" || Number.isNaN(score)) {
+          return { className: "text-muted", content: "—" };
+        }
+
+        let className: string | undefined;
+        if (score >= 1) {
+          className = "table-success text-success fw-semibold";
+        } else if (score <= -1) {
+          className = "table-danger text-danger fw-semibold";
+        } else {
+          className = "table-warning text-warning";
+        }
+
+        return { className, content: score.toFixed(2) };
       };
 
       switch (column) {
@@ -868,21 +913,10 @@ export default function BuyPage({
               : "",
           };
         case "momentum": {
-          if (
-            typeof momentumScore !== "number" ||
-            Number.isNaN(momentumScore)
-          ) {
-            return { className: "text-muted", content: "—" };
-          }
-          let className: string | undefined;
-          if (momentumScore >= 1) {
-            className = "table-success text-success fw-semibold";
-          } else if (momentumScore <= -1) {
-            className = "table-danger text-danger fw-semibold";
-          } else {
-            className = "table-warning text-warning";
-          }
-          return { className, content: momentumScore.toFixed(2) };
+          return momentumCell(momentumScore);
+        }
+        case "portfolioMomentum": {
+          return momentumCell(portfolioMomentumScore);
         }
         case "divergence": {
           const divergenceTimeframes: (keyof DivergenceInfo)[] = [
@@ -1180,6 +1214,8 @@ export default function BuyPage({
             const breachInfo = resolvedData.breach_hit?.[symbol];
             const maCrossovers = resolvedData.ma_crossovers?.[symbol];
             const momentumScore = resolvedData.momentum?.[symbol];
+            const portfolioMomentumScore =
+              resolvedData.portfolio_momentum?.[symbol];
             const divergenceInfo = resolvedData.divergence?.[symbol];
             const rowContext: RowContext = {
               symbol,
@@ -1193,6 +1229,7 @@ export default function BuyPage({
               breachInfo,
               maCrossovers,
               momentumScore,
+              portfolioMomentumScore,
               divergenceInfo,
             };
             return (

@@ -157,6 +157,22 @@ def _z_score(value: float, samples: Iterable[float]) -> float | None:
     return (value - mean) / std
 
 
+def blended_return(series: pd.Series | None) -> float | None:
+    """Public wrapper to compute the blended return for a price series."""
+
+    if series is None:
+        return None
+
+    if isinstance(series, pd.DataFrame):
+        series = series.iloc[:, 0]
+
+    series = series.dropna()
+    if series.empty:
+        return None
+
+    return _blended_return(series)
+
+
 def sector_relative_momentum_zscore(
     symbol: str, closes: pd.Series | None = None
 ) -> float | None:
@@ -204,4 +220,34 @@ def sector_relative_momentum_zscore(
     return round(float(z_score), 4)
 
 
-__all__ = ["sector_relative_momentum_zscore", "get_fmp_peers"]
+def portfolio_relative_momentum_zscores(
+    returns_map: dict[str, float]
+) -> dict[str, float]:
+    """Calculate z-scores of blended returns against the entire portfolio.
+
+    Args:
+        returns_map: Mapping of ticker → blended return value.
+
+    Returns:
+        Mapping of ticker → z-score (rounded to 4 decimals). Symbols without a
+        valid return are excluded.
+    """
+
+    values = [value for value in returns_map.values() if math.isfinite(value)]
+    if len(values) < 2:
+        return {}
+
+    zscores: dict[str, float] = {}
+    for symbol, value in returns_map.items():
+        z_score = _z_score(value, values)
+        if z_score is not None:
+            zscores[symbol] = round(float(z_score), 4)
+    return zscores
+
+
+__all__ = [
+    "blended_return",
+    "get_fmp_peers",
+    "portfolio_relative_momentum_zscores",
+    "sector_relative_momentum_zscore",
+]

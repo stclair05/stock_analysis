@@ -19,7 +19,9 @@ from stock_analysis.utils import (
     safe_value,
 )
 from stock_analysis.sector_momentum import (
+    blended_return,
     get_fmp_peers,
+    portfolio_relative_momentum_zscores,
     sector_relative_momentum_zscore,
 )
 from fastapi.responses import JSONResponse
@@ -160,8 +162,11 @@ def _status_for_holdings(holdings, price_direction: str):
         "breach_hit": {},
         "ma_crossovers": {},
         "momentum": {},
+        "portfolio_momentum": {},
         "divergence": {},
     }
+
+    portfolio_returns: dict[str, float] = {}
 
     for holding in holdings:
         ticker = holding.get("ticker")
@@ -215,6 +220,10 @@ def _status_for_holdings(holdings, price_direction: str):
             momentum_score = sector_relative_momentum_zscore(ticker, closes)
             if isinstance(momentum_score, (int, float)):
                 results["momentum"][ticker] = momentum_score
+
+            blended = blended_return(closes)
+            if isinstance(blended, (int, float)):
+                portfolio_returns[ticker] = blended
 
             if isinstance(price, (int, float)) and isinstance(twenty, (int, float)):
                 if price_direction == "below" and price < twenty:
@@ -439,6 +448,10 @@ def _status_for_holdings(holdings, price_direction: str):
         except Exception:
             continue
 
+    results["portfolio_momentum"] = portfolio_relative_momentum_zscores(
+        portfolio_returns
+    )
+
     return results
 
 @app.get("/portfolio_status")
@@ -471,6 +484,7 @@ def get_portfolio_status(
             "breach_hit": {},
             "ma_crossovers": {},
             "momentum": {},
+            "portfolio_momentum": {},
             "divergence": {},
         }
 
@@ -830,6 +844,7 @@ def get_buylist_status():
             "breach_hit": {},
             "ma_crossovers": {},
             "momentum": {},
+            "portfolio_momentum": {},
             "divergence": {},
         }
 

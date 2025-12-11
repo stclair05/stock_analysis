@@ -91,7 +91,7 @@
       "target_1": 51,
       "player": 2,
       "technigrade": [8, 8, 8, 10, 14],
-      "peers": ["AR", "SWN", "EQT", "CTRA", "CNX", "CHK"]
+      "peers": ["AR", "EQT", "CTRA", "CNX", "CHK"]
     },
     {
       "ticker": "COP",
@@ -629,13 +629,6 @@
       "player": 8
     },
     {
-      "ticker": "XAGUSD",
-      "shares": 160000,
-      "average_cost": 57.708,
-      "sector": "Precious Metals",
-      "player": 8
-    },
-    {
       "ticker": "FCX",
       "shares": 21000,
       "average_cost": 45.16,
@@ -824,6 +817,21 @@
       "invalidation_2": 29.81,
       "invalidation_3": -1,
       "target_1": 36.7,
+      "target_2": -1,
+      "target_3": -1
+    },
+    {
+      "ticker": "OI",
+      "shares": 32500.0,
+      "average_cost": 14.23,
+      "sector": "Others",
+      "player": 1,
+      "technigrade": [11, 10, 11, 13, 19],
+      "peers": ["AMBP", "CCK", "BALL", "SLGN", "GEF"],
+      "invalidation_1": 13.51,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": 18.46,
       "target_2": -1,
       "target_3": -1
     },
@@ -1125,21 +1133,6 @@
       "target_3": -1
     },
     {
-      "ticker": "MRVL",
-      "shares": 9000,
-      "average_cost": 90.77,
-      "sector": "Others",
-      "player": 2,
-      "technigrade": [5, 10, 5, 3, 3],
-      "peers": ["NVDA", "AVGO", "AMD", "CSCO", "MU", "ANET"],
-      "invalidation_1": 85.27,
-      "invalidation_2": 78.79,
-      "invalidation_3": -1,
-      "target_1": 103.5,
-      "target_2": 126,
-      "target_3": -1
-    },
-    {
       "ticker": "ENPH",
       "shares": 17000,
       "average_cost": 37.41,
@@ -1338,7 +1331,7 @@
     },
     {
       "ticker": "6181.HK",
-      "shares": 4000,
+      "shares": 2000,
       "average_cost": 138.08,
       "sector": "Hong Kong and China",
       "peers": [
@@ -1369,6 +1362,20 @@
       "invalidation_3": -1,
       "target_1": 48.9,
       "target_2": -1,
+      "target_3": -1
+    },
+    {
+      "ticker": "0020.HK",
+      "shares": 570000,
+      "average_cost": 0.28,
+      "sector": "Hong Kong and China",
+      "peers": ["9988.HK", "0700.HK", "0268.HK", "3896.HK", "3690.HK"],
+      "player": 6,
+      "invalidation_1": 2,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": 2.17,
+      "target_2": 3.8,
       "target_3": -1
     }
   ],
