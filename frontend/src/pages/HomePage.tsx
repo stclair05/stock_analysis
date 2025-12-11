@@ -172,13 +172,10 @@ function HomePage() {
       <h1 className="mb-5 text-center fw-bold">Analysis</h1>
 
       {/* Search Bar + Sector Momentum */}
-      <div className="d-flex flex-column flex-lg-row align-items-stretch gap-3 mb-5">
-        <div className="flex-grow-1">
+      <div className="search-momentum-layout mb-5">
+        <div className="search-panel shadow-sm border-0 bg-white">
           <div className="search-bar-container d-flex justify-content-center">
-            <div
-              className="input-group shadow-sm"
-              style={{ maxWidth: "600px", width: "100%" }}
-            >
+            <div className="input-group shadow-sm">
               <input
                 type="text"
                 className="form-control search-input"
@@ -216,10 +213,7 @@ function HomePage() {
         </div>
 
         {stockSymbol && (
-          <div
-            className="card shadow-sm border-0 flex-grow-1"
-            style={{ maxWidth: "520px" }}
-          >
+          <div className="card shadow-sm border-0 momentum-panel">
             <div className="card-body">
               <div className="d-flex flex-column gap-3">
                 <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2">
@@ -232,7 +226,7 @@ function HomePage() {
                           backgroundColor: momentumStyle?.background,
                           color: momentumStyle?.color,
                           fontSize: "0.95rem",
-                          padding: "0.55rem 0.8rem",
+                          padding: "0.6rem 0.85rem",
                           minWidth: "4.5rem",
                           textAlign: "center",
                           boxShadow: "0 2px 6px rgba(0, 0, 0, 0.08)",
@@ -261,7 +255,7 @@ function HomePage() {
                           backgroundColor: portfolioMomentumStyle?.background,
                           color: portfolioMomentumStyle?.color,
                           fontSize: "0.95rem",
-                          padding: "0.55rem 0.8rem",
+                          padding: "0.6rem 0.85rem",
                           minWidth: "4.5rem",
                           textAlign: "center",
                           boxShadow: "0 2px 6px rgba(0, 0, 0, 0.08)",

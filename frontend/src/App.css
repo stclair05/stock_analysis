@@ -10,12 +10,42 @@
   margin-bottom: 40px;
 }
 
+.search-momentum-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 480px);
+  gap: 1.5rem;
+  align-items: stretch;
+  padding: 0 1.25rem;
+}
+
+.search-panel {
+  border-radius: 14px;
+  padding: 24px 28px 20px;
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+}
+
+.search-panel .input-group {
+  max-width: 620px;
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  background: white;
+}
+
 .search-input {
   padding: 12px 16px;
   border: 1px solid #cbd5e1;
   border-radius: 6px;
   font-size: 1rem;
   background: white;
+}
+
+.momentum-panel {
+  border-radius: 14px;
+  padding: 6px;
+  background: #f8fafc;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
 }
 
 .search-button {
@@ -111,6 +141,11 @@ h2 {
   .cards-wrapper-row {
     flex-direction: column;
     align-items: center;
+  }
+
+  .search-momentum-layout {
+    grid-template-columns: 1fr;
+    padding: 0;
   }
 
   .metric-card,
