@@ -328,14 +328,16 @@ function HomePage() {
                   <div className="small text-muted fst-italic mt-2">
                     <div className="d-flex align-items-center justify-content-between gap-2 flex-wrap">
                       <div className="fw-semibold text-uppercase small mb-0 text-muted">
-                        Peers:
+                        Peers (comma-separated)
                       </div>
                       <button
                         type="button"
-                        className="btn btn-sm btn-outline-secondary"
+                        className="btn btn-outline-secondary p-0 d-inline-flex align-items-center justify-content-center"
+                        style={{ width: "22px", height: "22px", lineHeight: 1 }}
                         onClick={() => setShowPeersEditor((open) => !open)}
+                        aria-label="Toggle peer editor"
                       >
-                        {showPeersEditor ? "Hide" : "Update"} peers
+                        <span aria-hidden="true">+</span>
                       </button>
                     </div>
                     {showPeersEditor && (
