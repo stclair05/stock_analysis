@@ -1,0 +1,101 @@
+.momentum-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+  padding: 1.5rem;
+}
+
+.momentum-modal {
+  background: #fff;
+  border-radius: 0.75rem;
+  box-shadow: 0 0.75rem 1.5rem rgba(0, 0, 0, 0.1);
+  padding: 1.25rem;
+  width: min(960px, 100%);
+  max-height: calc(100vh - 3rem);
+  overflow: auto;
+}
+
+.momentum-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.momentum-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.75rem;
+}
+
+.momentum-cell {
+  border: 1px solid #e9ecef;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  background: #f8f9fa;
+}
+
+.momentum-cell--positive {
+  border-color: #b6e3c6;
+  background: #f3fbf6;
+}
+
+.momentum-cell--negative {
+  border-color: #f5c2c7;
+  background: #fff5f6;
+}
+
+.momentum-cell--neutral {
+  border-style: dashed;
+  background: #f8f9fa;
+}
+
+.momentum-symbols {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+}
+
+.momentum-symbol {
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 999px;
+  padding: 0.25rem 0.6rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.symbol-text {
+  letter-spacing: 0.02em;
+}
+
+.symbol-arrow {
+  font-size: 0.85rem;
+}
+
+.arrow-up {
+  color: #198754;
+}
+
+.arrow-down {
+  color: #dc3545;
+}
+
+.legend-up {
+  color: #198754;
+  font-size: 0.85rem;
+}
+
+.legend-down {
+  color: #dc3545;
+  font-size: 0.85rem;
+}

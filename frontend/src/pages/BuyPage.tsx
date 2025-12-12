@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
+import MomentumQuadrant from "../components/MomentumQuadrant";
 
 type CandleTimeframe = "daily" | "weekly" | "monthly";
 type CandlePattern = "engulfing" | "harami";
@@ -186,13 +187,16 @@ type CellDisplay = {
 type BuyPageProps = {
   statusEndpoint?: string;
   title?: string;
+  showMomentumQuadrant?: boolean;
 };
 
 export default function BuyPage({
   statusEndpoint = "http://localhost:8000/buylist_status",
   title = "Buy List Status",
+  showMomentumQuadrant = false,
 }: BuyPageProps) {
   const [data, setData] = useState<BuyStatusResponse | null>(null);
+  const [isMomentumOpen, setIsMomentumOpen] = useState(false);
 
   useEffect(() => {
     fetch(statusEndpoint)
@@ -1068,7 +1072,18 @@ export default function BuyPage({
 
   return (
     <div className="container mt-4" style={{ maxWidth: "60%" }}>
-      <h1 className="fw-bold mb-4">{title}</h1>
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h1 className="fw-bold mb-0">{title}</h1>
+        {showMomentumQuadrant && (
+          <button
+            type="button"
+            className="btn btn-outline-primary"
+            onClick={() => setIsMomentumOpen(true)}
+          >
+            Momentum
+          </button>
+        )}
+      </div>
       <div className="card mb-4">
         <div className="card-body">
           <div className="d-flex justify-content-between align-items-center mb-3">
@@ -1299,6 +1314,16 @@ export default function BuyPage({
           })}
         </tbody>
       </table>
+      {showMomentumQuadrant && (
+        <MomentumQuadrant
+          isOpen={isMomentumOpen}
+          onClose={() => setIsMomentumOpen(false)}
+          sectorWeekly={resolvedData.momentum_weekly}
+          sectorMonthly={resolvedData.momentum_monthly}
+          portfolioWeekly={resolvedData.portfolio_momentum_weekly}
+          portfolioMonthly={resolvedData.portfolio_momentum_monthly}
+        />
+      )}
     </div>
   );
 }

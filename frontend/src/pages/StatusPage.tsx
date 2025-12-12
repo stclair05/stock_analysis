@@ -5,6 +5,7 @@ export default function StatusPage() {
     <BuyPage
       statusEndpoint="http://localhost:8000/portfolio_status?direction=above"
       title="Portfolio Status"
+      showMomentumQuadrant
     />
   );
 }
