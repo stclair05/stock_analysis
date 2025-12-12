@@ -145,6 +145,42 @@ def _blended_return(series: pd.Series) -> float | None:
     return total / weight_sum
 
 
+def period_return(series: pd.Series | None, periods: int) -> float | None:
+    """Return a blended daily return over the last ``periods`` sessions.
+
+    Instead of a single point-to-point percentage change, this computes a
+    weighted average of the most recent ``periods`` daily percentage changes,
+    emphasizing the latest session. This preserves the "blended" feel while
+    focusing the score on the requested window (e.g., 5 or 21 trading days).
+    """
+
+    if series is None:
+        return None
+
+    if isinstance(series, pd.DataFrame):
+        series = series.iloc[:, 0]
+
+    series = series.dropna()
+    if series.empty:
+        return None
+
+    daily_returns = series.pct_change().dropna()
+    if len(daily_returns) < periods:
+        return None
+
+    window = daily_returns.iloc[-periods:]
+
+    # Linearly increasing weights so the most recent sessions count more.
+    weights = np.linspace(1.0, float(periods), num=periods)
+    weights = weights / weights.sum()
+
+    blended = float(np.dot(window.values, weights))
+    if not math.isfinite(blended):
+        return None
+
+    return blended
+
+
 def _z_score(value: float, samples: Iterable[float]) -> float | None:
     arr = np.array([s for s in samples if isinstance(s, (int, float))], dtype=float)
     arr = arr[np.isfinite(arr)]
@@ -157,26 +193,10 @@ def _z_score(value: float, samples: Iterable[float]) -> float | None:
     return (value - mean) / std
 
 
-def blended_return(series: pd.Series | None) -> float | None:
-    """Public wrapper to compute the blended return for a price series."""
-
-    if series is None:
-        return None
-
-    if isinstance(series, pd.DataFrame):
-        series = series.iloc[:, 0]
-
-    series = series.dropna()
-    if series.empty:
-        return None
-
-    return _blended_return(series)
-
-
 def sector_relative_momentum_zscore(
-    symbol: str, closes: pd.Series | None = None
+    symbol: str, closes: pd.Series | None = None, period_days: int = 5
 ) -> float | None:
-    """Compute the z-score of a symbol's blended returns vs. its FMP peers."""
+    """Compute the z-score of a symbol's return over a given period vs. peers."""
     cleaned = _sanitize_symbol(symbol)
     if closes is None:
         try:
@@ -190,7 +210,7 @@ def sector_relative_momentum_zscore(
     if closes.empty:
         return None
 
-    base_return = _blended_return(closes)
+    base_return = period_return(closes, period_days)
     if base_return is None:
         return None
 
@@ -206,7 +226,7 @@ def sector_relative_momentum_zscore(
         peer_closes = peer_closes.dropna()
         if peer_closes.empty:
             continue
-        value = _blended_return(peer_closes)
+        value = period_return(peer_closes, period_days)
         if value is not None and math.isfinite(value):
             peer_returns.append(value)
 
@@ -246,8 +266,8 @@ def portfolio_relative_momentum_zscores(
 
 
 __all__ = [
-    "blended_return",
     "get_fmp_peers",
+    "period_return",
     "portfolio_relative_momentum_zscores",
     "sector_relative_momentum_zscore",
 ]

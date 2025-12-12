@@ -19,8 +19,8 @@ from stock_analysis.utils import (
     safe_value,
 )
 from stock_analysis.sector_momentum import (
-    blended_return,
     get_fmp_peers,
+    period_return,
     portfolio_relative_momentum_zscores,
     sector_relative_momentum_zscore,
 )
@@ -52,8 +52,8 @@ app.add_middleware(
 
 # Symbol → (Fundamentals, timestamp)
 _fundamentals_cache = {}
-PORTFOLIO_RETURNS_CACHE: dict[str, float] = {}
-PORTFOLIO_RETURNS_LAST_UPDATED = 0.0
+PORTFOLIO_RETURNS_CACHE: dict[int, dict[str, float]] = {}
+PORTFOLIO_RETURNS_LAST_UPDATED: dict[int, float] = {}
 PORTFOLIO_RETURNS_TTL_SECONDS = 15 * 60  # 15 minutes cache
 
 
@@ -69,7 +69,7 @@ def _get_portfolio_equities():
         ]
 
 
-def _blended_return_for_symbol(symbol: str) -> tuple[str, float | None]:
+def _return_for_symbol(symbol: str, period_days: int) -> tuple[str, float | None]:
     try:
         analyser = StockAnalyser(symbol)
         closes = analyser.df.get("Close")
@@ -77,36 +77,37 @@ def _blended_return_for_symbol(symbol: str) -> tuple[str, float | None]:
             return symbol, None
         if isinstance(closes, pd.DataFrame):
             closes = closes.iloc[:, 0]
-        blended = blended_return(closes)
-        blended_val = float(blended)
-        if math.isfinite(blended_val):
-            return symbol, blended_val
+        ret_value = period_return(closes, period_days)
+        if ret_value is None:
+            return symbol, None
+        ret_value = float(ret_value)
+        if math.isfinite(ret_value):
+            return symbol, ret_value
     except Exception:
         return symbol, None
     return symbol, None
 
 
-def _portfolio_blended_returns() -> dict[str, float]:
+def _portfolio_returns(period_days: int) -> dict[str, float]:
     global PORTFOLIO_RETURNS_CACHE, PORTFOLIO_RETURNS_LAST_UPDATED
 
     now = time()
-    if (
-        PORTFOLIO_RETURNS_CACHE
-        and now - PORTFOLIO_RETURNS_LAST_UPDATED < PORTFOLIO_RETURNS_TTL_SECONDS
-    ):
-        return PORTFOLIO_RETURNS_CACHE
+    cached = PORTFOLIO_RETURNS_CACHE.get(period_days)
+    last_updated = PORTFOLIO_RETURNS_LAST_UPDATED.get(period_days, 0.0)
+    if cached and now - last_updated < PORTFOLIO_RETURNS_TTL_SECONDS:
+        return cached
 
     equities = _get_portfolio_equities()
     symbols = [item["ticker"] for item in equities if isinstance(item.get("ticker"), str)]
     if not symbols:
-        PORTFOLIO_RETURNS_CACHE = {}
-        PORTFOLIO_RETURNS_LAST_UPDATED = now
-        return PORTFOLIO_RETURNS_CACHE
+        PORTFOLIO_RETURNS_CACHE[period_days] = {}
+        PORTFOLIO_RETURNS_LAST_UPDATED[period_days] = now
+        return PORTFOLIO_RETURNS_CACHE[period_days]
 
     returns: dict[str, float] = {}
     with ThreadPoolExecutor(max_workers=8) as executor:
         futures = {
-            executor.submit(_blended_return_for_symbol, symbol): symbol
+            executor.submit(_return_for_symbol, symbol, period_days): symbol
             for symbol in symbols
         }
         for future in as_completed(futures):
@@ -114,9 +115,9 @@ def _portfolio_blended_returns() -> dict[str, float]:
             if value is not None:
                 returns[symbol] = value
 
-    PORTFOLIO_RETURNS_CACHE = returns
-    PORTFOLIO_RETURNS_LAST_UPDATED = now
-    return PORTFOLIO_RETURNS_CACHE
+    PORTFOLIO_RETURNS_CACHE[period_days] = returns
+    PORTFOLIO_RETURNS_LAST_UPDATED[period_days] = now
+    return PORTFOLIO_RETURNS_CACHE[period_days]
 
 @app.post("/analyse", response_model=StockAnalysisResponse)
 def analyse(stock_request: StockRequest):
@@ -126,25 +127,41 @@ def analyse(stock_request: StockRequest):
     if closes is not None and isinstance(closes, pd.DataFrame):
         closes = closes.iloc[:, 0]
 
-    momentum_score = (
-        sector_relative_momentum_zscore(stock_request.symbol, closes)
+    weekly_momentum_score = (
+        sector_relative_momentum_zscore(stock_request.symbol, closes, 5)
+        if closes is not None
+        else None
+    )
+    monthly_momentum_score = (
+        sector_relative_momentum_zscore(stock_request.symbol, closes, 21)
         if closes is not None
         else None
     )
     peers = get_fmp_peers(stock_request.symbol)
 
-    portfolio_momentum_score = None
+    weekly_portfolio_momentum_score = None
+    monthly_portfolio_momentum_score = None
     try:
-        blended = blended_return(closes) if closes is not None else None
-        if blended is not None:
-            blended_val = float(blended)
-            if math.isfinite(blended_val):
-                portfolio_returns = _portfolio_blended_returns()
-                combined_returns = {**portfolio_returns, stock_request.symbol: blended_val}
-                zscores = portfolio_relative_momentum_zscores(combined_returns)
-                portfolio_momentum_score = zscores.get(stock_request.symbol)
+        weekly_return = period_return(closes, 5) if closes is not None else None
+        monthly_return = period_return(closes, 21) if closes is not None else None
+
+        if weekly_return is not None and math.isfinite(float(weekly_return)):
+            weekly_portfolio = _portfolio_returns(5)
+            combined = {**weekly_portfolio, stock_request.symbol: float(weekly_return)}
+            weekly_scores = portfolio_relative_momentum_zscores(combined)
+            weekly_portfolio_momentum_score = weekly_scores.get(stock_request.symbol)
+
+        if monthly_return is not None and math.isfinite(float(monthly_return)):
+            monthly_portfolio = _portfolio_returns(21)
+            combined_monthly = {
+                **monthly_portfolio,
+                stock_request.symbol: float(monthly_return),
+            }
+            monthly_scores = portfolio_relative_momentum_zscores(combined_monthly)
+            monthly_portfolio_momentum_score = monthly_scores.get(stock_request.symbol)
     except Exception:
-        portfolio_momentum_score = None
+        weekly_portfolio_momentum_score = None
+        monthly_portfolio_momentum_score = None
 
     return StockAnalysisResponse(
         current_price=analyser.get_current_price(),
@@ -168,9 +185,11 @@ def analyse(stock_request: StockRequest):
         short_term_trend=analyser.short_term_trend_score(),
         long_term_trend=analyser.long_term_trend_score(),
         sell_signal=analyser.sell_signal_score(),
-        sector_momentum_zscore=momentum_score,
+        sector_momentum_zscore_weekly=weekly_momentum_score,
+        sector_momentum_zscore_monthly=monthly_momentum_score,
         sector_peers=peers,
-        portfolio_momentum_zscore=portfolio_momentum_score,
+        portfolio_momentum_zscore_weekly=weekly_portfolio_momentum_score,
+        portfolio_momentum_zscore_monthly=monthly_portfolio_momentum_score,
     )
 
 @app.post("/elliott", response_model=ElliottWaveScenariosResponse)
@@ -243,12 +262,15 @@ def _status_for_holdings(holdings, price_direction: str):
         "long_term_trend": {},
         "breach_hit": {},
         "ma_crossovers": {},
-        "momentum": {},
-        "portfolio_momentum": {},
+        "momentum_weekly": {},
+        "momentum_monthly": {},
+        "portfolio_momentum_weekly": {},
+        "portfolio_momentum_monthly": {},
         "divergence": {},
     }
 
-    portfolio_returns: dict[str, float] = {}
+    weekly_portfolio_returns: dict[str, float] = {}
+    monthly_portfolio_returns: dict[str, float] = {}
 
     for holding in holdings:
         ticker = holding.get("ticker")
@@ -299,13 +321,25 @@ def _status_for_holdings(holdings, price_direction: str):
                 long_total if isinstance(long_total, (int, float)) else None
             )
 
-            momentum_score = sector_relative_momentum_zscore(ticker, closes)
-            if isinstance(momentum_score, (int, float)):
-                results["momentum"][ticker] = momentum_score
+            weekly_momentum_score = sector_relative_momentum_zscore(
+                ticker, closes, 5
+            )
+            if isinstance(weekly_momentum_score, (int, float)):
+                results["momentum_weekly"][ticker] = weekly_momentum_score
 
-            blended = blended_return(closes)
-            if isinstance(blended, (int, float)):
-                portfolio_returns[ticker] = blended
+            monthly_momentum_score = sector_relative_momentum_zscore(
+                ticker, closes, 21
+            )
+            if isinstance(monthly_momentum_score, (int, float)):
+                results["momentum_monthly"][ticker] = monthly_momentum_score
+
+            weekly_return = period_return(closes, 5)
+            if isinstance(weekly_return, (int, float)):
+                weekly_portfolio_returns[ticker] = weekly_return
+
+            monthly_return = period_return(closes, 21)
+            if isinstance(monthly_return, (int, float)):
+                monthly_portfolio_returns[ticker] = monthly_return
 
             if isinstance(price, (int, float)) and isinstance(twenty, (int, float)):
                 if price_direction == "below" and price < twenty:
@@ -530,8 +564,11 @@ def _status_for_holdings(holdings, price_direction: str):
         except Exception:
             continue
 
-    results["portfolio_momentum"] = portfolio_relative_momentum_zscores(
-        portfolio_returns
+    results["portfolio_momentum_weekly"] = portfolio_relative_momentum_zscores(
+        weekly_portfolio_returns
+    )
+    results["portfolio_momentum_monthly"] = portfolio_relative_momentum_zscores(
+        monthly_portfolio_returns
     )
 
     return results
@@ -565,8 +602,10 @@ def get_portfolio_status(
             "long_term_trend": {},
             "breach_hit": {},
             "ma_crossovers": {},
-            "momentum": {},
-            "portfolio_momentum": {},
+            "momentum_weekly": {},
+            "momentum_monthly": {},
+            "portfolio_momentum_weekly": {},
+            "portfolio_momentum_monthly": {},
             "divergence": {},
         }
 
@@ -925,8 +964,10 @@ def get_buylist_status():
             "long_term_trend": {},
             "breach_hit": {},
             "ma_crossovers": {},
-            "momentum": {},
-            "portfolio_momentum": {},
+            "momentum_weekly": {},
+            "momentum_monthly": {},
+            "portfolio_momentum_weekly": {},
+            "portfolio_momentum_monthly": {},
             "divergence": {},
         }
 

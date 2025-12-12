@@ -18,8 +18,16 @@ function HomePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [momentumScore, setMomentumScore] = useState<number | null>(null);
-  const [portfolioMomentumScore, setPortfolioMomentumScore] = useState<
+  const [sectorMomentumWeekly, setSectorMomentumWeekly] = useState<
+    number | null
+  >(null);
+  const [sectorMomentumMonthly, setSectorMomentumMonthly] = useState<
+    number | null
+  >(null);
+  const [portfolioMomentumWeekly, setPortfolioMomentumWeekly] = useState<
+    number | null
+  >(null);
+  const [portfolioMomentumMonthly, setPortfolioMomentumMonthly] = useState<
     number | null
   >(null);
   const [momentumPeers, setMomentumPeers] = useState<string[]>([]);
@@ -112,8 +120,10 @@ function HomePage() {
 
     let cancelled = false;
     setMomentumLoading(true);
-    setMomentumScore(null);
-    setPortfolioMomentumScore(null);
+    setSectorMomentumWeekly(null);
+    setSectorMomentumMonthly(null);
+    setPortfolioMomentumWeekly(null);
+    setPortfolioMomentumMonthly(null);
     setMomentumPeers([]);
 
     const fetchMomentum = async () => {
@@ -128,13 +138,21 @@ function HomePage() {
         const json = await res.json();
         if (cancelled) return;
 
-        const score =
-          typeof json.sector_momentum_zscore === "number"
-            ? json.sector_momentum_zscore
+        const weeklySectorScore =
+          typeof json.sector_momentum_zscore_weekly === "number"
+            ? json.sector_momentum_zscore_weekly
             : null;
-        const portfolioScore =
-          typeof json.portfolio_momentum_zscore === "number"
-            ? json.portfolio_momentum_zscore
+        const monthlySectorScore =
+          typeof json.sector_momentum_zscore_monthly === "number"
+            ? json.sector_momentum_zscore_monthly
+            : null;
+        const weeklyPortfolioScore =
+          typeof json.portfolio_momentum_zscore_weekly === "number"
+            ? json.portfolio_momentum_zscore_weekly
+            : null;
+        const monthlyPortfolioScore =
+          typeof json.portfolio_momentum_zscore_monthly === "number"
+            ? json.portfolio_momentum_zscore_monthly
             : null;
         const peers = Array.isArray(json.sector_peers)
           ? json.sector_peers
@@ -142,8 +160,10 @@ function HomePage() {
               .map((p: string) => p.trim().toUpperCase())
           : [];
 
-        setMomentumScore(score);
-        setPortfolioMomentumScore(portfolioScore);
+        setSectorMomentumWeekly(weeklySectorScore);
+        setSectorMomentumMonthly(monthlySectorScore);
+        setPortfolioMomentumWeekly(weeklyPortfolioScore);
+        setPortfolioMomentumMonthly(monthlyPortfolioScore);
         setMomentumPeers(peers);
       } catch (err) {
         console.error("Failed to fetch sector momentum", err);
@@ -158,14 +178,34 @@ function HomePage() {
     };
   }, [stockSymbol]);
 
-  const momentumStyle =
-    typeof momentumScore === "number"
-      ? momentumBadgeStyle(momentumScore)
-      : null;
-  const portfolioMomentumStyle =
-    typeof portfolioMomentumScore === "number"
-      ? momentumBadgeStyle(portfolioMomentumScore)
-      : null;
+  const badgeStyleFor = (score: number | null) =>
+    typeof score === "number" ? momentumBadgeStyle(score) : null;
+
+  const sectorMomentumEntries = [
+    {
+      key: "sector-weekly",
+      label: "Sector momentum (5 trading days)",
+      value: sectorMomentumWeekly,
+    },
+    {
+      key: "sector-monthly",
+      label: "Sector momentum (21 trading days)",
+      value: sectorMomentumMonthly,
+    },
+  ];
+
+  const portfolioMomentumEntries = [
+    {
+      key: "portfolio-weekly",
+      label: "Portfolio momentum (5 trading days)",
+      value: portfolioMomentumWeekly,
+    },
+    {
+      key: "portfolio-monthly",
+      label: "Portfolio momentum (21 trading days)",
+      value: portfolioMomentumMonthly,
+    },
+  ];
 
   return (
     <div className="app-container">
@@ -216,58 +256,84 @@ function HomePage() {
           <div className="card shadow-sm border-0 momentum-panel">
             <div className="card-body">
               <div className="d-flex flex-column gap-3">
-                <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2">
-                  <div className="fw-semibold d-flex align-items-center gap-2">
-                    <span>Sector momentum score:</span>
-                    {typeof momentumScore === "number" ? (
-                      <span
-                        className="badge rounded-pill"
-                        style={{
-                          backgroundColor: momentumStyle?.background,
-                          color: momentumStyle?.color,
-                          fontSize: "0.95rem",
-                          padding: "0.6rem 0.85rem",
-                          minWidth: "4.5rem",
-                          textAlign: "center",
-                          boxShadow: "0 2px 6px rgba(0, 0, 0, 0.08)",
-                        }}
-                      >
-                        {momentumScore.toFixed(2)}
-                      </span>
-                    ) : (
-                      "N/A"
-                    )}
+                <div>
+                  <div className="fw-semibold mb-2">
+                    Sector momentum scores:
                   </div>
-                  <div className="small text-muted fst-italic">
+                  <div className="d-flex flex-column gap-2">
+                    {sectorMomentumEntries.map((entry) => {
+                      const style = badgeStyleFor(entry.value);
+                      return (
+                        <div
+                          key={entry.key}
+                          className="d-flex align-items-center justify-content-between gap-2 flex-wrap"
+                        >
+                          <span>{entry.label}</span>
+                          {typeof entry.value === "number" ? (
+                            <span
+                              className="badge rounded-pill"
+                              style={{
+                                backgroundColor: style?.background,
+                                color: style?.color,
+                                fontSize: "0.95rem",
+                                padding: "0.6rem 0.85rem",
+                                minWidth: "4.5rem",
+                                textAlign: "center",
+                                boxShadow: "0 2px 6px rgba(0, 0, 0, 0.08)",
+                              }}
+                            >
+                              {entry.value.toFixed(2)}
+                            </span>
+                          ) : (
+                            "N/A"
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="small text-muted fst-italic mt-2">
                     Peers:{" "}
                     {momentumPeers.length > 0
                       ? momentumPeers.join(", ")
                       : "N/A"}
                   </div>
                 </div>
-                <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2">
-                  <div className="fw-semibold d-flex align-items-center gap-2">
-                    <span>Portfolio momentum score:</span>
-                    {typeof portfolioMomentumScore === "number" ? (
-                      <span
-                        className="badge rounded-pill"
-                        style={{
-                          backgroundColor: portfolioMomentumStyle?.background,
-                          color: portfolioMomentumStyle?.color,
-                          fontSize: "0.95rem",
-                          padding: "0.6rem 0.85rem",
-                          minWidth: "4.5rem",
-                          textAlign: "center",
-                          boxShadow: "0 2px 6px rgba(0, 0, 0, 0.08)",
-                        }}
-                      >
-                        {portfolioMomentumScore.toFixed(2)}
-                      </span>
-                    ) : (
-                      "N/A"
-                    )}
+                <div>
+                  <div className="fw-semibold mb-2">
+                    Portfolio momentum scores:
                   </div>
-                  <div className="small text-muted fst-italic text-md-end">
+                  <div className="d-flex flex-column gap-2">
+                    {portfolioMomentumEntries.map((entry) => {
+                      const style = badgeStyleFor(entry.value);
+                      return (
+                        <div
+                          key={entry.key}
+                          className="d-flex align-items-center justify-content-between gap-2 flex-wrap"
+                        >
+                          <span>{entry.label}</span>
+                          {typeof entry.value === "number" ? (
+                            <span
+                              className="badge rounded-pill"
+                              style={{
+                                backgroundColor: style?.background,
+                                color: style?.color,
+                                fontSize: "0.95rem",
+                                padding: "0.6rem 0.85rem",
+                                minWidth: "4.5rem",
+                                textAlign: "center",
+                                boxShadow: "0 2px 6px rgba(0, 0, 0, 0.08)",
+                              }}
+                            >
+                              {entry.value.toFixed(2)}
+                            </span>
+                          ) : (
+                            "N/A"
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="small text-muted fst-italic text-md-end mt-2">
                     Compared against full portfolio momentum distribution
                   </div>
                 </div>

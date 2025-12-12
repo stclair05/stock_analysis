@@ -33,9 +33,11 @@ class StockAnalysisResponse(BaseModel):
     short_term_trend: dict[str, int] | None = None
     long_term_trend: dict[str, int] | None = None
     sell_signal: dict[str, int | None] | None = None
-    sector_momentum_zscore: float | None = None
+    sector_momentum_zscore_weekly: float | None = None
+    sector_momentum_zscore_monthly: float | None = None
     sector_peers: list[str] | None = None
-    portfolio_momentum_zscore: float | None = None
+    portfolio_momentum_zscore_weekly: float | None = None
+    portfolio_momentum_zscore_monthly: float | None = None
 
 class WaveLabel(BaseModel):
     index: int

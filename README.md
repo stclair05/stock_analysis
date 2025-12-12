@@ -47,3 +47,22 @@ The backend listens on port `8000` by default.
    ```
 
 The frontend expects the backend to be running on `http://localhost:8000`.
+
+## Momentum scores explained
+
+The UI shows four momentum figures that come from blended daily returns over
+fixed windows:
+
+- **Weekly sector momentum** – your stock's blended return over the last five
+  trading days compared to its sector peers.
+- **Monthly sector momentum** – the same blended approach over the last 21
+  trading days compared to sector peers.
+- **Weekly portfolio momentum** – the five-day blended return relative to the
+  rest of the tracked portfolio.
+- **Monthly portfolio momentum** – the 21-day blended return relative to the
+  rest of the tracked portfolio.
+
+For each window, daily percentage changes are weighted so the most recent
+sessions count more than older ones. The resulting blended return is then
+converted to a z-score (how many standard deviations above or below the peer or
+portfolio mean it is) for easier comparison.
