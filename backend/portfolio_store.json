@@ -568,15 +568,6 @@
       "target_3": 25.1
     },
     {
-      "ticker": "CRCL",
-      "shares": 3000,
-      "average_cost": 224.64,
-      "sector": "Bitcoin",
-      "target_1": 387,
-      "player": 0,
-      "peers": ["COIN", "HOOD", "PYPL", "FI", "ETOR", "BMNR"]
-    },
-    {
       "ticker": "HIMS",
       "shares": 27000,
       "average_cost": 43.43,
@@ -1044,21 +1035,6 @@
       "target_3": -1
     },
     {
-      "ticker": "ORCL",
-      "shares": 1500.0,
-      "average_cost": 219.02,
-      "sector": "Technology",
-      "player": 2,
-      "technigrade": [19, 18, 16, 11, 6],
-      "peers": ["MSFT", "AMZN", "GOOGL", "SAP", "CRM", "SNOW"],
-      "invalidation_1": 198.22,
-      "invalidation_2": -1,
-      "invalidation_3": -1,
-      "target_1": 272,
-      "target_2": -1,
-      "target_3": -1
-    },
-    {
       "ticker": "SOUN",
       "shares": 45000.0,
       "average_cost": 12.68,
@@ -1148,6 +1124,21 @@
       "target_3": 74
     },
     {
+      "ticker": "ALLY",
+      "shares": 6000,
+      "average_cost": 44.53,
+      "sector": "Financial",
+      "player": 2,
+      "technigrade": [8, 9, 12, 11, 11],
+      "peers": ["COF", "DFS", "SOFI", "BAC", "JPM"],
+      "invalidation_1": 44.8,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": 53,
+      "target_2": -1,
+      "target_3": -1
+    },
+    {
       "ticker": "IPI",
       "shares": 7000.0,
       "average_cost": 37.4,
@@ -1193,8 +1184,8 @@
     },
     {
       "ticker": "SERV",
-      "shares": 70000,
-      "average_cost": 10.9843,
+      "shares": 84500,
+      "average_cost": 11.2591,
       "sector": "Aerospace & Defense",
       "peers": ["UBER", "SYM", "UAVS", "IRBT", "RR"],
       "player": 10,
