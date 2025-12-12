@@ -10,6 +10,7 @@ class TimeSeriesMetric(BaseModel):
 
 class StockRequest(BaseModel):
     symbol: str
+    peers_override: list[str] | None = None
 
 class StockAnalysisResponse(BaseModel):
     current_price: float | None

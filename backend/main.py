@@ -19,6 +19,7 @@ from stock_analysis.utils import (
     safe_value,
 )
 from stock_analysis.sector_momentum import (
+    _sanitize_peers,
     get_fmp_peers,
     period_return,
     portfolio_relative_momentum_zscores,
@@ -127,17 +128,26 @@ def analyse(stock_request: StockRequest):
     if closes is not None and isinstance(closes, pd.DataFrame):
         closes = closes.iloc[:, 0]
 
+    peers_override = _sanitize_peers(stock_request.peers_override)
+    peers_for_analysis = (
+        peers_override if peers_override is not None else get_fmp_peers(stock_request.symbol)
+    )
+
     weekly_momentum_score = (
-        sector_relative_momentum_zscore(stock_request.symbol, closes, 5)
+        sector_relative_momentum_zscore(
+            stock_request.symbol, closes, 5, peers_override=peers_for_analysis
+        )
         if closes is not None
         else None
     )
     monthly_momentum_score = (
-        sector_relative_momentum_zscore(stock_request.symbol, closes, 21)
+        sector_relative_momentum_zscore(
+            stock_request.symbol, closes, 21, peers_override=peers_for_analysis
+        )
         if closes is not None
         else None
     )
-    peers = get_fmp_peers(stock_request.symbol)
+    peers = peers_for_analysis
 
     weekly_portfolio_momentum_score = None
     monthly_portfolio_momentum_score = None

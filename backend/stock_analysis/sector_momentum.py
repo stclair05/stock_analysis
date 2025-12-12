@@ -25,6 +25,32 @@ def _sanitize_symbol(symbol: str) -> str:
     return symbol.upper().strip()
 
 
+def _sanitize_peers(peers: list[str] | None) -> list[str] | None:
+    """Normalize a user-provided peer list.
+
+    Returns ``None`` if no override was provided, otherwise returns a list that may
+    be empty if the input had no valid symbols.
+    """
+
+    if peers is None:
+        return None
+
+    cleaned = []
+    for peer in peers:
+        if isinstance(peer, str):
+            symbol = _sanitize_symbol(peer)
+            if symbol:
+                cleaned.append(symbol)
+
+    # Preserve order but drop duplicates
+    deduped: list[str] = []
+    for peer in cleaned:
+        if peer not in deduped:
+            deduped.append(peer)
+
+    return deduped
+
+
 @lru_cache(maxsize=256)
 def _fetch_peers_via_api(symbol: str) -> list[str]:
     """Query FMP's stock_peers endpoint for the latest peer list."""
@@ -194,7 +220,10 @@ def _z_score(value: float, samples: Iterable[float]) -> float | None:
 
 
 def sector_relative_momentum_zscore(
-    symbol: str, closes: pd.Series | None = None, period_days: int = 5
+    symbol: str,
+    closes: pd.Series | None = None,
+    period_days: int = 5,
+    peers_override: list[str] | None = None,
 ) -> float | None:
     """Compute the z-score of a symbol's return over a given period vs. peers."""
     cleaned = _sanitize_symbol(symbol)
@@ -215,7 +244,10 @@ def sector_relative_momentum_zscore(
         return None
 
     peer_returns: list[float] = []
-    peers = get_fmp_peers(cleaned)
+    peers = _sanitize_peers(peers_override)
+    if peers is None:
+        peers = get_fmp_peers(cleaned)
+        
     for peer in peers[:_MAX_PEERS]:
         try:
             peer_closes = StockAnalyser.get_price_data(peer)["Close"]

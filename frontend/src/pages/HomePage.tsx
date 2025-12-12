@@ -2,7 +2,7 @@ import "../App.css";
 import Metrics from "../components/Metrics";
 import Fundamentals from "../components/Fundamentals";
 import StockChart from "../components/StockChart";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import ETFHoldings from "../components/ETFHoldings";
 import SignalSummary from "../components/SignalSummary";
@@ -32,6 +32,10 @@ function HomePage() {
   >(null);
   const [momentumPeers, setMomentumPeers] = useState<string[]>([]);
   const [momentumLoading, setMomentumLoading] = useState(false);
+  const [customPeersInput, setCustomPeersInput] = useState("");
+  const [peersError, setPeersError] = useState<string | null>(null);
+  const [showPeersEditor, setShowPeersEditor] = useState(false);
+  const momentumControllerRef = useRef<AbortController | null>(null);
 
   const [isETF, setIsETF] = useState<boolean | null>(null);
 
@@ -110,6 +114,83 @@ function HomePage() {
     if (e.key === "Enter") handleSearch();
   };
 
+  const sanitizePeersInput = (input: string) =>
+    input
+      .split(/[\n,\s]+/)
+      .map((peer) => peer.trim().toUpperCase())
+      .filter((peer) => peer.length > 0);
+
+  const fetchMomentum = async (peersOverride?: string[] | null) => {
+    if (!stockSymbol) return;
+
+    momentumControllerRef.current?.abort();
+    const controller = new AbortController();
+    momentumControllerRef.current = controller;
+
+    setMomentumLoading(true);
+    setSectorMomentumWeekly(null);
+    setSectorMomentumMonthly(null);
+    setPortfolioMomentumWeekly(null);
+    setPortfolioMomentumMonthly(null);
+    setMomentumPeers([]);
+    setPeersError(null);
+
+    const payload: Record<string, unknown> = { symbol: stockSymbol };
+    if (typeof peersOverride !== "undefined") {
+      payload.peers_override = peersOverride;
+    }
+
+    try {
+      const res = await fetch("http://localhost:8000/analyse", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+
+      if (!res.ok) return;
+      const json = await res.json();
+      if (controller.signal.aborted) return;
+
+      const weeklySectorScore =
+        typeof json.sector_momentum_zscore_weekly === "number"
+          ? json.sector_momentum_zscore_weekly
+          : null;
+      const monthlySectorScore =
+        typeof json.sector_momentum_zscore_monthly === "number"
+          ? json.sector_momentum_zscore_monthly
+          : null;
+      const weeklyPortfolioScore =
+        typeof json.portfolio_momentum_zscore_weekly === "number"
+          ? json.portfolio_momentum_zscore_weekly
+          : null;
+      const monthlyPortfolioScore =
+        typeof json.portfolio_momentum_zscore_monthly === "number"
+          ? json.portfolio_momentum_zscore_monthly
+          : null;
+      const peers = Array.isArray(json.sector_peers)
+        ? json.sector_peers
+            .filter((p: unknown) => typeof p === "string" && p.trim())
+            .map((p: string) => p.trim().toUpperCase())
+        : [];
+
+      setSectorMomentumWeekly(weeklySectorScore);
+      setSectorMomentumMonthly(monthlySectorScore);
+      setPortfolioMomentumWeekly(weeklyPortfolioScore);
+      setPortfolioMomentumMonthly(monthlyPortfolioScore);
+      setMomentumPeers(peers);
+      setCustomPeersInput(peers.join(", "));
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      console.error("Failed to fetch sector momentum", err);
+      setPeersError(
+        "Unable to refresh momentum right now. Try again in a moment."
+      );
+    } finally {
+      if (!controller.signal.aborted) setMomentumLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!stockSymbol) return;
     setIsETF(etfList.etfs.includes(stockSymbol.toUpperCase()));
@@ -117,66 +198,19 @@ function HomePage() {
 
   useEffect(() => {
     if (!stockSymbol) return;
-
-    let cancelled = false;
-    setMomentumLoading(true);
-    setSectorMomentumWeekly(null);
-    setSectorMomentumMonthly(null);
-    setPortfolioMomentumWeekly(null);
-    setPortfolioMomentumMonthly(null);
-    setMomentumPeers([]);
-
-    const fetchMomentum = async () => {
-      try {
-        const res = await fetch("http://localhost:8000/analyse", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ symbol: stockSymbol }),
-        });
-
-        if (!res.ok) return;
-        const json = await res.json();
-        if (cancelled) return;
-
-        const weeklySectorScore =
-          typeof json.sector_momentum_zscore_weekly === "number"
-            ? json.sector_momentum_zscore_weekly
-            : null;
-        const monthlySectorScore =
-          typeof json.sector_momentum_zscore_monthly === "number"
-            ? json.sector_momentum_zscore_monthly
-            : null;
-        const weeklyPortfolioScore =
-          typeof json.portfolio_momentum_zscore_weekly === "number"
-            ? json.portfolio_momentum_zscore_weekly
-            : null;
-        const monthlyPortfolioScore =
-          typeof json.portfolio_momentum_zscore_monthly === "number"
-            ? json.portfolio_momentum_zscore_monthly
-            : null;
-        const peers = Array.isArray(json.sector_peers)
-          ? json.sector_peers
-              .filter((p: unknown) => typeof p === "string" && p.trim())
-              .map((p: string) => p.trim().toUpperCase())
-          : [];
-
-        setSectorMomentumWeekly(weeklySectorScore);
-        setSectorMomentumMonthly(monthlySectorScore);
-        setPortfolioMomentumWeekly(weeklyPortfolioScore);
-        setPortfolioMomentumMonthly(monthlyPortfolioScore);
-        setMomentumPeers(peers);
-      } catch (err) {
-        console.error("Failed to fetch sector momentum", err);
-      } finally {
-        if (!cancelled) setMomentumLoading(false);
-      }
-    };
-
     fetchMomentum();
     return () => {
-      cancelled = true;
+      momentumControllerRef.current?.abort();
     };
   }, [stockSymbol]);
+
+  const handleApplyPeers = () => {
+    if (!stockSymbol) return;
+    const cleanedPeers = sanitizePeersInput(customPeersInput);
+    const override = cleanedPeers.length > 0 ? cleanedPeers : null;
+    setPeersError(null);
+    fetchMomentum(override);
+  };
 
   const badgeStyleFor = (score: number | null) =>
     typeof score === "number" ? momentumBadgeStyle(score) : null;
@@ -292,10 +326,58 @@ function HomePage() {
                     })}
                   </div>
                   <div className="small text-muted fst-italic mt-2">
-                    Peers:{" "}
-                    {momentumPeers.length > 0
-                      ? momentumPeers.join(", ")
-                      : "N/A"}
+                    <div className="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+                      <div className="fw-semibold text-uppercase small mb-0 text-muted">
+                        Peers:
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-secondary"
+                        onClick={() => setShowPeersEditor((open) => !open)}
+                      >
+                        {showPeersEditor ? "Hide" : "Update"} peers
+                      </button>
+                    </div>
+                    {showPeersEditor && (
+                      <div className="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center gap-2 mt-2">
+                        <input
+                          type="text"
+                          className="form-control"
+                          placeholder="e.g., UBER, SYM, UAVS, IRBT, RR"
+                          value={customPeersInput}
+                          onChange={(e) => setCustomPeersInput(e.target.value)}
+                        />
+                        <button
+                          className="btn btn-outline-primary"
+                          type="button"
+                          onClick={handleApplyPeers}
+                          disabled={!stockSymbol}
+                          style={{ minWidth: "8.5rem" }}
+                        >
+                          {momentumLoading ? (
+                            <div
+                              className="spinner-border spinner-border-sm"
+                              role="status"
+                            >
+                              <span className="visually-hidden">
+                                Loading...
+                              </span>
+                            </div>
+                          ) : (
+                            "Update peers"
+                          )}
+                        </button>
+                      </div>
+                    )}
+                    <div className="small text-muted fst-italic mt-2">
+                      Showing momentum vs:{" "}
+                      {momentumPeers.length > 0
+                        ? momentumPeers.join(", ")
+                        : "N/A"}
+                    </div>
+                    {peersError && (
+                      <div className="small text-danger mt-1">{peersError}</div>
+                    )}
                   </div>
                 </div>
                 <div>
