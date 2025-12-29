@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { ResponsiveContainer, Treemap, Tooltip } from "recharts";
 
 /* ============================
@@ -37,6 +37,11 @@ type Holding = {
   static_asset?: boolean;
 };
 
+type MomentumMaps = {
+  momentum_weekly: Record<string, number>;
+  portfolio_momentum_weekly: Record<string, number>;
+};
+
 type TreemapNode = {
   name: string;
   size?: number;
@@ -44,14 +49,14 @@ type TreemapNode = {
   nodeType?: "sectorHeader" | "ticker";
   sectorName?: string;
   sectorLabel?: string;
+  sectorMomentum?: number | null;
+  portfolioMomentum?: number | null;
   children?: TreemapNode[];
 };
 
-type TooltipPayload = {
-  name: string;
-  payload: TreemapNode;
-};
-
+/* ============================
+   Helpers
+============================ */
 const clamp = (v: number, min: number, max: number) =>
   Math.min(Math.max(v, min), max);
 
@@ -59,6 +64,9 @@ const formatPct = (v?: number | null) =>
   v === null || v === undefined
     ? "N/A"
     : `${v >= 0 ? "+" : ""}${v.toFixed(2)}%`;
+
+const formatMomentum = (v?: number | null) =>
+  v === null || v === undefined ? "N/A" : `${v >= 0 ? "+" : ""}${v.toFixed(1)}`;
 
 const truncate = (s: string, max = 18) => {
   const cleaned = (s ?? "").trim();
@@ -70,13 +78,26 @@ const truncate = (s: string, max = 18) => {
 const sectorLabelForBox = (fullSector: string, width: number) => {
   const trimmed = (fullSector ?? "Other").trim();
   const base = SECTOR_ABBREVIATIONS[trimmed] ?? trimmed;
-  if (width < 80) return truncate(base, 6); // More aggressive truncation
-  if (width < 120) return truncate(base, 10);
-  return truncate(base, 22);
+  if (width < 60) return truncate(base, 4);
+  if (width < 100) return truncate(base, 8);
+  return truncate(base, 20);
+};
+
+/**
+ * Momentum Color Logic
+ * Based on user-provided style requirements
+ */
+const getMomentumStyle = (score: number | null) => {
+  if (score === null) return { background: "#f1f3f5", color: "#495057" };
+  if (score >= 2) return { background: "#d1fae5", color: "#065f46" }; // strong positive
+  if (score >= 1) return { background: "#e0f2fe", color: "#075985" }; // positive
+  if (score <= -2) return { background: "#fee2e2", color: "#991b1b" }; // very weak
+  if (score <= -1) return { background: "#fff4e6", color: "#9a3412" }; // weak
+  return { background: "#f1f3f5", color: "#495057" }; // neutral
 };
 
 /* ============================
-   Colors
+   Heatmap Colors (Ticker background)
 ============================ */
 const COLOR_STOPS = [
   { percent: -6, color: "#7a0000" },
@@ -125,19 +146,7 @@ const getColorForChange = (change?: number | null) => {
 };
 
 /* ============================
-   Micro-Text Sizing Rules
-============================ */
-const computeTickerFont = (w: number, h: number) => {
-  const base = Math.sqrt(w * h) / 8.2;
-  return clamp(base, 8, 36);
-};
-const computePctFont = (tickerFont: number) => clamp(tickerFont * 0.72, 7, 24);
-
-const canShowTwoLines = (w: number, h: number) => w > 32 && h > 20;
-const canShowOneLine = (w: number, h: number) => w > 16 && h > 8;
-
-/* ============================
-   Custom Renderer with Zoom
+   Custom Treemap Content
 ============================ */
 const CustomContent = (props: any) => {
   const { x, y, width, height, name, onZoom, isZoomed } = props;
@@ -145,21 +154,15 @@ const CustomContent = (props: any) => {
 
   if (width <= 1 || height <= 1) return null;
 
-  // Reduced padding to 1px for micro-tiles
-  const pad = clamp(Math.min(width, height) * 0.1, 1, 12);
+  const pad = clamp(Math.min(width, height) * 0.05, 4, 10);
   const innerX = x + pad;
   const innerY = y + pad;
 
+  /* -------- Sector Header -------- */
   if (node.nodeType === "sectorHeader") {
-    const bg = "#111827";
-    const font = clamp(Math.sqrt(width * height) / 12.5, 9, 22);
-    const pctFont = clamp(font * 0.85, 8, 19);
-
-    const showName = width > 18 && height > 8;
-    const showPct = width > 40 && height > 22 && node.changePercent !== null;
-
+    const font = clamp(Math.sqrt(width * height) / 12, 11, 22);
     const label = isZoomed
-      ? `← BACK TO ALL`
+      ? "← BACK TO ALL SECTORS"
       : sectorLabelForBox(node.sectorName ?? "Other", width);
 
     return (
@@ -169,50 +172,74 @@ const CustomContent = (props: any) => {
           y={y}
           width={width}
           height={height}
-          fill={bg}
-          stroke="#ffffff"
-          strokeWidth={2}
+          fill="#1e293b"
+          stroke="#0f172a"
+          strokeWidth={1}
         />
-        {showName && (
-          <text
-            x={innerX}
-            y={innerY + font}
-            fill="#f9fafb"
-            fontSize={font}
-            fontWeight={900}
-            pointerEvents="none"
-          >
-            {label}
-          </text>
-        )}
-        {showPct && !isZoomed && (
-          <text
-            x={innerX}
-            y={innerY + font + pctFont + 2}
-            fill="#e5e7eb"
-            fontSize={pctFont}
-            fontWeight={800}
-            pointerEvents="none"
-          >
-            {formatPct(node.changePercent)}
-          </text>
-        )}
+        <text
+          x={x + width / 2}
+          y={y + height / 2 + font / 3}
+          fill="#f8fafc"
+          fontSize={font}
+          fontWeight={800}
+          textAnchor="middle"
+          pointerEvents="none"
+        >
+          {label}
+        </text>
       </g>
     );
   }
 
+  /* -------- Ticker Tile -------- */
   const bg = getColorForChange(node.changePercent);
-  const show1 = canShowOneLine(width, height);
-  const show2 = canShowTwoLines(width, height);
-  const tickerFont = computeTickerFont(width, height);
-  const pctFont = computePctFont(tickerFont);
+  const tickerFont = clamp(Math.sqrt(width * height) / 8, 12, 32);
+  const smallFont = clamp(tickerFont * 0.65, 10, 16);
+  const lineGap = clamp(smallFont * 0.4, 4, 8);
 
   const tickerY = innerY + tickerFont;
-  const pctY = innerY + tickerFont + pctFont + 2;
+  const pctY = tickerY + smallFont + lineGap;
+  const portMtmY = pctY + smallFont + lineGap + 4;
+  const sectMtmY = portMtmY + smallFont + lineGap;
 
-  const tickerFits = tickerY <= y + height;
-  const canActuallyShowPct =
-    show2 && node.changePercent !== null && pctY <= y + height;
+  const drawMomentumPill = (
+    label: string,
+    value: number | null,
+    textY: number
+  ) => {
+    if (value === null) return null;
+    const style = getMomentumStyle(value);
+    const text = `${label}: ${formatMomentum(value)}`;
+
+    // Width based on text length
+    const pillWidth = text.length * (smallFont * 0.62) + 14;
+    const pillHeight = smallFont + 8;
+
+    return (
+      <g>
+        <rect
+          x={innerX}
+          y={textY - smallFont}
+          rx={4}
+          ry={4}
+          width={pillWidth}
+          height={pillHeight}
+          fill={style.background}
+          style={{ filter: "drop-shadow(0px 1px 1px rgba(0,0,0,0.15))" }}
+        />
+        <text
+          x={innerX + 7}
+          y={textY}
+          fill={style.color}
+          fontSize={smallFont}
+          fontWeight={700}
+          pointerEvents="none"
+        >
+          {text}
+        </text>
+      </g>
+    );
+  };
 
   return (
     <g>
@@ -222,37 +249,49 @@ const CustomContent = (props: any) => {
         width={width}
         height={height}
         fill={bg}
-        stroke="#ffffff"
-        strokeWidth={Math.min(width, height) < 18 ? 0.5 : 1}
+        stroke="rgba(255,255,255,0.25)"
+        strokeWidth={1}
       />
-      {show1 && tickerFits && (
+
+      {/* Symbol */}
+      {height > 20 && width > 25 && (
         <text
           x={innerX}
           y={tickerY}
           fill="#ffffff"
           fontSize={tickerFont}
           fontWeight={900}
-          pointerEvents="none"
           style={{
             paintOrder: "stroke",
-            stroke: "rgba(0,0,0,0.4)",
-            strokeWidth: 1,
+            stroke: "rgba(0,0,0,0.3)",
+            strokeWidth: 1.5,
           }}
+          pointerEvents="none"
         >
           {name}
         </text>
       )}
-      {canActuallyShowPct && (
+
+      {/* Percentage */}
+      {height > 40 && node.changePercent !== null && (
         <text
           x={innerX}
           y={pctY}
           fill="#ffffff"
-          fontSize={pctFont}
-          fontWeight={800}
+          fontSize={smallFont}
+          fontWeight={600}
           pointerEvents="none"
         >
           {formatPct(node.changePercent)}
         </text>
+      )}
+
+      {/* Momentum logic - Only if Zoomed */}
+      {isZoomed && height > 80 && (
+        <>
+          {drawMomentumPill("PORT", node.portfolioMomentum ?? null, portMtmY)}
+          {drawMomentumPill("SECT", node.sectorMomentum ?? null, sectMtmY)}
+        </>
       )}
     </g>
   );
@@ -266,13 +305,41 @@ const DailyTab = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [zoomedSector, setZoomedSector] = useState<string | null>(null);
+  const [momentumMaps, setMomentumMaps] = useState<MomentumMaps>({
+    momentum_weekly: {},
+    portfolio_momentum_weekly: {},
+  });
 
   useEffect(() => {
-    fetch("http://localhost:8000/portfolio_live_data")
-      .then((r) => r.json())
-      .then(setHoldings)
-      .catch(() => setError("Unable to load daily performance."))
-      .finally(() => setLoading(false));
+    let isActive = true;
+    const loadData = async () => {
+      try {
+        const [hRes, sRes] = await Promise.all([
+          fetch("http://localhost:8000/portfolio_live_data"),
+          fetch("http://localhost:8000/portfolio_status"),
+        ]);
+        const hJson = hRes.ok ? await hRes.json() : [];
+        const mJson = sRes.ok ? await sRes.json() : null;
+
+        if (isActive) {
+          setHoldings(hJson);
+          if (mJson) {
+            setMomentumMaps({
+              momentum_weekly: mJson.momentum_weekly ?? {},
+              portfolio_momentum_weekly: mJson.portfolio_momentum_weekly ?? {},
+            });
+          }
+        }
+      } catch {
+        if (isActive) setError("Unable to load daily data.");
+      } finally {
+        if (isActive) setLoading(false);
+      }
+    };
+    loadData();
+    return () => {
+      isActive = false;
+    };
   }, []);
 
   const equityHoldings = useMemo(
@@ -286,8 +353,7 @@ const DailyTab = () => {
   );
 
   const handleZoom = (sectorName?: string) => {
-    if (zoomedSector === sectorName) setZoomedSector(null);
-    else if (sectorName) setZoomedSector(sectorName);
+    setZoomedSector(zoomedSector === sectorName ? null : sectorName ?? null);
   };
 
   const treemapData = useMemo(() => {
@@ -300,34 +366,32 @@ const DailyTab = () => {
 
       const c = h.daily_change_percent ?? null;
       const mvComp = COMPRESS_MV ? Math.sqrt(mv) : mv;
-      const absMoveNorm =
-        c === null ? 0 : clamp(Math.abs(c) / CHANGE_CLAMP, 0, 1);
-      const tileSize = mvComp * (1 + absMoveNorm * MOVE_SIZE_WEIGHT);
+      const absMove = c === null ? 0 : clamp(Math.abs(c) / CHANGE_CLAMP, 0, 1);
+      const tileSize = mvComp * (1 + absMove * MOVE_SIZE_WEIGHT);
 
       if (!sectors[sector])
         sectors[sector] = {
           totalSize: 0,
           totalMv: 0,
-          weightedChangeSum: 0,
           children: [],
         };
+
       sectors[sector].totalSize += tileSize;
       sectors[sector].totalMv += mv;
-      if (c !== null) sectors[sector].weightedChangeSum += c * mv;
 
       sectors[sector].children.push({
         name: h.ticker,
         size: tileSize,
         changePercent: c,
         nodeType: "ticker",
+        sectorMomentum: momentumMaps.momentum_weekly[h.ticker] ?? null,
+        portfolioMomentum:
+          momentumMaps.portfolio_momentum_weekly[h.ticker] ?? null,
       });
     }
 
-    // If a sector is zoomed, only return that sector's data
     if (zoomedSector && sectors[zoomedSector]) {
       const s = sectors[zoomedSector];
-      const sectorChange =
-        s.totalMv > 0 ? s.weightedChangeSum / s.totalMv : null;
       return [
         {
           name: zoomedSector,
@@ -335,10 +399,9 @@ const DailyTab = () => {
           children: [
             {
               name: "HEADER",
-              size: s.totalSize * 0.05,
+              size: s.totalSize * 0.08,
               nodeType: "sectorHeader",
               sectorName: zoomedSector,
-              changePercent: sectorChange,
             },
             ...s.children,
           ],
@@ -346,44 +409,48 @@ const DailyTab = () => {
       ];
     }
 
-    const result = Object.entries(sectors).map(([name, s]) => {
-      const sectorChange =
-        s.totalMv > 0 ? s.weightedChangeSum / s.totalMv : null;
-      const headerSize = Math.max(
-        s.totalSize * SECTOR_HEADER_FRACTION,
-        SECTOR_HEADER_MIN_UNITS
-      );
-      return {
-        name,
-        size: s.totalSize + headerSize,
-        children: [
-          {
-            name: "HEADER",
-            size: headerSize,
-            nodeType: "sectorHeader",
-            sectorName: name,
-            changePercent: sectorChange,
-          },
-          ...s.children,
-        ],
-      };
-    });
+    return Object.entries(sectors)
+      .map(([name, s]) => {
+        const headerSize = Math.max(
+          s.totalSize * SECTOR_HEADER_FRACTION,
+          SECTOR_HEADER_MIN_UNITS
+        );
+        return {
+          name,
+          size: s.totalSize + headerSize,
+          children: [
+            {
+              name: "HEADER",
+              size: headerSize,
+              nodeType: "sectorHeader",
+              sectorName: name,
+            },
+            ...s.children,
+          ],
+        };
+      })
+      .sort((a, b) => b.size - a.size);
+  }, [equityHoldings, momentumMaps, zoomedSector]);
 
-    return result.sort((a, b) => b.size - a.size);
-  }, [equityHoldings, zoomedSector]);
+  if (loading) return <div className="p-4">Loading performance…</div>;
+  if (error) return <div className="p-4 text-danger">{error}</div>;
 
   return (
     <div className="p-3 p-md-4 bg-white rounded shadow-sm border h-100">
       <div className="d-flex justify-content-between align-items-center mb-3">
-        <h4 className="fw-bold mb-0">
-          Daily Performance {zoomedSector && ` - ${zoomedSector}`}
-        </h4>
-        <div className="text-muted small">
-          Click a sector header to zoom in/out
+        <div>
+          <h4 className="fw-bold mb-0">
+            Performance Heatmap {zoomedSector && ` - ${zoomedSector}`}
+          </h4>
+          <p className="text-muted small mb-0">
+            {zoomedSector
+              ? "Momentum details are now visible for this sector."
+              : "Select a sector to view momentum score details."}
+          </p>
         </div>
       </div>
 
-      <div style={{ width: "100%", height: "70vh", minHeight: 600 }}>
+      <div style={{ width: "100%", height: "70vh", minHeight: 650 }}>
         <ResponsiveContainer width="100%" height="100%">
           <Treemap
             data={treemapData}
@@ -391,30 +458,40 @@ const DailyTab = () => {
             content={
               <CustomContent onZoom={handleZoom} isZoomed={!!zoomedSector} />
             }
-            stroke="#ffffff"
-            isAnimationActive={true}
+            isAnimationActive
           >
             <Tooltip
               content={({ active, payload }) => {
                 if (!active || !payload?.length) return null;
                 const node = payload[0].payload;
+                if (node.nodeType === "sectorHeader") return null;
                 return (
-                  <div className="bg-white p-2 rounded shadow border small">
-                    <div className="fw-bold">
-                      {node.nodeType === "sectorHeader"
-                        ? node.sectorName
-                        : node.name}
+                  <div className="bg-white p-3 rounded shadow border small">
+                    <div className="fw-bold border-bottom pb-1 mb-2">
+                      {node.name}
                     </div>
-                    <div>
-                      Daily:{" "}
+                    <div className="d-flex justify-content-between gap-4">
+                      <span>Change:</span>
                       <span
                         className={
                           node.changePercent >= 0
-                            ? "text-success"
-                            : "text-danger"
+                            ? "text-success fw-bold"
+                            : "text-danger fw-bold"
                         }
                       >
                         {formatPct(node.changePercent)}
+                      </span>
+                    </div>
+                    <div className="d-flex justify-content-between gap-4 mt-2">
+                      <span>Port Momentum:</span>
+                      <span className="fw-bold">
+                        {formatMomentum(node.portfolioMomentum)}
+                      </span>
+                    </div>
+                    <div className="d-flex justify-content-between gap-4">
+                      <span>Sect Momentum:</span>
+                      <span className="fw-bold">
+                        {formatMomentum(node.sectorMomentum)}
                       </span>
                     </div>
                   </div>
