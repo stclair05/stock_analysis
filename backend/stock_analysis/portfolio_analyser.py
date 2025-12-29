@@ -34,16 +34,38 @@ class PortfolioAnalyser:
         except Exception:
             self.fx_rate = 1.0
 
-    def _get_price(self, ticker: str) -> Optional[float]:
+    def _get_price_and_change(self, ticker: str) -> tuple[Optional[float], Optional[float], Optional[float]]:
+        """Return the latest close, absolute change, and percentage change."""
         try:
             yf_ticker = yf.Ticker(ticker)
-            hist = yf_ticker.history(period="1d")
+            hist = yf_ticker.history(period="2d")
+
+            close_today: Optional[float] = None
+            close_prev: Optional[float] = None
             if not hist.empty:
-                return hist["Close"].iloc[-1]
-            else:
-                return yf_ticker.info.get("previousClose")
+                close_today = hist["Close"].iloc[-1]
+                if len(hist) > 1:
+                    close_prev = hist["Close"].iloc[-2]
+
+            if close_today is None:
+                info = yf_ticker.info
+                close_today = info.get("currentPrice") or info.get("regularMarketPrice")
+                close_prev = info.get("previousClose")
+
+            if close_today is None:
+                return None, None, None
+
+            change = None
+            change_pct = None
+
+            if close_prev:
+                change = float(close_today) - float(close_prev)
+                change_pct = (change / float(close_prev)) * 100 if close_prev else None
+
+            return float(close_today), change, change_pct
+        
         except Exception:
-            return None
+            return None, None, None
 
     def _process_single_item(self, item: dict) -> Optional[dict]:
         try:
@@ -53,10 +75,12 @@ class PortfolioAnalyser:
             invested_capital = shares * average_cost
             category = item.get("category", "Other") 
 
-            current_price = self._get_price(ticker)
+            current_price, change, change_pct = self._get_price_and_change(ticker)
 
             if ticker.endswith(".L") and current_price and self.fx_rate:
                 current_price *= self.fx_rate
+                if change is not None:
+                    change *= self.fx_rate
 
             if current_price is None:
                 return {
@@ -68,13 +92,21 @@ class PortfolioAnalyser:
                     "invested_capital": round(invested_capital, 2),
                     "pnl": 0.0,
                     "pnl_percent": 0.0,
+                    "daily_change": None,
+                    "daily_change_percent": None,
                     "static_asset": True,
                     "category": category, 
+                    "sector": item.get("sector", "Other"),
                 }
 
             market_value = shares * current_price
             pnl = market_value - invested_capital
             pnl_percent = pnl / invested_capital if invested_capital else 0.0
+
+            if change is not None:
+                change = round(change, 2)
+            if change_pct is not None:
+                change_pct = round(change_pct, 2)
 
             return {
                 "ticker": ticker,
@@ -85,8 +117,11 @@ class PortfolioAnalyser:
                 "invested_capital": round(invested_capital, 2),
                 "pnl": round(pnl, 2),
                 "pnl_percent": round(pnl_percent * 100, 2),
+                "daily_change": change,
+                "daily_change_percent": change_pct,
                 "static_asset": False,
                 "category": category,
+                "sector": item.get("sector", "Other"),
             }
         except Exception:
             return None

@@ -5,6 +5,7 @@ import MarketPositionsTab from "./portfolio/MarketPositionsTab";
 import RecentTradesTab from "./portfolio/RecentTradesTab";
 import WhatIfAnalysisTab from "./portfolio/WhatIfAnalysisTab";
 import BuySellSignalsTab from "./portfolio/BuySellSignalsTab";
+import DailyTab from "./portfolio/DailyTab";
 import "./PortfolioPage.css";
 
 function PortfolioPage() {
@@ -20,6 +21,7 @@ function PortfolioPage() {
     recenttrades: "Recent Trades",
     whatifanalysis: "What-If Analysis",
     buy_sell_signals: "Buy/Sell Signals",
+    daily: "Daily",
   };
 
   const tabToPath: Record<string, string> = {
@@ -28,11 +30,13 @@ function PortfolioPage() {
     "Recent Trades": "recenttrades",
     "What-If Analysis": "whatifanalysis",
     "Buy/Sell Signals": "buy_sell_signals",
+    Daily: "daily",
   };
 
   const [activeTab, setActiveTab] = useState(
     pathToTab[tab ?? ""] || "Buy/Sell Signals"
   );
+
   const [signalListType, setSignalListType] = useState<
     "portfolio" | "watchlist" | "buylist"
   >(
@@ -48,6 +52,7 @@ function PortfolioPage() {
     "Recent Trades",
     "What-If Analysis",
     "Buy/Sell Signals",
+    "Daily",
   ];
 
   useEffect(() => {
@@ -60,11 +65,9 @@ function PortfolioPage() {
     }
   }, [activeTab]);
 
-  // Update state when route params change
   useEffect(() => {
-    if (tab && pathToTab[tab]) {
-      setActiveTab(pathToTab[tab]);
-    }
+    if (tab && pathToTab[tab]) setActiveTab(pathToTab[tab]);
+
     if (
       listType === "watchlist" ||
       listType === "portfolio" ||
@@ -75,40 +78,51 @@ function PortfolioPage() {
   }, [tab, listType]);
 
   return (
+    // Use viewport height so Daily tab can be tall
     <div
-      className="container-fluid mt-4"
-      style={{ maxWidth: "70%", margin: "0 auto" }}
+      className="container-fluid px-4 px-md-5"
+      style={{ height: "calc(100vh - 24px)" }}
     >
-      <h1 className="fw-bold text-dark mb-4">Portfolio</h1>
+      {/* Header */}
+      <div
+        className="d-flex align-items-center justify-content-between"
+        style={{ paddingTop: 16 }}
+      >
+        <h1 className="fw-bold text-dark mb-0">Portfolio</h1>
+      </div>
 
       {/* Tab bar */}
-      <div className="position-relative border-bottom mb-4 custom-tabs">
-        {tabs.map((tab, index) => (
+      <div
+        className="position-relative border-bottom custom-tabs"
+        style={{ marginTop: 16 }}
+      >
+        {tabs.map((t, index) => (
           <button
-            key={tab}
+            key={t}
             ref={(el: HTMLButtonElement | null) => {
               if (el) tabRefs.current[index] = el;
             }}
-            className={`custom-tab-button ${activeTab === tab ? "active" : ""}`}
+            className={`custom-tab-button ${activeTab === t ? "active" : ""}`}
             onClick={() => {
-              if (tab === "Buy/Sell Signals") {
+              if (t === "Buy/Sell Signals") {
                 navigate(`/portfolio/buy_sell_signals/${signalListType}`);
               } else {
-                navigate(`/portfolio/${tabToPath[tab]}`);
+                navigate(`/portfolio/${tabToPath[t]}`);
               }
             }}
           >
-            {tab}
+            {t}
           </button>
         ))}
         <div className="tab-underline" ref={underlineRef} />
       </div>
 
-      {/* Content */}
-      <div>
+      {/* Content area grows to fill remaining height */}
+      <div style={{ height: "calc(100% - 110px)", marginTop: 16 }}>
         <div style={{ display: activeTab === "Overview" ? "block" : "none" }}>
           <OverviewTab />
         </div>
+
         <div
           style={{
             display: activeTab === "Market Positions" ? "block" : "none",
@@ -116,11 +130,13 @@ function PortfolioPage() {
         >
           <MarketPositionsTab />
         </div>
+
         <div
           style={{ display: activeTab === "Recent Trades" ? "block" : "none" }}
         >
           <RecentTradesTab />
         </div>
+
         <div
           style={{
             display: activeTab === "What-If Analysis" ? "block" : "none",
@@ -128,6 +144,7 @@ function PortfolioPage() {
         >
           <WhatIfAnalysisTab />
         </div>
+
         <div
           style={{
             display: activeTab === "Buy/Sell Signals" ? "block" : "none",
@@ -140,6 +157,16 @@ function PortfolioPage() {
               navigate(`/portfolio/buy_sell_signals/${lt}`);
             }}
           />
+        </div>
+
+        {/* Give Daily tab full height */}
+        <div
+          style={{
+            display: activeTab === "Daily" ? "block" : "none",
+            height: "100%",
+          }}
+        >
+          <DailyTab />
         </div>
       </div>
     </div>
