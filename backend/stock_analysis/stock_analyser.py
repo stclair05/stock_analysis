@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+import copy
 import os
 import json
 from pathlib import Path
@@ -34,8 +35,29 @@ from .pricetarget import get_price_targets, calculate_mean_reversion_50dma_targe
 from threading import Lock
 
 _price_data_lock = Lock()
+_signal_cache_lock = Lock()
 
 MIN_HISTORY_POINTS = 5
+
+_signal_cache: dict[tuple[str, str, str, str], list[dict]] = {}
+_status_cache: dict[tuple[str, str, str, str], dict] = {}
+
+
+def _signal_cache_key(strategy: str, symbol: str, timeframe: str | None) -> tuple[str, str, str, str]:
+    return (strategy, symbol.upper(), timeframe or "default", _today_key_tzaware())
+
+
+def _get_cached_value(cache: dict, key: tuple[str, str, str, str]):
+    with _signal_cache_lock:
+        value = cache.get(key)
+    if value is None:
+        return None
+    return copy.deepcopy(value)
+
+
+def _store_cached_value(cache: dict, key: tuple[str, str, str, str], value):
+    with _signal_cache_lock:
+        cache[key] = copy.deepcopy(value)
 
 def _download_from_fmp(symbol: str) -> pd.DataFrame:
     """Fetch historical price data from Financial Modeling Prep, matching yfinance format."""
@@ -1878,6 +1900,11 @@ class StockAnalyser:
         Implements the TrendInvestorPro strategy logic.
         Returns a list of marker dicts: {time, price, side, label}
         """
+        cache_key = _signal_cache_key("trendinvestorpro", self.symbol, timeframe)
+        cached = _get_cached_value(_signal_cache, cache_key)
+        if cached is not None:
+            return cached
+        
         # 1. Choose correct OHLC dataframe
         if timeframe == "daily":
             df = self.df
@@ -1985,13 +2012,19 @@ class StockAnalyser:
             if (enableMAReentry or enableKCReentry) and s_pct <= -1.0:
                 sawDownCross = True
 
-        return markers
+        _store_cached_value(_signal_cache, cache_key, markers)
+        return copy.deepcopy(markers)
     
     def get_trendinvestorpro_status_and_strength(self, timeframe: str = "daily") -> dict:
         """
         Returns the most recent TrendInvestorPro signal (BUY/SELL) and whether the signal is
         strengthening, weakening, or crossed.
         """
+        cache_key = _signal_cache_key("trendinvestorpro_status", self.symbol, timeframe)
+        cached = _get_cached_value(_status_cache, cache_key)
+        if cached is not None:
+            return cached
+        
         if timeframe == "daily":
             df = self.df
         elif timeframe == "weekly":
@@ -2059,8 +2092,10 @@ class StockAnalyser:
             delta = "strengthening" if s_now > s_prev else "weakening"
         elif status == "SELL":
             delta = "strengthening" if c_now > c_prev else "weakening"
+        result = {"status": status, "delta": delta}
 
-        return {"status": status, "delta": delta}
+        _store_cached_value(_status_cache, cache_key, result)
+        return copy.deepcopy(result)
 
 
     
@@ -2070,6 +2105,11 @@ class StockAnalyser:
         Returns list of {time, price, side, label}.
         - timeframe: "weekly", "monthly", or "daily"
         """
+        cache_key = _signal_cache_key("stclair", self.symbol, timeframe)
+        cached = _get_cached_value(_signal_cache, cache_key)
+        if cached is not None:
+            return cached
+        
         # Choose base OHLC dataframe for the given timeframe
         if timeframe == "daily":
             df = self.df
@@ -2150,13 +2190,19 @@ class StockAnalyser:
                 in_position = False
                 entry_price = None
 
-        return markers
+        _store_cached_value(_signal_cache, cache_key, markers)
+        return copy.deepcopy(markers)
     
     def get_stclair_status_and_strength(self, timeframe: str = "weekly") -> dict:
         """
         Returns the latest signal ('BUY' or 'SELL') and its trend delta
         ('crossed', 'strengthening', 'weakening', 'neutral'), enhanced with Supertrend.
         """
+        cache_key = _signal_cache_key("stclair_status", self.symbol, timeframe)
+        cached = _get_cached_value(_status_cache, cache_key)
+        if cached is not None:
+            return cached
+        
         # Load correct timeframe
         if timeframe == "daily":
             df = self.df
@@ -2169,7 +2215,9 @@ class StockAnalyser:
 
         daily_df = self.df
         if len(daily_df) < 200 or len(df) < 3:
-            return {"status": None, "delta": None}
+            result = {"status": None, "delta": None}
+            _store_cached_value(_status_cache, cache_key, result)
+            return copy.deepcopy(result)
 
         # --- Daily SMAs for price context
         sma20 = daily_df['Close'].rolling(20).mean()
@@ -2205,7 +2253,9 @@ class StockAnalyser:
         latest = get_latest_values(-1)
         prev = get_latest_values(-2)
         if not latest or not prev:
-            return {"status": None, "delta": None}
+            result = {"status": None, "delta": None}
+            _store_cached_value(_status_cache, cache_key, result)
+            return copy.deepcopy(result)
 
         # ----- Build persistent BUY/SELL signals over the series -----
         in_position = False
@@ -2235,7 +2285,9 @@ class StockAnalyser:
         # Filter out leading None values (periods without enough data)
         valid_signals = [s for s in signals if s is not None]
         if len(valid_signals) < 2:
-            return {"status": None, "delta": None}
+            result = {"status": None, "delta": None}
+            _store_cached_value(_status_cache, cache_key, result)
+            return copy.deepcopy(result)
 
         curr_signal = valid_signals[-1]
         prev_signal = valid_signals[-2]
@@ -2252,11 +2304,15 @@ class StockAnalyser:
             prev_gap = prev["rsi_ma"] - prev["rsi"]
             delta = "strengthening" if curr_gap > prev_gap else "weakening"
         else:
-            return {"status": curr_signal, "delta": None}
+            result = {"status": curr_signal, "delta": None}
+            _store_cached_value(_status_cache, cache_key, result)
+            return copy.deepcopy(result)
 
        
 
-        return {"status": curr_signal, "delta": delta}
+        result = {"status": curr_signal, "delta": delta}
+        _store_cached_value(_status_cache, cache_key, result)
+        return copy.deepcopy(result)
 
     def get_northstar_signals(self, timeframe: str = "daily") -> list[dict]:
         """
@@ -2266,6 +2322,11 @@ class StockAnalyser:
         No entry if Price < 36MA.
         Returns markers: {time, price, side, label}
         """
+        cache_key = _signal_cache_key("northstar", self.symbol, timeframe)
+        cached = _get_cached_value(_signal_cache, cache_key)
+        if cached is not None:
+            return cached
+        
         # Select OHLC dataframe for requested timeframe
         if timeframe == "daily":
             df = self.df
@@ -2327,14 +2388,19 @@ class StockAnalyser:
                 })
                 in_position = False
 
-
-        return markers
+        _store_cached_value(_signal_cache, cache_key, markers)
+        return copy.deepcopy(markers)
     
     def get_northstar_status_and_strength(self, timeframe: str = "weekly") -> dict:
         """
         Returns the latest status ('BUY' or 'SELL') and trend delta
         ('strengthening' / 'weakening' / 'crossed'), adjusted with Supertrend trend.
         """
+        cache_key = _signal_cache_key("northstar_status", self.symbol, timeframe)
+        cached = _get_cached_value(_status_cache, cache_key)
+        if cached is not None:
+            return cached
+        
         df = {
             "daily": self.df,
             "weekly": self.weekly_df,
@@ -2342,7 +2408,9 @@ class StockAnalyser:
         }[timeframe].copy()
 
         if len(df) < 37:
-            return {"status": None, "delta": None}
+            result = {"status": None, "delta": None}
+            _store_cached_value(_status_cache, cache_key, result)
+            return copy.deepcopy(result)
 
         close = df["Close"]
         ma12 = close.rolling(12).mean()
@@ -2377,7 +2445,9 @@ class StockAnalyser:
         else:
             delta = "neutral"
 
-        return {"status": curr_sig, "delta": delta}
+        result = {"status": curr_sig, "delta": delta}
+        _store_cached_value(_status_cache, cache_key, result)
+        return copy.deepcopy(result)
 
 
 
@@ -2397,11 +2467,18 @@ class StockAnalyser:
 
         Returns markers in the form {time, price, side, label}
         """
+        cache_key = _signal_cache_key("stclairlongterm", self.symbol, timeframe)
+        cached = _get_cached_value(_signal_cache, cache_key)
+        if cached is not None:
+            return cached
+        
         if timeframe != "weekly":
             raise HTTPException(status_code=400, detail="stclairlongterm is only available for weekly timeframe.")
         df_weekly = self.weekly_df
         if len(df_weekly) < 40:
-            return []
+            result: list[dict] = []
+            _store_cached_value(_signal_cache, cache_key, result)
+            return copy.deepcopy(result)
 
         close = df_weekly["Close"]
 
@@ -2479,7 +2556,8 @@ class StockAnalyser:
                 })
                 in_position = False
 
-        return markers
+        _store_cached_value(_signal_cache, cache_key, markers)
+        return copy.deepcopy(markers)
     
     def get_stclairlongterm_status_and_strength(self) -> dict:
         """
