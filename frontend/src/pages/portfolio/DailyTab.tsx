@@ -316,7 +316,7 @@ const DailyTab = () => {
       try {
         const [hRes, sRes] = await Promise.all([
           fetch("http://localhost:8000/portfolio_live_data"),
-          fetch("http://localhost:8000/portfolio_status"),
+          fetch("http://localhost:8000/portfolio_status?scope=momentum"),
         ]);
         const hJson = hRes.ok ? await hRes.json() : [];
         const mJson = sRes.ok ? await sRes.json() : null;

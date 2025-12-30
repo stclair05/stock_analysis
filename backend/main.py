@@ -19,6 +19,7 @@ from stock_analysis.utils import (
     safe_value,
 )
 from stock_analysis.sector_momentum import (
+    _peer_returns,
     _sanitize_peers,
     get_fmp_peers,
     period_return,
@@ -52,10 +53,11 @@ app.add_middleware(
 )
 
 # Symbol → (Fundamentals, timestamp)
-_fundamentals_cache = {}
+_fundamentals_cache: dict[tuple[str, str], tuple[FinancialMetrics, float]] = {}
+_FUNDAMENTALS_TTL_SECONDS = 60 * 60  # 60 minutes
 PORTFOLIO_RETURNS_CACHE: dict[int, dict[str, float]] = {}
 PORTFOLIO_RETURNS_LAST_UPDATED: dict[int, float] = {}
-PORTFOLIO_RETURNS_TTL_SECONDS = 15 * 60  # 15 minutes cache
+PORTFOLIO_RETURNS_TTL_SECONDS = 60 * 60  # 60 minutes cache
 
 
 def _get_portfolio_equities():
@@ -70,10 +72,12 @@ def _get_portfolio_equities():
         ]
 
 
-def _return_for_symbol(symbol: str, period_days: int) -> tuple[str, float | None]:
+def _return_for_symbol(
+    symbol: str, period_days: int, price_data: pd.DataFrame | None = None
+) -> tuple[str, float | None]:
     try:
-        analyser = StockAnalyser(symbol)
-        closes = analyser.df.get("Close")
+        df = price_data if price_data is not None else StockAnalyser.get_price_data(symbol)
+        closes = df.get("Close") if df is not None else None
         if closes is None:
             return symbol, None
         if isinstance(closes, pd.DataFrame):
@@ -105,16 +109,23 @@ def _portfolio_returns(period_days: int) -> dict[str, float]:
         PORTFOLIO_RETURNS_LAST_UPDATED[period_days] = now
         return PORTFOLIO_RETURNS_CACHE[period_days]
 
-    returns: dict[str, float] = {}
+    price_data_map: dict[str, pd.DataFrame] = {}
     with ThreadPoolExecutor(max_workers=8) as executor:
-        futures = {
-            executor.submit(_return_for_symbol, symbol, period_days): symbol
-            for symbol in symbols
+        fetch_futures = {
+            executor.submit(StockAnalyser.get_price_data, symbol): symbol for symbol in symbols
         }
-        for future in as_completed(futures):
-            symbol, value = future.result()
-            if value is not None:
-                returns[symbol] = value
+        for future in as_completed(fetch_futures):
+            symbol = fetch_futures[future]
+            try:
+                price_data_map[symbol] = future.result()
+            except Exception:
+                continue
+
+    returns: dict[str, float] = {}
+    for symbol, df in price_data_map.items():
+        _, value = _return_for_symbol(symbol, period_days, price_data=df)
+        if value is not None:
+            returns[symbol] = value
 
     PORTFOLIO_RETURNS_CACHE[period_days] = returns
     PORTFOLIO_RETURNS_LAST_UPDATED[period_days] = now
@@ -133,16 +144,31 @@ def analyse(stock_request: StockRequest):
         peers_override if peers_override is not None else get_fmp_peers(stock_request.symbol)
     )
 
+    weekly_return = period_return(closes, 5) if closes is not None else None
+    monthly_return = period_return(closes, 21) if closes is not None else None
+
+    peer_returns_map = _peer_returns(peers_for_analysis, (5, 21))
+
     weekly_momentum_score = (
         sector_relative_momentum_zscore(
-            stock_request.symbol, closes, 5, peers_override=peers_for_analysis
+            stock_request.symbol,
+            closes,
+            5,
+            peers_override=peers_for_analysis,
+            peer_returns=peer_returns_map.get(5),
+            base_return=weekly_return,
         )
         if closes is not None
         else None
     )
     monthly_momentum_score = (
         sector_relative_momentum_zscore(
-            stock_request.symbol, closes, 21, peers_override=peers_for_analysis
+            stock_request.symbol,
+            closes,
+            21,
+            peers_override=peers_for_analysis,
+            peer_returns=peer_returns_map.get(21),
+            base_return=monthly_return,
         )
         if closes is not None
         else None
@@ -152,9 +178,6 @@ def analyse(stock_request: StockRequest):
     weekly_portfolio_momentum_score = None
     monthly_portfolio_momentum_score = None
     try:
-        weekly_return = period_return(closes, 5) if closes is not None else None
-        monthly_return = period_return(closes, 21) if closes is not None else None
-
         if weekly_return is not None and math.isfinite(float(weekly_return)):
             weekly_portfolio = _portfolio_returns(5)
             combined = {**weekly_portfolio, stock_request.symbol: float(weekly_return)}
@@ -248,7 +271,7 @@ def get_portfolio_tickers():
     ]
 
 
-def _status_for_holdings(holdings, price_direction: str):
+def _status_for_holdings(holdings, price_direction: str, *, momentum_only: bool = False):
     price_key_20 = "below_20dma" if price_direction == "below" else "above_20dma"
     price_key_200 = "below_200dma" if price_direction == "below" else "above_200dma"
     ma_prefix = "below" if price_direction == "below" else "above"
@@ -256,28 +279,37 @@ def _status_for_holdings(holdings, price_direction: str):
     ma70_key = f"{ma_prefix}_70wma"
     ma3y_key = f"{ma_prefix}_3yma"
 
-    results = {
-        price_key_20: [],
-        price_key_200: [],
-        ma40_key: [],
-        ma70_key: [],
-        ma3y_key: [],
-        "candle_signals": {},
-        "extended_vol": {},
-        "super_trend_daily": {},
-        "mansfield_daily": {},
-        "mace": {},
-        "stage": {},
-        "short_term_trend": {},
-        "long_term_trend": {},
-        "breach_hit": {},
-        "ma_crossovers": {},
-        "momentum_weekly": {},
-        "momentum_monthly": {},
-        "portfolio_momentum_weekly": {},
-        "portfolio_momentum_monthly": {},
-        "divergence": {},
-    }
+    results = (
+        {
+            "momentum_weekly": {},
+            "momentum_monthly": {},
+            "portfolio_momentum_weekly": {},
+            "portfolio_momentum_monthly": {},
+        }
+        if momentum_only
+        else {
+            price_key_20: [],
+            price_key_200: [],
+            ma40_key: [],
+            ma70_key: [],
+            ma3y_key: [],
+            "candle_signals": {},
+            "extended_vol": {},
+            "super_trend_daily": {},
+            "mansfield_daily": {},
+            "mace": {},
+            "stage": {},
+            "short_term_trend": {},
+            "long_term_trend": {},
+            "breach_hit": {},
+            "ma_crossovers": {},
+            "momentum_weekly": {},
+            "momentum_monthly": {},
+            "portfolio_momentum_weekly": {},
+            "portfolio_momentum_monthly": {},
+            "divergence": {},
+        }
+    )
 
     weekly_portfolio_returns: dict[str, float] = {}
     monthly_portfolio_returns: dict[str, float] = {}
@@ -288,68 +320,86 @@ def _status_for_holdings(holdings, price_direction: str):
             continue
         try:
             analyser = StockAnalyser(ticker)
-            price = analyser.get_current_price()
             flagged = False
 
             closes = analyser.df["Close"]
             if isinstance(closes, pd.DataFrame):
                 closes = closes.iloc[:, 0]
 
-            last_close = safe_value(closes, -1)
-            prev_close = safe_value(closes, -2)
+            peers_for_analysis = get_fmp_peers(ticker)
+            peer_returns_map = _peer_returns(peers_for_analysis, (5, 21))
 
-            def _latest_weekly_ma(period: int):
-                try:
-                    weekly_close = analyser.weekly_df["Close"]
-                except Exception:
-                    return None, None
-                if isinstance(weekly_close, pd.DataFrame):
-                    weekly_close = weekly_close.iloc[:, 0]
-                ma_series = weekly_close.rolling(window=period).mean()
-                return safe_value(ma_series, -1), safe_value(ma_series, -2)
+            weekly_return = period_return(closes, 5)
+            monthly_return = period_return(closes, 21)
 
-            ma_40, ma_40_prev = _latest_weekly_ma(40)
-            ma_70, ma_70_prev = _latest_weekly_ma(70)
-            ma_3y, ma_3y_prev = _latest_weekly_ma(156)
+            if not momentum_only:
+                price = analyser.get_current_price()
+                last_close = safe_value(closes, -1)
+                prev_close = safe_value(closes, -2)
 
-            ma20_series = closes.rolling(window=20).mean()
-            ma200_series = closes.rolling(window=200).mean()
-            twenty = safe_value(ma20_series, -1)
-            ma20_prev = safe_value(ma20_series, -2)
-            two_hundred = safe_value(ma200_series, -1)
-            ma200_prev = safe_value(ma200_series, -2)
+                def _latest_weekly_ma(period: int):
+                    try:
+                        weekly_close = analyser.weekly_df["Close"]
+                    except Exception:
+                        return None, None
+                    if isinstance(weekly_close, pd.DataFrame):
+                        weekly_close = weekly_close.iloc[:, 0]
+                    ma_series = weekly_close.rolling(window=period).mean()
+                    return safe_value(ma_series, -1), safe_value(ma_series, -2)
 
-            short_trend = analyser.short_term_trend_score()
-            short_total = short_trend.get("total") if isinstance(short_trend, dict) else None
-            results["short_term_trend"][ticker] = (
-                short_total if isinstance(short_total, (int, float)) else None
-            )
+                ma_40, ma_40_prev = _latest_weekly_ma(40)
+                ma_70, ma_70_prev = _latest_weekly_ma(70)
+                ma_3y, ma_3y_prev = _latest_weekly_ma(156)
 
-            long_trend = analyser.long_term_trend_score()
-            long_total = long_trend.get("total") if isinstance(long_trend, dict) else None
-            results["long_term_trend"][ticker] = (
-                long_total if isinstance(long_total, (int, float)) else None
-            )
+                ma20_series = closes.rolling(window=20).mean()
+                ma200_series = closes.rolling(window=200).mean()
+                twenty = safe_value(ma20_series, -1)
+                ma20_prev = safe_value(ma20_series, -2)
+                two_hundred = safe_value(ma200_series, -1)
+                ma200_prev = safe_value(ma200_series, -2)
+
+                short_trend = analyser.short_term_trend_score()
+                short_total = short_trend.get("total") if isinstance(short_trend, dict) else None
+                results["short_term_trend"][ticker] = (
+                    short_total if isinstance(short_total, (int, float)) else None
+                )
+
+                long_trend = analyser.long_term_trend_score()
+                long_total = long_trend.get("total") if isinstance(long_trend, dict) else None
+                results["long_term_trend"][ticker] = (
+                    long_total if isinstance(long_total, (int, float)) else None
+                )
 
             weekly_momentum_score = sector_relative_momentum_zscore(
-                ticker, closes, 5
+                ticker,
+                closes,
+                5,
+                peers_override=peers_for_analysis,
+                peer_returns=peer_returns_map.get(5),
+                base_return=weekly_return,
             )
             if isinstance(weekly_momentum_score, (int, float)):
                 results["momentum_weekly"][ticker] = weekly_momentum_score
 
             monthly_momentum_score = sector_relative_momentum_zscore(
-                ticker, closes, 21
+                ticker,
+                closes,
+                21,
+                peers_override=peers_for_analysis,
+                peer_returns=peer_returns_map.get(21),
+                base_return=monthly_return,
             )
             if isinstance(monthly_momentum_score, (int, float)):
                 results["momentum_monthly"][ticker] = monthly_momentum_score
 
-            weekly_return = period_return(closes, 5)
             if isinstance(weekly_return, (int, float)):
                 weekly_portfolio_returns[ticker] = weekly_return
 
-            monthly_return = period_return(closes, 21)
             if isinstance(monthly_return, (int, float)):
                 monthly_portfolio_returns[ticker] = monthly_return
+
+            if momentum_only:
+                continue
 
             if isinstance(price, (int, float)) and isinstance(twenty, (int, float)):
                 if price_direction == "below" and price < twenty:
@@ -585,7 +635,8 @@ def _status_for_holdings(holdings, price_direction: str):
 
 @app.get("/portfolio_status")
 def get_portfolio_status(
-    direction: Literal["above", "below"] = Query("below")
+    direction: Literal["above", "below"] = Query("below"),
+    scope: Literal["full", "momentum"] = Query("full"),
 ):
     json_path = Path("portfolio_store.json")
     price_key_20 = "below_20dma" if direction == "below" else "above_20dma"
@@ -596,6 +647,16 @@ def get_portfolio_status(
     ma3y_key = f"{ma_prefix}_3yma"
 
     if not json_path.exists():
+        base = {
+            "momentum_weekly": {},
+            "momentum_monthly": {},
+            "portfolio_momentum_weekly": {},
+            "portfolio_momentum_monthly": {},
+        }
+
+        if scope == "momentum":
+            return base
+        
         return {
             price_key_20: [],
             price_key_200: [],
@@ -612,10 +673,7 @@ def get_portfolio_status(
             "long_term_trend": {},
             "breach_hit": {},
             "ma_crossovers": {},
-            "momentum_weekly": {},
-            "momentum_monthly": {},
-            "portfolio_momentum_weekly": {},
-            "portfolio_momentum_monthly": {},
+            **base,
             "divergence": {},
         }
 
@@ -627,12 +685,25 @@ def get_portfolio_status(
             if isinstance(item, dict) and "ticker" in item
         ]
 
-    return _status_for_holdings(equities, direction)
+    return _status_for_holdings(
+        equities,
+        direction,
+        momentum_only=scope == "momentum",
+    )
 
 
 @app.get("/fmp_financials/{symbol}", response_model=FinancialMetrics)
 async def get_fmp_financials(symbol: str):
     try:
+        now = time()
+        cache_key = ("fmp", symbol)
+        cached = _fundamentals_cache.get(cache_key)
+        if cached:
+            metrics, ts = cached
+            if now - ts < _FUNDAMENTALS_TTL_SECONDS:
+                metrics_dict = metrics.model_dump() if hasattr(metrics, "model_dump") else metrics.dict()
+                return JSONResponse(metrics_dict)
+            
         fundamentals = FMPFundamentals(symbol)
         metrics = fundamentals.get_financial_metrics()
         # Grab the latest quarterly income statement date (or use another source if you prefer)
@@ -641,6 +712,9 @@ async def get_fmp_financials(symbol: str):
         metrics_dict = metrics.model_dump() if hasattr(metrics, "model_dump") else metrics.dict()
         # Add the as_of_date field
         metrics_dict["as_of_date"] = as_of_date
+
+        _fundamentals_cache[cache_key] = (metrics, now)
+
         return JSONResponse(metrics_dict)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -720,8 +794,18 @@ def preload_price_history():
 @app.get("/12data_financials/{symbol}", response_model=FinancialMetrics)
 async def get_financials(symbol: str):
     try:
+        now = time()
+        cache_key = ("12data", symbol)
+        cached = _fundamentals_cache.get(cache_key)
+        if cached:
+            metrics, ts = cached
+            if now - ts < _FUNDAMENTALS_TTL_SECONDS:
+                return metrics
+            
         fundamentals = TwelveDataFundamentals(symbol)
-        return fundamentals.get_financial_metrics()
+        metrics = fundamentals.get_financial_metrics()
+        _fundamentals_cache[cache_key] = (metrics, now)
+        return metrics
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

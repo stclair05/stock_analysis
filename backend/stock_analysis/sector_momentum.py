@@ -51,6 +51,51 @@ def _sanitize_peers(peers: list[str] | None) -> list[str] | None:
     return deduped
 
 
+def _peer_returns(peers: list[str] | None, periods: tuple[int, ...]) -> dict[int, list[float]]:
+    """Fetch peer price data once and compute returns for each requested period."""
+
+    if not peers:
+        return {period: [] for period in periods}
+
+    cleaned_peers = [_sanitize_symbol(p) for p in peers if isinstance(p, str)]
+    unique_peers: tuple[str, ...] = tuple(
+        dict.fromkeys([p for p in cleaned_peers if p][:_MAX_PEERS])
+    )
+
+    return _peer_returns_cached(unique_peers, tuple(periods))
+
+
+@lru_cache(maxsize=512)
+def _peer_returns_cached(
+    peers_key: tuple[str, ...], periods: tuple[int, ...]
+) -> dict[int, list[float]]:
+    """Cached peer return calculation keyed by peer set and requested periods."""
+
+    returns_by_period: dict[int, list[float]] = {period: [] for period in periods}
+    if not peers_key:
+        return returns_by_period
+
+    for peer in peers_key:
+        try:
+            peer_closes = StockAnalyser.get_price_data(peer)["Close"]
+        except Exception:
+            continue
+
+        if isinstance(peer_closes, pd.DataFrame):
+            peer_closes = peer_closes.iloc[:, 0]
+
+        peer_closes = peer_closes.dropna()
+        if peer_closes.empty:
+            continue
+
+        for period in periods:
+            value = period_return(peer_closes, period)
+            if value is not None and math.isfinite(value):
+                returns_by_period.setdefault(period, []).append(value)
+
+    return returns_by_period
+
+
 @lru_cache(maxsize=256)
 def _fetch_peers_via_api(symbol: str) -> list[str]:
     """Query FMP's stock_peers endpoint for the latest peer list."""
@@ -224,6 +269,8 @@ def sector_relative_momentum_zscore(
     closes: pd.Series | None = None,
     period_days: int = 5,
     peers_override: list[str] | None = None,
+    peer_returns: list[float] | None = None,
+    base_return: float | None = None,
 ) -> float | None:
     """Compute the z-score of a symbol's return over a given period vs. peers."""
     cleaned = _sanitize_symbol(symbol)
@@ -239,28 +286,16 @@ def sector_relative_momentum_zscore(
     if closes.empty:
         return None
 
-    base_return = period_return(closes, period_days)
+    if base_return is None:
+        base_return = period_return(closes, period_days)
     if base_return is None:
         return None
 
-    peer_returns: list[float] = []
     peers = _sanitize_peers(peers_override)
-    if peers is None:
-        peers = get_fmp_peers(cleaned)
-        
-    for peer in peers[:_MAX_PEERS]:
-        try:
-            peer_closes = StockAnalyser.get_price_data(peer)["Close"]
-        except Exception:
-            continue
-        if isinstance(peer_closes, pd.DataFrame):
-            peer_closes = peer_closes.iloc[:, 0]
-        peer_closes = peer_closes.dropna()
-        if peer_closes.empty:
-            continue
-        value = period_return(peer_closes, period_days)
-        if value is not None and math.isfinite(value):
-            peer_returns.append(value)
+    if peer_returns is None:
+        if peers is None:
+            peers = get_fmp_peers(cleaned)
+        peer_returns = _peer_returns(peers, (period_days,)).get(period_days, [])
 
     if not peer_returns:
         return None

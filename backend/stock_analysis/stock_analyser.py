@@ -168,7 +168,7 @@ class StockAnalyser:
 
     # >>> REPLACE _download_data with this normalized version
     def _download_data(self) -> pd.DataFrame:
-        df = yf.download(self.symbol, period='20y', interval='1d', auto_adjust=False, threads=False)
+        df = yf.download(self.symbol, period='20y', interval='1d', auto_adjust=False, threads=True)
         df = _normalize_yf_columns(df)
         if df.empty:
             raise HTTPException(status_code=400, detail="Stock symbol not found or data unavailable.")
@@ -180,7 +180,7 @@ class StockAnalyser:
     def _get_price_data_cached(symbol: str, asof_day: str) -> pd.DataFrame:
         with _price_data_lock:
             # 1) Base history (no repair)
-            base = yf.download(symbol, period="12y", interval="1d", auto_adjust=False, threads=False)
+            base = yf.download(symbol, period="12y", interval="1d", auto_adjust=False, threads=True)
             base = _normalize_yf_columns(base)
 
             if base.empty:
@@ -201,7 +201,7 @@ class StockAnalyser:
                 interval="1d",
                 auto_adjust=False,
                 repair=True,
-                threads=False,
+                threads=True,
             )
             live = _normalize_yf_columns(live)
 
@@ -244,7 +244,7 @@ class StockAnalyser:
 
             # 5) Sensible fallback if pathologically short (e.g., very new listing)
             if len(df) < MIN_HISTORY_POINTS:
-                retry = yf.download(symbol, period="20y", interval="1d", auto_adjust=False, threads=False)
+                retry = yf.download(symbol, period="20y", interval="1d", auto_adjust=False, threads=True)
                 retry = _normalize_yf_columns(retry)
                 if not retry.empty and len(retry) >= MIN_HISTORY_POINTS:
                     df = retry.combine_first(df).sort_index()
