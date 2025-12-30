@@ -139,16 +139,6 @@
       "target_3": -1
     },
     {
-      "ticker": "OXY",
-      "shares": 4305.0,
-      "average_cost": 71.0,
-      "sector": "Energy",
-      "target_1": 53,
-      "player": 2,
-      "technigrade": [15, 14, 13, 15, 16],
-      "peers": ["COP", "CVX", "XOM", "EOG", "PXD", "FANG"]
-    },
-    {
       "ticker": "FCG",
       "shares": 29510.0,
       "average_cost": 26.1,
@@ -169,7 +159,7 @@
     },
     {
       "ticker": "SM",
-      "shares": 47000.0,
+      "shares": 41000.0,
       "average_cost": 38.2,
       "sector": "Energy",
       "target_1": 36,
@@ -214,7 +204,7 @@
     },
     {
       "ticker": "MTDR",
-      "shares": 25000.0,
+      "shares": 17000.0,
       "average_cost": 61.5,
       "sector": "Energy",
       "target_1": 57.13,
@@ -365,6 +355,14 @@
       "ticker": "0P0000RU80.L",
       "shares": 81700.0,
       "average_cost": 6.54,
+      "sector": "Others",
+      "target_1": "",
+      "player": 4
+    },
+    {
+      "ticker": "ISF.L",
+      "shares": 25000,
+      "average_cost": 12.88,
       "sector": "Others",
       "target_1": "",
       "player": 4
@@ -599,8 +597,15 @@
     },
     {
       "ticker": "XAUUSD",
-      "shares": 500,
-      "average_cost": 4231.8,
+      "shares": 800,
+      "average_cost": 4346.7375,
+      "sector": "Precious Metals",
+      "player": 8
+    },
+    {
+      "ticker": "XAGUSD",
+      "shares": 15000,
+      "average_cost": 73.615,
       "sector": "Precious Metals",
       "player": 8
     },
@@ -623,7 +628,7 @@
       "ticker": "TMC",
       "shares": 100000.0,
       "average_cost": 5.37,
-      "sector": "Precious Metals",
+      "sector": "Others",
       "player": 8,
       "technigrade": [4, 17, 18, 13, 3],
       "peers": ["IONR", "MP", "BHP", "VALE", "CCJ", "TECK"],
@@ -649,6 +654,20 @@
       "target_3": 85
     },
     {
+      "ticker": "AMR",
+      "shares": 1500,
+      "average_cost": 189.66,
+      "sector": "Precious Metals",
+      "peers": ["HCC", "METC", "SID", "WS", "AREC", "SXC"],
+      "player": 8,
+      "invalidation_1": -1,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": -1,
+      "target_2": -1,
+      "target_3": -1
+    },
+    {
       "ticker": "SILJ",
       "shares": 60000,
       "average_cost": 26.375,
@@ -659,6 +678,34 @@
       "invalidation_2": -1,
       "invalidation_3": -1,
       "target_1": 32,
+      "target_2": -1,
+      "target_3": -1
+    },
+    {
+      "ticker": "HBM",
+      "shares": 40000,
+      "average_cost": 19.455,
+      "sector": "Precious Metals",
+      "peers": ["FCX", "ERO", "SCCO", "TGB"],
+      "player": 8,
+      "invalidation_1": -1,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": -1,
+      "target_2": -1,
+      "target_3": -1
+    },
+    {
+      "ticker": "COPX",
+      "shares": 7000,
+      "average_cost": 72.53,
+      "sector": "Precious Metals",
+      "peers": ["COPJ", "CPER", "ICOP", "COPP"],
+      "player": 8,
+      "invalidation_1": -1,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": -1,
       "target_2": -1,
       "target_3": -1
     },
@@ -679,8 +726,8 @@
     },
     {
       "ticker": "CDE",
-      "shares": 90000,
-      "average_cost": 17.2882,
+      "shares": 100000,
+      "average_cost": 17.232,
       "sector": "Precious Metals",
       "player": 8,
       "technigrade": [2, 5, 3, 3, 2],
@@ -854,6 +901,20 @@
       "target_1": 2.14,
       "target_2": 3.39,
       "target_3": 5.25
+    },
+    {
+      "ticker": "CCL",
+      "shares": 12000.0,
+      "average_cost": 32.52,
+      "sector": "Others",
+      "peers": ["RCL", "NCLH", "VIK", "LIND"],
+      "player": 2,
+      "invalidation_1": -1,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": -1,
+      "target_2": -1,
+      "target_3": -1
     },
     {
       "ticker": "MP",
@@ -1081,8 +1142,8 @@
     },
     {
       "ticker": "ALLY",
-      "shares": 6000,
-      "average_cost": 44.53,
+      "shares": 18000,
+      "average_cost": 45.35,
       "sector": "Financial",
       "player": 2,
       "technigrade": [8, 9, 12, 11, 11],
@@ -1091,6 +1152,20 @@
       "invalidation_2": -1,
       "invalidation_3": -1,
       "target_1": 53,
+      "target_2": -1,
+      "target_3": -1
+    },
+    {
+      "ticker": "CFG",
+      "shares": 6000,
+      "average_cost": 59.33,
+      "sector": "Financial",
+      "player": 2,
+      "peers": ["USB", "MTB", "FITB", "HBAN", "PNC"],
+      "invalidation_1": -1,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": -1,
       "target_2": -1,
       "target_3": -1
     },
@@ -1154,8 +1229,8 @@
     },
     {
       "ticker": "AXON",
-      "shares": 100,
-      "average_cost": 551,
+      "shares": 1100,
+      "average_cost": 581.74,
       "sector": "Aerospace & Defense",
       "technigrade": [20, 20, 19, 19, 12],
       "peers": ["UBER", "SYM", "UAVS", "IRBT", "RR"],
@@ -1164,6 +1239,34 @@
       "invalidation_2": -1,
       "invalidation_3": -1,
       "target_1": 697,
+      "target_2": -1,
+      "target_3": -1
+    },
+    {
+      "ticker": "BA",
+      "shares": 4000,
+      "average_cost": 207.035,
+      "sector": "Aerospace & Defense",
+      "peers": ["AIR.PA", "LMT", "RTX", "NOC", "GD"],
+      "player": 10,
+      "invalidation_1": -1,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": -1,
+      "target_2": -1,
+      "target_3": -1
+    },
+    {
+      "ticker": "UAL",
+      "shares": 4000,
+      "average_cost": 114.3,
+      "sector": "Aerospace & Defense",
+      "peers": ["AAL", "DAL", "LUV", "ALK", "JBLU"],
+      "player": 10,
+      "invalidation_1": -1,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": -1,
       "target_2": -1,
       "target_3": -1
     },

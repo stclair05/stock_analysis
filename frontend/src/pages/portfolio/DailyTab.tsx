@@ -4,9 +4,10 @@ import { ResponsiveContainer, Treemap, Tooltip } from "recharts";
 /* ============================
    Tuning knobs
 ============================ */
-const MOVE_SIZE_WEIGHT = 0.35;
+const MOVE_SIZE_WEIGHT = 0.5;
 const COMPRESS_MV = true;
 const CHANGE_CLAMP = 6;
+const NEGATIVE_BIAS_WEIGHT = -0.25;
 
 const SECTOR_HEADER_FRACTION = 0.1;
 const SECTOR_HEADER_MIN_UNITS = 120;
@@ -164,6 +165,12 @@ const CustomContent = (props: any) => {
     const label = isZoomed
       ? "← BACK TO ALL SECTORS"
       : sectorLabelForBox(node.sectorName ?? "Other", width);
+    const changeFont = clamp(font * 0.8, 10, 18);
+    const changeText =
+      node.changePercent === null || node.changePercent === undefined
+        ? null
+        : formatPct(node.changePercent);
+    const changeColor = (node.changePercent ?? 0) >= 0 ? "#bef264" : "#fca5a5";
 
     return (
       <g onClick={() => onZoom(node.sectorName)} style={{ cursor: "pointer" }}>
@@ -178,7 +185,7 @@ const CustomContent = (props: any) => {
         />
         <text
           x={x + width / 2}
-          y={y + height / 2 + font / 3}
+          y={y + height / 2}
           fill="#f8fafc"
           fontSize={font}
           fontWeight={800}
@@ -187,6 +194,19 @@ const CustomContent = (props: any) => {
         >
           {label}
         </text>
+        {changeText && (
+          <text
+            x={x + width / 2}
+            y={y + height / 2 + font}
+            fill={changeColor}
+            fontSize={changeFont}
+            fontWeight={800}
+            textAnchor="middle"
+            pointerEvents="none"
+          >
+            {changeText}
+          </text>
+        )}
       </g>
     );
   }
@@ -366,18 +386,27 @@ const DailyTab = () => {
 
       const c = h.daily_change_percent ?? null;
       const mvComp = COMPRESS_MV ? Math.sqrt(mv) : mv;
-      const absMove = c === null ? 0 : clamp(Math.abs(c) / CHANGE_CLAMP, 0, 1);
-      const tileSize = mvComp * (1 + absMove * MOVE_SIZE_WEIGHT);
+      const signedMove = c === null ? 0 : clamp(c / CHANGE_CLAMP, -1, 1);
+      const absMove = Math.abs(signedMove);
+      const directionBias = signedMove * NEGATIVE_BIAS_WEIGHT;
+      const tileSize =
+        mvComp * Math.max(0.35, 1 + absMove * MOVE_SIZE_WEIGHT + directionBias);
 
       if (!sectors[sector])
         sectors[sector] = {
           totalSize: 0,
           totalMv: 0,
+          changeValue: 0,
+          changeMv: 0,
           children: [],
         };
 
       sectors[sector].totalSize += tileSize;
       sectors[sector].totalMv += mv;
+      if (c !== null) {
+        sectors[sector].changeValue += mv * c;
+        sectors[sector].changeMv += mv;
+      }
 
       sectors[sector].children.push({
         name: h.ticker,
@@ -392,6 +421,7 @@ const DailyTab = () => {
 
     if (zoomedSector && sectors[zoomedSector]) {
       const s = sectors[zoomedSector];
+      const sectorChange = s.changeMv > 0 ? s.changeValue / s.changeMv : null;
       return [
         {
           name: zoomedSector,
@@ -402,6 +432,7 @@ const DailyTab = () => {
               size: s.totalSize * 0.08,
               nodeType: "sectorHeader",
               sectorName: zoomedSector,
+              changePercent: sectorChange,
             },
             ...s.children,
           ],
@@ -411,6 +442,7 @@ const DailyTab = () => {
 
     return Object.entries(sectors)
       .map(([name, s]) => {
+        const sectorChange = s.changeMv > 0 ? s.changeValue / s.changeMv : null;
         const headerSize = Math.max(
           s.totalSize * SECTOR_HEADER_FRACTION,
           SECTOR_HEADER_MIN_UNITS
@@ -424,6 +456,7 @@ const DailyTab = () => {
               size: headerSize,
               nodeType: "sectorHeader",
               sectorName: name,
+              changePercent: sectorChange,
             },
             ...s.children,
           ],
