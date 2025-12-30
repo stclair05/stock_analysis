@@ -598,21 +598,6 @@
       "target_3": 135
     },
     {
-      "ticker": "ISRG",
-      "shares": 1000,
-      "average_cost": 566.92,
-      "sector": "Healthcare",
-      "player": 2,
-      "technigrade": [5, 4, 5, 5, 7],
-      "peers": ["MDT", "SYK", "JNJ", "ZBH", "GMED", "ASXC"],
-      "invalidation_1": 550.7,
-      "invalidation_2": 529.75,
-      "invalidation_3": -1,
-      "target_1": 613,
-      "target_2": 706,
-      "target_3": -1
-    },
-    {
       "ticker": "XAUUSD",
       "shares": 500,
       "average_cost": 4231.8,
@@ -842,21 +827,6 @@
       "target_3": -1
     },
     {
-      "ticker": "LW",
-      "shares": 5000.0,
-      "average_cost": 62.66,
-      "sector": "Others",
-      "player": 1,
-      "technigrade": [11, 10, 11, 6, 7],
-      "peers": ["CAG", "GIS", "CPB", "POST", "SJM", "KHC"],
-      "invalidation_1": 60.36,
-      "invalidation_2": 58.63,
-      "invalidation_3": 50.23,
-      "target_1": 84,
-      "target_2": -1,
-      "target_3": -1
-    },
-    {
       "ticker": "DHT",
       "shares": 25000.0,
       "average_cost": 13.27,
@@ -869,20 +839,6 @@
       "invalidation_3": -1,
       "target_1": 16.2,
       "target_2": -1,
-      "target_3": -1
-    },
-    {
-      "ticker": "EWZ",
-      "shares": 20000,
-      "average_cost": 33.51,
-      "sector": "Others",
-      "peers": ["FLBR", "EWZS", "ILF", "BRF", "EEM", "VWO"],
-      "player": 1,
-      "invalidation_1": 31.46,
-      "invalidation_2": -1,
-      "invalidation_3": -1,
-      "target_1": 48,
-      "target_2": 58,
       "target_3": -1
     },
     {
