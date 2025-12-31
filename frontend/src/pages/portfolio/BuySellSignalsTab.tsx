@@ -584,6 +584,7 @@ export default function BuySellSignalsTab({
     if (ticker.endsWith(".TO")) return "CAD";
     if (ticker.endsWith(".HK")) return "HKD";
     if (ticker.endsWith(".AS")) return "EUR";
+    if (ticker.endsWith(".L")) return "GBP";
     return "USD";
   };
 
