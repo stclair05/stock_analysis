@@ -119,37 +119,11 @@ function PortfolioPage() {
 
       {/* Content area grows to fill remaining height */}
       <div style={{ height: "calc(100% - 110px)", marginTop: 16 }}>
-        <div style={{ display: activeTab === "Overview" ? "block" : "none" }}>
-          <OverviewTab />
-        </div>
-
-        <div
-          style={{
-            display: activeTab === "Market Positions" ? "block" : "none",
-          }}
-        >
-          <MarketPositionsTab />
-        </div>
-
-        <div
-          style={{ display: activeTab === "Recent Trades" ? "block" : "none" }}
-        >
-          <RecentTradesTab />
-        </div>
-
-        <div
-          style={{
-            display: activeTab === "What-If Analysis" ? "block" : "none",
-          }}
-        >
-          <WhatIfAnalysisTab />
-        </div>
-
-        <div
-          style={{
-            display: activeTab === "Buy/Sell Signals" ? "block" : "none",
-          }}
-        >
+        {activeTab === "Overview" && <OverviewTab />}
+        {activeTab === "Market Positions" && <MarketPositionsTab />}
+        {activeTab === "Recent Trades" && <RecentTradesTab />}
+        {activeTab === "What-If Analysis" && <WhatIfAnalysisTab />}
+        {activeTab === "Buy/Sell Signals" && (
           <BuySellSignalsTab
             initialListType={signalListType}
             onListTypeChange={(lt) => {
@@ -157,17 +131,13 @@ function PortfolioPage() {
               navigate(`/portfolio/buy_sell_signals/${lt}`);
             }}
           />
-        </div>
-
+        )}
         {/* Give Daily tab full height */}
-        <div
-          style={{
-            display: activeTab === "Daily" ? "block" : "none",
-            height: "100%",
-          }}
-        >
-          <DailyTab />
-        </div>
+        {activeTab === "Daily" && (
+          <div style={{ height: "100%" }}>
+            <DailyTab />
+          </div>
+        )}
       </div>
     </div>
   );

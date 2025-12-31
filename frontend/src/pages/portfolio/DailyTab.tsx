@@ -31,9 +31,12 @@ const SECTOR_ABBREVIATIONS: Record<string, string> = {
 
 type Holding = {
   ticker: string;
-  market_value: number;
+  market_value?: number;
   sector?: string;
   daily_change_percent?: number | null;
+  current_price?: number;
+  invested_capital?: number;
+  daily_change?: number | null;
   category?: string;
   static_asset?: boolean;
 };
@@ -324,25 +327,37 @@ const DailyTab = () => {
   const [momentumMaps, setMomentumMaps] = useState<MomentumMaps>({
     portfolio_momentum_weekly: {},
   });
+  const [forexRates, setForexRates] = useState<Record<string, number>>({});
+  const [momentumLoading, setMomentumLoading] = useState(false);
+  const [momentumError, setMomentumError] = useState<string | null>(null);
+
+  const getCurrencyForTicker = (ticker: string): string => {
+    if (ticker.endsWith(".AX")) return "AUD";
+    if (ticker.endsWith(".TO")) return "CAD";
+    if (ticker.endsWith(".HK")) return "HKD";
+    if (ticker.endsWith(".AS")) return "EUR";
+    if (ticker.endsWith(".L")) return "GBP";
+    return "USD";
+  };
+
+  const getUsdToCurrencyRate = (currency: string): number => {
+    if (currency === "USD") return 1;
+    const pair1 = `USD${currency}`;
+    const pair2 = `${currency}USD`;
+    if (forexRates[pair1]) return forexRates[pair1];
+    if (forexRates[pair2]) return 1 / forexRates[pair2];
+    return 1;
+  };
 
   useEffect(() => {
     let isActive = true;
     const loadData = async () => {
       try {
-        const [hRes, sRes] = await Promise.all([
-          fetch("http://localhost:8000/portfolio_live_data"),
-          fetch("http://localhost:8000/portfolio_status?scope=momentum"),
-        ]);
+        const hRes = await fetch("http://localhost:8000/portfolio_live_data");
         const hJson = hRes.ok ? await hRes.json() : [];
-        const mJson = sRes.ok ? await sRes.json() : null;
 
         if (isActive) {
           setHoldings(hJson);
-          if (mJson) {
-            setMomentumMaps({
-              portfolio_momentum_weekly: mJson.portfolio_momentum_weekly ?? {},
-            });
-          }
         }
       } catch {
         if (isActive) setError("Unable to load daily data.");
@@ -356,14 +371,77 @@ const DailyTab = () => {
     };
   }, []);
 
+  useEffect(() => {
+    const fetchFx = async () => {
+      try {
+        const res = await fetch("http://localhost:8000/forex_rates");
+        const data = await res.json();
+        const fx: Record<string, number> = {};
+        if (Array.isArray(data)) {
+          data.forEach((d: any) => {
+            const symbol = d.ticker || d.symbol;
+            const price = parseFloat(d.price);
+            if (symbol && !isNaN(price)) fx[symbol] = price;
+          });
+        }
+        setForexRates(fx);
+      } catch {
+        setForexRates({});
+      }
+    };
+    fetchFx();
+  }, []);
+
+  const fetchMomentum = async () => {
+    setMomentumLoading(true);
+    setMomentumError(null);
+    try {
+      const res = await fetch(
+        "http://localhost:8000/portfolio_status?scope=momentum"
+      );
+      if (!res.ok) throw new Error("Request failed");
+      const data = await res.json();
+      setMomentumMaps({
+        portfolio_momentum_weekly: data?.portfolio_momentum_weekly ?? {},
+      });
+    } catch {
+      setMomentumError("Momentum scores are unavailable right now.");
+    } finally {
+      setMomentumLoading(false);
+    }
+  };
+
+  const normalizedHoldings = useMemo(
+    () =>
+      holdings.map((h) => {
+        const currency = getCurrencyForTicker(h.ticker);
+        const rate = getUsdToCurrencyRate(currency);
+        const convert = (val?: number | null) =>
+          typeof val === "number" && rate ? val / rate : val ?? undefined;
+        return {
+          ...h,
+          current_price: convert(h.current_price),
+          market_value: convert(h.market_value),
+          invested_capital: convert(h.invested_capital),
+          daily_change: convert(h.daily_change),
+        } as Holding;
+      }),
+    [holdings, forexRates]
+  );
+
+  const hasMomentum = useMemo(
+    () => Object.keys(momentumMaps.portfolio_momentum_weekly || {}).length > 0,
+    [momentumMaps]
+  );
+
   const equityHoldings = useMemo(
     () =>
-      holdings.filter(
+      normalizedHoldings.filter(
         (h) =>
           (h.category?.toLowerCase() === "equities" || !h.category) &&
           !h.static_asset
       ),
-    [holdings]
+    [normalizedHoldings]
   );
 
   const handleZoom = (sectorName?: string) => {
@@ -473,6 +551,22 @@ const DailyTab = () => {
               ? "Portfolio momentum details are now visible for this sector."
               : "Select a sector to view portfolio momentum score details."}
           </p>
+          {momentumError && (
+            <div className="text-danger small mt-1">{momentumError}</div>
+          )}
+        </div>
+        <div className="d-flex align-items-center gap-2">
+          <button
+            className="btn btn-sm btn-outline-secondary"
+            disabled={momentumLoading || hasMomentum}
+            onClick={fetchMomentum}
+          >
+            {momentumLoading
+              ? "Loading momentum…"
+              : hasMomentum
+              ? "Momentum loaded"
+              : "Load momentum scores"}
+          </button>
         </div>
       </div>
 
