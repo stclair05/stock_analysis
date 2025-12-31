@@ -326,9 +326,6 @@ def _status_for_holdings(holdings, price_direction: str, *, momentum_only: bool 
             if isinstance(closes, pd.DataFrame):
                 closes = closes.iloc[:, 0]
 
-            peers_for_analysis = get_fmp_peers(ticker)
-            peer_returns_map = _peer_returns(peers_for_analysis, (5, 21))
-
             weekly_return = period_return(closes, 5)
             monthly_return = period_return(closes, 21)
 
@@ -370,27 +367,31 @@ def _status_for_holdings(holdings, price_direction: str, *, momentum_only: bool 
                     long_total if isinstance(long_total, (int, float)) else None
                 )
 
-            weekly_momentum_score = sector_relative_momentum_zscore(
-                ticker,
-                closes,
-                5,
-                peers_override=peers_for_analysis,
-                peer_returns=peer_returns_map.get(5),
-                base_return=weekly_return,
-            )
-            if isinstance(weekly_momentum_score, (int, float)):
-                results["momentum_weekly"][ticker] = weekly_momentum_score
+            if not momentum_only:
+                peers_for_analysis = get_fmp_peers(ticker)
+                peer_returns_map = _peer_returns(peers_for_analysis, (5, 21))
 
-            monthly_momentum_score = sector_relative_momentum_zscore(
-                ticker,
-                closes,
-                21,
-                peers_override=peers_for_analysis,
-                peer_returns=peer_returns_map.get(21),
-                base_return=monthly_return,
-            )
-            if isinstance(monthly_momentum_score, (int, float)):
-                results["momentum_monthly"][ticker] = monthly_momentum_score
+                weekly_momentum_score = sector_relative_momentum_zscore(
+                    ticker,
+                    closes,
+                    5,
+                    peers_override=peers_for_analysis,
+                    peer_returns=peer_returns_map.get(5),
+                    base_return=weekly_return,
+                )
+                if isinstance(weekly_momentum_score, (int, float)):
+                    results["momentum_weekly"][ticker] = weekly_momentum_score
+
+                monthly_momentum_score = sector_relative_momentum_zscore(
+                    ticker,
+                    closes,
+                    21,
+                    peers_override=peers_for_analysis,
+                    peer_returns=peer_returns_map.get(21),
+                    base_return=monthly_return,
+                )
+                if isinstance(monthly_momentum_score, (int, float)):
+                    results["momentum_monthly"][ticker] = monthly_momentum_score
 
             if isinstance(weekly_return, (int, float)):
                 weekly_portfolio_returns[ticker] = weekly_return

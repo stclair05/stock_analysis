@@ -39,7 +39,6 @@ type Holding = {
 };
 
 type MomentumMaps = {
-  momentum_weekly: Record<string, number>;
   portfolio_momentum_weekly: Record<string, number>;
 };
 
@@ -50,7 +49,6 @@ type TreemapNode = {
   nodeType?: "sectorHeader" | "ticker";
   sectorName?: string;
   sectorLabel?: string;
-  sectorMomentum?: number | null;
   portfolioMomentum?: number | null;
   children?: TreemapNode[];
 };
@@ -220,7 +218,6 @@ const CustomContent = (props: any) => {
   const tickerY = innerY + tickerFont;
   const pctY = tickerY + smallFont + lineGap;
   const portMtmY = pctY + smallFont + lineGap + 4;
-  const sectMtmY = portMtmY + smallFont + lineGap;
 
   const drawMomentumPill = (
     label: string,
@@ -310,7 +307,6 @@ const CustomContent = (props: any) => {
       {isZoomed && height > 80 && (
         <>
           {drawMomentumPill("PORT", node.portfolioMomentum ?? null, portMtmY)}
-          {drawMomentumPill("SECT", node.sectorMomentum ?? null, sectMtmY)}
         </>
       )}
     </g>
@@ -326,7 +322,6 @@ const DailyTab = () => {
   const [error, setError] = useState<string | null>(null);
   const [zoomedSector, setZoomedSector] = useState<string | null>(null);
   const [momentumMaps, setMomentumMaps] = useState<MomentumMaps>({
-    momentum_weekly: {},
     portfolio_momentum_weekly: {},
   });
 
@@ -345,7 +340,6 @@ const DailyTab = () => {
           setHoldings(hJson);
           if (mJson) {
             setMomentumMaps({
-              momentum_weekly: mJson.momentum_weekly ?? {},
               portfolio_momentum_weekly: mJson.portfolio_momentum_weekly ?? {},
             });
           }
@@ -413,7 +407,6 @@ const DailyTab = () => {
         size: tileSize,
         changePercent: c,
         nodeType: "ticker",
-        sectorMomentum: momentumMaps.momentum_weekly[h.ticker] ?? null,
         portfolioMomentum:
           momentumMaps.portfolio_momentum_weekly[h.ticker] ?? null,
       });
@@ -477,8 +470,8 @@ const DailyTab = () => {
           </h4>
           <p className="text-muted small mb-0">
             {zoomedSector
-              ? "Momentum details are now visible for this sector."
-              : "Select a sector to view momentum score details."}
+              ? "Portfolio momentum details are now visible for this sector."
+              : "Select a sector to view portfolio momentum score details."}
           </p>
         </div>
       </div>
@@ -519,12 +512,6 @@ const DailyTab = () => {
                       <span>Port Momentum:</span>
                       <span className="fw-bold">
                         {formatMomentum(node.portfolioMomentum)}
-                      </span>
-                    </div>
-                    <div className="d-flex justify-content-between gap-4">
-                      <span>Sect Momentum:</span>
-                      <span className="fw-bold">
-                        {formatMomentum(node.sectorMomentum)}
                       </span>
                     </div>
                   </div>
