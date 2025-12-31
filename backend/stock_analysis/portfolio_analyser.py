@@ -1,8 +1,11 @@
-import yfinance as yf
-from typing import Optional
-from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor, as_completed
 import json
+import os
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
+from typing import Optional
+
+import requests
+import yfinance as yf
 
 class PortfolioAnalyser:
     def __init__(self, json_path: str = "portfolio_store.json"):
@@ -36,6 +39,14 @@ class PortfolioAnalyser:
 
     def _get_price_and_change(self, ticker: str) -> tuple[Optional[float], Optional[float], Optional[float]]:
         """Return the latest close, absolute change, and percentage change."""
+
+        if ticker in {"XAUUSD", "XAGUSD"}:
+            price, prev_close = self._get_fmp_price(ticker)
+            if price is not None:
+                change = price - prev_close if prev_close else None
+                change_pct = (change / prev_close * 100) if prev_close else None
+                return price, change, change_pct
+            
         try:
             yf_ticker = yf.Ticker(ticker)
             hist = yf_ticker.history(period="2d")
@@ -66,6 +77,32 @@ class PortfolioAnalyser:
         
         except Exception:
             return None, None, None
+    
+    def _get_fmp_price(self, ticker: str) -> tuple[Optional[float], Optional[float]]:
+        base_url = os.getenv("FMP_BASE_URL")
+        api_key = os.getenv("FMP_API_KEY")
+
+        if not base_url or not api_key:
+            return None, None
+
+        url = f"{base_url}/quote/{ticker}?apikey={api_key}"
+
+        try:
+            resp = requests.get(url, timeout=8)
+            resp.raise_for_status()
+            data = resp.json()
+
+            if isinstance(data, list) and data:
+                quote = data[0]
+                price = quote.get("price")
+                prev_close = quote.get("previousClose") or quote.get("previousPrice")
+
+                if price is not None:
+                    return float(price), float(prev_close) if prev_close is not None else None
+        except Exception:
+            return None, None
+
+        return None, None
 
     def _process_single_item(self, item: dict) -> Optional[dict]:
         try:
