@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ResponsiveContainer, Treemap, Tooltip } from "recharts";
 
 /* ============================
@@ -43,6 +43,7 @@ type Holding = {
 
 type MomentumMaps = {
   portfolio_momentum_weekly: Record<string, number>;
+  portfolio_momentum_monthly: Record<string, number>;
 };
 
 type TreemapNode = {
@@ -52,9 +53,15 @@ type TreemapNode = {
   nodeType?: "sectorHeader" | "ticker";
   sectorName?: string;
   sectorLabel?: string;
-  portfolioMomentum?: number | null;
+  portfolioMomentum5d?: number | null;
+  portfolioMomentum21d?: number | null;
   children?: TreemapNode[];
 };
+
+type HeatmapMode =
+  | "dailyChange"
+  | "portfolioMomentum5d"
+  | "portfolioMomentum21d";
 
 /* ============================
    Helpers
@@ -113,6 +120,16 @@ const COLOR_STOPS = [
 
 const MISSING_CHANGE_COLOR = "#cbd5e1";
 
+const MOMENTUM_COLOR_STOPS = [
+  { score: -3, color: "#7a0000" },
+  { score: -1.5, color: "#b00000" },
+  { score: -0.5, color: "#d84343" },
+  { score: 0, color: "#9ca3af" },
+  { score: 0.5, color: "#4ade80" },
+  { score: 1.5, color: "#22c55e" },
+  { score: 3, color: "#15803d" },
+];
+
 const hexToRgb = (hex: string) => {
   const clean = hex.replace("#", "");
   const num = parseInt(clean, 16);
@@ -147,11 +164,34 @@ const getColorForChange = (change?: number | null) => {
   );
 };
 
+const getColorForMomentum = (score?: number | null) => {
+  if (score === null || score === undefined) return MISSING_CHANGE_COLOR;
+  const v = clamp(score, -3, 3);
+  let lower = MOMENTUM_COLOR_STOPS[0];
+  let upper = MOMENTUM_COLOR_STOPS[MOMENTUM_COLOR_STOPS.length - 1];
+
+  for (const stop of MOMENTUM_COLOR_STOPS) {
+    if (stop.score <= v) lower = stop;
+    if (stop.score >= v) {
+      upper = stop;
+      break;
+    }
+  }
+
+  if (lower.score === upper.score) return lower.color;
+
+  return interpolateColor(
+    lower.color,
+    upper.color,
+    (v - lower.score) / (upper.score - lower.score)
+  );
+};
+
 /* ============================
    Custom Treemap Content
 ============================ */
-const CustomContent = (props: any) => {
-  const { x, y, width, height, name, onZoom, isZoomed } = props;
+const CustomContent = (props: any & { heatmapMode: HeatmapMode }) => {
+  const { x, y, width, height, name, onZoom, isZoomed, heatmapMode } = props;
   const node = (props?.payload ?? props) as TreemapNode;
 
   if (width <= 1 || height <= 1) return null;
@@ -213,7 +253,24 @@ const CustomContent = (props: any) => {
   }
 
   /* -------- Ticker Tile -------- */
-  const bg = getColorForChange(node.changePercent);
+  const metricValue =
+    (heatmapMode === "dailyChange"
+      ? node.changePercent
+      : heatmapMode === "portfolioMomentum5d"
+      ? node.portfolioMomentum5d
+      : node.portfolioMomentum21d) ?? null;
+
+  const metricLabel =
+    heatmapMode === "dailyChange"
+      ? "Change"
+      : heatmapMode === "portfolioMomentum5d"
+      ? "Port 5d"
+      : "Port 21d";
+
+  const bg =
+    heatmapMode === "dailyChange"
+      ? getColorForChange(metricValue)
+      : getColorForMomentum(metricValue);
   const tickerFont = clamp(Math.sqrt(width * height) / 8, 12, 32);
   const smallFont = clamp(tickerFont * 0.65, 10, 16);
   const lineGap = clamp(smallFont * 0.4, 4, 8);
@@ -221,6 +278,7 @@ const CustomContent = (props: any) => {
   const tickerY = innerY + tickerFont;
   const pctY = tickerY + smallFont + lineGap;
   const portMtmY = pctY + smallFont + lineGap + 4;
+  const portMtm21Y = portMtmY + smallFont + lineGap + 8;
 
   const drawMomentumPill = (
     label: string,
@@ -293,7 +351,7 @@ const CustomContent = (props: any) => {
       )}
 
       {/* Percentage */}
-      {height > 40 && node.changePercent !== null && (
+      {height > 40 && metricValue !== null && (
         <text
           x={innerX}
           y={pctY}
@@ -302,14 +360,26 @@ const CustomContent = (props: any) => {
           fontWeight={600}
           pointerEvents="none"
         >
-          {formatPct(node.changePercent)}
+          {metricLabel}:{" "}
+          {heatmapMode === "dailyChange"
+            ? formatPct(metricValue)
+            : formatMomentum(metricValue)}
         </text>
       )}
 
       {/* Momentum logic - Only if Zoomed */}
       {isZoomed && height > 80 && (
         <>
-          {drawMomentumPill("PORT", node.portfolioMomentum ?? null, portMtmY)}
+          {drawMomentumPill(
+            "PORT 5d",
+            node.portfolioMomentum5d ?? null,
+            portMtmY
+          )}
+          {drawMomentumPill(
+            "PORT 21d",
+            node.portfolioMomentum21d ?? null,
+            portMtm21Y
+          )}
         </>
       )}
     </g>
@@ -326,10 +396,12 @@ const DailyTab = () => {
   const [zoomedSector, setZoomedSector] = useState<string | null>(null);
   const [momentumMaps, setMomentumMaps] = useState<MomentumMaps>({
     portfolio_momentum_weekly: {},
+    portfolio_momentum_monthly: {},
   });
   const [forexRates, setForexRates] = useState<Record<string, number>>({});
   const [momentumLoading, setMomentumLoading] = useState(false);
   const [momentumError, setMomentumError] = useState<string | null>(null);
+  const [heatmapMode, setHeatmapMode] = useState<HeatmapMode>("dailyChange");
 
   const getCurrencyForTicker = (ticker: string): string => {
     if (ticker.endsWith(".AX")) return "AUD";
@@ -403,6 +475,7 @@ const DailyTab = () => {
       const data = await res.json();
       setMomentumMaps({
         portfolio_momentum_weekly: data?.portfolio_momentum_weekly ?? {},
+        portfolio_momentum_monthly: data?.portfolio_momentum_monthly ?? {},
       });
     } catch {
       setMomentumError("Momentum scores are unavailable right now.");
@@ -429,10 +502,15 @@ const DailyTab = () => {
     [holdings, forexRates]
   );
 
-  const hasMomentum = useMemo(
-    () => Object.keys(momentumMaps.portfolio_momentum_weekly || {}).length > 0,
-    [momentumMaps]
-  );
+  const hasMomentum = useMemo(() => {
+    const weeklyCount = Object.keys(
+      momentumMaps.portfolio_momentum_weekly || {}
+    ).length;
+    const monthlyCount = Object.keys(
+      momentumMaps.portfolio_momentum_monthly || {}
+    ).length;
+    return weeklyCount + monthlyCount > 0;
+  }, [momentumMaps]);
 
   const equityHoldings = useMemo(
     () =>
@@ -485,8 +563,10 @@ const DailyTab = () => {
         size: tileSize,
         changePercent: c,
         nodeType: "ticker",
-        portfolioMomentum:
+        portfolioMomentum5d:
           momentumMaps.portfolio_momentum_weekly[h.ticker] ?? null,
+        portfolioMomentum21d:
+          momentumMaps.portfolio_momentum_monthly[h.ticker] ?? null,
       });
     }
 
@@ -556,6 +636,41 @@ const DailyTab = () => {
           )}
         </div>
         <div className="d-flex align-items-center gap-2">
+          <div className="btn-group btn-group-sm" role="group">
+            <button
+              type="button"
+              className={`btn ${
+                heatmapMode === "dailyChange"
+                  ? "btn-primary"
+                  : "btn-outline-primary"
+              }`}
+              onClick={() => setHeatmapMode("dailyChange")}
+            >
+              Daily change
+            </button>
+            <button
+              type="button"
+              className={`btn ${
+                heatmapMode === "portfolioMomentum5d"
+                  ? "btn-primary"
+                  : "btn-outline-primary"
+              }`}
+              onClick={() => setHeatmapMode("portfolioMomentum5d")}
+            >
+              Portfolio 5d
+            </button>
+            <button
+              type="button"
+              className={`btn ${
+                heatmapMode === "portfolioMomentum21d"
+                  ? "btn-primary"
+                  : "btn-outline-primary"
+              }`}
+              onClick={() => setHeatmapMode("portfolioMomentum21d")}
+            >
+              Portfolio 21d
+            </button>
+          </div>
           <button
             className="btn btn-sm btn-outline-secondary"
             disabled={momentumLoading || hasMomentum}
@@ -576,7 +691,11 @@ const DailyTab = () => {
             data={treemapData}
             dataKey="size"
             content={
-              <CustomContent onZoom={handleZoom} isZoomed={!!zoomedSector} />
+              <CustomContent
+                onZoom={handleZoom}
+                isZoomed={!!zoomedSector}
+                heatmapMode={heatmapMode}
+              />
             }
             isAnimationActive
           >
@@ -585,27 +704,53 @@ const DailyTab = () => {
                 if (!active || !payload?.length) return null;
                 const node = payload[0].payload;
                 if (node.nodeType === "sectorHeader") return null;
+
+                const colorValue =
+                  heatmapMode === "dailyChange"
+                    ? node.changePercent
+                    : heatmapMode === "portfolioMomentum5d"
+                    ? node.portfolioMomentum5d
+                    : node.portfolioMomentum21d;
+
+                const colorLabel =
+                  heatmapMode === "dailyChange"
+                    ? "Change"
+                    : heatmapMode === "portfolioMomentum5d"
+                    ? "Portfolio momentum (5d)"
+                    : "Portfolio momentum (21d)";
+
+                const colorFormatter =
+                  heatmapMode === "dailyChange" ? formatPct : formatMomentum;
+
+                const colorClass =
+                  heatmapMode === "dailyChange" &&
+                  typeof colorValue === "number"
+                    ? colorValue >= 0
+                      ? "text-success fw-bold"
+                      : "text-danger fw-bold"
+                    : "fw-bold";
+
                 return (
                   <div className="bg-white p-3 rounded shadow border small">
                     <div className="fw-bold border-bottom pb-1 mb-2">
                       {node.name}
                     </div>
                     <div className="d-flex justify-content-between gap-4">
-                      <span>Change:</span>
-                      <span
-                        className={
-                          node.changePercent >= 0
-                            ? "text-success fw-bold"
-                            : "text-danger fw-bold"
-                        }
-                      >
-                        {formatPct(node.changePercent)}
+                      <span>{colorLabel}:</span>
+                      <span className={colorClass}>
+                        {colorFormatter(colorValue)}
                       </span>
                     </div>
                     <div className="d-flex justify-content-between gap-4 mt-2">
-                      <span>Port Momentum:</span>
+                      <span>Portfolio momentum (5d):</span>
                       <span className="fw-bold">
-                        {formatMomentum(node.portfolioMomentum)}
+                        {formatMomentum(node.portfolioMomentum5d)}
+                      </span>
+                    </div>
+                    <div className="d-flex justify-content-between gap-4 mt-1">
+                      <span>Portfolio momentum (21d):</span>
+                      <span className="fw-bold">
+                        {formatMomentum(node.portfolioMomentum21d)}
                       </span>
                     </div>
                   </div>
