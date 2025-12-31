@@ -114,10 +114,16 @@ class PortfolioAnalyser:
 
             current_price, change, change_pct = self._get_price_and_change(ticker)
 
-            if ticker.endswith(".L") and current_price and self.fx_rate:
-                current_price *= self.fx_rate
+            if ticker.endswith(".L"):
+                if current_price is not None:
+                    current_price /= 100  # Convert GBp to GBP
                 if change is not None:
-                    change *= self.fx_rate
+                    change /= 100
+
+                if self.fx_rate:
+                    current_price *= self.fx_rate
+                    if change is not None:
+                        change *= self.fx_rate
 
             if current_price is None:
                 return {
