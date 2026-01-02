@@ -586,21 +586,6 @@
       "target_3": 135
     },
     {
-      "ticker": "ISRG",
-      "shares": 500,
-      "average_cost": 566.92,
-      "sector": "Healthcare",
-      "player": 2,
-      "technigrade": [5, 4, 5, 5, 7],
-      "peers": ["MDT", "SYK", "JNJ", "ZBH", "GMED", "ASXC"],
-      "invalidation_1": 550.7,
-      "invalidation_2": 529.75,
-      "invalidation_3": -1,
-      "target_1": 613,
-      "target_2": 706,
-      "target_3": -1
-    },
-    {
       "ticker": "XAUUSD",
       "shares": 1300,
       "average_cost": 4349.4154,
@@ -863,8 +848,8 @@
     },
     {
       "ticker": "MSB",
-      "shares": 10000.0,
-      "average_cost": 35.34,
+      "shares": 17000,
+      "average_cost": 36.8782,
       "sector": "Others",
       "player": 1,
       "technigrade": [7, 9, 4, 4, 4],
