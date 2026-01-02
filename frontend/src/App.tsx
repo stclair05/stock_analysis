@@ -13,6 +13,7 @@ import RatioPage from "./pages/RatioPage";
 import StatusPage from "./pages/StatusPage";
 import BuyPage from "./pages/BuyPage";
 import Navbar from "./components/Navbar";
+import MomentumPage from "./pages/MomentumPage";
 
 function App() {
   return (
@@ -37,6 +38,7 @@ function App() {
           element={<Navigate to="/quadrant/portfolio" replace />}
         />
         <Route path="/quadrant/:listType" element={<QuadrantPage />} />
+        <Route path="/momentum" element={<MomentumPage />} />
         <Route path="/ratios" element={<RatioPage />} />
         <Route path="/status" element={<StatusPage />} />
         <Route path="/buy" element={<BuyPage />} />

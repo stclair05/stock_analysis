@@ -42,6 +42,14 @@ export default function Navbar() {
           Quadrant
         </Link>
         <Link
+          to="/momentum"
+          className={`nav-link ${
+            location.pathname === "/momentum" ? "active" : ""
+          }`}
+        >
+          Momentum
+        </Link>
+        <Link
           to="/ratios"
           className={`nav-link ${
             location.pathname === "/ratios" ? "active" : ""
