@@ -121,7 +121,7 @@ export default function MomentumPage() {
     <div className="container-fluid momentum-page py-4">
       <h1 className="fw-bold mb-3">Momentum</h1>
       <p className="text-muted mb-4">
-        Plot of portfolio stocks by 5-day (x-axis) and 21-day (y-axis) portfolio
+        Plot of portfolio stocks by 21-day (x-axis) and 5-day (y-axis) portfolio
         momentum z-scores.
       </p>
 
@@ -153,10 +153,10 @@ export default function MomentumPage() {
         />
 
         <div className="momentum-axis-label momentum-axis-label--x">
-          5D Portfolio Momentum Score
+          21D Portfolio Momentum Score
         </div>
         <div className="momentum-axis-label momentum-axis-label--y">
-          21D Portfolio Momentum Score
+          5D Portfolio Momentum Score
         </div>
 
         {ticks.map((tick) => (
@@ -192,11 +192,11 @@ export default function MomentumPage() {
               }${isNegativeExtreme ? " momentum-point--negative-extreme" : ""}`}
               style={{
                 left: `${
-                  toPosition(point.weekly) + jitterPercent(point.symbol, "x")
+                  toPosition(point.monthly) + jitterPercent(point.symbol, "x")
                 }%`,
                 top: `${
                   100 -
-                  toPosition(point.monthly) +
+                  toPosition(point.weekly) +
                   jitterPercent(point.symbol, "y")
                 }%`,
               }}
