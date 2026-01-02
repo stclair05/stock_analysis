@@ -741,14 +741,13 @@ const DailyTab = () => {
             key={heatmapMode}
             data={treemapData}
             dataKey="size"
-            content={(props) => (
+            content={
               <CustomContent
-                {...props}
                 onZoom={handleZoom}
                 isZoomed={!!zoomedSector}
                 heatmapMode={heatmapMode}
               />
-            )}
+            }
             isAnimationActive
           >
             <Tooltip

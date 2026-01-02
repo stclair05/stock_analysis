@@ -58,15 +58,22 @@ class PortfolioAnalyser:
 
     def _get_price_and_change(
         self, ticker: str
-    ) -> tuple[Optional[float], Optional[float], Optional[float], Optional[pd.Series]]:
-        """Return the latest close, absolute change, percentage change, and close history."""
+    ) -> tuple[
+        Optional[float],
+        Optional[float],
+        Optional[float],
+        Optional[pd.Series],
+        dict[str, Optional[float]],
+    ]:
+        """Return price, daily change, % change, close history, and period changes."""
 
         if ticker in {"XAUUSD", "XAGUSD"}:
             price, prev_close = self._get_fmp_price(ticker)
+            period_changes = self._get_fmp_price_change(ticker)
             if price is not None:
                 change = price - prev_close if prev_close else None
                 change_pct = (change / prev_close * 100) if prev_close else None
-                return price, change, change_pct, None
+                return price, change, change_pct, None, period_changes
             
         try:
             yf_ticker = yf.Ticker(ticker)
@@ -96,10 +103,10 @@ class PortfolioAnalyser:
                 change = float(close_today) - float(close_prev)
                 change_pct = (change / float(close_prev)) * 100 if close_prev else None
 
-            return float(close_today), change, change_pct, closes_series
+            return float(close_today), change, change_pct, closes_series, {}
         
         except Exception:
-            return None, None, None, None
+            return None, None, None, None, {}
 
     def _get_fmp_price(self, ticker: str) -> tuple[Optional[float], Optional[float]]:
         base_url = os.getenv("FMP_BASE_URL")
@@ -126,6 +133,37 @@ class PortfolioAnalyser:
             return None, None
 
         return None, None
+    
+    def _get_fmp_price_change(self, ticker: str) -> dict[str, Optional[float]]:
+        api_key = os.getenv("FMP_API_KEY")
+        if not api_key:
+            return {}
+
+        url = f"https://financialmodelingprep.com/stable/stock-price-change?symbol={ticker}&apikey={api_key}"
+
+        try:
+            resp = requests.get(url, timeout=8)
+            resp.raise_for_status()
+            data = resp.json()
+
+            if isinstance(data, list) and data:
+                change_data = data[0]
+                results: dict[str, Optional[float]] = {}
+
+                five_day = change_data.get("5D")
+                twenty_one_day = change_data.get("21D") or change_data.get("1M")
+
+                if five_day is not None:
+                    results["5D"] = float(five_day)
+                if twenty_one_day is not None:
+                    # FMP does not offer a 21D field; fall back to 1M if present.
+                    results["21D"] = float(twenty_one_day)
+
+                return results
+        except Exception:
+            return {}
+
+        return {}
 
     def _process_single_item(self, item: dict) -> Optional[dict]:
         try:
@@ -135,7 +173,13 @@ class PortfolioAnalyser:
             invested_capital = shares * average_cost
             category = item.get("category", "Other") 
 
-            current_price, change, change_pct, closes = self._get_price_and_change(ticker)
+            (
+                current_price,
+                change,
+                change_pct,
+                closes,
+                period_changes,
+            ) = self._get_price_and_change(ticker)
 
             if ticker.endswith(".L"):
                 if current_price is not None:
@@ -175,8 +219,18 @@ class PortfolioAnalyser:
             pnl = market_value - invested_capital
             pnl_percent = pnl / invested_capital if invested_capital else 0.0
 
-            five_day_change_pct = self._compute_period_change(closes, 5)
-            twenty_one_day_change_pct = self._compute_period_change(closes, 21)
+            five_day_change_pct = period_changes.get("5D") if period_changes else None
+            twenty_one_day_change_pct = period_changes.get("21D") if period_changes else None
+
+            if five_day_change_pct is None:
+                five_day_change_pct = self._compute_period_change(closes, 5)
+            if twenty_one_day_change_pct is None:
+                twenty_one_day_change_pct = self._compute_period_change(closes, 21)
+
+            if five_day_change_pct is not None:
+                five_day_change_pct = round(five_day_change_pct, 2)
+            if twenty_one_day_change_pct is not None:
+                twenty_one_day_change_pct = round(twenty_one_day_change_pct, 2)
 
             if change is not None:
                 change = round(change, 2)
