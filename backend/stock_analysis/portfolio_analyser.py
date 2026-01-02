@@ -4,6 +4,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Optional
 
+import pandas as pd
 import requests
 import yfinance as yf
 
@@ -37,22 +38,43 @@ class PortfolioAnalyser:
         except Exception:
             self.fx_rate = 1.0
 
-    def _get_price_and_change(self, ticker: str) -> tuple[Optional[float], Optional[float], Optional[float]]:
-        """Return the latest close, absolute change, and percentage change."""
+    def _compute_period_change(self, closes: Optional[pd.Series], period: int) -> Optional[float]:
+        if closes is None or closes.empty:
+            return None
+
+        series = closes if not isinstance(closes, pd.DataFrame) else closes.iloc[:, 0]
+        if len(series) < period:
+            return None
+
+        latest = series.iloc[-1]
+        prior = series.iloc[-period]
+        if prior is None or prior == 0:
+            return None
+
+        try:
+            return round(((float(latest) - float(prior)) / float(prior)) * 100, 2)
+        except Exception:
+            return None
+
+    def _get_price_and_change(
+        self, ticker: str
+    ) -> tuple[Optional[float], Optional[float], Optional[float], Optional[pd.Series]]:
+        """Return the latest close, absolute change, percentage change, and close history."""
 
         if ticker in {"XAUUSD", "XAGUSD"}:
             price, prev_close = self._get_fmp_price(ticker)
             if price is not None:
                 change = price - prev_close if prev_close else None
                 change_pct = (change / prev_close * 100) if prev_close else None
-                return price, change, change_pct
+                return price, change, change_pct, None
             
         try:
             yf_ticker = yf.Ticker(ticker)
-            hist = yf_ticker.history(period="2d")
+            hist = yf_ticker.history(period="2mo")
 
             close_today: Optional[float] = None
             close_prev: Optional[float] = None
+            closes_series = hist["Close"] if not hist.empty else None
             if not hist.empty:
                 close_today = hist["Close"].iloc[-1]
                 if len(hist) > 1:
@@ -62,6 +84,7 @@ class PortfolioAnalyser:
                 info = yf_ticker.info
                 close_today = info.get("currentPrice") or info.get("regularMarketPrice")
                 close_prev = info.get("previousClose")
+                closes_series = None
 
             if close_today is None:
                 return None, None, None
@@ -73,11 +96,11 @@ class PortfolioAnalyser:
                 change = float(close_today) - float(close_prev)
                 change_pct = (change / float(close_prev)) * 100 if close_prev else None
 
-            return float(close_today), change, change_pct
+            return float(close_today), change, change_pct, closes_series
         
         except Exception:
-            return None, None, None
-    
+            return None, None, None, None
+
     def _get_fmp_price(self, ticker: str) -> tuple[Optional[float], Optional[float]]:
         base_url = os.getenv("FMP_BASE_URL")
         api_key = os.getenv("FMP_API_KEY")
@@ -112,18 +135,22 @@ class PortfolioAnalyser:
             invested_capital = shares * average_cost
             category = item.get("category", "Other") 
 
-            current_price, change, change_pct = self._get_price_and_change(ticker)
+            current_price, change, change_pct, closes = self._get_price_and_change(ticker)
 
             if ticker.endswith(".L"):
                 if current_price is not None:
                     current_price /= 100  # Convert GBp to GBP
                 if change is not None:
                     change /= 100
+                if closes is not None:
+                    closes = closes / 100
 
                 if self.fx_rate:
                     current_price *= self.fx_rate
                     if change is not None:
                         change *= self.fx_rate
+                    if closes is not None:
+                        closes = closes * self.fx_rate
 
             if current_price is None:
                 return {
@@ -137,6 +164,8 @@ class PortfolioAnalyser:
                     "pnl_percent": 0.0,
                     "daily_change": None,
                     "daily_change_percent": None,
+                    "five_day_change_percent": None,
+                    "twenty_one_day_change_percent": None,
                     "static_asset": True,
                     "category": category, 
                     "sector": item.get("sector", "Other"),
@@ -145,6 +174,9 @@ class PortfolioAnalyser:
             market_value = shares * current_price
             pnl = market_value - invested_capital
             pnl_percent = pnl / invested_capital if invested_capital else 0.0
+
+            five_day_change_pct = self._compute_period_change(closes, 5)
+            twenty_one_day_change_pct = self._compute_period_change(closes, 21)
 
             if change is not None:
                 change = round(change, 2)
@@ -162,6 +194,8 @@ class PortfolioAnalyser:
                 "pnl_percent": round(pnl_percent * 100, 2),
                 "daily_change": change,
                 "daily_change_percent": change_pct,
+                "five_day_change_percent": five_day_change_pct,
+                "twenty_one_day_change_percent": twenty_one_day_change_pct,
                 "static_asset": False,
                 "category": category,
                 "sector": item.get("sector", "Other"),

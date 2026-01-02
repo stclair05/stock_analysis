@@ -34,6 +34,8 @@ type Holding = {
   market_value?: number;
   sector?: string;
   daily_change_percent?: number | null;
+  five_day_change_percent?: number | null;
+  twenty_one_day_change_percent?: number | null;
   current_price?: number;
   invested_capital?: number;
   daily_change?: number | null;
@@ -53,6 +55,8 @@ type TreemapNode = {
   nodeType?: "sectorHeader" | "ticker";
   sectorName?: string;
   sectorLabel?: string;
+  fiveDayChangePercent?: number | null;
+  twentyOneDayChangePercent?: number | null;
   portfolioMomentum5d?: number | null;
   portfolioMomentum21d?: number | null;
   children?: TreemapNode[];
@@ -60,6 +64,8 @@ type TreemapNode = {
 
 type HeatmapMode =
   | "dailyChange"
+  | "priceChange5d"
+  | "priceChange21d"
   | "portfolioMomentum5d"
   | "portfolioMomentum21d";
 
@@ -256,21 +262,36 @@ const CustomContent = (props: any & { heatmapMode: HeatmapMode }) => {
   const metricValue =
     (heatmapMode === "dailyChange"
       ? node.changePercent
+      : heatmapMode === "priceChange5d"
+      ? node.fiveDayChangePercent
+      : heatmapMode === "priceChange21d"
+      ? node.twentyOneDayChangePercent
       : heatmapMode === "portfolioMomentum5d"
       ? node.portfolioMomentum5d
       : node.portfolioMomentum21d) ?? null;
 
   const metricLabel =
     heatmapMode === "dailyChange"
-      ? "Change"
+      ? "1D"
+      : heatmapMode === "priceChange5d"
+      ? "5D"
+      : heatmapMode === "priceChange21d"
+      ? "21D"
       : heatmapMode === "portfolioMomentum5d"
       ? "Port 5d"
       : "Port 21d";
 
+  const metricFormatter =
+    heatmapMode === "portfolioMomentum5d" ||
+    heatmapMode === "portfolioMomentum21d"
+      ? formatMomentum
+      : formatPct;
+
   const bg =
-    heatmapMode === "dailyChange"
-      ? getColorForChange(metricValue)
-      : getColorForMomentum(metricValue);
+    heatmapMode === "portfolioMomentum5d" ||
+    heatmapMode === "portfolioMomentum21d"
+      ? getColorForMomentum(metricValue)
+      : getColorForChange(metricValue);
   const tickerFont = clamp(Math.sqrt(width * height) / 8, 12, 32);
   const smallFont = clamp(tickerFont * 0.65, 10, 16);
   const lineGap = clamp(smallFont * 0.4, 4, 8);
@@ -360,10 +381,7 @@ const CustomContent = (props: any & { heatmapMode: HeatmapMode }) => {
           fontWeight={600}
           pointerEvents="none"
         >
-          {metricLabel}:{" "}
-          {heatmapMode === "dailyChange"
-            ? formatPct(metricValue)
-            : formatMomentum(metricValue)}
+          {metricLabel}: {metricFormatter(metricValue)}
         </text>
       )}
 
@@ -529,12 +547,20 @@ const DailyTab = () => {
   const treemapData = useMemo(() => {
     const sectors: Record<string, any> = {};
 
+    const getChangeForMode = (h: Holding) => {
+      if (heatmapMode === "priceChange5d")
+        return h.five_day_change_percent ?? null;
+      if (heatmapMode === "priceChange21d")
+        return h.twenty_one_day_change_percent ?? null;
+      return h.daily_change_percent ?? null;
+    };
+
     for (const h of equityHoldings) {
       const sector = (h.sector || "Other").trim();
       const mv = Math.max(h.market_value ?? 0, 0);
       if (mv <= 0) continue;
 
-      const c = h.daily_change_percent ?? null;
+      const c = getChangeForMode(h);
       const mvComp = COMPRESS_MV ? Math.sqrt(mv) : mv;
       const signedMove = c === null ? 0 : clamp(c / CHANGE_CLAMP, -1, 1);
       const absMove = Math.abs(signedMove);
@@ -561,7 +587,9 @@ const DailyTab = () => {
       sectors[sector].children.push({
         name: h.ticker,
         size: tileSize,
-        changePercent: c,
+        changePercent: h.daily_change_percent ?? null,
+        fiveDayChangePercent: h.five_day_change_percent ?? null,
+        twentyOneDayChangePercent: h.twenty_one_day_change_percent ?? null,
         nodeType: "ticker",
         portfolioMomentum5d:
           momentumMaps.portfolio_momentum_weekly[h.ticker] ?? null,
@@ -614,7 +642,7 @@ const DailyTab = () => {
         };
       })
       .sort((a, b) => b.size - a.size);
-  }, [equityHoldings, momentumMaps, zoomedSector]);
+  }, [equityHoldings, heatmapMode, momentumMaps, zoomedSector]);
 
   if (loading) return <div className="p-4">Loading performance…</div>;
   if (error) return <div className="p-4 text-danger">{error}</div>;
@@ -647,6 +675,28 @@ const DailyTab = () => {
               onClick={() => setHeatmapMode("dailyChange")}
             >
               Daily change
+            </button>
+            <button
+              type="button"
+              className={`btn ${
+                heatmapMode === "priceChange5d"
+                  ? "btn-primary"
+                  : "btn-outline-primary"
+              }`}
+              onClick={() => setHeatmapMode("priceChange5d")}
+            >
+              5D price change
+            </button>
+            <button
+              type="button"
+              className={`btn ${
+                heatmapMode === "priceChange21d"
+                  ? "btn-primary"
+                  : "btn-outline-primary"
+              }`}
+              onClick={() => setHeatmapMode("priceChange21d")}
+            >
+              21D price change
             </button>
             <button
               type="button"
@@ -688,15 +738,17 @@ const DailyTab = () => {
       <div style={{ width: "100%", height: "70vh", minHeight: 650 }}>
         <ResponsiveContainer width="100%" height="100%">
           <Treemap
+            key={heatmapMode}
             data={treemapData}
             dataKey="size"
-            content={
+            content={(props) => (
               <CustomContent
+                {...props}
                 onZoom={handleZoom}
                 isZoomed={!!zoomedSector}
                 heatmapMode={heatmapMode}
               />
-            }
+            )}
             isAnimationActive
           >
             <Tooltip
@@ -708,22 +760,35 @@ const DailyTab = () => {
                 const colorValue =
                   heatmapMode === "dailyChange"
                     ? node.changePercent
+                    : heatmapMode === "priceChange5d"
+                    ? node.fiveDayChangePercent
+                    : heatmapMode === "priceChange21d"
+                    ? node.twentyOneDayChangePercent
                     : heatmapMode === "portfolioMomentum5d"
                     ? node.portfolioMomentum5d
                     : node.portfolioMomentum21d;
 
                 const colorLabel =
                   heatmapMode === "dailyChange"
-                    ? "Change"
+                    ? "1D price change"
+                    : heatmapMode === "priceChange5d"
+                    ? "5D price change"
+                    : heatmapMode === "priceChange21d"
+                    ? "21D price change"
                     : heatmapMode === "portfolioMomentum5d"
                     ? "Portfolio momentum (5d)"
                     : "Portfolio momentum (21d)";
 
                 const colorFormatter =
-                  heatmapMode === "dailyChange" ? formatPct : formatMomentum;
+                  heatmapMode === "portfolioMomentum5d" ||
+                  heatmapMode === "portfolioMomentum21d"
+                    ? formatMomentum
+                    : formatPct;
 
                 const colorClass =
-                  heatmapMode === "dailyChange" &&
+                  (heatmapMode === "dailyChange" ||
+                    heatmapMode === "priceChange5d" ||
+                    heatmapMode === "priceChange21d") &&
                   typeof colorValue === "number"
                     ? colorValue >= 0
                       ? "text-success fw-bold"
