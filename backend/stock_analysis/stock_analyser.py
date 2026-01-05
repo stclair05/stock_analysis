@@ -8,7 +8,6 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 from fastapi import HTTPException
-from functools import lru_cache
 from functools import cached_property
 from .models import TimeSeriesMetric
 from aliases import SYMBOL_ALIASES
@@ -32,10 +31,17 @@ from .utils import (
     reindex_indicator,
 )
 from .pricetarget import get_price_targets, calculate_mean_reversion_50dma_target
-from threading import Lock
+from threading import Lock, Event
 
 _price_data_lock = Lock()
 _signal_cache_lock = Lock()
+
+# Tracks completed price downloads for the (symbol, as-of-day) key
+_price_cache: dict[tuple[str, str], pd.DataFrame] = {}
+
+# Tracks in-flight downloads so concurrent requests for the same symbol/day can
+# wait on a single fetch instead of triggering back-to-back downloads.
+_inflight_downloads: dict[tuple[str, str], Event] = {}
 
 MIN_HISTORY_POINTS = 5
 
@@ -113,8 +119,20 @@ def _download_from_fmp(symbol: str) -> pd.DataFrame:
 _YF_COLS = ["Open", "High", "Low", "Close", "Adj Close", "Volume"]
 
 def _normalize_yf_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """Return a yfinance-style OHLCV DataFrame; never raises on bad inputs."""
+    if df is None:
+        return pd.DataFrame()
+
+    # yfinance occasionally hands back odd objects (e.g., dict with empty frames).
+    # Force to DataFrame early so downstream cleanup is consistent.
+    if not isinstance(df, pd.DataFrame):
+        try:
+            df = pd.DataFrame(df)
+        except Exception:
+            return pd.DataFrame()
+        
     if df.empty:
-        return df
+        return pd.DataFrame()
 
     # --- Fix: drop the *ticker* level, keep the OHLCV field level ---
     if isinstance(df.columns, pd.MultiIndex):
@@ -129,20 +147,26 @@ def _normalize_yf_columns(df: pd.DataFrame) -> pd.DataFrame:
         # else: leave as-is (defensive; unlikely)
 
     # Remove helper/extraneous columns that sometimes appear
-    for extra in ["Repaired?", "Price"]:
-        if extra in df.columns and extra not in _YF_COLS:
-            df = df.drop(columns=[extra])
+    try:
+        for extra in ["Repaired?", "Price"]:
+            if extra in df.columns and extra not in _YF_COLS:
+                df = df.drop(columns=[extra])
 
-    # Ensure canonical columns exist and are ordered
-    for c in _YF_COLS:
-        if c not in df.columns:
-            df[c] = np.nan
-    df = df[_YF_COLS]
+        # Ensure canonical columns exist and are ordered
+        for c in _YF_COLS:
+            if c not in df.columns:
+                df[c] = np.nan
+        df = df[_YF_COLS]
 
-    # Index hygiene
-    df = df.sort_index()
-    df.index = pd.to_datetime(df.index)
-    df = df[~df.index.duplicated(keep="last")]
+        # Index hygiene
+        df = df.sort_index()
+        df.index = pd.to_datetime(df.index)
+        df = df[~df.index.duplicated(keep="last")]
+    except Exception:
+        # If anything above fails (e.g., weird dtype coercion), return an empty
+        # frame so callers can fall back to alternate data sources.
+        return pd.DataFrame()
+    
     return df
 
 
@@ -176,89 +200,144 @@ class StockAnalyser:
 
     # >>> REPLACE THE ENTIRE _get_price_data_cached WITH THIS
     @staticmethod
-    @lru_cache(maxsize=100)
-    def _get_price_data_cached(symbol: str, asof_day: str) -> pd.DataFrame:
-        with _price_data_lock:
-            # 1) Base history (no repair)
+    def _build_price_data(symbol: str) -> pd.DataFrame:
+        # 1) Base history (no repair)
+        try:
             base = yf.download(symbol, period="12y", interval="1d", auto_adjust=False, threads=True)
-            base = _normalize_yf_columns(base)
+        except Exception:
+            base = pd.DataFrame()
+        base = _normalize_yf_columns(base)
 
-            if base.empty:
-                # fallback to FMP immediately if base is empty
-                fmp_df = _download_from_fmp(symbol)
-                fmp_df = _normalize_yf_columns(fmp_df)
-                if fmp_df.empty or len(fmp_df) < MIN_HISTORY_POINTS:
-                    raise HTTPException(status_code=400, detail="Stock symbol not found or data unavailable.")
-                return fmp_df
+        if base.empty:
+            # fallback to FMP immediately if base is empty or malformed
+            fmp_df = _normalize_yf_columns(_download_from_fmp(symbol))
+            if fmp_df.empty or len(fmp_df) < MIN_HISTORY_POINTS:
+                raise HTTPException(status_code=400, detail="Stock symbol not found or data unavailable.")
+            return fmp_df
 
-            # 2) Patch last ~7 calendar days with repair=True (end is exclusive → add +1 day)
+        # 2) Only download a short live patch if the base feed looks stale
+        # Avoids an immediate second download (and console progress bar) when the
+        # latest bar is already fresh.
+        df = base
+        latest = base.index.max() if not base.empty else None
+        need_live_patch = True
+        if latest is not None:
+            latest_date = pd.Timestamp(latest).normalize()
+            today = pd.Timestamp.today().normalize()
+            # If we already have data within the last two calendar days, skip the
+            # expensive repair=True download and rely on the base feed.
+            need_live_patch = latest_date < (today - pd.Timedelta(days=2))
+
+        if need_live_patch:
             end_dt = datetime.now() + timedelta(days=1)
             start_dt = datetime.now() - timedelta(days=7)
-            live = yf.download(
-                symbol,
-                start=start_dt.strftime("%Y-%m-%d"),
-                end=end_dt.strftime("%Y-%m-%d"),
-                interval="1d",
-                auto_adjust=False,
-                repair=True,
-                threads=True,
-            )
+            try:
+                live = yf.download(
+                    symbol,
+                    start=start_dt.strftime("%Y-%m-%d"),
+                    end=end_dt.strftime("%Y-%m-%d"),
+                    interval="1d",
+                    auto_adjust=False,
+                    repair=True,
+                    threads=True,
+                )
+            except Exception:
+                live = pd.DataFrame()
             live = _normalize_yf_columns(live)
 
-            # 3) Union merge: keep base where present, fill gaps (like 2025-09-15) from live
+            # Union merge: keep base where present, fill gaps (like 2025-09-15) from live
             df = base.combine_first(live)
 
-            # 3.5) Fallback: patch the last few sessions from INTRADAY if daily feed lags
+        # 3.5) Fallback: patch the last few sessions from INTRADAY if daily feed lags
+        try:
+            t = yf.Ticker(symbol)
+            intraday = t.history(period="7d", interval="1m", prepost=False, repair=True)
+            if not intraday.empty:
+                # Align day boundaries to US/Eastern incl. DST
+                intraday = intraday.tz_convert("America/New_York").between_time("09:30", "16:00")
+                intraday_daily = intraday.resample("1D").agg({
+                    "Open":  "first",
+                    "High":  "max",
+                    "Low":   "min",
+                    "Close": "last",
+                    "Volume":"sum"
+                }).dropna(subset=["Close"])
+                # make the index date-like (no tz, no time)
+                intraday_daily.index = intraday_daily.index.tz_localize(None)
+
+                # Only keep very recent days to avoid overwriting older history
+                # (e.g., last 7 calendar days)
+                cutoff = pd.Timestamp.today().normalize() - pd.Timedelta(days=7)
+                intraday_daily = intraday_daily[intraday_daily.index >= cutoff]
+
+                # Merge: fill missing rows (e.g., 2025-09-16) or empty columns
+                df = df.combine_first(intraday_daily).sort_index()
+        except Exception:
+            # Non-fatal: if intraday fetch fails, just return df as-is
+            pass
+
+
+        # 4) Final tidy (don’t over-eagerly drop rows just on 'Close')
+        df = df.sort_index()
+        df = df[~df.index.duplicated(keep="last")]
+        df = df.dropna(how="all")
+
+        # 5) Sensible fallback if pathologically short (e.g., very new listing)
+        if len(df) < MIN_HISTORY_POINTS:
             try:
-                t = yf.Ticker(symbol)
-                intraday = t.history(period="7d", interval="1m", prepost=False, repair=True)
-                if not intraday.empty:
-                    # Align day boundaries to US/Eastern incl. DST
-                    intraday = intraday.tz_convert("America/New_York").between_time("09:30", "16:00")
-                    intraday_daily = intraday.resample("1D").agg({
-                        "Open":  "first",
-                        "High":  "max",
-                        "Low":   "min",
-                        "Close": "last",
-                        "Volume":"sum"
-                    }).dropna(subset=["Close"])
-                    # make the index date-like (no tz, no time)
-                    intraday_daily.index = intraday_daily.index.tz_localize(None)
-
-                    # Only keep very recent days to avoid overwriting older history
-                    # (e.g., last 7 calendar days)
-                    cutoff = pd.Timestamp.today().normalize() - pd.Timedelta(days=7)
-                    intraday_daily = intraday_daily[intraday_daily.index >= cutoff]
-
-                    # Merge: fill missing rows (e.g., 2025-09-16) or empty columns
-                    df = df.combine_first(intraday_daily).sort_index()
-            except Exception:
-                # Non-fatal: if intraday fetch fails, just return df as-is
-                pass
-
-
-            # 4) Final tidy (don’t over-eagerly drop rows just on 'Close')
-            df = df.sort_index()
-            df = df[~df.index.duplicated(keep="last")]
-            df = df.dropna(how="all")
-
-            # 5) Sensible fallback if pathologically short (e.g., very new listing)
-            if len(df) < MIN_HISTORY_POINTS:
                 retry = yf.download(symbol, period="20y", interval="1d", auto_adjust=False, threads=True)
-                retry = _normalize_yf_columns(retry)
-                if not retry.empty and len(retry) >= MIN_HISTORY_POINTS:
-                    df = retry.combine_first(df).sort_index()
+            except Exception:
+                retry = pd.DataFrame()
+            retry = _normalize_yf_columns(retry)
+            if not retry.empty and len(retry) >= MIN_HISTORY_POINTS:
+                df = retry.combine_first(df).sort_index()
+            else:
+                fmp_df = _normalize_yf_columns(_download_from_fmp(symbol))
+                if not fmp_df.empty and len(fmp_df) >= MIN_HISTORY_POINTS:
+                    df = fmp_df
                 else:
-                    fmp_df = _download_from_fmp(symbol)
-                    fmp_df = _normalize_yf_columns(fmp_df)
-                    if not fmp_df.empty and len(fmp_df) >= MIN_HISTORY_POINTS:
-                        df = fmp_df
-                    else:
-                        raise HTTPException(status_code=400, detail="Not enough historical data for analysis.")
+                    raise HTTPException(status_code=400, detail="Not enough historical data for analysis.")
 
-            return df
+        return df
 
+    @staticmethod
+    def _get_price_data_cached(symbol: str, asof_day: str) -> pd.DataFrame:
+        key = (symbol.upper(), asof_day)
 
+        # Fast path: return a cached frame if it exists
+        with _price_data_lock:
+            cached = _price_cache.get(key)
+            if cached is not None:
+                return cached.copy()
+
+            inflight = _inflight_downloads.get(key)
+
+        # If another request is already fetching this key, wait for it to finish
+        if inflight:
+            inflight.wait()
+            with _price_data_lock:
+                cached = _price_cache.get(key)
+                if cached is not None:
+                    return cached.copy()
+
+        # Mark this key as in-flight
+        event = Event()
+        with _price_data_lock:
+            _inflight_downloads[key] = event
+
+        try:
+            df = StockAnalyser._build_price_data(symbol)
+            if df is None or not isinstance(df, pd.DataFrame):
+                raise HTTPException(status_code=500, detail="Price download returned no data.")
+            with _price_data_lock:
+                _price_cache[key] = df
+            return df.copy()
+        finally:
+            with _price_data_lock:
+                event.set()
+                _inflight_downloads.pop(key, None)
+
+                
     @staticmethod
     def get_price_data(symbol: str) -> pd.DataFrame:
         """Return a copy of cached price data for the given symbol, refreshed daily."""
