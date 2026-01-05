@@ -33,6 +33,7 @@ type Holding = {
   ticker: string;
   market_value?: number;
   sector?: string;
+  shares?: number;
   daily_change_percent?: number | null;
   five_day_change_percent?: number | null;
   twenty_one_day_change_percent?: number | null;
@@ -82,6 +83,15 @@ const formatPct = (v?: number | null) =>
 
 const formatMomentum = (v?: number | null) =>
   v === null || v === undefined ? "N/A" : `${v >= 0 ? "+" : ""}${v.toFixed(1)}`;
+
+const formatCurrency = (v?: number | null) =>
+  v === null || v === undefined
+    ? "N/A"
+    : v.toLocaleString("en-US", {
+        style: "currency",
+        currency: "USD",
+        maximumFractionDigits: Math.abs(v) >= 1000 ? 0 : 2,
+      });
 
 const truncate = (s: string, max = 18) => {
   const cleaned = (s ?? "").trim();
@@ -520,6 +530,81 @@ const DailyTab = () => {
     [holdings, forexRates]
   );
 
+  const portfolioChangeSummary = useMemo(() => {
+    const computeChange = (
+      getPercent: (h: Holding) => number | null,
+      getAbsoluteChange?: (h: Holding) => number | null
+    ) => {
+      let totalMarketValue = 0;
+      let totalChange = 0;
+      let weightedPctNumerator = 0;
+      let pctWeight = 0;
+
+      normalizedHoldings.forEach((h) => {
+        const mv =
+          typeof h.market_value === "number"
+            ? Math.max(h.market_value, 0)
+            : null;
+        if (mv !== null) totalMarketValue += mv;
+
+        const pct = getPercent(h);
+        const changeFromPercent =
+          pct !== null && mv !== null ? (mv * pct) / 100 : null;
+        const absoluteChange = getAbsoluteChange?.(h) ?? null;
+        const change =
+          absoluteChange !== null && typeof absoluteChange === "number"
+            ? absoluteChange
+            : changeFromPercent;
+
+        if (typeof change === "number") totalChange += change;
+        if (pct !== null && mv !== null) {
+          weightedPctNumerator += mv * pct;
+          pctWeight += mv;
+        }
+      });
+
+      const totalChangePercent =
+        pctWeight > 0 ? weightedPctNumerator / pctWeight : null;
+
+      return { totalMarketValue, totalChange, totalChangePercent };
+    };
+
+    const daily = computeChange(
+      (h) =>
+        typeof h.daily_change_percent === "number"
+          ? h.daily_change_percent
+          : null,
+      (h) =>
+        typeof h.daily_change === "number" && typeof h.shares === "number"
+          ? h.daily_change * h.shares
+          : null
+    );
+
+    const fiveDay = computeChange((h) =>
+      typeof h.five_day_change_percent === "number"
+        ? h.five_day_change_percent
+        : null
+    );
+
+    const twentyOneDay = computeChange((h) =>
+      typeof h.twenty_one_day_change_percent === "number"
+        ? h.twenty_one_day_change_percent
+        : null
+    );
+
+    return { daily, fiveDay, twentyOneDay };
+  }, [normalizedHoldings]);
+
+  const changeSummary = useMemo(() => {
+    if (heatmapMode === "priceChange5d") {
+      return { ...portfolioChangeSummary.fiveDay, label: "5D change" };
+    }
+    if (heatmapMode === "priceChange21d") {
+      return { ...portfolioChangeSummary.twentyOneDay, label: "21D change" };
+    }
+    return { ...portfolioChangeSummary.daily, label: "Daily change" };
+  }, [heatmapMode, portfolioChangeSummary]);
+
   const hasMomentum = useMemo(() => {
     const weeklyCount = Object.keys(
       momentumMaps.portfolio_momentum_weekly || {}
@@ -649,7 +734,7 @@ const DailyTab = () => {
 
   return (
     <div className="p-3 p-md-4 bg-white rounded shadow-sm border h-100">
-      <div className="d-flex justify-content-between align-items-center mb-3">
+      <div className="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
         <div>
           <h4 className="fw-bold mb-0">
             Performance Heatmap {zoomedSector && ` - ${zoomedSector}`}
@@ -663,75 +748,104 @@ const DailyTab = () => {
             <div className="text-danger small mt-1">{momentumError}</div>
           )}
         </div>
-        <div className="d-flex align-items-center gap-2">
-          <div className="btn-group btn-group-sm" role="group">
+        <div className="d-flex flex-column align-items-end gap-2">
+          <div className="text-end">
+            <div className="text-uppercase small fw-semibold text-muted">
+              Total portfolio value
+            </div>
+            <div className="fw-bold fs-5">
+              {formatCurrency(changeSummary.totalMarketValue)}
+            </div>
+            <div className="small">
+              <span
+                className={
+                  typeof changeSummary.totalChange === "number"
+                    ? changeSummary.totalChange >= 0
+                      ? "text-success fw-semibold"
+                      : "text-danger fw-semibold"
+                    : "text-muted"
+                }
+              >
+                {formatCurrency(changeSummary.totalChange)}
+                <span className="ms-1">
+                  ({formatPct(changeSummary.totalChangePercent)})
+                </span>
+              </span>
+              <span className="ms-2 text-muted text-uppercase fw-semibold">
+                {changeSummary.label}
+              </span>
+            </div>
+          </div>
+          <div className="d-flex align-items-center gap-2 flex-wrap justify-content-end">
+            <div className="btn-group btn-group-sm" role="group">
+              <button
+                type="button"
+                className={`btn ${
+                  heatmapMode === "dailyChange"
+                    ? "btn-primary"
+                    : "btn-outline-primary"
+                }`}
+                onClick={() => setHeatmapMode("dailyChange")}
+              >
+                Daily change
+              </button>
+              <button
+                type="button"
+                className={`btn ${
+                  heatmapMode === "priceChange5d"
+                    ? "btn-primary"
+                    : "btn-outline-primary"
+                }`}
+                onClick={() => setHeatmapMode("priceChange5d")}
+              >
+                5D price change
+              </button>
+              <button
+                type="button"
+                className={`btn ${
+                  heatmapMode === "priceChange21d"
+                    ? "btn-primary"
+                    : "btn-outline-primary"
+                }`}
+                onClick={() => setHeatmapMode("priceChange21d")}
+              >
+                21D price change
+              </button>
+              <button
+                type="button"
+                className={`btn ${
+                  heatmapMode === "portfolioMomentum5d"
+                    ? "btn-primary"
+                    : "btn-outline-primary"
+                }`}
+                onClick={() => setHeatmapMode("portfolioMomentum5d")}
+              >
+                Portfolio 5d
+              </button>
+              <button
+                type="button"
+                className={`btn ${
+                  heatmapMode === "portfolioMomentum21d"
+                    ? "btn-primary"
+                    : "btn-outline-primary"
+                }`}
+                onClick={() => setHeatmapMode("portfolioMomentum21d")}
+              >
+                Portfolio 21d
+              </button>
+            </div>
             <button
-              type="button"
-              className={`btn ${
-                heatmapMode === "dailyChange"
-                  ? "btn-primary"
-                  : "btn-outline-primary"
-              }`}
-              onClick={() => setHeatmapMode("dailyChange")}
+              className="btn btn-sm btn-outline-secondary"
+              disabled={momentumLoading || hasMomentum}
+              onClick={fetchMomentum}
             >
-              Daily change
-            </button>
-            <button
-              type="button"
-              className={`btn ${
-                heatmapMode === "priceChange5d"
-                  ? "btn-primary"
-                  : "btn-outline-primary"
-              }`}
-              onClick={() => setHeatmapMode("priceChange5d")}
-            >
-              5D price change
-            </button>
-            <button
-              type="button"
-              className={`btn ${
-                heatmapMode === "priceChange21d"
-                  ? "btn-primary"
-                  : "btn-outline-primary"
-              }`}
-              onClick={() => setHeatmapMode("priceChange21d")}
-            >
-              21D price change
-            </button>
-            <button
-              type="button"
-              className={`btn ${
-                heatmapMode === "portfolioMomentum5d"
-                  ? "btn-primary"
-                  : "btn-outline-primary"
-              }`}
-              onClick={() => setHeatmapMode("portfolioMomentum5d")}
-            >
-              Portfolio 5d
-            </button>
-            <button
-              type="button"
-              className={`btn ${
-                heatmapMode === "portfolioMomentum21d"
-                  ? "btn-primary"
-                  : "btn-outline-primary"
-              }`}
-              onClick={() => setHeatmapMode("portfolioMomentum21d")}
-            >
-              Portfolio 21d
+              {momentumLoading
+                ? "Loading momentum…"
+                : hasMomentum
+                ? "Momentum loaded"
+                : "Load momentum scores"}
             </button>
           </div>
-          <button
-            className="btn btn-sm btn-outline-secondary"
-            disabled={momentumLoading || hasMomentum}
-            onClick={fetchMomentum}
-          >
-            {momentumLoading
-              ? "Loading momentum…"
-              : hasMomentum
-              ? "Momentum loaded"
-              : "Load momentum scores"}
-          </button>
         </div>
       </div>
 
