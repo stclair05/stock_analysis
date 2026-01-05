@@ -41,6 +41,7 @@ import os
 import pandas as pd
 import re
 from fastapi import Query
+from pydantic import BaseModel
 
 app = FastAPI()
 
@@ -58,6 +59,24 @@ _FUNDAMENTALS_TTL_SECONDS = 60 * 60  # 60 minutes
 PORTFOLIO_RETURNS_CACHE: dict[int, dict[str, float]] = {}
 PORTFOLIO_RETURNS_LAST_UPDATED: dict[int, float] = {}
 PORTFOLIO_RETURNS_TTL_SECONDS = 60 * 60  # 60 minutes cache
+
+
+class CustomMomentumRequest(BaseModel):
+    symbols: List[str]
+
+
+def _sanitize_symbols_list(symbols: List[str]) -> list[str]:
+    seen: set[str] = set()
+    cleaned: list[str] = []
+    for sym in symbols:
+        if not isinstance(sym, str):
+            continue
+        normalized = sym.strip().upper()
+        if not normalized or normalized in seen:
+            continue
+        seen.add(normalized)
+        cleaned.append(normalized)
+    return cleaned
 
 
 def _get_portfolio_equities():
@@ -130,6 +149,76 @@ def _portfolio_returns(period_days: int) -> dict[str, float]:
     PORTFOLIO_RETURNS_CACHE[period_days] = returns
     PORTFOLIO_RETURNS_LAST_UPDATED[period_days] = now
     return PORTFOLIO_RETURNS_CACHE[period_days]
+
+def _update_portfolio_returns_cache(returns: dict[str, float], period_days: int):
+    """Persist precomputed portfolio returns to avoid redundant downloads."""
+
+    global PORTFOLIO_RETURNS_CACHE, PORTFOLIO_RETURNS_LAST_UPDATED
+
+    now = time()
+    PORTFOLIO_RETURNS_CACHE[period_days] = returns
+    PORTFOLIO_RETURNS_LAST_UPDATED[period_days] = now
+
+
+@app.post("/custom_momentum")
+def custom_momentum(payload: CustomMomentumRequest):
+    symbols = _sanitize_symbols_list(payload.symbols)
+    if not symbols:
+        return {"momentum_weekly": {}, "momentum_monthly": {}}
+
+    price_data_map: dict[str, pd.DataFrame] = {}
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        fetch_futures = {
+            executor.submit(StockAnalyser.get_price_data, symbol): symbol
+            for symbol in symbols
+        }
+        for future in as_completed(fetch_futures):
+            symbol = fetch_futures[future]
+            try:
+                price_data_map[symbol] = future.result()
+            except Exception:
+                continue
+
+    weekly_returns: dict[str, float] = {}
+    monthly_returns: dict[str, float] = {}
+    for symbol, df in price_data_map.items():
+        _, weekly_val = _return_for_symbol(symbol, 5, price_data=df)
+        if weekly_val is not None:
+            weekly_returns[symbol] = weekly_val
+
+        _, monthly_val = _return_for_symbol(symbol, 21, price_data=df)
+        if monthly_val is not None:
+            monthly_returns[symbol] = monthly_val
+
+    portfolio_weekly = _portfolio_returns(5)
+    portfolio_monthly = _portfolio_returns(21)
+
+    weekly_scores: dict[str, float] = {}
+    monthly_scores: dict[str, float] = {}
+
+    if weekly_returns:
+        combined_weekly = {**portfolio_weekly, **weekly_returns}
+        combined_weekly_scores = portfolio_relative_momentum_zscores(combined_weekly)
+        weekly_scores = {
+            symbol: score
+            for symbol, score in combined_weekly_scores.items()
+            if symbol in weekly_returns
+        }
+
+    if monthly_returns:
+        combined_monthly = {**portfolio_monthly, **monthly_returns}
+        combined_monthly_scores = portfolio_relative_momentum_zscores(combined_monthly)
+        monthly_scores = {
+            symbol: score
+            for symbol, score in combined_monthly_scores.items()
+            if symbol in monthly_returns
+        }
+
+    return {
+        "momentum_weekly": weekly_scores,
+        "momentum_monthly": monthly_scores,
+    }
+
 
 @app.post("/analyse", response_model=StockAnalysisResponse)
 def analyse(stock_request: StockRequest):
@@ -624,6 +713,9 @@ def _status_for_holdings(holdings, price_direction: str, *, momentum_only: bool 
                     }
         except Exception:
             continue
+
+    _update_portfolio_returns_cache(weekly_portfolio_returns, 5)
+    _update_portfolio_returns_cache(monthly_portfolio_returns, 21)
 
     results["portfolio_momentum_weekly"] = portfolio_relative_momentum_zscores(
         weekly_portfolio_returns

@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import "./MomentumPage.css";
 
 type MomentumResponse = {
-  portfolio_momentum_weekly: Record<string, number>;
-  portfolio_momentum_monthly: Record<string, number>;
+  momentum_weekly: Record<string, number>;
+  momentum_monthly: Record<string, number>;
 };
 
 type MomentumPoint = {
@@ -13,17 +13,25 @@ type MomentumPoint = {
 };
 
 const FALLBACK: MomentumResponse = {
-  portfolio_momentum_weekly: {},
-  portfolio_momentum_monthly: {},
+  momentum_weekly: {},
+  momentum_monthly: {},
 };
 
 export default function MomentumPage() {
-  const [data, setData] = useState<MomentumResponse>(FALLBACK);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [portfolioData, setPortfolioData] =
+    useState<MomentumResponse>(FALLBACK);
+  const [portfolioLoading, setPortfolioLoading] = useState(true);
+  const [portfolioError, setPortfolioError] = useState<string | null>(null);
+
+  const [mode, setMode] = useState<"portfolio" | "custom">("portfolio");
+  const [customInput, setCustomInput] = useState("");
+  const [customSymbols, setCustomSymbols] = useState<string[]>([]);
+  const [customData, setCustomData] = useState<MomentumResponse>(FALLBACK);
+  const [customLoading, setCustomLoading] = useState(false);
+  const [customError, setCustomError] = useState<string | null>(null);
 
   useEffect(() => {
-    setLoading(true);
+    setPortfolioLoading(true);
     fetch("http://localhost:8000/portfolio_status?scope=momentum")
       .then((res) => {
         if (!res.ok) {
@@ -32,34 +40,89 @@ export default function MomentumPage() {
         return res.json();
       })
       .then((json) => {
-        setData({
-          portfolio_momentum_weekly: json.portfolio_momentum_weekly || {},
-          portfolio_momentum_monthly: json.portfolio_momentum_monthly || {},
+        setPortfolioData({
+          momentum_weekly: json.portfolio_momentum_weekly || {},
+          momentum_monthly: json.portfolio_momentum_monthly || {},
         });
-        setError(null);
+        setPortfolioError(null);
       })
       .catch((err) => {
         console.error(err);
-        setData(FALLBACK);
-        setError("Unable to fetch momentum scores. Showing empty view.");
+        setPortfolioData(FALLBACK);
+        setPortfolioError(
+          "Unable to fetch momentum scores. Showing empty view."
+        );
       })
-      .finally(() => setLoading(false));
+      .finally(() => setPortfolioLoading(false));
   }, []);
+
+  const onSubmitCustom = (event: FormEvent) => {
+    event.preventDefault();
+    const parsedSymbols = customInput
+      .split(/[,\s]+/)
+      .map((s) => s.trim().toUpperCase())
+      .filter(Boolean);
+
+    const uniqueSymbols = Array.from(new Set(parsedSymbols));
+
+    if (uniqueSymbols.length === 0) {
+      setCustomError("Enter at least one ticker symbol.");
+      return;
+    }
+
+    setCustomError(null);
+    setCustomLoading(true);
+    setMode("custom");
+    setCustomSymbols(uniqueSymbols);
+
+    fetch("http://localhost:8000/custom_momentum", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ symbols: uniqueSymbols }),
+    })
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("Failed to fetch custom momentum");
+        }
+        return res.json();
+      })
+      .then((json) => {
+        setCustomData({
+          momentum_weekly: json.momentum_weekly || {},
+          momentum_monthly: json.momentum_monthly || {},
+        });
+        setCustomError(null);
+      })
+      .catch((err) => {
+        console.error(err);
+        setCustomData(FALLBACK);
+        setCustomError(
+          "Unable to fetch momentum scores for that list. Try different symbols."
+        );
+      })
+      .finally(() => setCustomLoading(false));
+  };
+
+  const activeData = mode === "portfolio" ? portfolioData : customData;
+  const loading = mode === "portfolio" ? portfolioLoading : customLoading;
+  const error = mode === "portfolio" ? portfolioError : customError;
 
   const points: MomentumPoint[] = useMemo(() => {
     const symbols = new Set<string>([
-      ...Object.keys(data.portfolio_momentum_weekly || {}),
-      ...Object.keys(data.portfolio_momentum_monthly || {}),
+      ...Object.keys(activeData.momentum_weekly || {}),
+      ...Object.keys(activeData.momentum_monthly || {}),
     ]);
 
     return Array.from(symbols)
       .sort()
       .map((symbol) => ({
         symbol,
-        weekly: data.portfolio_momentum_weekly?.[symbol],
-        monthly: data.portfolio_momentum_monthly?.[symbol],
+        weekly: activeData.momentum_weekly?.[symbol],
+        monthly: activeData.momentum_monthly?.[symbol],
       }));
-  }, [data.portfolio_momentum_monthly, data.portfolio_momentum_weekly]);
+  }, [activeData.momentum_monthly, activeData.momentum_weekly]);
 
   const extremes = useMemo(() => {
     const scored = points.map((p) => ({
@@ -117,17 +180,91 @@ export default function MomentumPage() {
     return values;
   }, [range]);
 
+  const subtitle =
+    mode === "portfolio"
+      ? "Plot of portfolio stocks by 21-day (x-axis) and 5-day (y-axis) portfolio momentum z-scores."
+      : "Plot of your custom stock list by 21-day (x-axis) and 5-day (y-axis) portfolio-relative momentum z-scores.";
+
+  const hasSymbols =
+    mode === "portfolio" ? points.length > 0 : customSymbols.length > 0;
+
   return (
     <div className="container-fluid momentum-page py-4">
-      <h1 className="fw-bold mb-3">Momentum</h1>
-      <p className="text-muted mb-4">
-        Plot of portfolio stocks by 21-day (x-axis) and 5-day (y-axis) portfolio
-        momentum z-scores.
-      </p>
+      <div className="d-flex flex-wrap align-items-center gap-3 mb-3">
+        <h1 className="fw-bold mb-0">Momentum</h1>
+        <div
+          className="btn-group"
+          role="group"
+          aria-label="Momentum view selector"
+        >
+          <button
+            className={`btn btn-outline-primary ${
+              mode === "portfolio" ? "active" : ""
+            }`}
+            type="button"
+            onClick={() => setMode("portfolio")}
+          >
+            Portfolio grid
+          </button>
+          <button
+            className={`btn btn-outline-primary ${
+              mode === "custom" ? "active" : ""
+            }`}
+            type="button"
+            onClick={() => setMode("custom")}
+          >
+            Custom list
+          </button>
+        </div>
+      </div>
+
+      <p className="text-muted mb-4">{subtitle}</p>
+
+      <div className="card shadow-sm border-0 mb-4">
+        <div className="card-body">
+          <h5 className="card-title mb-3">Plot a custom symbol grid</h5>
+          <form className="row g-3" onSubmit={onSubmitCustom}>
+            <div className="col-md-8">
+              <label htmlFor="customSymbols" className="form-label">
+                Enter ticker symbols (comma or space separated)
+              </label>
+              <input
+                id="customSymbols"
+                className="form-control"
+                placeholder="e.g. AAPL, MU, PTON"
+                value={customInput}
+                onChange={(e) => setCustomInput(e.target.value)}
+                aria-describedby="customSymbolsHelp"
+              />
+            </div>
+            <div className="col-md-4 d-flex align-items-end">
+              <button
+                type="submit"
+                className="btn btn-primary w-100"
+                disabled={customLoading}
+              >
+                {customLoading ? "Loading…" : "Plot custom grid"}
+              </button>
+            </div>
+          </form>
+          <div id="customSymbolsHelp" className="form-text">
+            Enter any tickers to see how their momentum compares against your
+            current portfolio baseline, even if they are not in the portfolio.
+          </div>
+          {customError && (
+            <div className="text-danger small mt-2">{customError}</div>
+          )}
+          {customSymbols.length > 0 && (
+            <div className="text-muted small mt-2">
+              Showing custom list: {customSymbols.join(", ")}
+            </div>
+          )}
+        </div>
+      </div>
 
       {error && <div className="alert alert-warning">{error}</div>}
 
-      <div className="momentum-grid mb-3">
+      <div className="momentum-grid mb-3" aria-live="polite">
         <div className="momentum-quadrant-label positive-developing">
           Positive Developing
         </div>
@@ -153,10 +290,10 @@ export default function MomentumPage() {
         />
 
         <div className="momentum-axis-label momentum-axis-label--x">
-          21D Portfolio Momentum Score
+          21D Momentum Score
         </div>
         <div className="momentum-axis-label momentum-axis-label--y">
-          5D Portfolio Momentum Score
+          5D Momentum Score
         </div>
 
         {ticks.map((tick) => (
@@ -212,7 +349,11 @@ export default function MomentumPage() {
 
       {loading && <div className="text-muted">Loading momentum data…</div>}
       {!loading && points.length === 0 && (
-        <div className="text-muted">No portfolio momentum data available.</div>
+        <div className="text-muted">
+          {hasSymbols
+            ? "No momentum data available for these symbols."
+            : "Enter symbols above to plot a custom grid."}
+        </div>
       )}
     </div>
   );
