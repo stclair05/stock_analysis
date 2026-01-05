@@ -25,6 +25,7 @@ from stock_analysis.sector_momentum import (
     period_return,
     portfolio_relative_momentum_zscores,
     sector_relative_momentum_zscore,
+     _z_score,
 )
 from fastapi.responses import JSONResponse
 from pathlib import Path
@@ -193,26 +194,24 @@ def custom_momentum(payload: CustomMomentumRequest):
     portfolio_weekly = _portfolio_returns(5)
     portfolio_monthly = _portfolio_returns(21)
 
-    weekly_scores: dict[str, float] = {}
-    monthly_scores: dict[str, float] = {}
+    def _scores_against_portfolio(
+        returns: dict[str, float], portfolio_returns: dict[str, float]
+    ) -> dict[str, float]:
+        baseline = [
+            value for value in portfolio_returns.values() if math.isfinite(value)
+        ]
+        if len(baseline) < 2:
+            return {}
 
-    if weekly_returns:
-        combined_weekly = {**portfolio_weekly, **weekly_returns}
-        combined_weekly_scores = portfolio_relative_momentum_zscores(combined_weekly)
-        weekly_scores = {
-            symbol: score
-            for symbol, score in combined_weekly_scores.items()
-            if symbol in weekly_returns
-        }
+        scores: dict[str, float] = {}
+        for symbol, value in returns.items():
+            z_score = _z_score(value, baseline)
+            if z_score is not None:
+                scores[symbol] = round(float(z_score), 4)
+        return scores
 
-    if monthly_returns:
-        combined_monthly = {**portfolio_monthly, **monthly_returns}
-        combined_monthly_scores = portfolio_relative_momentum_zscores(combined_monthly)
-        monthly_scores = {
-            symbol: score
-            for symbol, score in combined_monthly_scores.items()
-            if symbol in monthly_returns
-        }
+    weekly_scores = _scores_against_portfolio(weekly_returns, portfolio_weekly)
+    monthly_scores = _scores_against_portfolio(monthly_returns, portfolio_monthly)
 
     return {
         "momentum_weekly": weekly_scores,
