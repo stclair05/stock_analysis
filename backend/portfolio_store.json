@@ -416,6 +416,13 @@
       "target_3": 70.11
     },
     {
+      "ticker": "SMR",
+      "shares": 15000,
+      "average_cost": 17.9,
+      "sector": "Uranium",
+      "acquired_date": "2025-01-05"
+    },
+    {
       "ticker": "LEU",
       "shares": 1500,
       "average_cost": 296.88,
@@ -597,7 +604,8 @@
       "shares": 35000,
       "average_cost": 74.4033,
       "sector": "Precious Metals",
-      "player": 8
+      "player": 8,
+      "acquired_date": "2024-12-31"
     },
     {
       "ticker": "FCX",
@@ -877,21 +885,6 @@
       "target_3": -1
     },
     {
-      "ticker": "CRUS",
-      "shares": 3500,
-      "average_cost": 128.74,
-      "sector": "Others",
-      "player": 1,
-      "technigrade": [9, 8, 8, 8, 4],
-      "peers": ["QCOM", "TXN", "ADI", "SWKS", "MPWR", "MCHP"],
-      "invalidation_1": 116,
-      "invalidation_2": 91.91,
-      "invalidation_3": 75.76,
-      "target_1": 123,
-      "target_2": 147,
-      "target_3": -1
-    },
-    {
       "ticker": "GEVO",
       "shares": 75000.0,
       "average_cost": 1.97,
@@ -995,40 +988,32 @@
       "target_3": 228
     },
     {
-      "ticker": "FIVN",
-      "shares": 15000.0,
-      "average_cost": 23.11,
+      "ticker": "VRT",
+      "shares": 1200,
+      "average_cost": 182.63,
       "sector": "Technology",
-      "player": 2,
-      "technigrade": [19, 19, 19, 19, 14],
-      "peers": ["ZM", "RING", "TWLO", "CRM", "ASPN", "CSCO"],
-      "invalidation_1": 21.04,
-      "invalidation_2": -1,
-      "invalidation_3": -1,
-      "target_1": 20,
-      "target_2": 29,
-      "target_3": 50
+      "acquired_date": "2025-01-05"
     },
     {
-      "ticker": "AMZN",
-      "shares": 2500.0,
-      "average_cost": 255,
+      "ticker": "JBL",
+      "shares": 1500,
+      "average_cost": 245.76,
       "sector": "Technology",
-      "player": 2,
-      "technigrade": [10, 12, 8, 6, 6],
-      "peers": ["MSFT", "GOOGL", "AAPL", "META", "BABA", "WMT"],
-      "invalidation_1": 213,
-      "invalidation_2": 161.38,
-      "invalidation_3": 151.61,
-      "target_1": 283,
-      "target_2": 311,
-      "target_3": -1
+      "acquired_date": "2025-01-05"
+    },
+    {
+      "ticker": "EAT",
+      "shares": 1500,
+      "average_cost": 149.34,
+      "sector": "Others",
+      "acquired_date": "2025-01-05"
     },
     {
       "ticker": "TSLA",
-      "shares": 1000.0,
-      "average_cost": 453.15,
+      "shares": 2000.0,
+      "average_cost": 450.57,
       "sector": "Technology",
+      "acquired_date": "2025-01-05",
       "player": 2,
       "technigrade": [5, 7, 6, 4, 3],
       "peers": ["BYDDY", "RIVN", "LCID", "GM", "F", "NIO"],

@@ -38,16 +38,31 @@ class PortfolioAnalyser:
         except Exception:
             self.fx_rate = 1.0
 
-    def _compute_period_change(self, closes: Optional[pd.Series], period: int) -> Optional[float]:
+    def _compute_period_change(
+        self,
+        closes: Optional[pd.Series],
+        period: int,
+        acquired_date: Optional[pd.Timestamp] = None,
+    ) -> Optional[float]:
         if closes is None or closes.empty:
             return None
 
         series = closes if not isinstance(closes, pd.DataFrame) else closes.iloc[:, 0]
-        if len(series) < period:
+        
+        if acquired_date is not None:
+            try:
+                series = series[series.index >= acquired_date]
+            except Exception:
+                # If parsing fails, fall back to using the full series.
+                pass
+
+        if len(series) < 2:
             return None
+        
+        lookback = min(period, len(series) - 1)
 
         latest = series.iloc[-1]
-        prior = series.iloc[-period]
+        prior = series.iloc[-(lookback + 1)]
         if prior is None or prior == 0:
             return None
 
@@ -170,8 +185,14 @@ class PortfolioAnalyser:
             ticker = item["ticker"]
             shares = item["shares"]
             average_cost = item["average_cost"]
+            acquired_date = None
+            if item.get("acquired_date"):
+                try:
+                    acquired_date = pd.to_datetime(item["acquired_date"])
+                except Exception:
+                    acquired_date = None
             invested_capital = shares * average_cost
-            category = item.get("category", "Other") 
+            category = item.get("category", "Other")
 
             (
                 current_price,
@@ -219,13 +240,17 @@ class PortfolioAnalyser:
             pnl = market_value - invested_capital
             pnl_percent = pnl / invested_capital if invested_capital else 0.0
 
-            five_day_change_pct = period_changes.get("5D") if period_changes else None
-            twenty_one_day_change_pct = period_changes.get("21D") if period_changes else None
+            five_day_change_pct = None
+            twenty_one_day_change_pct = None
 
-            if five_day_change_pct is None:
-                five_day_change_pct = self._compute_period_change(closes, 5)
-            if twenty_one_day_change_pct is None:
-                twenty_one_day_change_pct = self._compute_period_change(closes, 21)
+            if closes is not None:
+                five_day_change_pct = self._compute_period_change(closes, 5, acquired_date)
+                twenty_one_day_change_pct = self._compute_period_change(closes, 21, acquired_date)
+
+            if five_day_change_pct is None and period_changes:
+                five_day_change_pct = period_changes.get("5D")
+            if twenty_one_day_change_pct is None and period_changes:
+                twenty_one_day_change_pct = period_changes.get("21D")
 
             if five_day_change_pct is not None:
                 five_day_change_pct = round(five_day_change_pct, 2)
