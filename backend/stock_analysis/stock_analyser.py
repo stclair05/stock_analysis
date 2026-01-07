@@ -32,10 +32,12 @@ from .utils import (
     reindex_indicator,
 )
 from .pricetarget import get_price_targets, calculate_mean_reversion_50dma_target
-from threading import Lock
+from threading import Event, Lock
 
 _price_data_lock = Lock()
 _signal_cache_lock = Lock()
+_price_data_inflight_lock = Lock()
+_price_data_inflight: dict[tuple[str, str], Event] = {}
 
 MIN_HISTORY_POINTS = 5
 
@@ -177,7 +179,7 @@ class StockAnalyser:
     # >>> REPLACE THE ENTIRE _get_price_data_cached WITH THIS
     @staticmethod
     @lru_cache(maxsize=100)
-    def _get_price_data_cached(symbol: str, asof_day: str) -> pd.DataFrame:
+    def _get_price_data_cached_inner(symbol: str, asof_day: str) -> pd.DataFrame:
         with _price_data_lock:
             # 1) Base history (no repair)
             base = yf.download(symbol, period="12y", interval="1d", auto_adjust=False, threads=True)
@@ -191,22 +193,30 @@ class StockAnalyser:
                     raise HTTPException(status_code=400, detail="Stock symbol not found or data unavailable.")
                 return fmp_df
 
-            # 2) Patch last ~7 calendar days with repair=True (end is exclusive → add +1 day)
-            end_dt = datetime.now() + timedelta(days=1)
-            start_dt = datetime.now() - timedelta(days=7)
-            live = yf.download(
-                symbol,
-                start=start_dt.strftime("%Y-%m-%d"),
-                end=end_dt.strftime("%Y-%m-%d"),
-                interval="1d",
-                auto_adjust=False,
-                repair=True,
-                threads=True,
-            )
-            live = _normalize_yf_columns(live)
+            # 2) Patch last ~7 calendar days with repair=True only if needed
+            today = datetime.now(timezone.utc).date()
+            last_date = pd.Timestamp(base.index.max()).date()
+            recent = base.tail(7)
+            recent_ohlc_ok = recent[["Open", "High", "Low", "Close"]].notna().all().all()
+            need_live = last_date < today or not recent_ohlc_ok
 
-            # 3) Union merge: keep base where present, fill gaps (like 2025-09-15) from live
-            df = base.combine_first(live)
+            if need_live:
+                end_dt = datetime.now() + timedelta(days=1)
+                start_dt = datetime.now() - timedelta(days=7)
+                live = yf.download(
+                    symbol,
+                    start=start_dt.strftime("%Y-%m-%d"),
+                    end=end_dt.strftime("%Y-%m-%d"),
+                    interval="1d",
+                    auto_adjust=False,
+                    repair=True,
+                    threads=True,
+                )
+                live = _normalize_yf_columns(live)
+                # 3) Union merge: keep base where present, fill gaps (like 2025-09-15) from live
+                df = base.combine_first(live)
+            else:
+                df = base
 
             # 3.5) Fallback: patch the last few sessions from INTRADAY if daily feed lags
             try:
@@ -257,6 +267,29 @@ class StockAnalyser:
                         raise HTTPException(status_code=400, detail="Not enough historical data for analysis.")
 
             return df
+
+    @staticmethod
+    def _get_price_data_cached(symbol: str, asof_day: str) -> pd.DataFrame:
+        key = (symbol, asof_day)
+        with _price_data_inflight_lock:
+            event = _price_data_inflight.get(key)
+            if event is None:
+                event = Event()
+                _price_data_inflight[key] = event
+                is_owner = True
+            else:
+                is_owner = False
+
+        if not is_owner:
+            event.wait()
+            return StockAnalyser._get_price_data_cached_inner(symbol, asof_day)
+
+        try:
+            return StockAnalyser._get_price_data_cached_inner(symbol, asof_day)
+        finally:
+            event.set()
+            with _price_data_inflight_lock:
+                _price_data_inflight.pop(key, None)
 
 
     @staticmethod
