@@ -1,21 +1,6 @@
 {
   "equities": [
     {
-      "ticker": "AI",
-      "shares": 27000.0,
-      "average_cost": 34.38,
-      "sector": "Technology",
-      "player": 1,
-      "technigrade": [20, 20, 20, 19, 18],
-      "peers": ["PLTR", "BBAI", "VERI", "RAMP", "SEMR", "IOT"],
-      "invalidation_1": 16.88,
-      "invalidation_2": 14.7,
-      "invalidation_3": -1,
-      "target_1": 23.99,
-      "target_2": 30,
-      "target_3": 35.6
-    },
-    {
       "ticker": "XOM",
       "shares": 8000.0,
       "average_cost": 102.0,
@@ -572,8 +557,8 @@
     },
     {
       "ticker": "TEM",
-      "shares": 53000,
-      "average_cost": 83.51,
+      "shares": 56000,
+      "average_cost": 82.0164,
       "sector": "Healthcare",
       "player": 2,
       "technigrade": [9, 13, 15, 13, 3],
@@ -950,6 +935,21 @@
       "target_3": 120
     },
     {
+      "ticker": "CIFR",
+      "shares": 20000,
+      "average_cost": 18,
+      "sector": "Technology",
+      "player": 2,
+      "technigrade": [],
+      "peers": ["RIOT", "CLSK", "NBIS", "HUT", "WULF", "BITF", "IREN"],
+      "invalidation_1": -1,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": -1,
+      "target_2": -1,
+      "target_3": -1
+    },
+    {
       "ticker": "META",
       "shares": 1600,
       "average_cost": 624.4,
@@ -1070,21 +1070,6 @@
       "target_3": -1
     },
     {
-      "ticker": "MU",
-      "shares": 2500.0,
-      "average_cost": 235.5,
-      "sector": "Technology",
-      "player": 2,
-      "technigrade": [1, 1, 1, 1, 1],
-      "peers": ["SKHYY", "SSNLF", "WDC", "KLAC", "AMAT"],
-      "invalidation_1": 192.06,
-      "invalidation_2": -1,
-      "invalidation_3": -1,
-      "target_1": 280,
-      "target_2": -1,
-      "target_3": -1
-    },
-    {
       "ticker": "VST",
       "shares": 2000.0,
       "average_cost": 209.76,
@@ -1174,8 +1159,8 @@
     },
     {
       "ticker": "NBIS",
-      "shares": 10000,
-      "average_cost": 97.95,
+      "shares": 15000,
+      "average_cost": 97.1833,
       "sector": "Technology",
       "technigrade": [3, 4, 3, 1, 1],
       "peers": ["NVDA", "ORCL", "CRWV", "IREN", "MSFT", "AMD"],
@@ -1189,8 +1174,8 @@
     },
     {
       "ticker": "SERV",
-      "shares": 84500,
-      "average_cost": 11.2591,
+      "shares": 114500,
+      "average_cost": 11.7588,
       "sector": "Aerospace & Defense",
       "peers": ["UBER", "SYM", "UAVS", "IRBT", "RR"],
       "player": 10,
@@ -1203,8 +1188,8 @@
     },
     {
       "ticker": "AXON",
-      "shares": 1700,
-      "average_cost": 581.74,
+      "shares": 2200,
+      "average_cost": 587.196,
       "sector": "Aerospace & Defense",
       "technigrade": [20, 20, 19, 19, 12],
       "peers": ["UBER", "SYM", "UAVS", "IRBT", "RR"],
@@ -1260,8 +1245,23 @@
       "target_3": -1
     },
     {
+      "ticker": "AVAV",
+      "shares": 500,
+      "average_cost": 297.7,
+      "sector": "Aerospace & Defense",
+      "technigrade": [],
+      "peers": ["KTOS", "TDY", "DRS", "TXT", "NOC", "LMT"],
+      "player": 10,
+      "invalidation_1": -1,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": -1,
+      "target_2": -1,
+      "target_3": -1
+    },
+    {
       "ticker": "2318.HK",
-      "shares": 333894.0,
+      "shares": 111564.0,
       "average_cost": 10.03,
       "sector": "Hong Kong and China",
       "peers": [
