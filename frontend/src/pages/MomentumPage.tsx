@@ -202,34 +202,58 @@ function MomentumGrid({
           <>
             <div className="momentum-grid mb-3" aria-live="polite">
               <div className="momentum-quadrant-label positive-developing">
-                Positive Developing
+                <span className="momentum-quadrant-title">
+                  Positive Developing
+                </span>
                 {mode === "portfolio" && (
                   <div className="momentum-quadrant-value">
-                    {formatCurrency(quadrantTotals.positiveDeveloping)}
+                    <span className="momentum-quadrant-value-label">
+                      Portfolio value
+                    </span>
+                    <span className="momentum-quadrant-value-amount">
+                      {formatCurrency(quadrantTotals.positiveDeveloping)}
+                    </span>
                   </div>
                 )}
               </div>
               <div className="momentum-quadrant-label positive-trend">
-                Positive Trend
+                <span className="momentum-quadrant-title">Positive Trend</span>
                 {mode === "portfolio" && (
                   <div className="momentum-quadrant-value">
-                    {formatCurrency(quadrantTotals.positiveTrend)}
+                    <span className="momentum-quadrant-value-label">
+                      Portfolio value
+                    </span>
+                    <span className="momentum-quadrant-value-amount">
+                      {formatCurrency(quadrantTotals.positiveTrend)}
+                    </span>
                   </div>
                 )}
               </div>
               <div className="momentum-quadrant-label negative-trend">
-                Negative Trend
+                <span className="momentum-quadrant-title">Negative Trend</span>
                 {mode === "portfolio" && (
                   <div className="momentum-quadrant-value">
-                    {formatCurrency(quadrantTotals.negativeTrend)}
+                    <span className="momentum-quadrant-value-label">
+                      Portfolio value
+                    </span>
+                    <span className="momentum-quadrant-value-amount">
+                      {formatCurrency(quadrantTotals.negativeTrend)}
+                    </span>
                   </div>
                 )}
               </div>
               <div className="momentum-quadrant-label negative-developing">
-                Negative Developing
+                <span className="momentum-quadrant-title">
+                  Negative Developing
+                </span>
                 {mode === "portfolio" && (
                   <div className="momentum-quadrant-value">
-                    {formatCurrency(quadrantTotals.negativeDeveloping)}
+                    <span className="momentum-quadrant-value-label">
+                      Portfolio value
+                    </span>
+                    <span className="momentum-quadrant-value-amount">
+                      {formatCurrency(quadrantTotals.negativeDeveloping)}
+                    </span>
                   </div>
                 )}
               </div>
@@ -280,6 +304,17 @@ function MomentumGrid({
               {points.map((point) => {
                 const isPositiveExtreme = extremes.positive.has(point.symbol);
                 const isNegativeExtreme = extremes.negative.has(point.symbol);
+                const quadrantClass =
+                  typeof point.weekly === "number" &&
+                  typeof point.monthly === "number"
+                    ? point.monthly >= 0 && point.weekly >= 0
+                      ? " momentum-point--positive-trend"
+                      : point.monthly < 0 && point.weekly >= 0
+                      ? " momentum-point--positive-developing"
+                      : point.monthly < 0 && point.weekly < 0
+                      ? " momentum-point--negative-trend"
+                      : " momentum-point--negative-developing"
+                    : "";
 
                 return (
                   <div
@@ -292,7 +327,7 @@ function MomentumGrid({
                       isNegativeExtreme
                         ? " momentum-point--negative-extreme"
                         : ""
-                    }`}
+                    }${quadrantClass}`}
                     style={{
                       left: `${
                         toPosition(point.monthly) +
@@ -565,6 +600,7 @@ export default function MomentumPage() {
             <option value={1.25}>1.25x</option>
             <option value={1.5}>1.5x</option>
             <option value={2}>2x</option>
+            <option value={4}>4x</option>
           </select>
         </div>
       </div>
