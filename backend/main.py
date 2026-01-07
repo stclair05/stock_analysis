@@ -64,6 +64,7 @@ PORTFOLIO_RETURNS_TTL_SECONDS = 60 * 60  # 60 minutes cache
 
 class CustomMomentumRequest(BaseModel):
     symbols: List[str]
+    baseline: Literal["portfolio", "spx", "dji", "iwm"] = "portfolio"
 
 
 def _sanitize_symbols_list(symbols: List[str]) -> list[str]:
@@ -111,6 +112,68 @@ def _return_for_symbol(
     except Exception:
         return symbol, None
     return symbol, None
+
+
+BENCHMARK_SYMBOLS = {
+    "spx": SYMBOL_ALIASES.get("SPX", "^GSPC"),
+    "dji": SYMBOL_ALIASES.get("DJI", "^DJI"),
+    "iwm": "IWM",
+}
+
+
+def _benchmark_daily_returns(baseline: str, period_days: int) -> list[float]:
+    symbol = BENCHMARK_SYMBOLS.get(baseline)
+    if not symbol:
+        return []
+    symbol = SYMBOL_ALIASES.get(symbol, symbol)
+    try:
+        df = StockAnalyser.get_price_data(symbol)
+    except Exception:
+        return []
+    closes = df.get("Close") if df is not None else None
+    if closes is None:
+        return []
+    if isinstance(closes, pd.DataFrame):
+        closes = closes.iloc[:, 0]
+    closes = closes.dropna()
+    if closes.empty:
+        return []
+    daily_returns = closes.pct_change().dropna()
+    if len(daily_returns) < period_days:
+        return []
+    window = daily_returns.iloc[-period_days:]
+    return [float(val) for val in window.values if math.isfinite(val)]
+
+
+def _scores_against_values(
+    returns: dict[str, float], baseline_values: list[float]
+) -> dict[str, float]:
+    cleaned = [value for value in baseline_values if math.isfinite(value)]
+    if len(cleaned) < 2:
+        return {}
+
+    scores: dict[str, float] = {}
+    for symbol, value in returns.items():
+        z_score = _z_score(value, cleaned)
+        if z_score is not None:
+            scores[symbol] = round(float(z_score), 4)
+    return scores
+
+
+def _scores_against_baseline(
+    returns: dict[str, float],
+    baseline: str,
+    period_days: int,
+    *,
+    portfolio_baseline: dict[str, float] | None = None,
+) -> dict[str, float]:
+    if baseline == "portfolio":
+        if portfolio_baseline is None:
+            return portfolio_relative_momentum_zscores(returns)
+        return _scores_against_values(returns, list(portfolio_baseline.values()))
+
+    benchmark_returns = _benchmark_daily_returns(baseline, period_days)
+    return _scores_against_values(returns, benchmark_returns)
 
 
 def _portfolio_returns(period_days: int) -> dict[str, float]:
@@ -191,27 +254,21 @@ def custom_momentum(payload: CustomMomentumRequest):
         if monthly_val is not None:
             monthly_returns[symbol] = monthly_val
 
+    baseline = payload.baseline
     portfolio_weekly = _portfolio_returns(5)
     portfolio_monthly = _portfolio_returns(21)
-
-    def _scores_against_portfolio(
-        returns: dict[str, float], portfolio_returns: dict[str, float]
-    ) -> dict[str, float]:
-        baseline = [
-            value for value in portfolio_returns.values() if math.isfinite(value)
-        ]
-        if len(baseline) < 2:
-            return {}
-
-        scores: dict[str, float] = {}
-        for symbol, value in returns.items():
-            z_score = _z_score(value, baseline)
-            if z_score is not None:
-                scores[symbol] = round(float(z_score), 4)
-        return scores
-
-    weekly_scores = _scores_against_portfolio(weekly_returns, portfolio_weekly)
-    monthly_scores = _scores_against_portfolio(monthly_returns, portfolio_monthly)
+    weekly_scores = _scores_against_baseline(
+        weekly_returns,
+        baseline,
+        5,
+        portfolio_baseline=portfolio_weekly,
+    )
+    monthly_scores = _scores_against_baseline(
+        monthly_returns,
+        baseline,
+        21,
+        portfolio_baseline=portfolio_monthly,
+    )
 
     return {
         "momentum_weekly": weekly_scores,
@@ -359,7 +416,13 @@ def get_portfolio_tickers():
     ]
 
 
-def _status_for_holdings(holdings, price_direction: str, *, momentum_only: bool = False):
+def _status_for_holdings(
+    holdings,
+    price_direction: str,
+    *,
+    momentum_only: bool = False,
+    baseline: Literal["portfolio", "spx", "dji", "iwm"] = "portfolio",
+):
     price_key_20 = "below_20dma" if price_direction == "below" else "above_20dma"
     price_key_200 = "below_200dma" if price_direction == "below" else "above_200dma"
     ma_prefix = "below" if price_direction == "below" else "above"
@@ -373,6 +436,7 @@ def _status_for_holdings(holdings, price_direction: str, *, momentum_only: bool 
             "momentum_monthly": {},
             "portfolio_momentum_weekly": {},
             "portfolio_momentum_monthly": {},
+            "portfolio_values": {},
         }
         if momentum_only
         else {
@@ -395,6 +459,7 @@ def _status_for_holdings(holdings, price_direction: str, *, momentum_only: bool 
             "momentum_monthly": {},
             "portfolio_momentum_weekly": {},
             "portfolio_momentum_monthly": {},
+            "portfolio_values": {},
             "divergence": {},
         }
     )
@@ -416,6 +481,15 @@ def _status_for_holdings(holdings, price_direction: str, *, momentum_only: bool 
 
             weekly_return = period_return(closes, 5)
             monthly_return = period_return(closes, 21)
+            last_close = safe_value(closes, -1)
+
+            shares = holding.get("shares")
+            if isinstance(shares, (int, float)) and isinstance(
+                last_close, (int, float)
+            ):
+                results["portfolio_values"][ticker] = float(shares) * float(
+                    last_close
+                )
 
             if not momentum_only:
                 price = analyser.get_current_price()
@@ -716,11 +790,11 @@ def _status_for_holdings(holdings, price_direction: str, *, momentum_only: bool 
     _update_portfolio_returns_cache(weekly_portfolio_returns, 5)
     _update_portfolio_returns_cache(monthly_portfolio_returns, 21)
 
-    results["portfolio_momentum_weekly"] = portfolio_relative_momentum_zscores(
-        weekly_portfolio_returns
+    results["portfolio_momentum_weekly"] = _scores_against_baseline(
+        weekly_portfolio_returns, baseline, 5
     )
-    results["portfolio_momentum_monthly"] = portfolio_relative_momentum_zscores(
-        monthly_portfolio_returns
+    results["portfolio_momentum_monthly"] = _scores_against_baseline(
+        monthly_portfolio_returns, baseline, 21
     )
 
     return results
@@ -729,6 +803,7 @@ def _status_for_holdings(holdings, price_direction: str, *, momentum_only: bool 
 def get_portfolio_status(
     direction: Literal["above", "below"] = Query("below"),
     scope: Literal["full", "momentum"] = Query("full"),
+    baseline: Literal["portfolio", "spx", "dji", "iwm"] = Query("portfolio"),
 ):
     json_path = Path("portfolio_store.json")
     price_key_20 = "below_20dma" if direction == "below" else "above_20dma"
@@ -744,6 +819,7 @@ def get_portfolio_status(
             "momentum_monthly": {},
             "portfolio_momentum_weekly": {},
             "portfolio_momentum_monthly": {},
+            "portfolio_values": {},
         }
 
         if scope == "momentum":
@@ -781,6 +857,7 @@ def get_portfolio_status(
         equities,
         direction,
         momentum_only=scope == "momentum",
+        baseline=baseline,
     )
 
 

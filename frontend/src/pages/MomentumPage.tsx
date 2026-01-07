@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import "./MomentumPage.css";
 
 type MomentumResponse = {
   momentum_weekly: Record<string, number>;
   momentum_monthly: Record<string, number>;
+  portfolio_values?: Record<string, number>;
 };
 
 type MomentumPoint = {
@@ -30,10 +31,15 @@ export default function MomentumPage() {
   const [customLoading, setCustomLoading] = useState(false);
   const [customError, setCustomError] = useState<string | null>(null);
   const [zoomScale, setZoomScale] = useState(1.25);
+  const [baseline, setBaseline] = useState<"portfolio" | "spx" | "dji" | "iwm">(
+    "portfolio"
+  );
 
   useEffect(() => {
     setPortfolioLoading(true);
-    fetch("http://localhost:8000/portfolio_status?scope=momentum")
+    fetch(
+      `http://localhost:8000/portfolio_status?scope=momentum&baseline=${baseline}`
+    )
       .then((res) => {
         if (!res.ok) {
           throw new Error("Failed to load momentum data");
@@ -44,6 +50,7 @@ export default function MomentumPage() {
         setPortfolioData({
           momentum_weekly: json.portfolio_momentum_weekly || {},
           momentum_monthly: json.portfolio_momentum_monthly || {},
+          portfolio_values: json.portfolio_values || {},
         });
         setPortfolioError(null);
       })
@@ -55,33 +62,19 @@ export default function MomentumPage() {
         );
       })
       .finally(() => setPortfolioLoading(false));
-  }, []);
+  }, [baseline]);
 
-  const onSubmitCustom = (event: FormEvent) => {
-    event.preventDefault();
-    const parsedSymbols = customInput
-      .split(/[,\s]+/)
-      .map((s) => s.trim().toUpperCase())
-      .filter(Boolean);
-
-    const uniqueSymbols = Array.from(new Set(parsedSymbols));
-
-    if (uniqueSymbols.length === 0) {
-      setCustomError("Enter at least one ticker symbol.");
-      return;
-    }
-
-    setCustomError(null);
+  const fetchCustomMomentum = (
+    symbols: string[],
+    selectedBaseline: "portfolio" | "spx" | "dji" | "iwm"
+  ) => {
     setCustomLoading(true);
-    setMode("custom");
-    setCustomSymbols(uniqueSymbols);
-
     fetch("http://localhost:8000/custom_momentum", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ symbols: uniqueSymbols }),
+      body: JSON.stringify({ symbols, baseline: selectedBaseline }),
     })
       .then((res) => {
         if (!res.ok) {
@@ -106,9 +99,36 @@ export default function MomentumPage() {
       .finally(() => setCustomLoading(false));
   };
 
+  const onSubmitCustom = (event: FormEvent) => {
+    event.preventDefault();
+    const parsedSymbols = customInput
+      .split(/[,\s]+/)
+      .map((s) => s.trim().toUpperCase())
+      .filter(Boolean);
+
+    const uniqueSymbols = Array.from(new Set(parsedSymbols));
+
+    if (uniqueSymbols.length === 0) {
+      setCustomError("Enter at least one ticker symbol.");
+      return;
+    }
+
+    setCustomError(null);
+    setMode("custom");
+    setCustomSymbols(uniqueSymbols);
+    fetchCustomMomentum(uniqueSymbols, baseline);
+  };
+
   const activeData = mode === "portfolio" ? portfolioData : customData;
   const loading = mode === "portfolio" ? portfolioLoading : customLoading;
   const error = mode === "portfolio" ? portfolioError : customError;
+  const portfolioValues = portfolioData.portfolio_values || {};
+
+  useEffect(() => {
+    if (mode === "custom" && customSymbols.length > 0) {
+      fetchCustomMomentum(customSymbols, baseline);
+    }
+  }, [baseline]);
 
   const points: MomentumPoint[] = useMemo(() => {
     const symbols = new Set<string>([
@@ -190,13 +210,65 @@ export default function MomentumPage() {
     return values;
   }, [visibleRange]);
 
+  const baselineLabel = {
+    portfolio: "Portfolio",
+    spx: "SPX",
+    dji: "DJI",
+    iwm: "IWM",
+  }[baseline];
+
   const subtitle =
     mode === "portfolio"
-      ? "Plot of portfolio stocks by 21-day (x-axis) and 5-day (y-axis) portfolio momentum z-scores."
-      : "Plot of your custom stock list by 21-day (x-axis) and 5-day (y-axis) portfolio-relative momentum z-scores.";
+      ? `Plot of portfolio stocks by 21-day (x-axis) and 5-day (y-axis) ${baselineLabel} momentum z-scores.`
+      : `Plot of your custom stock list by 21-day (x-axis) and 5-day (y-axis) ${baselineLabel}-relative momentum z-scores.`;
 
   const hasSymbols =
     mode === "portfolio" ? points.length > 0 : customSymbols.length > 0;
+
+  const quadrantTotals = useMemo(() => {
+    const totals = {
+      positiveDeveloping: 0,
+      positiveTrend: 0,
+      negativeTrend: 0,
+      negativeDeveloping: 0,
+    };
+
+    if (mode !== "portfolio") {
+      return totals;
+    }
+
+    points.forEach((point) => {
+      if (
+        typeof point.weekly !== "number" ||
+        typeof point.monthly !== "number"
+      ) {
+        return;
+      }
+      const value = portfolioValues[point.symbol];
+      if (typeof value !== "number") {
+        return;
+      }
+
+      if (point.monthly >= 0 && point.weekly >= 0) {
+        totals.positiveTrend += value;
+      } else if (point.monthly < 0 && point.weekly >= 0) {
+        totals.positiveDeveloping += value;
+      } else if (point.monthly < 0 && point.weekly < 0) {
+        totals.negativeTrend += value;
+      } else {
+        totals.negativeDeveloping += value;
+      }
+    });
+
+    return totals;
+  }, [mode, points, portfolioValues]);
+
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      maximumFractionDigits: 0,
+    }).format(value);
 
   return (
     <div className="container-fluid momentum-page py-4">
@@ -227,6 +299,27 @@ export default function MomentumPage() {
           </button>
         </div>
         <div className="d-flex align-items-center gap-2 ms-auto">
+          <label
+            htmlFor="momentumBaseline"
+            className="form-label mb-0 small text-muted"
+          >
+            Baseline
+          </label>
+          <select
+            id="momentumBaseline"
+            className="form-select form-select-sm w-auto"
+            value={baseline}
+            onChange={(event) =>
+              setBaseline(
+                event.target.value as "portfolio" | "spx" | "dji" | "iwm"
+              )
+            }
+          >
+            <option value="portfolio">Portfolio</option>
+            <option value="spx">SPX</option>
+            <option value="dji">DJI</option>
+            <option value="iwm">IWM</option>
+          </select>
           <label
             htmlFor="momentumZoom"
             className="form-label mb-0 small text-muted"
@@ -278,7 +371,7 @@ export default function MomentumPage() {
           </form>
           <div id="customSymbolsHelp" className="form-text">
             Enter any tickers to see how their momentum compares against your
-            current portfolio baseline, even if they are not in the portfolio.
+            selected baseline, even if they are not in the portfolio.
           </div>
           {customError && (
             <div className="text-danger small mt-2">{customError}</div>
@@ -296,15 +389,35 @@ export default function MomentumPage() {
       <div className="momentum-grid mb-3" aria-live="polite">
         <div className="momentum-quadrant-label positive-developing">
           Positive Developing
+          {mode === "portfolio" && (
+            <div className="momentum-quadrant-value">
+              {formatCurrency(quadrantTotals.positiveDeveloping)}
+            </div>
+          )}
         </div>
         <div className="momentum-quadrant-label positive-trend">
           Positive Trend
+          {mode === "portfolio" && (
+            <div className="momentum-quadrant-value">
+              {formatCurrency(quadrantTotals.positiveTrend)}
+            </div>
+          )}
         </div>
         <div className="momentum-quadrant-label negative-trend">
           Negative Trend
+          {mode === "portfolio" && (
+            <div className="momentum-quadrant-value">
+              {formatCurrency(quadrantTotals.negativeTrend)}
+            </div>
+          )}
         </div>
         <div className="momentum-quadrant-label negative-developing">
           Negative Developing
+          {mode === "portfolio" && (
+            <div className="momentum-quadrant-value">
+              {formatCurrency(quadrantTotals.negativeDeveloping)}
+            </div>
+          )}
         </div>
 
         <div
