@@ -29,6 +29,7 @@ export default function MomentumPage() {
   const [customData, setCustomData] = useState<MomentumResponse>(FALLBACK);
   const [customLoading, setCustomLoading] = useState(false);
   const [customError, setCustomError] = useState<string | null>(null);
+  const [zoomScale, setZoomScale] = useState(1.25);
 
   useEffect(() => {
     setPortfolioLoading(true);
@@ -154,10 +155,15 @@ export default function MomentumPage() {
     return maxAbs;
   }, [points]);
 
+  const visibleRange = useMemo(
+    () => Math.max(range / zoomScale, 1),
+    [range, zoomScale]
+  );
+
   const toPosition = (value?: number) => {
     if (typeof value !== "number" || Number.isNaN(value)) return 50;
-    const clamped = Math.max(Math.min(value, range), -range);
-    return 50 + (clamped / range) * 45;
+    const clamped = Math.max(Math.min(value, visibleRange), -visibleRange);
+    return 50 + (clamped / visibleRange) * 45;
   };
 
   const jitterPercent = (symbol: string, axis: "x" | "y") => {
@@ -171,14 +177,18 @@ export default function MomentumPage() {
   };
 
   const ticks = useMemo(() => {
-    const step = Math.max(1, Math.floor(range / 3));
+    const step = Math.max(1, Math.floor(visibleRange / 3));
     const values: number[] = [];
-    for (let v = -Math.ceil(range); v <= Math.ceil(range); v += step) {
+    for (
+      let v = -Math.ceil(visibleRange);
+      v <= Math.ceil(visibleRange);
+      v += step
+    ) {
       if (Math.abs(v) < 0.01) continue;
       values.push(parseFloat(v.toFixed(1)));
     }
     return values;
-  }, [range]);
+  }, [visibleRange]);
 
   const subtitle =
     mode === "portfolio"
@@ -215,6 +225,25 @@ export default function MomentumPage() {
           >
             Custom list
           </button>
+        </div>
+        <div className="d-flex align-items-center gap-2 ms-auto">
+          <label
+            htmlFor="momentumZoom"
+            className="form-label mb-0 small text-muted"
+          >
+            Zoom
+          </label>
+          <select
+            id="momentumZoom"
+            className="form-select form-select-sm w-auto"
+            value={zoomScale}
+            onChange={(event) => setZoomScale(Number(event.target.value))}
+          >
+            <option value={1}>1x</option>
+            <option value={1.25}>1.25x</option>
+            <option value={1.5}>1.5x</option>
+            <option value={2}>2x</option>
+          </select>
         </div>
       </div>
 
