@@ -585,6 +585,13 @@
       "player": 8
     },
     {
+      "ticker": "PAUSD",
+      "shares": 110,
+      "average_cost": 1904.8,
+      "sector": "Precious Metals",
+      "player": 8
+    },
+    {
       "ticker": "FCX",
       "shares": 41000,
       "average_cost": 45.16,
