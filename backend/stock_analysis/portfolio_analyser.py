@@ -8,6 +8,9 @@ import pandas as pd
 import requests
 import yfinance as yf
 
+from aliases import SYMBOL_ALIASES
+from .stock_analyser import StockAnalyser
+
 class PortfolioAnalyser:
     def __init__(self, json_path: str = "portfolio_store.json"):
         self.json_path = Path(json_path)
@@ -67,8 +70,11 @@ class PortfolioAnalyser:
     ]:
         """Return price, daily change, % change, close history, and period changes."""
 
-        if ticker in {"XAUUSD", "XAGUSD"}:
-            price, prev_close = self._get_fmp_price(ticker)
+        raw_symbol = ticker.upper().strip()
+        symbol = SYMBOL_ALIASES.get(raw_symbol, raw_symbol)
+
+        if symbol in {"XAUUSD", "XAGUSD", "PAUSD", "PLUSD"}:
+            price, prev_close = self._get_fmp_price(symbol)
             period_changes = self._get_fmp_price_change(ticker)
             if price is not None:
                 change = price - prev_close if prev_close else None
@@ -76,7 +82,7 @@ class PortfolioAnalyser:
                 return price, change, change_pct, None, period_changes
             
         try:
-            yf_ticker = yf.Ticker(ticker)
+            yf_ticker = yf.Ticker(symbol)
             hist = yf_ticker.history(period="2mo")
 
             close_today: Optional[float] = None
@@ -94,7 +100,17 @@ class PortfolioAnalyser:
                 closes_series = None
 
             if close_today is None:
-                return None, None, None
+                try:
+                    df = StockAnalyser.get_price_data(symbol)
+                    if not df.empty:
+                        close_today = df["Close"].iloc[-1]
+                        close_prev = df["Close"].iloc[-2] if len(df) > 1 else None
+                        closes_series = df["Close"]
+                except Exception:
+                    close_today = None
+
+            if close_today is None:
+                return None, None, None, None, {}
 
             change = None
             change_pct = None

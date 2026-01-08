@@ -640,9 +640,7 @@ const DailyTab = () => {
   const equityHoldings = useMemo(
     () =>
       normalizedHoldings.filter(
-        (h) =>
-          (h.category?.toLowerCase() === "equities" || !h.category) &&
-          !h.static_asset
+        (h) => h.category?.toLowerCase() === "equities" || !h.category
       ),
     [normalizedHoldings]
   );
