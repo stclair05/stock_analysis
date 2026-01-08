@@ -64,7 +64,7 @@ PORTFOLIO_RETURNS_TTL_SECONDS = 60 * 60  # 60 minutes cache
 
 class CustomMomentumRequest(BaseModel):
     symbols: List[str]
-    baseline: Literal["portfolio", "spx", "dji", "iwm"] = "portfolio"
+    baseline: Literal["portfolio", "spx", "dji", "iwm", "nasdaq"] = "portfolio"
 
 
 def _sanitize_symbols_list(symbols: List[str]) -> list[str]:
@@ -118,6 +118,7 @@ BENCHMARK_SYMBOLS = {
     "spx": SYMBOL_ALIASES.get("SPX", "^GSPC"),
     "dji": SYMBOL_ALIASES.get("DJI", "^DJI"),
     "iwm": "IWM",
+    "nasdaq": SYMBOL_ALIASES.get("NASDAQ", "^IXIC"),
 }
 
 
@@ -421,7 +422,7 @@ def _status_for_holdings(
     price_direction: str,
     *,
     momentum_only: bool = False,
-    baseline: Literal["portfolio", "spx", "dji", "iwm"] = "portfolio",
+    baseline: Literal["portfolio", "spx", "dji", "iwm", "nasdaq"] = "portfolio",
 ):
     price_key_20 = "below_20dma" if price_direction == "below" else "above_20dma"
     price_key_200 = "below_200dma" if price_direction == "below" else "above_200dma"
@@ -803,7 +804,7 @@ def _status_for_holdings(
 def get_portfolio_status(
     direction: Literal["above", "below"] = Query("below"),
     scope: Literal["full", "momentum"] = Query("full"),
-    baseline: Literal["portfolio", "spx", "dji", "iwm"] = Query("portfolio"),
+    baseline: Literal["portfolio", "spx", "dji", "iwm", "nasdaq"] = Query("portfolio"),
 ):
     json_path = Path("portfolio_store.json")
     price_key_20 = "below_20dma" if direction == "below" else "above_20dma"

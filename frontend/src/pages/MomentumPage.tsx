@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import "./MomentumPage.css";
 
-type BaselineKey = "portfolio" | "spx" | "dji" | "iwm";
+type BaselineKey = "portfolio" | "spx" | "dji" | "iwm" | "nasdaq";
 
 type MomentumResponse = {
   momentum_weekly: Record<string, number>;
@@ -20,12 +20,13 @@ const FALLBACK: MomentumResponse = {
   momentum_monthly: {},
 };
 
-const BASELINES: BaselineKey[] = ["portfolio", "spx", "dji", "iwm"];
+const BASELINES: BaselineKey[] = ["portfolio", "spx", "dji", "iwm", "nasdaq"];
 const BASELINE_LABELS: Record<BaselineKey, string> = {
   portfolio: "Portfolio",
   spx: "SPX",
   dji: "DJI",
   iwm: "IWM",
+  nasdaq: "NASDAQ",
 };
 
 type MomentumGridProps = {
@@ -380,6 +381,7 @@ export default function MomentumPage() {
     spx: FALLBACK,
     dji: FALLBACK,
     iwm: FALLBACK,
+    nasdaq: FALLBACK,
   });
   const [portfolioLoading, setPortfolioLoading] = useState<
     Record<BaselineKey, boolean>
@@ -388,6 +390,7 @@ export default function MomentumPage() {
     spx: true,
     dji: true,
     iwm: true,
+    nasdaq: true,
   });
   const [portfolioError, setPortfolioError] = useState<
     Record<BaselineKey, string | null>
@@ -396,6 +399,7 @@ export default function MomentumPage() {
     spx: null,
     dji: null,
     iwm: null,
+    nasdaq: null,
   });
 
   const [mode, setMode] = useState<"portfolio" | "custom">("portfolio");
@@ -408,6 +412,7 @@ export default function MomentumPage() {
     spx: FALLBACK,
     dji: FALLBACK,
     iwm: FALLBACK,
+    nasdaq: FALLBACK,
   });
   const [customLoading, setCustomLoading] = useState<
     Record<BaselineKey, boolean>
@@ -416,6 +421,7 @@ export default function MomentumPage() {
     spx: false,
     dji: false,
     iwm: false,
+    nasdaq: false,
   });
   const [customError, setCustomError] = useState<
     Record<BaselineKey, string | null>
@@ -424,6 +430,7 @@ export default function MomentumPage() {
     spx: null,
     dji: null,
     iwm: null,
+    nasdaq: null,
   });
   const [zoomScale, setZoomScale] = useState(1.25);
 
@@ -532,6 +539,7 @@ export default function MomentumPage() {
       spx: null,
       dji: null,
       iwm: null,
+      nasdaq: null,
     });
     setMode("custom");
     setCustomSymbols(uniqueSymbols);
@@ -552,8 +560,8 @@ export default function MomentumPage() {
 
   const subtitle =
     mode === "portfolio"
-      ? "Plot of portfolio stocks by 21-day (x-axis) and 5-day (y-axis) relative momentum z-scores across Portfolio, SPX, DJI, and IWM baselines."
-      : "Plot of your custom stock list by 21-day (x-axis) and 5-day (y-axis) relative momentum z-scores across Portfolio, SPX, DJI, and IWM baselines.";
+      ? "Plot of portfolio stocks by 21-day (x-axis) and 5-day (y-axis) relative momentum z-scores across Portfolio, SPX, DJI, IWM, and NASDAQ baselines."
+      : "Plot of your custom stock list by 21-day (x-axis) and 5-day (y-axis) relative momentum z-scores across Portfolio, SPX, DJI, IWM, and NASDAQ baselines.";
 
   return (
     <div className="container-fluid momentum-page py-4">
