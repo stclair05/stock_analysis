@@ -53,6 +53,7 @@ type TreemapNode = {
   name: string;
   size?: number;
   changePercent?: number | null;
+  dailyChange?: number | null;
   nodeType?: "sectorHeader" | "ticker";
   sectorName?: string;
   sectorLabel?: string;
@@ -228,6 +229,14 @@ const CustomContent = (props: any & { heatmapMode: HeatmapMode }) => {
         ? null
         : formatPct(node.changePercent);
     const changeColor = (node.changePercent ?? 0) >= 0 ? "#bef264" : "#fca5a5";
+    const dailyChangeText =
+      heatmapMode === "dailyChange" &&
+      node.dailyChange !== null &&
+      node.dailyChange !== undefined
+        ? formatCurrency(node.dailyChange)
+        : null;
+    const dailyChangeColor =
+      (node.dailyChange ?? 0) >= 0 ? "#bef264" : "#fca5a5";
 
     return (
       <g onClick={() => onZoom(node.sectorName)} style={{ cursor: "pointer" }}>
@@ -262,6 +271,19 @@ const CustomContent = (props: any & { heatmapMode: HeatmapMode }) => {
             pointerEvents="none"
           >
             {changeText}
+          </text>
+        )}
+        {dailyChangeText && (
+          <text
+            x={x + width / 2}
+            y={y + height / 2 + font + changeFont}
+            fill={dailyChangeColor}
+            fontSize={changeFont}
+            fontWeight={800}
+            textAnchor="middle"
+            pointerEvents="none"
+          >
+            {dailyChangeText}
           </text>
         )}
       </g>
@@ -659,6 +681,8 @@ const DailyTab = () => {
           totalMv: 0,
           changeValue: 0,
           changeMv: 0,
+          dailyChangeTotal: 0,
+          dailyChangeSeen: false,
           children: [],
         };
 
@@ -667,6 +691,10 @@ const DailyTab = () => {
       if (c !== null) {
         sectors[sector].changeValue += mv * c;
         sectors[sector].changeMv += mv;
+      }
+      if (typeof h.daily_change === "number" && typeof h.shares === "number") {
+        sectors[sector].dailyChangeTotal += h.daily_change * h.shares;
+        sectors[sector].dailyChangeSeen = true;
       }
 
       sectors[sector].children.push({
@@ -686,6 +714,7 @@ const DailyTab = () => {
     if (zoomedSector && sectors[zoomedSector]) {
       const s = sectors[zoomedSector];
       const sectorChange = s.changeMv > 0 ? s.changeValue / s.changeMv : null;
+      const sectorDailyChange = s.dailyChangeSeen ? s.dailyChangeTotal : null;
       return [
         {
           name: zoomedSector,
@@ -697,6 +726,7 @@ const DailyTab = () => {
               nodeType: "sectorHeader",
               sectorName: zoomedSector,
               changePercent: sectorChange,
+              dailyChange: sectorDailyChange,
             },
             ...s.children,
           ],
@@ -707,6 +737,7 @@ const DailyTab = () => {
     return Object.entries(sectors)
       .map(([name, s]) => {
         const sectorChange = s.changeMv > 0 ? s.changeValue / s.changeMv : null;
+        const sectorDailyChange = s.dailyChangeSeen ? s.dailyChangeTotal : null;
         const headerSize = Math.max(
           s.totalSize * SECTOR_HEADER_FRACTION,
           SECTOR_HEADER_MIN_UNITS
@@ -721,6 +752,7 @@ const DailyTab = () => {
               nodeType: "sectorHeader",
               sectorName: name,
               changePercent: sectorChange,
+              dailyChange: sectorDailyChange,
             },
             ...s.children,
           ],
