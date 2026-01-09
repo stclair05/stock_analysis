@@ -1222,21 +1222,6 @@
       "target_3": -1
     },
     {
-      "ticker": "KTOS",
-      "shares": 7000,
-      "average_cost": 77.46,
-      "sector": "Aerospace & Defense",
-      "technigrade": [5, 6, 4, 3, 1],
-      "peers": ["AVAV", "TDY", "DRS", "TXT", "NOC", "LMT"],
-      "player": 10,
-      "invalidation_1": 72.49,
-      "invalidation_2": -1,
-      "invalidation_3": -1,
-      "target_1": 112.33,
-      "target_2": -1,
-      "target_3": -1
-    },
-    {
       "ticker": "AVAV",
       "shares": 500,
       "average_cost": 297.7,
@@ -1274,7 +1259,7 @@
     },
     {
       "ticker": "KWEB",
-      "shares": 14256.0,
+      "shares": 1728.0,
       "average_cost": 25.54,
       "sector": "Hong Kong and China",
       "peers": ["CQQQ", "GCH", "CHIN", "EEM", "VWO"],
