@@ -543,7 +543,7 @@
     {
       "ticker": "HIMS",
       "shares": 37000,
-      "average_cost": 43.43,
+      "average_cost": 46,
       "sector": "Healthcare",
       "player": 2,
       "technigrade": [19, 20, 20, 19, 18],
