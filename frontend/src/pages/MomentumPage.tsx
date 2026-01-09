@@ -271,10 +271,10 @@ function MomentumGrid({
               />
 
               <div className="momentum-axis-label momentum-axis-label--x">
-                21D Momentum Score
+                5D Momentum Score
               </div>
               <div className="momentum-axis-label momentum-axis-label--y">
-                5D Momentum Score
+                21D Momentum Score
               </div>
 
               {ticks.map((tick) => (
