@@ -1018,8 +1018,8 @@
     },
     {
       "ticker": "TSLA",
-      "shares": 1000.0,
-      "average_cost": 453.15,
+      "shares": 1700,
+      "average_cost": 446.9624,
       "sector": "Technology",
       "player": 2,
       "technigrade": [5, 7, 6, 4, 3],
