@@ -541,21 +541,6 @@
       "target_3": 25.1
     },
     {
-      "ticker": "HIMS",
-      "shares": 37000,
-      "average_cost": 46,
-      "sector": "Healthcare",
-      "player": 2,
-      "technigrade": [19, 20, 20, 19, 18],
-      "peers": ["TDOC", "AMWL", "LMDX", "CI", "DVA", "OPCH"],
-      "invalidation_1": 50.49,
-      "invalidation_2": 46.29,
-      "invalidation_3": 40.78,
-      "target_1": 72.6,
-      "target_2": 86.88,
-      "target_3": 98.84
-    },
-    {
       "ticker": "TEM",
       "shares": 56000,
       "average_cost": 82.0164,
@@ -593,8 +578,8 @@
     },
     {
       "ticker": "FCX",
-      "shares": 41000,
-      "average_cost": 45.16,
+      "shares": 20000,
+      "average_cost": 57.9,
       "sector": "Precious Metals",
       "player": 8,
       "technigrade": [10, 14, 14, 14, 12],
@@ -1205,20 +1190,6 @@
       "invalidation_2": -1,
       "invalidation_3": -1,
       "target_1": 697,
-      "target_2": -1,
-      "target_3": -1
-    },
-    {
-      "ticker": "BA",
-      "shares": 4000,
-      "average_cost": 207.035,
-      "sector": "Aerospace & Defense",
-      "peers": ["AIR.PA", "LMT", "RTX", "NOC", "GD"],
-      "player": 10,
-      "invalidation_1": -1,
-      "invalidation_2": -1,
-      "invalidation_3": -1,
-      "target_1": -1,
       "target_2": -1,
       "target_3": -1
     },
