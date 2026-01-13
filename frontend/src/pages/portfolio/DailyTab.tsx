@@ -57,6 +57,9 @@ type TreemapNode = {
   nodeType?: "sectorHeader" | "ticker";
   sectorName?: string;
   sectorLabel?: string;
+  marketValue?: number | null;
+  shares?: number | null;
+  sectorMarketValue?: number | null;
   fiveDayChangePercent?: number | null;
   twentyOneDayChangePercent?: number | null;
   portfolioMomentum5d?: number | null;
@@ -93,6 +96,9 @@ const formatCurrency = (v?: number | null) =>
         currency: "USD",
         maximumFractionDigits: Math.abs(v) >= 1000 ? 0 : 2,
       });
+
+const formatShares = (v?: number | null) =>
+  v === null || v === undefined ? "N/A" : v.toLocaleString("en-US");
 
 const truncate = (s: string, max = 18) => {
   const cleaned = (s ?? "").trim();
@@ -207,8 +213,20 @@ const getColorForMomentum = (score?: number | null) => {
 /* ============================
    Custom Treemap Content
 ============================ */
-const CustomContent = (props: any & { heatmapMode: HeatmapMode }) => {
-  const { x, y, width, height, name, onZoom, isZoomed, heatmapMode } = props;
+const CustomContent = (
+  props: any & { heatmapMode: HeatmapMode; showPositionDetails: boolean }
+) => {
+  const {
+    x,
+    y,
+    width,
+    height,
+    name,
+    onZoom,
+    isZoomed,
+    heatmapMode,
+    showPositionDetails,
+  } = props;
   const node = (props?.payload ?? props) as TreemapNode;
 
   if (width <= 1 || height <= 1) return null;
@@ -237,6 +255,12 @@ const CustomContent = (props: any & { heatmapMode: HeatmapMode }) => {
         : null;
     const dailyChangeColor =
       (node.dailyChange ?? 0) >= 0 ? "#bef264" : "#fca5a5";
+    const sectorMarketValueText =
+      showPositionDetails && node.sectorMarketValue !== null
+        ? `Sector MV: ${formatCurrency(node.sectorMarketValue)}`
+        : null;
+    const detailFont = clamp(changeFont * 0.9, 10, 16);
+    const detailOffset = dailyChangeText ? detailFont * 1.4 : 0;
 
     return (
       <g onClick={() => onZoom(node.sectorName)} style={{ cursor: "pointer" }}>
@@ -286,6 +310,19 @@ const CustomContent = (props: any & { heatmapMode: HeatmapMode }) => {
             {dailyChangeText}
           </text>
         )}
+        {sectorMarketValueText && (
+          <text
+            x={x + width / 2}
+            y={y + height / 2 + font + changeFont + detailOffset}
+            fill="#e2e8f0"
+            fontSize={detailFont}
+            fontWeight={700}
+            textAnchor="middle"
+            pointerEvents="none"
+          >
+            {sectorMarketValueText}
+          </text>
+        )}
       </g>
     );
   }
@@ -330,8 +367,13 @@ const CustomContent = (props: any & { heatmapMode: HeatmapMode }) => {
 
   const tickerY = innerY + tickerFont;
   const pctY = tickerY + smallFont + lineGap;
+  const detailsBaseY =
+    height > 40 && metricValue !== null
+      ? pctY + smallFont + lineGap
+      : tickerY + smallFont + lineGap;
   const portMtmY = pctY + smallFont + lineGap + 4;
   const portMtm21Y = portMtmY + smallFont + lineGap + 8;
+  const allowDetails = showPositionDetails && height > (isZoomed ? 120 : 90);
 
   const drawMomentumPill = (
     label: string,
@@ -417,6 +459,31 @@ const CustomContent = (props: any & { heatmapMode: HeatmapMode }) => {
         </text>
       )}
 
+      {allowDetails && (
+        <>
+          <text
+            x={innerX}
+            y={detailsBaseY}
+            fill="#ffffff"
+            fontSize={smallFont}
+            fontWeight={600}
+            pointerEvents="none"
+          >
+            MV: {formatCurrency(node.marketValue ?? null)}
+          </text>
+          <text
+            x={innerX}
+            y={detailsBaseY + smallFont + lineGap}
+            fill="#ffffff"
+            fontSize={smallFont}
+            fontWeight={600}
+            pointerEvents="none"
+          >
+            Shares: {formatShares(node.shares ?? null)}
+          </text>
+        </>
+      )}
+
       {/* Momentum logic - Only if Zoomed */}
       {isZoomed && height > 80 && (
         <>
@@ -452,6 +519,7 @@ const DailyTab = () => {
   const [momentumLoading, setMomentumLoading] = useState(false);
   const [momentumError, setMomentumError] = useState<string | null>(null);
   const [heatmapMode, setHeatmapMode] = useState<HeatmapMode>("dailyChange");
+  const [showPositionDetails, setShowPositionDetails] = useState(false);
 
   const getCurrencyForTicker = (ticker: string): string => {
     if (ticker.endsWith(".AX")) return "AUD";
@@ -702,6 +770,8 @@ const DailyTab = () => {
         fiveDayChangePercent: h.five_day_change_percent ?? null,
         twentyOneDayChangePercent: h.twenty_one_day_change_percent ?? null,
         nodeType: "ticker",
+        marketValue: h.market_value ?? null,
+        shares: h.shares ?? null,
         portfolioMomentum5d:
           momentumMaps.portfolio_momentum_weekly[h.ticker] ?? null,
         portfolioMomentum21d:
@@ -725,6 +795,7 @@ const DailyTab = () => {
               sectorName: zoomedSector,
               changePercent: sectorChange,
               dailyChange: sectorDailyChange,
+              sectorMarketValue: s.totalMv,
             },
             ...s.children,
           ],
@@ -751,6 +822,7 @@ const DailyTab = () => {
               sectorName: name,
               changePercent: sectorChange,
               dailyChange: sectorDailyChange,
+              sectorMarketValue: s.totalMv,
             },
             ...s.children,
           ],
@@ -875,6 +947,17 @@ const DailyTab = () => {
                 ? "Momentum loaded"
                 : "Load momentum scores"}
             </button>
+            <button
+              type="button"
+              className={`btn btn-sm ${
+                showPositionDetails ? "btn-secondary" : "btn-outline-secondary"
+              }`}
+              onClick={() => setShowPositionDetails((prev) => !prev)}
+            >
+              {showPositionDetails
+                ? "Hide position details"
+                : "Show position details"}
+            </button>
           </div>
         </div>
       </div>
@@ -890,6 +973,7 @@ const DailyTab = () => {
                 onZoom={handleZoom}
                 isZoomed={!!zoomedSector}
                 heatmapMode={heatmapMode}
+                showPositionDetails={showPositionDetails}
               />
             }
             isAnimationActive
@@ -961,6 +1045,22 @@ const DailyTab = () => {
                         {formatMomentum(node.portfolioMomentum21d)}
                       </span>
                     </div>
+                    {showPositionDetails && (
+                      <>
+                        <div className="d-flex justify-content-between gap-4 mt-2">
+                          <span>Market value:</span>
+                          <span className="fw-bold">
+                            {formatCurrency(node.marketValue)}
+                          </span>
+                        </div>
+                        <div className="d-flex justify-content-between gap-4 mt-1">
+                          <span>Shares:</span>
+                          <span className="fw-bold">
+                            {formatShares(node.shares)}
+                          </span>
+                        </div>
+                      </>
+                    )}
                   </div>
                 );
               }}
