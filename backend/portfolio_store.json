@@ -854,21 +854,6 @@
       "target_3": -1
     },
     {
-      "ticker": "CRUS",
-      "shares": 3500,
-      "average_cost": 128.74,
-      "sector": "Technology",
-      "player": 1,
-      "technigrade": [9, 8, 8, 8, 4],
-      "peers": ["QCOM", "TXN", "ADI", "SWKS", "MPWR", "MCHP"],
-      "invalidation_1": 116,
-      "invalidation_2": 91.91,
-      "invalidation_3": 75.76,
-      "target_1": 123,
-      "target_2": 147,
-      "target_3": -1
-    },
-    {
       "ticker": "GEVO",
       "shares": 75000.0,
       "average_cost": 1.97,
@@ -957,21 +942,6 @@
       "target_3": -1
     },
     {
-      "ticker": "META",
-      "shares": 1600,
-      "average_cost": 624.4,
-      "sector": "Technology",
-      "player": 2,
-      "technigrade": [17, 18, 18, 18, 17],
-      "peers": ["GOOG", "AMZN", "MSFT", "SNAP", "PINS", "BABA"],
-      "invalidation_1": -1,
-      "invalidation_2": -1,
-      "invalidation_3": -1,
-      "target_1": 706,
-      "target_2": 794,
-      "target_3": -1
-    },
-    {
       "ticker": "PTON",
       "shares": 40000,
       "average_cost": 8.35,
@@ -1000,21 +970,6 @@
       "target_1": 206,
       "target_2": 219,
       "target_3": 228
-    },
-    {
-      "ticker": "AMZN",
-      "shares": 2500.0,
-      "average_cost": 255,
-      "sector": "Technology",
-      "player": 2,
-      "technigrade": [10, 12, 8, 6, 6],
-      "peers": ["MSFT", "GOOGL", "AAPL", "META", "BABA", "WMT"],
-      "invalidation_1": 213,
-      "invalidation_2": 161.38,
-      "invalidation_3": 151.61,
-      "target_1": 283,
-      "target_2": 311,
-      "target_3": -1
     },
     {
       "ticker": "TSLA",
@@ -1242,20 +1197,6 @@
       "target_1": 59,
       "target_2": 66,
       "target_3": 72.2
-    },
-    {
-      "ticker": "KWEB",
-      "shares": 1728.0,
-      "average_cost": 25.54,
-      "sector": "Hong Kong and China",
-      "peers": ["CQQQ", "GCH", "CHIN", "EEM", "VWO"],
-      "player": 10,
-      "invalidation_1": 39.17,
-      "invalidation_2": 38.1,
-      "invalidation_3": -1,
-      "target_1": 43.39,
-      "target_2": 46,
-      "target_3": 47.6
     },
     {
       "ticker": "0700.HK",
