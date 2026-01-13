@@ -578,8 +578,8 @@
     },
     {
       "ticker": "FCX",
-      "shares": 20000,
-      "average_cost": 57.9,
+      "shares": 41000,
+      "average_cost": 45.16,
       "sector": "Precious Metals",
       "player": 8,
       "technigrade": [10, 14, 14, 14, 12],
