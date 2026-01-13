@@ -557,15 +557,15 @@
     },
     {
       "ticker": "XAUUSD",
-      "shares": 1800,
-      "average_cost": 4405.5456,
+      "shares": 2300,
+      "average_cost": 4451.6337,
       "sector": "Precious Metals",
       "player": 8
     },
     {
       "ticker": "XAGUSD",
-      "shares": 75000,
-      "average_cost": 83.6497,
+      "shares": 90000,
+      "average_cost": 84.0503,
       "sector": "Precious Metals",
       "player": 8
     },
