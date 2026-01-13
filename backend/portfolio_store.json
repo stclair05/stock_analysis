@@ -927,6 +927,21 @@
       "target_3": -1
     },
     {
+      "ticker": "VRT",
+      "shares": 1200,
+      "average_cost": 182.63,
+      "sector": "Technology",
+      "player": 2,
+      "technigrade": [],
+      "peers": ["PWR", "SMCI", "HPE", "JCI", "CTAS", "AEIS", "PLUG"],
+      "invalidation_1": -1,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": -1,
+      "target_2": -1,
+      "target_3": -1
+    },
+    {
       "ticker": "MVST",
       "shares": 50000,
       "average_cost": 3.6631,
