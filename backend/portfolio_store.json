@@ -1121,8 +1121,8 @@
     },
     {
       "ticker": "NBIS",
-      "shares": 15000,
-      "average_cost": 97.1833,
+      "shares": 19500,
+      "average_cost": 99.539,
       "sector": "Technology",
       "technigrade": [3, 4, 3, 1, 1],
       "peers": ["NVDA", "ORCL", "CRWV", "IREN", "MSFT", "AMD"],
