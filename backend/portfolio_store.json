@@ -607,6 +607,21 @@
       "target_3": 11.96
     },
     {
+      "ticker": "RIO.AX",
+      "shares": 4000.0,
+      "average_cost": 98.35,
+      "sector": "Precious Metals",
+      "player": 8,
+      "technigrade": [],
+      "peers": ["BHP", "VALE", "GLEN", "AAL", "FMG", "TECK"],
+      "invalidation_1": 5.42,
+      "invalidation_2": 4.93,
+      "invalidation_3": 4.37,
+      "target_1": 7,
+      "target_2": 11,
+      "target_3": 11.96
+    },
+    {
       "ticker": "SIL",
       "shares": 50000,
       "average_cost": 70.89,
