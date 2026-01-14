@@ -67,8 +67,11 @@ class PortfolioAnalyser:
         Optional[float],
         Optional[pd.Series],
         dict[str, Optional[float]],
+        Optional[float],
+        Optional[float],
+        Optional[float],
     ]:
-        """Return price, daily change, % change, close history, and period changes."""
+        """Return price, daily change, % change, close history, period changes, and yesterday stats."""
 
         raw_symbol = ticker.upper().strip()
         symbol = SYMBOL_ALIASES.get(raw_symbol, raw_symbol)
@@ -76,10 +79,30 @@ class PortfolioAnalyser:
         if symbol in {"XAUUSD", "XAGUSD", "PAUSD", "PLUSD"}:
             price, prev_close = self._get_fmp_price(symbol)
             period_changes = self._get_fmp_price_change(ticker)
+            yesterday_close, prior_close = self._get_fmp_recent_closes(symbol)
             if price is not None:
                 change = price - prev_close if prev_close else None
                 change_pct = (change / prev_close * 100) if prev_close else None
-                return price, change, change_pct, None, period_changes
+                yesterday_change = (
+                    yesterday_close - prior_close
+                    if yesterday_close is not None and prior_close
+                    else None
+                )
+                yesterday_change_pct = (
+                    (yesterday_change / prior_close) * 100
+                    if yesterday_change is not None and prior_close
+                    else None
+                )
+                return (
+                    price,
+                    change,
+                    change_pct,
+                    None,
+                    period_changes,
+                    yesterday_close,
+                    yesterday_change,
+                    yesterday_change_pct,
+                )
             
         try:
             yf_ticker = yf.Ticker(symbol)
@@ -87,16 +110,21 @@ class PortfolioAnalyser:
 
             close_today: Optional[float] = None
             close_prev: Optional[float] = None
+            close_prev_prev: Optional[float] = None
             closes_series = hist["Close"] if not hist.empty else None
             if not hist.empty:
                 close_today = hist["Close"].iloc[-1]
                 if len(hist) > 1:
                     close_prev = hist["Close"].iloc[-2]
+                if len(hist) > 2:
+                    close_prev_prev = hist["Close"].iloc[-3]
 
             if close_today is None:
                 info = yf_ticker.info
                 close_today = info.get("currentPrice") or info.get("regularMarketPrice")
                 close_prev = info.get("previousClose")
+                if closes_series is not None and len(closes_series) > 2:
+                    close_prev_prev = closes_series.iloc[-3]
                 closes_series = None
 
             if close_today is None:
@@ -105,12 +133,13 @@ class PortfolioAnalyser:
                     if not df.empty:
                         close_today = df["Close"].iloc[-1]
                         close_prev = df["Close"].iloc[-2] if len(df) > 1 else None
+                        close_prev_prev = df["Close"].iloc[-3] if len(df) > 2 else None
                         closes_series = df["Close"]
                 except Exception:
                     close_today = None
 
             if close_today is None:
-                return None, None, None, None, {}
+                return None, None, None, None, {}, None, None, None
 
             change = None
             change_pct = None
@@ -119,10 +148,29 @@ class PortfolioAnalyser:
                 change = float(close_today) - float(close_prev)
                 change_pct = (change / float(close_prev)) * 100 if close_prev else None
 
-            return float(close_today), change, change_pct, closes_series, {}
+            yesterday_change = None
+            yesterday_change_pct = None
+            if close_prev and close_prev_prev:
+                yesterday_change = float(close_prev) - float(close_prev_prev)
+                yesterday_change_pct = (
+                    (yesterday_change / float(close_prev_prev)) * 100
+                    if close_prev_prev
+                    else None
+                )
+
+            return (
+                float(close_today),
+                change,
+                change_pct,
+                closes_series,
+                {},
+                float(close_prev) if close_prev is not None else None,
+                yesterday_change,
+                yesterday_change_pct,
+            )
         
         except Exception:
-            return None, None, None, None, {}
+            return None, None, None, None, {}, None, None, None
 
     def _get_fmp_price(self, ticker: str) -> tuple[Optional[float], Optional[float]]:
         base_url = os.getenv("FMP_BASE_URL")
@@ -181,6 +229,30 @@ class PortfolioAnalyser:
 
         return {}
 
+    def _get_fmp_recent_closes(
+        self, ticker: str
+    ) -> tuple[Optional[float], Optional[float]]:
+        api_key = os.getenv("FMP_API_KEY")
+        if not api_key:
+            return None, None
+
+        base_url = os.getenv("FMP_BASE_URL") or "https://financialmodelingprep.com"
+        url = f"{base_url}/historical-price-full/{ticker}?timeseries=3&apikey={api_key}"
+
+        try:
+            resp = requests.get(url, timeout=8)
+            resp.raise_for_status()
+            data = resp.json()
+            history = data.get("historical") if isinstance(data, dict) else None
+            if history and isinstance(history, list):
+                closes = [item.get("close") for item in history if item.get("close")]
+                if len(closes) >= 2:
+                    return float(closes[0]), float(closes[1])
+        except Exception:
+            return None, None
+
+        return None, None
+    
     def _process_single_item(self, item: dict) -> Optional[dict]:
         try:
             ticker = item["ticker"]
@@ -195,6 +267,9 @@ class PortfolioAnalyser:
                 change_pct,
                 closes,
                 period_changes,
+                yesterday_close,
+                yesterday_change,
+                yesterday_change_pct,
             ) = self._get_price_and_change(ticker)
 
             if ticker.endswith(".L"):
@@ -211,6 +286,10 @@ class PortfolioAnalyser:
                         change *= self.fx_rate
                     if closes is not None:
                         closes = closes * self.fx_rate
+                    if yesterday_close is not None:
+                        yesterday_close *= self.fx_rate
+                    if yesterday_change is not None:
+                        yesterday_change *= self.fx_rate
 
             if current_price is None:
                 return {
@@ -224,6 +303,9 @@ class PortfolioAnalyser:
                     "pnl_percent": 0.0,
                     "daily_change": None,
                     "daily_change_percent": None,
+                    "yesterday_close": None,
+                    "yesterday_change": None,
+                    "yesterday_change_percent": None,
                     "five_day_change_percent": None,
                     "twenty_one_day_change_percent": None,
                     "static_asset": True,
@@ -252,6 +334,12 @@ class PortfolioAnalyser:
                 change = round(change, 2)
             if change_pct is not None:
                 change_pct = round(change_pct, 2)
+            if yesterday_close is not None:
+                yesterday_close = round(yesterday_close, 2)
+            if yesterday_change is not None:
+                yesterday_change = round(yesterday_change, 2)
+            if yesterday_change_pct is not None:
+                yesterday_change_pct = round(yesterday_change_pct, 2)
 
             return {
                 "ticker": ticker,
@@ -264,6 +352,9 @@ class PortfolioAnalyser:
                 "pnl_percent": round(pnl_percent * 100, 2),
                 "daily_change": change,
                 "daily_change_percent": change_pct,
+                "yesterday_close": yesterday_close,
+                "yesterday_change": yesterday_change,
+                "yesterday_change_percent": yesterday_change_pct,
                 "five_day_change_percent": five_day_change_pct,
                 "twenty_one_day_change_percent": twenty_one_day_change_pct,
                 "static_asset": False,

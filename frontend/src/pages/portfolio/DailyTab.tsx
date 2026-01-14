@@ -11,6 +11,8 @@ const NEGATIVE_BIAS_WEIGHT = -0.25;
 
 const SECTOR_HEADER_FRACTION = 0.1;
 const SECTOR_HEADER_MIN_UNITS = 120;
+const YESTERDAY_CLOSE_SUFFIXES = [".HK", ".SS", ".SZ"];
+const YESTERDAY_CLOSE_TICKERS = new Set(["XAUUSD", "XAGUSD", "PAUSD"]);
 
 /* ============================
    Sector label shortening
@@ -37,6 +39,9 @@ type Holding = {
   daily_change_percent?: number | null;
   five_day_change_percent?: number | null;
   twenty_one_day_change_percent?: number | null;
+  yesterday_close?: number | null;
+  yesterday_change?: number | null;
+  yesterday_change_percent?: number | null;
   current_price?: number;
   invested_capital?: number;
   daily_change?: number | null;
@@ -113,6 +118,31 @@ const sectorLabelForBox = (fullSector: string, width: number) => {
   if (width < 60) return truncate(base, 4);
   if (width < 100) return truncate(base, 8);
   return truncate(base, 20);
+};
+
+const isYesterdayCloseEligible = (ticker: string) => {
+  const normalized = (ticker ?? "").toUpperCase().trim();
+  if (!normalized) return false;
+  const base = normalized.endsWith("=X") ? normalized.slice(0, -2) : normalized;
+  if (YESTERDAY_CLOSE_TICKERS.has(base)) return true;
+  return YESTERDAY_CLOSE_SUFFIXES.some((suffix) => base.endsWith(suffix));
+};
+
+const getYesterdayClose = (holding: Holding) => {
+  if (typeof holding.yesterday_close === "number") {
+    return holding.yesterday_close;
+  }
+  const price = holding.current_price;
+  if (typeof price !== "number") return null;
+  if (typeof holding.daily_change === "number") {
+    return price - holding.daily_change;
+  }
+  if (typeof holding.daily_change_percent === "number") {
+    const pct = holding.daily_change_percent / 100;
+    const divisor = 1 + pct;
+    if (divisor !== 0) return price / divisor;
+  }
+  return null;
 };
 
 /**
@@ -520,6 +550,7 @@ const DailyTab = () => {
   const [momentumError, setMomentumError] = useState<string | null>(null);
   const [heatmapMode, setHeatmapMode] = useState<HeatmapMode>("dailyChange");
   const [showPositionDetails, setShowPositionDetails] = useState(false);
+  const [useYesterdayClose, setUseYesterdayClose] = useState(false);
 
   const getCurrencyForTicker = (ticker: string): string => {
     if (ticker.endsWith(".AX")) return "AUD";
@@ -609,15 +640,55 @@ const DailyTab = () => {
         const rate = getUsdToCurrencyRate(currency);
         const convert = (val?: number | null) =>
           typeof val === "number" && rate ? val / rate : val ?? undefined;
-        return {
+        const converted: Holding = {
           ...h,
           current_price: convert(h.current_price),
           market_value: convert(h.market_value),
           invested_capital: convert(h.invested_capital),
           daily_change: convert(h.daily_change),
-        } as Holding;
+          yesterday_close: convert(h.yesterday_close),
+          yesterday_change: convert(h.yesterday_change),
+          yesterday_change_percent: h.yesterday_change_percent ?? null,
+        };
+
+        if (!useYesterdayClose || !isYesterdayCloseEligible(h.ticker)) {
+          return converted;
+        }
+
+        const yesterdayClose = getYesterdayClose(converted);
+        if (typeof yesterdayClose !== "number") {
+          return converted;
+        }
+
+        let yesterdayChange = converted.yesterday_change ?? null;
+        let yesterdayChangePercent = converted.yesterday_change_percent ?? null;
+        if (
+          typeof yesterdayChangePercent !== "number" &&
+          typeof yesterdayChange === "number"
+        ) {
+          const priorClose = yesterdayClose - yesterdayChange;
+          if (priorClose) {
+            yesterdayChangePercent = (yesterdayChange / priorClose) * 100;
+          }
+        }
+        if (
+          typeof yesterdayChange !== "number" &&
+          typeof yesterdayChangePercent === "number"
+        ) {
+          yesterdayChange = (yesterdayClose * yesterdayChangePercent) / 100;
+        }
+
+        const shares =
+          typeof converted.shares === "number" ? converted.shares : null;
+        return {
+          ...converted,
+          current_price: yesterdayClose,
+          market_value: shares !== null ? yesterdayClose * shares : null,
+          daily_change: yesterdayChange,
+          daily_change_percent: yesterdayChangePercent,
+        };
       }),
-    [holdings, forexRates]
+    [holdings, forexRates, useYesterdayClose]
   );
 
   const portfolioChangeSummary = useMemo(() => {
@@ -692,8 +763,13 @@ const DailyTab = () => {
     if (heatmapMode === "priceChange21d") {
       return { ...portfolioChangeSummary.twentyOneDay, label: "21D change" };
     }
-    return { ...portfolioChangeSummary.daily, label: "Daily change" };
-  }, [heatmapMode, portfolioChangeSummary]);
+    return {
+      ...portfolioChangeSummary.daily,
+      label: useYesterdayClose
+        ? "Daily change (yesterday close for HK/China & metals)"
+        : "Daily change",
+    };
+  }, [heatmapMode, portfolioChangeSummary, useYesterdayClose]);
 
   const hasMomentum = useMemo(() => {
     const weeklyCount = Object.keys(
@@ -846,6 +922,12 @@ const DailyTab = () => {
               ? "Portfolio momentum details are now visible for this sector."
               : "Select a sector to view portfolio momentum score details."}
           </p>
+          {useYesterdayClose && (
+            <div className="text-muted small">
+              Using yesterday&apos;s close for HK/China tickers and
+              XAG/XAU/PAUSD to stabilize daily changes during SGT hours.
+            </div>
+          )}
           {momentumError && (
             <div className="text-danger small mt-1">{momentumError}</div>
           )}
@@ -957,6 +1039,17 @@ const DailyTab = () => {
               {showPositionDetails
                 ? "Hide position details"
                 : "Show position details"}
+            </button>
+            <button
+              type="button"
+              className={`btn btn-sm ${
+                useYesterdayClose ? "btn-secondary" : "btn-outline-secondary"
+              }`}
+              onClick={() => setUseYesterdayClose((prev) => !prev)}
+            >
+              {useYesterdayClose
+                ? "Using yesterday close (HK/China & metals)"
+                : "Use yesterday close (HK/China & metals)"}
             </button>
           </div>
         </div>
