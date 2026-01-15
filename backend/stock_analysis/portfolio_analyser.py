@@ -77,12 +77,32 @@ class PortfolioAnalyser:
         symbol = SYMBOL_ALIASES.get(raw_symbol, raw_symbol)
 
         if symbol in {"XAUUSD", "XAGUSD", "PAUSD", "PLUSD"}:
+            metals_eod_map = {
+                "XAUUSD": "GCUSD",
+                "XAGUSD": "SIUSD",
+                "PAUSD": "PAUSD",
+                "PLUSD": "PLUSD",
+            }
             price, prev_close = self._get_fmp_price(symbol)
             period_changes = self._get_fmp_price_change(ticker)
-            yesterday_close, prior_close = self._get_fmp_recent_closes(symbol)
+            eod_symbol = metals_eod_map.get(symbol, symbol)
+            yesterday_close, prior_close = self._get_fmp_recent_closes(eod_symbol)
+            print(
+                "Metals pricing debug:",
+                {
+                    "ticker": ticker,
+                    "symbol": symbol,
+                    "eod_symbol": eod_symbol,
+                    "price": price,
+                    "prev_close": prev_close,
+                    "yesterday_close": yesterday_close,
+                    "prior_close": prior_close,
+                },
+            )
             if price is not None:
-                change = price - prev_close if prev_close else None
-                change_pct = (change / prev_close * 100) if prev_close else None
+                base_close = yesterday_close if yesterday_close is not None else prev_close
+                change = price - base_close if base_close else None
+                change_pct = (change / base_close * 100) if base_close else None
                 yesterday_change = (
                     yesterday_close - prior_close
                     if yesterday_close is not None and prior_close
@@ -237,15 +257,26 @@ class PortfolioAnalyser:
             return None, None
 
         base_url = os.getenv("FMP_BASE_URL") or "https://financialmodelingprep.com"
-        url = f"{base_url}/historical-price-full/{ticker}?timeseries=3&apikey={api_key}"
+        url = (
+            f"{base_url}/stable/historical-price-eod/full"
+            f"?symbol={ticker}&timeseries=3&apikey={api_key}"
+        )
 
         try:
             resp = requests.get(url, timeout=8)
             resp.raise_for_status()
             data = resp.json()
-            history = data.get("historical") if isinstance(data, dict) else None
-            if history and isinstance(history, list):
-                closes = [item.get("close") for item in history if item.get("close")]
+            print(
+                "FMP EOD response debug:",
+                {
+                    "ticker": ticker,
+                    "url": url,
+                    "data_type": type(data).__name__,
+                    "data_preview": data[:2] if isinstance(data, list) else data,
+                },
+            )
+            if isinstance(data, list) and data:
+                closes = [item.get("close") for item in data if item.get("close")]
                 if len(closes) >= 2:
                     return float(closes[0]), float(closes[1])
         except Exception:
