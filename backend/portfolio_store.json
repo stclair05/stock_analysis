@@ -593,7 +593,7 @@
     },
     {
       "ticker": "TMC",
-      "shares": 150000.0,
+      "shares": 100000.0,
       "average_cost": 5.37,
       "sector": "Precious Metals",
       "player": 8,
@@ -634,20 +634,6 @@
       "target_1": 72,
       "target_2": 74.5,
       "target_3": 85
-    },
-    {
-      "ticker": "AMR",
-      "shares": 1500,
-      "average_cost": 189.66,
-      "sector": "Others",
-      "peers": ["HCC", "METC", "SID", "WS", "AREC", "SXC"],
-      "player": 8,
-      "invalidation_1": -1,
-      "invalidation_2": -1,
-      "invalidation_3": -1,
-      "target_1": -1,
-      "target_2": -1,
-      "target_3": -1
     },
     {
       "ticker": "EXK",
@@ -908,21 +894,6 @@
       "invalidation_3": -1,
       "target_1": -1,
       "target_2": -1,
-      "target_3": -1
-    },
-    {
-      "ticker": "MP",
-      "shares": 14000,
-      "average_cost": 60.911,
-      "sector": "Precious Metals",
-      "player": 2,
-      "technigrade": [6, 8, 4, 4, 3],
-      "peers": ["LYSDY", "UUUU", "IOC", "USAR", "IPX", "NB"],
-      "invalidation_1": 50.5,
-      "invalidation_2": -1,
-      "invalidation_3": -1,
-      "target_1": 82.5,
-      "target_2": 100,
       "target_3": -1
     },
     {
@@ -1319,20 +1290,6 @@
       "invalidation_2": -1,
       "invalidation_3": -1,
       "target_1": 1392,
-      "target_2": -1,
-      "target_3": -1
-    },
-    {
-      "ticker": "9698.HK",
-      "shares": 45000,
-      "average_cost": 4.12,
-      "sector": "Hong Kong and China",
-      "peers": ["VNET", "DLR", "EQIX", "0960.HK", "9988.HK", "0700.HK"],
-      "player": 6,
-      "invalidation_1": 35.08,
-      "invalidation_2": 30.08,
-      "invalidation_3": -1,
-      "target_1": 48.9,
       "target_2": -1,
       "target_3": -1
     },
