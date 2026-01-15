@@ -66,6 +66,9 @@ class CustomMomentumRequest(BaseModel):
     symbols: List[str]
     baseline: Literal["portfolio", "spx", "dji", "iwm", "nasdaq"] = "portfolio"
 
+class MaceScoresRequest(BaseModel):
+    symbols: List[str]
+
 
 def _sanitize_symbols_list(symbols: List[str]) -> list[str]:
     seen: set[str] = set()
@@ -861,6 +864,36 @@ def get_portfolio_status(
         momentum_only=scope == "momentum",
         baseline=baseline,
     )
+
+
+@app.post("/mace_scores")
+def get_mace_scores(request: MaceScoresRequest):
+    symbols = _sanitize_symbols_list(request.symbols)
+    if not symbols:
+        return {"current": {}, "twentyone_days_ago": {}}
+
+    def _fetch_score(symbol: str):
+        analyser = StockAnalyser(symbol)
+        metric = analyser.mace_score()
+        return {
+            "symbol": symbol,
+            "current": metric.current,
+            "twentyone_days_ago": metric.twentyone_days_ago,
+        }
+
+    scores = {"current": {}, "twentyone_days_ago": {}}
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        futures = {executor.submit(_fetch_score, symbol): symbol for symbol in symbols}
+        for future in as_completed(futures):
+            symbol = futures[future]
+            try:
+                result = future.result()
+                scores["current"][symbol] = result["current"]
+                scores["twentyone_days_ago"][symbol] = result["twentyone_days_ago"]
+            except Exception as exc:
+                print(f"MACE score error for {symbol}: {exc}")
+
+    return convert_numpy_types(scores)
 
 
 @app.get("/fmp_financials/{symbol}", response_model=FinancialMetrics)

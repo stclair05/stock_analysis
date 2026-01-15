@@ -14,6 +14,7 @@ import StatusPage from "./pages/StatusPage";
 import BuyPage from "./pages/BuyPage";
 import Navbar from "./components/Navbar";
 import MomentumPage from "./pages/MomentumPage";
+import MacePage from "./pages/MacePage";
 
 function App() {
   return (
@@ -39,6 +40,7 @@ function App() {
         />
         <Route path="/quadrant/:listType" element={<QuadrantPage />} />
         <Route path="/momentum" element={<MomentumPage />} />
+        <Route path="/mace" element={<MacePage />} />
         <Route path="/ratios" element={<RatioPage />} />
         <Route path="/status" element={<StatusPage />} />
         <Route path="/buy" element={<BuyPage />} />

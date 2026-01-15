@@ -50,6 +50,14 @@ export default function Navbar() {
           Momentum
         </Link>
         <Link
+          to="/mace"
+          className={`nav-link ${
+            location.pathname === "/mace" ? "active" : ""
+          }`}
+        >
+          MACE
+        </Link>
+        <Link
           to="/ratios"
           className={`nav-link ${
             location.pathname === "/ratios" ? "active" : ""
