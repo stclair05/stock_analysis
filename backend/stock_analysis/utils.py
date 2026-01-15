@@ -18,6 +18,9 @@ def safe_value(series: pd.Series, idx: int):
 
 # utils.py
 
+def sigmoid(z: pd.Series | float) -> pd.Series | float:
+    return 1 / (1 + np.exp(-z))
+
 def detect_zigzag_pivots(df: pd.DataFrame, threshold: float = 0.07, window: int = 5):
     """
     Detects zigzag pivots using raw High for peaks and Low for troughs.
@@ -263,6 +266,108 @@ def classify_dma_trend(close: pd.Series, ma50: pd.Series, ma150: pd.Series) -> p
     result[valid & result.isna()] = "Between/Inside Moving Averages"
 
     return result
+
+def compute_mace_spectrum_metrics(
+    df_weekly: pd.DataFrame,
+    ma_short_len: int = 4,
+    ma_mid_len: int = 13,
+    ma_long_len: int = 26,
+    atr_len: int = 14,
+    a: float = 0.90,
+    b: float = 0.30,
+    c: float = 0.70,
+    epsilon: float = 1e-9,
+) -> pd.DataFrame:
+    close = df_weekly["Close"]
+    high = df_weekly["High"]
+    low = df_weekly["Low"]
+
+    s = close.rolling(ma_short_len).mean()
+    m = close.rolling(ma_mid_len).mean()
+    l = close.rolling(ma_long_len).mean()
+
+    prev_close = close.shift(1)
+    tr1 = high - low
+    tr2 = (high - prev_close).abs()
+    tr3 = (low - prev_close).abs()
+    true_range = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+    atr = compute_wilder_atr(true_range, atr_len)
+    atr = atr.where(atr != 0, epsilon)
+
+    x_sm = (s - m) / atr
+    x_sl = (s - l) / atr
+    x_ml = (m - l) / atr
+
+    p_sm = sigmoid(x_sm / a)
+    p_sl = sigmoid(x_sl / a)
+    p_ml = sigmoid(x_ml / a)
+
+    w_u3 = p_sm * p_ml
+    w_u2 = p_sl * (1 - p_ml)
+    w_u1 = (1 - p_sl) * p_sm
+    w_d1 = (1 - p_sm) * p_sl
+    w_d2 = p_ml * (1 - p_sl)
+    w_d3 = (1 - p_ml) * (1 - p_sm)
+
+    g = (
+        (s - s.shift(1)) / atr
+        + (m - m.shift(1)) / atr
+        + (l - l.shift(1)) / atr
+    ) / 3
+    strength_slope = sigmoid(g / b)
+
+    w_u1 = w_u1 * strength_slope
+    w_u2 = w_u2 * strength_slope
+    w_u3 = w_u3 * strength_slope
+    w_d1 = w_d1 * (1 - strength_slope)
+    w_d2 = w_d2 * (1 - strength_slope)
+    w_d3 = w_d3 * (1 - strength_slope)
+
+    sum_w = w_u3 + w_u2 + w_u1 + w_d1 + w_d2 + w_d3
+    fallback_mask = sum_w == 0
+
+    p_u3 = w_u3.div(sum_w).where(~fallback_mask, 0.0)
+    p_u2 = w_u2.div(sum_w).where(~fallback_mask, 0.0)
+    p_u1 = w_u1.div(sum_w).where(~fallback_mask, 0.0)
+    p_d1 = w_d1.div(sum_w).where(~fallback_mask, 0.0)
+    p_d2 = w_d2.div(sum_w).where(~fallback_mask, 0.0)
+    p_d3 = w_d3.div(sum_w).where(~fallback_mask, 1.0)
+
+    score_base = (
+        1.0 * p_u3
+        + 0.8 * p_u2
+        + 0.6 * p_u1
+        + 0.4 * p_d1
+        + 0.2 * p_d2
+        + 0.0 * p_d3
+    )
+
+    margin_up = np.minimum(x_sm, x_ml)
+    margin_down = np.minimum(-x_sm, -x_ml)
+    strength_sep_up = sigmoid(margin_up / c)
+    strength_sep_down = sigmoid(margin_down / c)
+    strength_sep = (
+        (p_u1 + p_u2 + p_u3) * strength_sep_up
+        + (p_d1 + p_d2 + p_d3) * strength_sep_down
+    )
+
+    score_conviction = (score_base * (0.5 + 0.5 * strength_sep)).clip(0, 1)
+
+    return pd.DataFrame(
+        {
+            "p_u1": p_u1,
+            "p_u2": p_u2,
+            "p_u3": p_u3,
+            "p_d1": p_d1,
+            "p_d2": p_d2,
+            "p_d3": p_d3,
+            "score_base": score_base,
+            "strength_slope": strength_slope,
+            "strength_sep": strength_sep,
+            "score_conviction": score_conviction,
+        },
+        index=df_weekly.index,
+    )
 
 
 

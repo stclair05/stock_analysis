@@ -17,6 +17,7 @@ type MetricsType = {
   super_trend: TimeSeriesMetric;
   adx: TimeSeriesMetric;
   mace: TimeSeriesMetric;
+  mace_score: TimeSeriesMetric;
   forty_week_status: TimeSeriesMetric;
   fifty_dma_and_150_dma: TimeSeriesMetric;
   twenty_dma: TimeSeriesMetric;
@@ -84,6 +85,7 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
         const keyFields: (keyof MetricsType)[] = [
           "three_year_ma",
           "mace",
+          "mace_score",
           "forty_week_status",
         ];
         const keyFieldsIncomplete = keyFields.some((field) => {
@@ -285,6 +287,7 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
       "super_trend",
       "adx",
       "mace",
+      "mace_score",
       "forty_week_status",
     ];
 
@@ -445,6 +448,29 @@ function Metrics({ stockSymbol, setParentLoading }: MetricsProps) {
                   {renderColoredCell(metrics.mace.seven_days_ago)}
                   {renderColoredCell(metrics.mace.fourteen_days_ago)}
                   {renderColoredCell(metrics.mace.twentyone_days_ago)}
+                </tr>
+                <tr>
+                  <td>🎯 MACE Score (0-1)</td>
+                  {renderColoredCell(
+                    typeof metrics.mace_score.current === "number"
+                      ? metrics.mace_score.current.toFixed(2)
+                      : metrics.mace_score.current
+                  )}
+                  {renderColoredCell(
+                    typeof metrics.mace_score.seven_days_ago === "number"
+                      ? metrics.mace_score.seven_days_ago.toFixed(2)
+                      : metrics.mace_score.seven_days_ago
+                  )}
+                  {renderColoredCell(
+                    typeof metrics.mace_score.fourteen_days_ago === "number"
+                      ? metrics.mace_score.fourteen_days_ago.toFixed(2)
+                      : metrics.mace_score.fourteen_days_ago
+                  )}
+                  {renderColoredCell(
+                    typeof metrics.mace_score.twentyone_days_ago === "number"
+                      ? metrics.mace_score.twentyone_days_ago.toFixed(2)
+                      : metrics.mace_score.twentyone_days_ago
+                  )}
                 </tr>
                 <tr>
                   <td>🗓️ 40-Week Status</td>

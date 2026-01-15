@@ -25,6 +25,7 @@ from .utils import (
     to_series,
     classify_adx_trend,
     classify_mace_signal,
+    compute_mace_spectrum_metrics,
     classify_40w_status,
     classify_dma_trend,
     classify_bbwp_percentile,
@@ -633,6 +634,22 @@ class StockAnalyser:
             twentyone_days_ago=safe_value(signal, -4),
         )
 
+    def mace_score(self) -> TimeSeriesMetric:
+        df_weekly = self._last_days(self.weekly_df, 600)
+
+        if len(df_weekly) < 30 or df_weekly.empty:  # ~30 weeks
+            return TimeSeriesMetric(**{k: "in progress" for k in TimeSeriesMetric.__fields__})
+
+        mace_metrics = compute_mace_spectrum_metrics(df_weekly)
+        score = mace_metrics["score_base"]
+
+        return TimeSeriesMetric(
+            current=safe_value(score, -1),
+            seven_days_ago=safe_value(score, -2),
+            fourteen_days_ago=safe_value(score, -3),
+            twentyone_days_ago=safe_value(score, -4),
+        )
+    
     def forty_week_status(self) -> TimeSeriesMetric:
         df_weekly = self._last_days(self.weekly_df, 600)
 

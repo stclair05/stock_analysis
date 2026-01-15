@@ -22,6 +22,7 @@ class StockAnalysisResponse(BaseModel):
     super_trend: TimeSeriesMetric
     adx: TimeSeriesMetric
     mace: TimeSeriesMetric
+    mace_score: TimeSeriesMetric
     forty_week_status: TimeSeriesMetric
     fifty_dma_and_150_dma: TimeSeriesMetric
     twenty_dma: TimeSeriesMetric

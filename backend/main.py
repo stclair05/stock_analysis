@@ -352,6 +352,7 @@ def analyse(stock_request: StockRequest):
         super_trend=analyser.super_trend(),
         adx=analyser.adx(),
         mace=analyser.mace(),
+        mace_score=analyser.mace_score(),
         forty_week_status=analyser.forty_week_status(),
         fifty_dma_and_150_dma=analyser.fifty_dma_and_150_dma(),
         twenty_dma=analyser.calculate_20dma(),
