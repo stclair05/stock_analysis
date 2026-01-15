@@ -897,6 +897,20 @@
       "target_3": -1
     },
     {
+      "ticker": "EAT",
+      "shares": 1500.0,
+      "average_cost": 149.34,
+      "sector": "Others",
+      "peers": ["DRI", "CMG", "QSR", "YUM", "MCD", "SONC"],
+      "player": 2,
+      "invalidation_1": -1,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": -1,
+      "target_2": -1,
+      "target_3": -1
+    },
+    {
       "ticker": "MP",
       "shares": 14000,
       "average_cost": 60.911,
