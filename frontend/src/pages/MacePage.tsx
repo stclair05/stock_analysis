@@ -196,6 +196,19 @@ function MaceGrid({
                   </div>
                 )}
               </div>
+              <div className="momentum-background-note positive-developing-note">
+                <span className="momentum-note-letter momentum-note-letter--down">
+                  D
+                </span>
+                <span aria-hidden className="momentum-note-arrow">
+                  {" "}
+                  --&gt;{" "}
+                </span>
+                <span className="momentum-note-letter momentum-note-letter--up">
+                  U
+                </span>
+                <span className="momentum-note-text"> (breakout)</span>
+              </div>
               <div className="momentum-quadrant-label positive-trend">
                 <span className="momentum-quadrant-title">Positive Trend</span>
                 {mode === "portfolio" && (
@@ -236,6 +249,18 @@ function MaceGrid({
                     </span>
                   </div>
                 )}
+              </div>
+              <div className="momentum-background-note negative-developing-note">
+                <span className="momentum-note-letter momentum-note-letter--up">
+                  U
+                </span>
+                <span aria-hidden className="momentum-note-arrow">
+                  {" "}
+                  --&gt;{" "}
+                </span>
+                <span className="momentum-note-letter momentum-note-letter--down">
+                  D
+                </span>
               </div>
 
               <div

@@ -145,6 +145,50 @@
   color: #7c2d12;
 }
 
+.momentum-background-note {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: clamp(20px, 2.6vw, 36px);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.28;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.momentum-background-note.positive-developing-note {
+  top: 84px;
+  left: 24px;
+  color: #14532d;
+}
+
+.momentum-background-note.negative-developing-note {
+  bottom: 84px;
+  right: 24px;
+  text-align: right;
+  color: #7c2d12;
+}
+
+.momentum-note-letter {
+  font-weight: 800;
+}
+
+.momentum-note-letter--down {
+  color: rgba(220, 38, 38, 0.7);
+}
+
+.momentum-note-letter--up {
+  color: rgba(22, 163, 74, 0.7);
+}
+
+.momentum-note-arrow,
+.momentum-note-text {
+  color: rgba(51, 65, 85, 0.65);
+}
+
 .momentum-point {
   position: absolute;
   width: 16px;
