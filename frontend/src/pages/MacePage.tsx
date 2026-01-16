@@ -250,10 +250,10 @@ function MaceGrid({
               />
 
               <div className="momentum-axis-label momentum-axis-label--x">
-                MACE score 21D ago
+                Current MACE score
               </div>
               <div className="momentum-axis-label momentum-axis-label--y">
-                Current MACE score
+                MACE score 21D ago
               </div>
 
               {ticks.map((tick) => (
