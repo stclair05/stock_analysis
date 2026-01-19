@@ -108,6 +108,42 @@ function MaceGrid({
   };
 
   const ticks = useMemo(() => [0, 0.5, 1], []);
+  const breakoutZone = useMemo(
+    () => ({
+      xMin: 0,
+      xMax: 0.5,
+      yMin: 0.54,
+      yMax: 0.7,
+    }),
+    []
+  );
+  const breakdownZone = useMemo(
+    () => ({
+      xMin: 0.54,
+      xMax: 0.7,
+      yMin: 0,
+      yMax: 0.5,
+    }),
+    []
+  );
+  const toZoneStyle = (zone: {
+    xMin: number;
+    xMax: number;
+    yMin: number;
+    yMax: number;
+  }) => {
+    const left = toPosition(zone.xMin);
+    const right = toPosition(zone.xMax);
+    const top = 100 - toPosition(zone.yMax);
+    const bottom = 100 - toPosition(zone.yMin);
+
+    return {
+      left: `${left}%`,
+      top: `${top}%`,
+      width: `${right - left}%`,
+      height: `${bottom - top}%`,
+    };
+  };
 
   const quadrantTotals = useMemo(() => {
     const totals = {
@@ -273,6 +309,24 @@ function MaceGrid({
                 style={{ left: "50%" }}
                 aria-hidden
               />
+              <div
+                className="momentum-diagonal momentum-diagonal--positive"
+                aria-hidden
+              />
+              <div
+                className="momentum-diagonal momentum-diagonal--negative"
+                aria-hidden
+              />
+              <div
+                className="momentum-zone momentum-zone--breakout"
+                style={toZoneStyle(breakoutZone)}
+                aria-hidden
+              />
+              <div
+                className="momentum-zone momentum-zone--breakdown"
+                style={toZoneStyle(breakdownZone)}
+                aria-hidden
+              />
 
               <div className="momentum-axis-label momentum-axis-label--x">
                 Current MACE score
@@ -305,6 +359,16 @@ function MaceGrid({
                   </div>
                 </div>
               ))}
+
+              <div className="momentum-zone-note">
+                <div className="momentum-zone-note__title">Zones</div>
+                <div className="momentum-zone-note__row momentum-zone-note__row--breakout">
+                  Green = breakout (Current 0–0.50, 21D 0.54–0.70)
+                </div>
+                <div className="momentum-zone-note__row momentum-zone-note__row--breakdown">
+                  Red = breakdown (Current 0.54–0.70, 21D 0–0.50)
+                </div>
+              </div>
 
               {points.map((point) => {
                 const currentScaled = point.current;
