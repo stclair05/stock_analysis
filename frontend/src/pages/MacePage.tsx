@@ -336,14 +336,39 @@ function MaceGrid({
                 style={{ left: "50%" }}
                 aria-hidden
               />
-              <div
-                className="momentum-diagonal momentum-diagonal--positive"
-                aria-hidden
-              />
-              <div
-                className="momentum-diagonal momentum-diagonal--negative"
-                aria-hidden
-              />
+              {/* Dynamic Diagonal Lines */}
+              <svg
+                viewBox="0 0 100 100"
+                preserveAspectRatio="none"
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  height: "100%",
+                  pointerEvents: "none",
+                  zIndex: 1,
+                }}
+              >
+                {/* y = x Line (Current = 21D Ago) */}
+                <line
+                  x1={`${toPosition(0.5 - visibleRange)}`}
+                  y1={`${100 - toPosition(0.5 - visibleRange)}`}
+                  x2={`${toPosition(0.5 + visibleRange)}`}
+                  y2={`${100 - toPosition(0.5 + visibleRange)}`}
+                  stroke="rgba(15, 23, 42, 0.2)"
+                  strokeWidth="0.2"
+                />
+                {/* y = -x Line (Inverse relationship) */}
+                <line
+                  x1={`${toPosition(0.5 - visibleRange)}`}
+                  y1={`${100 - toPosition(0.5 + visibleRange)}`}
+                  x2={`${toPosition(0.5 + visibleRange)}`}
+                  y2={`${100 - toPosition(0.5 - visibleRange)}`}
+                  stroke="rgba(15, 23, 42, 0.2)"
+                  strokeWidth="0.2"
+                />
+              </svg>
               <div
                 className="momentum-zone momentum-zone--breakout"
                 style={toZoneStyle(breakoutZone)}

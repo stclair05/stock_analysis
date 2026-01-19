@@ -46,26 +46,6 @@
   width: 2px;
 }
 
-.momentum-diagonal {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 140%;
-  height: 2px;
-  background: rgba(15, 23, 42, 0.2);
-  transform-origin: center;
-  z-index: 1;
-  pointer-events: none;
-}
-
-.momentum-diagonal--positive {
-  transform: translate(-50%, -50%) rotate(45deg);
-}
-
-.momentum-diagonal--negative {
-  transform: translate(-50%, -50%) rotate(-45deg);
-}
-
 .momentum-zone {
   position: absolute;
   border-radius: 12px;
