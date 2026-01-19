@@ -327,6 +327,21 @@
       "target_3": 71
     },
     {
+      "ticker": "MOO",
+      "shares": 5000.0,
+      "average_cost": 77.32,
+      "sector": "Fertilizer",
+      "player": 3,
+      "technigrade": [],
+      "peers": ["ZTS", "DE", "BAYN.DE", "CTVA", "NTR", "ADM"],
+      "invalidation_1": -1,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": -1,
+      "target_2": -1,
+      "target_3": -1
+    },
+    {
       "ticker": "0P0000RU80.L",
       "shares": 81700.0,
       "average_cost": 6.54,
@@ -564,7 +579,7 @@
     },
     {
       "ticker": "XAGUSD",
-      "shares": 90000,
+      "shares": 5000,
       "average_cost": 84.0503,
       "sector": "Precious Metals",
       "player": 8
@@ -869,20 +884,6 @@
       "target_3": 5.25
     },
     {
-      "ticker": "CCL",
-      "shares": 12000.0,
-      "average_cost": 32.52,
-      "sector": "Others",
-      "peers": ["RCL", "NCLH", "VIK", "LIND"],
-      "player": 2,
-      "invalidation_1": -1,
-      "invalidation_2": -1,
-      "invalidation_3": -1,
-      "target_1": -1,
-      "target_2": -1,
-      "target_3": -1
-    },
-    {
       "ticker": "EAT",
       "shares": 1500.0,
       "average_cost": 149.34,
@@ -910,21 +911,6 @@
       "target_1": 70.79,
       "target_2": 103.58,
       "target_3": 120
-    },
-    {
-      "ticker": "CIFR",
-      "shares": 20000,
-      "average_cost": 18,
-      "sector": "Technology",
-      "player": 2,
-      "technigrade": [],
-      "peers": ["RIOT", "CLSK", "NBIS", "HUT", "WULF", "BITF", "IREN"],
-      "invalidation_1": -1,
-      "invalidation_2": -1,
-      "invalidation_3": -1,
-      "target_1": -1,
-      "target_2": -1,
-      "target_3": -1
     },
     {
       "ticker": "VRT",
@@ -1097,6 +1083,20 @@
       "sector": "Financial",
       "player": 2,
       "peers": ["USB", "MTB", "FITB", "HBAN", "PNC"],
+      "invalidation_1": -1,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": -1,
+      "target_2": -1,
+      "target_3": -1
+    },
+    {
+      "ticker": "KRE",
+      "shares": 5000,
+      "average_cost": 68.11,
+      "sector": "Financial",
+      "player": 2,
+      "peers": ["BPOP", "FHN", "CFG", "ZION", "TFC"],
       "invalidation_1": -1,
       "invalidation_2": -1,
       "invalidation_3": -1,

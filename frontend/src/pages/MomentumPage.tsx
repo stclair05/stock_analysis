@@ -89,13 +89,17 @@ function MomentumGrid({
   }, [points]);
 
   const range = useMemo(() => {
-    const allValues = points.flatMap((p) => [p.weekly ?? 0, p.monthly ?? 0]);
-    const maxAbs = Math.max(...allValues.map((v) => Math.abs(v)), 3);
-    return maxAbs;
+    const allValues = points
+      .flatMap((p) => [p.weekly, p.monthly])
+      .filter((value): value is number => typeof value === "number");
+    const maxAbs = allValues.length
+      ? Math.max(...allValues.map((value) => Math.abs(value)))
+      : 0;
+    return Math.max(maxAbs, 0.5);
   }, [points]);
 
   const visibleRange = useMemo(
-    () => Math.max(range / zoomScale, 1),
+    () => Math.max(range / zoomScale, 0.5),
     [range, zoomScale]
   );
 
@@ -116,7 +120,7 @@ function MomentumGrid({
   };
 
   const ticks = useMemo(() => {
-    const step = Math.max(1, Math.floor(visibleRange / 3));
+    const step = Math.max(0.5, Math.round((visibleRange / 3) * 2) / 2);
     const values: number[] = [];
     for (
       let v = -Math.ceil(visibleRange);
