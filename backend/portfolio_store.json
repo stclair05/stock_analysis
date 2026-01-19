@@ -637,20 +637,6 @@
       "target_3": 11.96
     },
     {
-      "ticker": "SIL",
-      "shares": 50000,
-      "average_cost": 70.89,
-      "sector": "Precious Metals",
-      "peers": ["AG", "EXK", "PAAS", "CDE", "GGD", "FSM"],
-      "player": 8,
-      "invalidation_1": 67.86,
-      "invalidation_2": 62.47,
-      "invalidation_3": -1,
-      "target_1": 72,
-      "target_2": 74.5,
-      "target_3": 85
-    },
-    {
       "ticker": "EXK",
       "shares": 50000,
       "average_cost": 9.34,
@@ -675,20 +661,6 @@
       "invalidation_2": -1,
       "invalidation_3": -1,
       "target_1": -1,
-      "target_2": -1,
-      "target_3": -1
-    },
-    {
-      "ticker": "SILJ",
-      "shares": 60000,
-      "average_cost": 26.375,
-      "sector": "Precious Metals",
-      "peers": ["SIL", "SLVP", "PSLV", "SIVR"],
-      "player": 8,
-      "invalidation_1": 25.43,
-      "invalidation_2": -1,
-      "invalidation_3": -1,
-      "target_1": 32,
       "target_2": -1,
       "target_3": -1
     },
@@ -722,7 +694,7 @@
     },
     {
       "ticker": "HL",
-      "shares": 160000,
+      "shares": 80000,
       "average_cost": 17.06,
       "sector": "Precious Metals",
       "player": 8,
@@ -752,7 +724,7 @@
     },
     {
       "ticker": "ASM",
-      "shares": 170000,
+      "shares": 85000,
       "average_cost": 5.69,
       "sector": "Precious Metals",
       "player": 8,
