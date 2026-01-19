@@ -650,6 +650,31 @@ class StockAnalyser:
             twentyone_days_ago=safe_value(score, -4),
         )
     
+    def mace_score_recent_change(self, window: int = 5) -> float | None:
+        df_weekly = self._last_days(self.weekly_df, 600)
+
+        if len(df_weekly) < 30 or df_weekly.empty:  # ~30 weeks
+            return None
+
+        mace_metrics = compute_mace_spectrum_metrics(df_weekly)
+        score = mace_metrics["score_base"].dropna()
+
+        if score.empty:
+            return None
+
+        recent_values = score.tail(window).to_numpy()
+        if len(recent_values) < 2:
+            return None
+
+        deltas = np.diff(recent_values)
+        if len(deltas) == 0:
+            return None
+
+        weights = np.arange(1, len(deltas) + 1)
+        weighted_average = float(np.average(deltas, weights=weights))
+
+        return weighted_average
+    
     def forty_week_status(self) -> TimeSeriesMetric:
         df_weekly = self._last_days(self.weekly_df, 600)
 

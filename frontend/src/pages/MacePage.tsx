@@ -4,17 +4,20 @@ import "./MomentumPage.css";
 type MaceScoresResponse = {
   current: Record<string, number>;
   twentyone_days_ago: Record<string, number>;
+  recent_weighted_change: Record<string, number>;
 };
 
 type MacePoint = {
   symbol: string;
   current?: number;
   twentyoneDaysAgo?: number;
+  recentWeightedChange?: number;
 };
 
 const FALLBACK: MaceScoresResponse = {
   current: {},
   twentyone_days_ago: {},
+  recent_weighted_change: {},
 };
 
 type MaceGridProps = {
@@ -35,6 +38,20 @@ const toCentered = (value?: number) =>
 const formatScore = (value?: number) =>
   typeof value === "number" ? value.toFixed(2) : "—";
 
+const clamp = (value: number, min: number, max: number) =>
+  Math.min(Math.max(value, min), max);
+
+const getTrendColor = (change?: number) => {
+  if (typeof change !== "number" || Number.isNaN(change)) {
+    return "rgba(148, 163, 184, 0.8)";
+  }
+
+  const intensity = clamp(Math.abs(change) / 0.12, 0.25, 1);
+  const green = change >= 0;
+  const base = green ? [34, 197, 94] : [239, 68, 68];
+  return `rgba(${base[0]}, ${base[1]}, ${base[2]}, ${intensity})`;
+};
+
 function MaceGrid({
   data,
   loading,
@@ -49,6 +66,7 @@ function MaceGrid({
     const symbols = new Set<string>([
       ...Object.keys(data.current || {}),
       ...Object.keys(data.twentyone_days_ago || {}),
+      ...Object.keys(data.recent_weighted_change || {}),
     ]);
 
     return Array.from(symbols)
@@ -57,8 +75,9 @@ function MaceGrid({
         symbol,
         current: data.current?.[symbol],
         twentyoneDaysAgo: data.twentyone_days_ago?.[symbol],
+        recentWeightedChange: data.recent_weighted_change?.[symbol],
       }));
-  }, [data.current, data.twentyone_days_ago]);
+  }, [data.current, data.twentyone_days_ago, data.recent_weighted_change]);
 
   const extremes = useMemo(() => {
     const scored = points.map((p) => ({
@@ -375,6 +394,11 @@ function MaceGrid({
                 const pastScaled = point.twentyoneDaysAgo;
                 const isPositiveExtreme = extremes.positive.has(point.symbol);
                 const isNegativeExtreme = extremes.negative.has(point.symbol);
+                const trendLabel =
+                  typeof point.recentWeightedChange === "number" &&
+                  !Number.isNaN(point.recentWeightedChange)
+                    ? `, 5D trend ${formatScore(point.recentWeightedChange)}`
+                    : "";
                 const quadrantClass =
                   typeof currentScaled === "number" &&
                   typeof pastScaled === "number"
@@ -412,10 +436,30 @@ function MaceGrid({
                     }}
                     title={`${point.symbol}: Current ${formatScore(
                       point.current
-                    )}, 21D ${formatScore(point.twentyoneDaysAgo)}`}
+                    )}, 21D ${formatScore(
+                      point.twentyoneDaysAgo
+                    )}${trendLabel}`}
                   >
                     <span className="momentum-point__label">
-                      {point.symbol}
+                      <span className="momentum-point__ticker">
+                        {point.symbol}
+                      </span>
+                      {typeof point.recentWeightedChange === "number" &&
+                        !Number.isNaN(point.recentWeightedChange) && (
+                          <span
+                            className="momentum-point__trend"
+                            style={{
+                              color: getTrendColor(point.recentWeightedChange),
+                            }}
+                            aria-label={
+                              point.recentWeightedChange >= 0
+                                ? "MACE score improving over the last 5 days"
+                                : "MACE score worsening over the last 5 days"
+                            }
+                          >
+                            {point.recentWeightedChange >= 0 ? "▲" : "▼"}
+                          </span>
+                        )}
                     </span>
                   </div>
                 );
@@ -539,6 +583,7 @@ export default function MacePage() {
       setData({
         current: json.current || {},
         twentyone_days_ago: json.twentyone_days_ago || {},
+        recent_weighted_change: json.recent_weighted_change || {},
       });
       setError(null);
     } catch (err) {

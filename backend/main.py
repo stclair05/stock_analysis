@@ -870,18 +870,24 @@ def get_portfolio_status(
 def get_mace_scores(request: MaceScoresRequest):
     symbols = _sanitize_symbols_list(request.symbols)
     if not symbols:
-        return {"current": {}, "twentyone_days_ago": {}}
+        return {
+            "current": {},
+            "twentyone_days_ago": {},
+            "recent_weighted_change": {},
+        }
 
     def _fetch_score(symbol: str):
         analyser = StockAnalyser(symbol)
         metric = analyser.mace_score()
+        recent_change = analyser.mace_score_recent_change()
         return {
             "symbol": symbol,
             "current": metric.current,
             "twentyone_days_ago": metric.twentyone_days_ago,
+            "recent_weighted_change": recent_change,
         }
 
-    scores = {"current": {}, "twentyone_days_ago": {}}
+    scores = {"current": {}, "twentyone_days_ago": {}, "recent_weighted_change": {}}
     with ThreadPoolExecutor(max_workers=8) as executor:
         futures = {executor.submit(_fetch_score, symbol): symbol for symbol in symbols}
         for future in as_completed(futures):
@@ -890,6 +896,9 @@ def get_mace_scores(request: MaceScoresRequest):
                 result = future.result()
                 scores["current"][symbol] = result["current"]
                 scores["twentyone_days_ago"][symbol] = result["twentyone_days_ago"]
+                scores["recent_weighted_change"][symbol] = result[
+                    "recent_weighted_change"
+                ]
             except Exception as exc:
                 print(f"MACE score error for {symbol}: {exc}")
 
