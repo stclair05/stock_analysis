@@ -38,18 +38,26 @@ const toCentered = (value?: number) =>
 const formatScore = (value?: number) =>
   typeof value === "number" ? value.toFixed(2) : "—";
 
-const clamp = (value: number, min: number, max: number) =>
-  Math.min(Math.max(value, min), max);
-
-const getTrendColor = (change?: number) => {
+const getTickerColor = (change?: number) => {
   if (typeof change !== "number" || Number.isNaN(change)) {
     return "rgba(148, 163, 184, 0.8)";
   }
 
-  const intensity = clamp(Math.abs(change) / 0.12, 0.25, 1);
-  const green = change >= 0;
-  const base = green ? [34, 197, 94] : [239, 68, 68];
-  return `rgba(${base[0]}, ${base[1]}, ${base[2]}, ${intensity})`;
+  if (change > 0.02) return "rgb(34, 197, 94)";
+  if (change < -0.02) return "rgb(239, 68, 68)";
+  return "rgb(59, 130, 246)";
+};
+
+const getArrowColor = (change?: number) => {
+  if (typeof change !== "number" || Number.isNaN(change)) {
+    return "rgba(148, 163, 184, 0.8)";
+  }
+
+  if (change > 0.02) return "rgb(34, 197, 94)";
+  if (change < -0.02) return "rgb(239, 68, 68)";
+  if (change > 0) return "rgba(34, 197, 94, 0.55)";
+  if (change < 0) return "rgba(239, 68, 68, 0.55)";
+  return "rgba(148, 163, 184, 0.8)";
 };
 
 function MaceGrid({
@@ -441,15 +449,21 @@ function MaceGrid({
                     )}${trendLabel}`}
                   >
                     <span className="momentum-point__label">
-                      <span className="momentum-point__ticker">
+                      <span
+                        className="momentum-point__ticker"
+                        style={{
+                          color: getTickerColor(point.recentWeightedChange),
+                        }}
+                      >
                         {point.symbol}
                       </span>
                       {typeof point.recentWeightedChange === "number" &&
-                        !Number.isNaN(point.recentWeightedChange) && (
+                        !Number.isNaN(point.recentWeightedChange) &&
+                        point.recentWeightedChange !== 0 && (
                           <span
                             className="momentum-point__trend"
                             style={{
-                              color: getTrendColor(point.recentWeightedChange),
+                              color: getArrowColor(point.recentWeightedChange),
                             }}
                             aria-label={
                               point.recentWeightedChange >= 0
