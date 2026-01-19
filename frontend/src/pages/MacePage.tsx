@@ -196,6 +196,19 @@ function MaceGrid({
                   </div>
                 )}
               </div>
+              <div className="momentum-background-note positive-developing-note">
+                <span className="momentum-note-letter momentum-note-letter--down">
+                  D
+                </span>
+                <span aria-hidden className="momentum-note-arrow">
+                  {" "}
+                  --&gt;{" "}
+                </span>
+                <span className="momentum-note-letter momentum-note-letter--up">
+                  U
+                </span>
+                <span className="momentum-note-text"> (breakout)</span>
+              </div>
               <div className="momentum-quadrant-label positive-trend">
                 <span className="momentum-quadrant-title">Positive Trend</span>
                 {mode === "portfolio" && (
@@ -237,6 +250,18 @@ function MaceGrid({
                   </div>
                 )}
               </div>
+              <div className="momentum-background-note negative-developing-note">
+                <span className="momentum-note-letter momentum-note-letter--up">
+                  U
+                </span>
+                <span aria-hidden className="momentum-note-arrow">
+                  {" "}
+                  --&gt;{" "}
+                </span>
+                <span className="momentum-note-letter momentum-note-letter--down">
+                  D
+                </span>
+              </div>
 
               <div
                 className="momentum-axis momentum-axis--x"
@@ -250,10 +275,10 @@ function MaceGrid({
               />
 
               <div className="momentum-axis-label momentum-axis-label--x">
-                MACE score 21D ago
+                Current MACE score
               </div>
               <div className="momentum-axis-label momentum-axis-label--y">
-                Current MACE score
+                MACE score 21D ago
               </div>
 
               {ticks.map((tick) => (
