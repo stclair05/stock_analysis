@@ -572,8 +572,8 @@
     },
     {
       "ticker": "XAUUSD",
-      "shares": 2300,
-      "average_cost": 4451.6337,
+      "shares": 3750,
+      "average_cost": 4524.6555,
       "sector": "Precious Metals",
       "player": 8
     },
@@ -1277,6 +1277,20 @@
       "invalidation_3": -1,
       "target_1": 2.17,
       "target_2": 3.8,
+      "target_3": -1
+    },
+    {
+      "ticker": "0916.HK",
+      "shares": 250000,
+      "average_cost": 0.89,
+      "sector": "Hong Kong and China",
+      "peers": ["1798.HK", "3868.HK", "0182.HK", "0987.HK", "0451.HK"],
+      "player": 6,
+      "invalidation_1": -1,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": -1,
+      "target_2": -1,
       "target_3": -1
     }
   ],
