@@ -114,7 +114,7 @@ function MaceGrid({
 
   const visibleRange = useMemo(
     () => Math.max(BASE_RANGE / zoomScale, 0.125),
-    [zoomScale]
+    [zoomScale],
   );
 
   const toPosition = (value?: number) => {
@@ -142,7 +142,7 @@ function MaceGrid({
       yMin: 0.54,
       yMax: 0.7,
     }),
-    []
+    [],
   );
   const breakdownZone = useMemo(
     () => ({
@@ -151,7 +151,7 @@ function MaceGrid({
       yMin: 0,
       yMax: 0.5,
     }),
-    []
+    [],
   );
   const toZoneStyle = (zone: {
     xMin: number;
@@ -380,10 +380,10 @@ function MaceGrid({
                 aria-hidden
               />
 
-              <div className="momentum-axis-label momentum-axis-label--x">
+              <div className="momentum-axis-label mace-axis-label--y">
                 Current MACE score
               </div>
-              <div className="momentum-axis-label momentum-axis-label--y">
+              <div className="momentum-axis-label mace-axis-label--x">
                 MACE score 21D ago
               </div>
 
@@ -438,10 +438,10 @@ function MaceGrid({
                     ? currentScaled >= 0.5 && pastScaled >= 0.5
                       ? " momentum-point--positive-trend"
                       : currentScaled >= 0.5 && pastScaled < 0.5
-                      ? " momentum-point--positive-developing"
-                      : currentScaled < 0.5 && pastScaled < 0.5
-                      ? " momentum-point--negative-trend"
-                      : " momentum-point--negative-developing"
+                        ? " momentum-point--positive-developing"
+                        : currentScaled < 0.5 && pastScaled < 0.5
+                          ? " momentum-point--negative-trend"
+                          : " momentum-point--negative-developing"
                     : "";
 
                 return (
@@ -468,9 +468,9 @@ function MaceGrid({
                       }%`,
                     }}
                     title={`${point.symbol}: Current ${formatScore(
-                      point.current
+                      point.current,
                     )}, 21D ${formatScore(
-                      point.twentyoneDaysAgo
+                      point.twentyoneDaysAgo,
                     )}${trendLabel}`}
                   >
                     <span className="momentum-point__label">
@@ -549,10 +549,10 @@ export default function MacePage() {
         const symbols = Array.isArray(json)
           ? json
               .map((entry: { ticker?: string }) =>
-                entry?.ticker ? entry.ticker.toUpperCase() : null
+                entry?.ticker ? entry.ticker.toUpperCase() : null,
               )
               .filter((ticker: string | null): ticker is string =>
-                Boolean(ticker)
+                Boolean(ticker),
               )
           : [];
         setPortfolioSymbols(symbols);
@@ -599,7 +599,7 @@ export default function MacePage() {
       setData: (value: MaceScoresResponse) => void;
       setError: (value: string | null) => void;
       setLoading: (value: boolean) => void;
-    }
+    },
   ) => {
     if (symbols.length === 0) {
       setData(FALLBACK);
