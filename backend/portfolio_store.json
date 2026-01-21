@@ -526,21 +526,6 @@
       "invalidation_3": 41.2
     },
     {
-      "ticker": "JOBY",
-      "shares": 30000.0,
-      "average_cost": 14.92,
-      "sector": "Aerospace & Defense",
-      "player": 4,
-      "technigrade": [10, 13, 6, 4, 2],
-      "peers": ["ACHR", "LILM", "EVEX", "EVTL", "EH", "BLDE"],
-      "invalidation_1": 14.15,
-      "invalidation_2": 12.72,
-      "invalidation_3": -1,
-      "target_1": 17,
-      "target_2": 20.95,
-      "target_3": 25.1
-    },
-    {
       "ticker": "TEM",
       "shares": 56000,
       "average_cost": 82.0164,
@@ -752,21 +737,6 @@
       "target_3": 226
     },
     {
-      "ticker": "MSB",
-      "shares": 7000,
-      "average_cost": 36.8782,
-      "sector": "Others",
-      "player": 1,
-      "technigrade": [7, 9, 4, 4, 4],
-      "peers": ["SXC", "ZEUS", "CLF", "X", "FRD", "MT"],
-      "invalidation_1": 33.28,
-      "invalidation_2": 29.81,
-      "invalidation_3": -1,
-      "target_1": 36.7,
-      "target_2": -1,
-      "target_3": -1
-    },
-    {
       "ticker": "OI",
       "shares": 32500.0,
       "average_cost": 14.23,
@@ -809,21 +779,6 @@
       "target_1": 70.79,
       "target_2": 103.58,
       "target_3": 120
-    },
-    {
-      "ticker": "MVST",
-      "shares": 50000,
-      "average_cost": 3.6631,
-      "sector": "Technology",
-      "player": 2,
-      "technigrade": [],
-      "peers": ["FLNC", "EOSE", "SLDP", "QS", "AMPX", "ENVX", "CATL"],
-      "invalidation_1": -1,
-      "invalidation_2": -1,
-      "invalidation_3": -1,
-      "target_1": -1,
-      "target_2": -1,
-      "target_3": -1
     },
     {
       "ticker": "ANET",
@@ -973,20 +928,6 @@
       "target_3": 135
     },
     {
-      "ticker": "SERV",
-      "shares": 70000,
-      "average_cost": 11.7588,
-      "sector": "Technology",
-      "peers": ["UBER", "SYM", "UAVS", "IRBT", "RR"],
-      "player": 10,
-      "invalidation_1": 8.87,
-      "invalidation_2": -1,
-      "invalidation_3": -1,
-      "target_1": 11,
-      "target_2": 14,
-      "target_3": 15
-    },
-    {
       "ticker": "AXON",
       "shares": 2200,
       "average_cost": 587.196,
@@ -998,21 +939,6 @@
       "invalidation_2": -1,
       "invalidation_3": -1,
       "target_1": 697,
-      "target_2": -1,
-      "target_3": -1
-    },
-    {
-      "ticker": "AVAV",
-      "shares": 200,
-      "average_cost": 318.42,
-      "sector": "Aerospace & Defense",
-      "technigrade": [],
-      "peers": ["KTOS", "TDY", "DRS", "TXT", "NOC", "LMT"],
-      "player": 10,
-      "invalidation_1": -1,
-      "invalidation_2": -1,
-      "invalidation_3": -1,
-      "target_1": -1,
       "target_2": -1,
       "target_3": -1
     },
