@@ -431,36 +431,6 @@
       "target_3": 850
     },
     {
-      "ticker": "NNE",
-      "shares": 8000,
-      "average_cost": 45.13,
-      "sector": "Uranium",
-      "player": 2,
-      "technigrade": [18, 19, 17, 7, 3],
-      "peers": ["SMR", "LEU", "OKLO", "LTBR", "BWXT", "EU"],
-      "invalidation_1": 39.9,
-      "invalidation_2": 36.7,
-      "invalidation_3": 34.23,
-      "target_1": 46.52,
-      "target_2": 54.27,
-      "target_3": 57.8
-    },
-    {
-      "ticker": "OKLO",
-      "shares": 3000,
-      "average_cost": 130.75,
-      "sector": "Uranium",
-      "player": 2,
-      "technigrade": [7, 7, 3, 1, 1],
-      "peers": ["SMR", "LEU", "NNE", "LTBR", "BWXT", "CCJ"],
-      "invalidation_1": 114,
-      "invalidation_2": 108,
-      "invalidation_3": -1,
-      "target_1": 146.61,
-      "target_2": 172.55,
-      "target_3": 185.75
-    },
-    {
       "ticker": "DML.TO",
       "shares": 60000,
       "average_cost": 2.7,
@@ -578,7 +548,7 @@
     },
     {
       "ticker": "TMC",
-      "shares": 100000.0,
+      "shares": 50000.0,
       "average_cost": 5.37,
       "sector": "Precious Metals",
       "player": 8,
@@ -626,20 +596,6 @@
       "average_cost": 16.05,
       "sector": "Precious Metals",
       "peers": ["HL", "PAAS", "WPM", "CDE", "SVM", "AEM"],
-      "player": 8,
-      "invalidation_1": -1,
-      "invalidation_2": -1,
-      "invalidation_3": -1,
-      "target_1": -1,
-      "target_2": -1,
-      "target_3": -1
-    },
-    {
-      "ticker": "HBM",
-      "shares": 32000,
-      "average_cost": 19.455,
-      "sector": "Precious Metals",
-      "peers": ["FCX", "ERO", "SCCO", "TGB"],
       "player": 8,
       "invalidation_1": -1,
       "invalidation_2": -1,
@@ -737,21 +693,6 @@
       "target_3": 226
     },
     {
-      "ticker": "OI",
-      "shares": 32500.0,
-      "average_cost": 14.23,
-      "sector": "Others",
-      "player": 1,
-      "technigrade": [11, 10, 11, 13, 19],
-      "peers": ["AMBP", "CCK", "BALL", "SLGN", "GEF"],
-      "invalidation_1": 13.51,
-      "invalidation_2": -1,
-      "invalidation_3": -1,
-      "target_1": 18.46,
-      "target_2": -1,
-      "target_3": -1
-    },
-    {
       "ticker": "GEVO",
       "shares": 75000.0,
       "average_cost": 1.97,
@@ -767,7 +708,7 @@
     },
     {
       "ticker": "INOD",
-      "shares": 29000,
+      "shares": 12000,
       "average_cost": 66.77,
       "sector": "Technology",
       "player": 2,
@@ -779,21 +720,6 @@
       "target_1": 70.79,
       "target_2": 103.58,
       "target_3": 120
-    },
-    {
-      "ticker": "ANET",
-      "shares": 5000,
-      "average_cost": 148.02,
-      "sector": "Technology",
-      "player": 2,
-      "technigrade": [10, 15, 8, 6, 3],
-      "peers": ["CSCO", "JNPR", "DELL", "HPE", "MSFT", "AVGO"],
-      "invalidation_1": 133.31,
-      "invalidation_2": 127.58,
-      "invalidation_3": 119.25,
-      "target_1": 206,
-      "target_2": 219,
-      "target_3": 228
     },
     {
       "ticker": "TSLA",
@@ -838,21 +764,6 @@
       "target_1": 64,
       "target_2": -1,
       "target_3": -1
-    },
-    {
-      "ticker": "ENPH",
-      "shares": 7000,
-      "average_cost": 37.41,
-      "sector": "Others",
-      "player": 2,
-      "technigrade": [19, 19, 19, 19, 20],
-      "peers": ["SEDG", "RUN", "SPWR", "FSLR", "PLUG", "SOL"],
-      "invalidation_1": 29.89,
-      "invalidation_2": -1,
-      "invalidation_3": -1,
-      "target_1": 37.8,
-      "target_2": 53,
-      "target_3": 74
     },
     {
       "ticker": "ALLY",
@@ -911,21 +822,6 @@
       "target_1": 34,
       "target_2": 48,
       "target_3": 50
-    },
-    {
-      "ticker": "NBIS",
-      "shares": 10000,
-      "average_cost": 99.539,
-      "sector": "Technology",
-      "technigrade": [3, 4, 3, 1, 1],
-      "peers": ["NVDA", "ORCL", "CRWV", "IREN", "MSFT", "AMD"],
-      "player": 10,
-      "invalidation_1": 34.37,
-      "invalidation_2": 32.03,
-      "invalidation_3": -1,
-      "target_1": 103,
-      "target_2": 117,
-      "target_3": 135
     },
     {
       "ticker": "AXON",
