@@ -512,7 +512,7 @@
     },
     {
       "ticker": "XAUUSD",
-      "shares": 5850,
+      "shares": 6050,
       "average_cost": 4564.0484,
       "sector": "Precious Metals",
       "player": 8
@@ -575,34 +575,6 @@
       "target_1": 7,
       "target_2": 11,
       "target_3": 11.96
-    },
-    {
-      "ticker": "EXK",
-      "shares": 50000,
-      "average_cost": 9.34,
-      "sector": "Precious Metals",
-      "peers": ["HL", "PAAS", "AG", "CDE", "SVM", "AEM"],
-      "player": 8,
-      "invalidation_1": -1,
-      "invalidation_2": -1,
-      "invalidation_3": -1,
-      "target_1": -1,
-      "target_2": -1,
-      "target_3": -1
-    },
-    {
-      "ticker": "AG",
-      "shares": 50000,
-      "average_cost": 16.05,
-      "sector": "Precious Metals",
-      "peers": ["HL", "PAAS", "WPM", "CDE", "SVM", "AEM"],
-      "player": 8,
-      "invalidation_1": -1,
-      "invalidation_2": -1,
-      "invalidation_3": -1,
-      "target_1": -1,
-      "target_2": -1,
-      "target_3": -1
     },
     {
       "ticker": "COPX",
