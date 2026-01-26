@@ -359,8 +359,8 @@
     },
     {
       "ticker": "U-UN.TO",
-      "shares": 49000,
-      "average_cost": 20.91,
+      "shares": 64000,
+      "average_cost": 23.1694,
       "sector": "Uranium",
       "player": 5,
       "invalidation_1": 26,
@@ -373,8 +373,8 @@
     },
     {
       "ticker": "EU",
-      "shares": 50000,
-      "average_cost": 3.16,
+      "shares": 95000,
+      "average_cost": 3.224,
       "sector": "Uranium",
       "technigrade": [],
       "peers": ["UEC", "URG", "UUUU", "DNN", "UROY", "CCJ"],
@@ -402,8 +402,8 @@
     },
     {
       "ticker": "LTBR",
-      "shares": 10000,
-      "average_cost": 17.47,
+      "shares": 18000,
+      "average_cost": 17.6762,
       "sector": "Uranium",
       "player": 2,
       "technigrade": [14, 18, 6, 4, 1],
@@ -432,8 +432,8 @@
     },
     {
       "ticker": "DML.TO",
-      "shares": 60000,
-      "average_cost": 2.7,
+      "shares": 120000,
+      "average_cost": 4.0029,
       "sector": "Uranium",
       "player": 2,
       "technigrade": [],
@@ -483,6 +483,33 @@
       "peers": ["FANG", "EOG", "MTDR", "OXY", "HES", "MRO"]
     },
     {
+      "ticker": "BTU",
+      "shares": 10000.0,
+      "average_cost": 37.7,
+      "sector": "Energy",
+      "target_1": "",
+      "player": 7,
+      "peers": ["AMR", "HCC", "ARLP", "CNR", "NRP", "METC"]
+    },
+    {
+      "ticker": "HWX.TO",
+      "shares": 30000.0,
+      "average_cost": 7.81,
+      "sector": "Energy",
+      "target_1": "",
+      "player": 7,
+      "peers": ["TVE.TO", "SGY.TO", "SDE.TO", "ATH.TO", "POU.TO"]
+    },
+    {
+      "ticker": "ATH.TO",
+      "shares": 45000.0,
+      "average_cost": 5.56,
+      "sector": "Energy",
+      "target_1": "",
+      "player": 7,
+      "peers": ["TVE.TO", "SGY.TO", "SDE.TO", "ATH.TO", "POU.TO"]
+    },
+    {
       "ticker": "1810.HK",
       "shares": 30000,
       "average_cost": 7.85,
@@ -518,13 +545,6 @@
       "player": 8
     },
     {
-      "ticker": "XAGUSD",
-      "shares": 5000,
-      "average_cost": 84.0503,
-      "sector": "Precious Metals",
-      "player": 8
-    },
-    {
       "ticker": "PAUSD",
       "shares": 435,
       "average_cost": 1897.9337,
@@ -548,8 +568,8 @@
     },
     {
       "ticker": "TMC",
-      "shares": 50000.0,
-      "average_cost": 5.37,
+      "shares": 60000.0,
+      "average_cost": 9.03,
       "sector": "Precious Metals",
       "player": 8,
       "technigrade": [4, 17, 18, 13, 3],
@@ -587,65 +607,6 @@
       "invalidation_2": -1,
       "invalidation_3": -1,
       "target_1": -1,
-      "target_2": -1,
-      "target_3": -1
-    },
-    {
-      "ticker": "CDE",
-      "shares": 190000,
-      "average_cost": 17.232,
-      "sector": "Precious Metals",
-      "player": 8,
-      "technigrade": [2, 5, 3, 3, 2],
-      "peers": ["HL", "AG", "PAAS", "EXK", "FSM", "MUX"],
-      "invalidation_1": 16.7,
-      "invalidation_2": 12.48,
-      "invalidation_3": -1,
-      "target_1": 23.3,
-      "target_2": 31.95,
-      "target_3": -1
-    },
-    {
-      "ticker": "ASM",
-      "shares": 85000,
-      "average_cost": 5.69,
-      "sector": "Precious Metals",
-      "player": 8,
-      "peers": ["AG", "EXK", "FSM", "CDE", "PAAS"],
-      "invalidation_1": 5.5,
-      "invalidation_2": 5.16,
-      "invalidation_3": -1,
-      "target_1": 6.42,
-      "target_2": 7,
-      "target_3": -1
-    },
-    {
-      "ticker": "BTG",
-      "shares": 100000,
-      "average_cost": 4.55,
-      "sector": "Precious Metals",
-      "player": 8,
-      "technigrade": [5, 15, 10, 13, 6],
-      "peers": ["AEM", "KGC", "EGO", "PAAS", "FNV", "RGLD"],
-      "invalidation_1": 4.29,
-      "invalidation_2": -1,
-      "invalidation_3": -1,
-      "target_1": 5.94,
-      "target_2": -1,
-      "target_3": -1
-    },
-    {
-      "ticker": "AYA.TO",
-      "shares": 68700,
-      "average_cost": 13.61,
-      "sector": "Precious Metals",
-      "player": 8,
-      "technigrade": [2, 14, 7, 9, 7],
-      "peers": ["AG", "PAAS", "CDE", "EXK", "FSM"],
-      "invalidation_1": 18.07,
-      "invalidation_2": -1,
-      "invalidation_3": -1,
-      "target_1": 20.81,
       "target_2": -1,
       "target_3": -1
     },
@@ -695,8 +656,8 @@
     },
     {
       "ticker": "TSLA",
-      "shares": 1000,
-      "average_cost": 446.9624,
+      "shares": 3500,
+      "average_cost": 442.0924,
       "sector": "Technology",
       "player": 2,
       "technigrade": [5, 7, 6, 4, 3],
@@ -705,6 +666,21 @@
       "invalidation_2": -1,
       "invalidation_3": -1,
       "target_1": 489.33,
+      "target_2": -1,
+      "target_3": -1
+    },
+    {
+      "ticker": "VRT",
+      "shares": 1500,
+      "average_cost": 186.92,
+      "sector": "Technology",
+      "player": 2,
+      "technigrade": [],
+      "peers": ["PWR", "SMCI", "HPE", "JCI", "CTAS", "AEIS", "PLUG"],
+      "invalidation_1": -1,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": -1,
       "target_2": -1,
       "target_3": -1
     },
@@ -734,6 +710,20 @@
       "invalidation_2": 42.16,
       "invalidation_3": -1,
       "target_1": 64,
+      "target_2": -1,
+      "target_3": -1
+    },
+    {
+      "ticker": "URNM",
+      "shares": 7000.0,
+      "average_cost": 75.05,
+      "sector": "Uranium",
+      "peers": ["URA", "NLR", "SRUUF", "URAN", "XME"],
+      "player": 2,
+      "invalidation_1": -1,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": -1,
       "target_2": -1,
       "target_3": -1
     },
