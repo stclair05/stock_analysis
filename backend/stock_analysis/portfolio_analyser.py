@@ -14,7 +14,7 @@ from .stock_analyser import StockAnalyser
 class PortfolioAnalyser:
     def __init__(self, json_path: str = "portfolio_store.json"):
         self.json_path = Path(json_path)
-        self.fx_rate = None
+        self.fx_rates: dict[str, float] = {}
         self.portfolio_data = self._load_portfolio()
 
     def _load_portfolio(self):
@@ -31,15 +31,20 @@ class PortfolioAnalyser:
                 flattened.append(item)
         return flattened
 
-    def _fetch_fx_rate(self):
+    def _fetch_fx_rate(self, pair: str) -> float:
+        if pair in self.fx_rates:
+            return self.fx_rates[pair]
+
+        rate = 1.0
         try:
-            fx_data = yf.Ticker("GBPUSD=X").history(period="1d")
+            fx_data = yf.Ticker(pair).history(period="1d")
             if not fx_data.empty:
-                self.fx_rate = fx_data["Close"].iloc[-1]
-            else:
-                self.fx_rate = 1.0
+                rate = fx_data["Close"].iloc[-1]
         except Exception:
-            self.fx_rate = 1.0
+            rate = 1.0
+
+        self.fx_rates[pair] = rate
+        return rate
 
     def _compute_period_change(self, closes: Optional[pd.Series], period: int) -> Optional[float]:
         if closes is None or closes.empty:
@@ -280,16 +285,30 @@ class PortfolioAnalyser:
                 if closes is not None:
                     closes = closes / 100
 
-                if self.fx_rate:
-                    current_price *= self.fx_rate
+                fx_rate = self.fx_rates.get("GBPUSD=X")
+                if fx_rate:
+                    current_price *= fx_rate
                     if change is not None:
-                        change *= self.fx_rate
+                        change *= fx_rate
                     if closes is not None:
-                        closes = closes * self.fx_rate
+                        closes = closes * fx_rate
                     if yesterday_close is not None:
-                        yesterday_close *= self.fx_rate
+                        yesterday_close *= fx_rate
                     if yesterday_change is not None:
-                        yesterday_change *= self.fx_rate
+                        yesterday_change *= fx_rate
+
+            if ticker.endswith(".SS") or ticker.endswith(".SZ"):
+                fx_rate = self.fx_rates.get("CNYUSD=X")
+                if fx_rate:
+                    current_price *= fx_rate
+                    if change is not None:
+                        change *= fx_rate
+                    if closes is not None:
+                        closes = closes * fx_rate
+                    if yesterday_close is not None:
+                        yesterday_close *= fx_rate
+                    if yesterday_change is not None:
+                        yesterday_change *= fx_rate
 
             if current_price is None:
                 return {
@@ -365,8 +384,16 @@ class PortfolioAnalyser:
             return None
 
     def analyse(self) -> list[dict]:
-        if any(item["ticker"].endswith(".L") for item in self.portfolio_data):
-            self._fetch_fx_rate()
+        fx_pairs = set()
+        for item in self.portfolio_data:
+            ticker = item["ticker"]
+            if ticker.endswith(".L"):
+                fx_pairs.add("GBPUSD=X")
+            if ticker.endswith(".SS") or ticker.endswith(".SZ"):
+                fx_pairs.add("CNYUSD=X")
+
+        for pair in fx_pairs:
+            self._fetch_fx_rate(pair)
 
         results = []
         with ThreadPoolExecutor(max_workers=16) as executor:
