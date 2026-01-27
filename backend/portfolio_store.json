@@ -656,21 +656,6 @@
       "target_3": -1
     },
     {
-      "ticker": "CDE",
-      "shares": 140000,
-      "average_cost": 17.2882,
-      "sector": "Precious Metals",
-      "player": 8,
-      "technigrade": [2, 5, 3, 3, 2],
-      "peers": ["HL", "AG", "PAAS", "EXK", "FSM", "MUX"],
-      "invalidation_1": -1,
-      "invalidation_2": -1,
-      "invalidation_3": -1,
-      "target_1": -1,
-      "target_2": -1,
-      "target_3": -1
-    },
-    {
       "ticker": "BIDU",
       "shares": 25054.0,
       "average_cost": 154.77,
