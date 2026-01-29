@@ -723,6 +723,15 @@ class StockAnalyser:
             twentyone_days_ago=safe_value(ma_20, -21),
         )
     
+    def calculate_5dma(self) -> TimeSeriesMetric:
+        ma_5 = self.df['Close'].rolling(window=5).mean()
+        return TimeSeriesMetric(
+            current=safe_value(ma_5, -1),
+            seven_days_ago=safe_value(ma_5, -7),
+            fourteen_days_ago=safe_value(ma_5, -14),
+            twentyone_days_ago=safe_value(ma_5, -21),
+        )
+    
     def calculate_50dma(self) -> TimeSeriesMetric:
         ma_50 = self.df['Close'].rolling(window=50).mean()
         return TimeSeriesMetric(

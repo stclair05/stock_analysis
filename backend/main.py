@@ -66,6 +66,9 @@ class CustomMomentumRequest(BaseModel):
     symbols: List[str]
     baseline: Literal["portfolio", "spx", "dji", "iwm", "nasdaq"] = "portfolio"
 
+class CustomSmaMomentumRequest(BaseModel):
+    symbols: List[str]
+
 class MaceScoresRequest(BaseModel):
     symbols: List[str]
 
@@ -82,6 +85,41 @@ def _sanitize_symbols_list(symbols: List[str]) -> list[str]:
         seen.add(normalized)
         cleaned.append(normalized)
     return cleaned
+
+
+def _sma_distance_pct(price: float | None, sma: float | None) -> float | None:
+    if not isinstance(price, (int, float)) or not isinstance(sma, (int, float)):
+        return None
+    if sma == 0:
+        return None
+    return (price - sma) / sma * 100
+
+
+def _compute_sma_distances(symbols: list[str]) -> dict[str, dict[str, float]]:
+    results: dict[str, dict[str, float]] = {"distance_5d": {}, "distance_20d": {}}
+
+    def _fetch(symbol: str):
+        analyser = StockAnalyser(symbol)
+        price_now = analyser.get_current_price()
+        dma5 = analyser.calculate_5dma().current
+        dma20 = analyser.calculate_20dma().current
+        return {
+            "symbol": symbol,
+            "distance_5d": _sma_distance_pct(price_now, dma5),
+            "distance_20d": _sma_distance_pct(price_now, dma20),
+        }
+
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        futures = {executor.submit(_fetch, symbol): symbol for symbol in symbols}
+        for future in as_completed(futures):
+            result = future.result()
+            symbol = result["symbol"]
+            if isinstance(result["distance_5d"], (int, float)):
+                results["distance_5d"][symbol] = float(result["distance_5d"])
+            if isinstance(result["distance_20d"], (int, float)):
+                results["distance_20d"][symbol] = float(result["distance_20d"])
+
+    return results
 
 
 def _get_portfolio_equities():
@@ -278,6 +316,40 @@ def custom_momentum(payload: CustomMomentumRequest):
         "momentum_weekly": weekly_scores,
         "momentum_monthly": monthly_scores,
     }
+
+
+@app.get("/sma_momentum")
+def sma_momentum(
+    list_type: str = Query("portfolio", enum=["portfolio", "watchlist"])
+):
+    if list_type == "portfolio":
+        equities = _get_portfolio_equities()
+        symbols = [item["ticker"] for item in equities if "ticker" in item]
+    else:
+        data = load_data()
+        symbols = []
+        for item in data.get("watchlist", []):
+            if isinstance(item, dict):
+                ticker = item.get("ticker")
+                if ticker:
+                    symbols.append(ticker)
+            elif isinstance(item, str):
+                symbols.append(item)
+
+    symbols = _sanitize_symbols_list(symbols)
+    if not symbols:
+        return {"distance_5d": {}, "distance_20d": {}}
+
+    return convert_numpy_types(_compute_sma_distances(symbols))
+
+
+@app.post("/custom_sma_momentum")
+def custom_sma_momentum(payload: CustomSmaMomentumRequest):
+    symbols = _sanitize_symbols_list(payload.symbols)
+    if not symbols:
+        return {"distance_5d": {}, "distance_20d": {}}
+
+    return convert_numpy_types(_compute_sma_distances(symbols))
 
 
 @app.post("/analyse", response_model=StockAnalysisResponse)

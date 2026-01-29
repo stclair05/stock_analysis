@@ -1,0 +1,490 @@
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import "./MomentumPage.css";
+
+type SmaMomentumResponse = {
+  distance_5d: Record<string, number>;
+  distance_20d: Record<string, number>;
+};
+
+type SmaPoint = {
+  symbol: string;
+  dma5?: number;
+  dma20?: number;
+};
+
+const FALLBACK: SmaMomentumResponse = {
+  distance_5d: {},
+  distance_20d: {},
+};
+
+type MomentumGridProps = {
+  data: SmaMomentumResponse;
+  loading: boolean;
+  error: string | null;
+  mode: "portfolio" | "custom";
+  zoomScale: number;
+  customSymbols: string[];
+};
+
+function SmaMomentumGrid({
+  data,
+  loading,
+  error,
+  mode,
+  zoomScale,
+  customSymbols,
+}: MomentumGridProps) {
+  const [isGridVisible, setIsGridVisible] = useState(true);
+  const points: SmaPoint[] = useMemo(() => {
+    const symbols = new Set<string>([
+      ...Object.keys(data.distance_5d || {}),
+      ...Object.keys(data.distance_20d || {}),
+    ]);
+
+    return Array.from(symbols)
+      .sort()
+      .map((symbol) => ({
+        symbol,
+        dma5: data.distance_5d?.[symbol],
+        dma20: data.distance_20d?.[symbol],
+      }));
+  }, [data.distance_20d, data.distance_5d]);
+
+  const extremes = useMemo(() => {
+    const scored = points.map((p) => ({
+      symbol: p.symbol,
+      score: (p.dma5 ?? 0) + (p.dma20 ?? 0),
+    }));
+
+    const positive = scored
+      .filter((s) => s.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 4)
+      .map((s) => s.symbol);
+
+    const negative = scored
+      .filter((s) => s.score < 0)
+      .sort((a, b) => a.score - b.score)
+      .slice(0, 4)
+      .map((s) => s.symbol);
+
+    return {
+      positive: new Set(positive),
+      negative: new Set(negative),
+    };
+  }, [points]);
+
+  const range = useMemo(() => {
+    const allValues = points
+      .flatMap((p) => [p.dma5, p.dma20])
+      .filter((value): value is number => typeof value === "number");
+    const maxAbs = allValues.length
+      ? Math.max(...allValues.map((value) => Math.abs(value)))
+      : 0;
+    return Math.max(maxAbs, 0.5);
+  }, [points]);
+
+  const visibleRange = useMemo(
+    () => Math.max(range / zoomScale, 0.5),
+    [range, zoomScale],
+  );
+
+  const toPosition = (value?: number) => {
+    if (typeof value !== "number" || Number.isNaN(value)) return 50;
+    const clamped = Math.max(Math.min(value, visibleRange), -visibleRange);
+    return 50 + (clamped / visibleRange) * 45;
+  };
+
+  const jitterPercent = (symbol: string, axis: "x" | "y") => {
+    const codeSum = symbol
+      .split("")
+      .reduce((acc, char, idx) => acc + char.charCodeAt(0) * (idx + 1), 0);
+    const axisSeed = axis === "x" ? 17 : 31;
+    const normalized = Math.sin(codeSum * axisSeed) * 0.6;
+    return normalized;
+  };
+
+  const ticks = useMemo(() => {
+    const step = Math.max(0.5, Math.round((visibleRange / 3) * 2) / 2);
+    const values: number[] = [];
+    for (
+      let v = -Math.ceil(visibleRange);
+      v <= Math.ceil(visibleRange);
+      v += step
+    ) {
+      if (Math.abs(v) < 0.01) continue;
+      values.push(parseFloat(v.toFixed(1)));
+    }
+    return values;
+  }, [visibleRange]);
+
+  const formatPercent = (value?: number) =>
+    typeof value === "number" ? `${value.toFixed(2)}%` : "-";
+
+  const hasSymbols =
+    mode === "portfolio" ? points.length > 0 : customSymbols.length > 0;
+
+  return (
+    <div className="card shadow-sm border-0 mb-4">
+      <div className="card-body">
+        <div className="d-flex align-items-center justify-content-between mb-3">
+          <h5 className="card-title mb-0">5DMA / 20DMA distance grid</h5>
+          <button
+            type="button"
+            className="btn btn-outline-secondary p-0 d-inline-flex align-items-center justify-content-center"
+            style={{ width: "26px", height: "26px", lineHeight: 1 }}
+            onClick={() => setIsGridVisible((visible) => !visible)}
+            aria-label="Toggle SMA momentum grid"
+          >
+            <span aria-hidden="true">{isGridVisible ? "−" : "+"}</span>
+          </button>
+        </div>
+
+        {error && <div className="alert alert-warning">{error}</div>}
+
+        {isGridVisible ? (
+          <>
+            <div className="momentum-grid mb-3" aria-live="polite">
+              <div className="momentum-quadrant-label positive-developing">
+                <span className="momentum-quadrant-title">
+                  Above 5DMA, Below 20DMA
+                </span>
+              </div>
+              <div className="momentum-quadrant-label positive-trend">
+                <span className="momentum-quadrant-title">
+                  Above 5DMA &amp; 20DMA
+                </span>
+              </div>
+              <div className="momentum-quadrant-label negative-trend">
+                <span className="momentum-quadrant-title">
+                  Below 5DMA &amp; 20DMA
+                </span>
+              </div>
+              <div className="momentum-quadrant-label negative-developing">
+                <span className="momentum-quadrant-title">
+                  Below 5DMA, Above 20DMA
+                </span>
+              </div>
+
+              <div
+                className="momentum-axis momentum-axis--x"
+                style={{ top: "50%" }}
+                aria-hidden
+              />
+              <div
+                className="momentum-axis momentum-axis--y"
+                style={{ left: "50%" }}
+                aria-hidden
+              />
+
+              <div className="momentum-axis-label momentum-axis-label--x">
+                Distance from 5DMA (%)
+              </div>
+              <div className="momentum-axis-label momentum-axis-label--y">
+                Distance from 20DMA (%)
+              </div>
+
+              {ticks.map((tick) => (
+                <div
+                  key={`x-${tick}`}
+                  className="momentum-tick"
+                  style={{ left: `${toPosition(tick)}%`, top: "52%" }}
+                >
+                  <div className="momentum-tick-line momentum-tick-line--x" />
+                  <div style={{ transform: "translate(-50%, 6px)" }}>
+                    {tick}
+                  </div>
+                </div>
+              ))}
+              {ticks.map((tick) => (
+                <div
+                  key={`y-${tick}`}
+                  className="momentum-tick"
+                  style={{ top: `${100 - toPosition(tick)}%`, left: "48%" }}
+                >
+                  <div className="momentum-tick-line momentum-tick-line--y" />
+                  <div style={{ transform: "translate(-26px, -50%)" }}>
+                    {tick}
+                  </div>
+                </div>
+              ))}
+
+              {points.map((point) => {
+                const isPositiveExtreme = extremes.positive.has(point.symbol);
+                const isNegativeExtreme = extremes.negative.has(point.symbol);
+                const quadrantClass =
+                  typeof point.dma5 === "number" &&
+                  typeof point.dma20 === "number"
+                    ? point.dma20 >= 0 && point.dma5 >= 0
+                      ? " momentum-point--positive-trend"
+                      : point.dma20 < 0 && point.dma5 >= 0
+                        ? " momentum-point--positive-developing"
+                        : point.dma20 < 0 && point.dma5 < 0
+                          ? " momentum-point--negative-trend"
+                          : " momentum-point--negative-developing"
+                    : "";
+
+                return (
+                  <div
+                    key={point.symbol}
+                    className={`momentum-point${
+                      isPositiveExtreme
+                        ? " momentum-point--positive-extreme"
+                        : ""
+                    }${
+                      isNegativeExtreme
+                        ? " momentum-point--negative-extreme"
+                        : ""
+                    }${quadrantClass}`}
+                    style={{
+                      left: `${
+                        toPosition(point.dma20) +
+                        jitterPercent(point.symbol, "x")
+                      }%`,
+                      top: `${
+                        100 -
+                        toPosition(point.dma5) +
+                        jitterPercent(point.symbol, "y")
+                      }%`,
+                    }}
+                    title={`${point.symbol}: 5DMA ${formatPercent(
+                      point.dma5,
+                    )}, 20DMA ${formatPercent(point.dma20)}`}
+                  >
+                    <span className="momentum-point__label">
+                      {point.symbol}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {loading && (
+              <div className="text-muted">Loading SMA distances…</div>
+            )}
+            {!loading && points.length === 0 && (
+              <div className="text-muted">
+                {hasSymbols
+                  ? "No SMA distance data available for these symbols."
+                  : "Enter symbols above to plot a custom grid."}
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="text-muted small">SMA grid hidden.</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default function SmaMomentumPage() {
+  const [portfolioData, setPortfolioData] =
+    useState<SmaMomentumResponse>(FALLBACK);
+  const [portfolioLoading, setPortfolioLoading] = useState(true);
+  const [portfolioError, setPortfolioError] = useState<string | null>(null);
+
+  const [mode, setMode] = useState<"portfolio" | "custom">("portfolio");
+  const [customInput, setCustomInput] = useState("");
+  const [customSymbols, setCustomSymbols] = useState<string[]>([]);
+  const [customData, setCustomData] = useState<SmaMomentumResponse>(FALLBACK);
+  const [customLoading, setCustomLoading] = useState(false);
+  const [customError, setCustomError] = useState<string | null>(null);
+  const [zoomScale, setZoomScale] = useState(1.25);
+
+  const fetchPortfolioDistances = () => {
+    setPortfolioLoading(true);
+    fetch("http://localhost:8000/sma_momentum?list_type=portfolio")
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("Failed to load SMA momentum data");
+        }
+        return res.json();
+      })
+      .then((json) => {
+        setPortfolioData({
+          distance_5d: json.distance_5d || {},
+          distance_20d: json.distance_20d || {},
+        });
+        setPortfolioError(null);
+      })
+      .catch((err) => {
+        console.error(err);
+        setPortfolioData(FALLBACK);
+        setPortfolioError("Unable to fetch SMA distances. Showing empty view.");
+      })
+      .finally(() => setPortfolioLoading(false));
+  };
+
+  useEffect(() => {
+    fetchPortfolioDistances();
+  }, []);
+
+  const fetchCustomDistances = (symbols: string[]) => {
+    setCustomLoading(true);
+    fetch("http://localhost:8000/custom_sma_momentum", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ symbols }),
+    })
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("Failed to fetch custom SMA momentum");
+        }
+        return res.json();
+      })
+      .then((json) => {
+        setCustomData({
+          distance_5d: json.distance_5d || {},
+          distance_20d: json.distance_20d || {},
+        });
+        setCustomError(null);
+      })
+      .catch((err) => {
+        console.error(err);
+        setCustomData(FALLBACK);
+        setCustomError(
+          "Unable to fetch SMA distances for that list. Try different symbols.",
+        );
+      })
+      .finally(() => setCustomLoading(false));
+  };
+
+  const onSubmitCustom = (event: FormEvent) => {
+    event.preventDefault();
+    const parsedSymbols = customInput
+      .split(/[,\s]+/)
+      .map((s) => s.trim().toUpperCase())
+      .filter(Boolean);
+
+    const uniqueSymbols = Array.from(new Set(parsedSymbols));
+
+    if (uniqueSymbols.length === 0) {
+      setCustomError("Enter at least one ticker symbol.");
+      return;
+    }
+
+    setCustomError(null);
+    setMode("custom");
+    setCustomSymbols(uniqueSymbols);
+    fetchCustomDistances(uniqueSymbols);
+  };
+
+  useEffect(() => {
+    if (mode === "custom" && customSymbols.length > 0) {
+      fetchCustomDistances(customSymbols);
+    }
+  }, [customSymbols, mode]);
+
+  const subtitle =
+    mode === "portfolio"
+      ? "Plot of portfolio stocks by percent distance from the 20DMA (x-axis) and 5DMA (y-axis)."
+      : "Plot of your custom stock list by percent distance from the 20DMA (x-axis) and 5DMA (y-axis).";
+
+  return (
+    <div className="container-fluid momentum-page py-4">
+      <div className="d-flex flex-wrap align-items-center gap-3 mb-3">
+        <h1 className="fw-bold mb-0">SMA Momentum</h1>
+        <div
+          className="btn-group"
+          role="group"
+          aria-label="SMA momentum view selector"
+        >
+          <button
+            className={`btn btn-outline-primary ${
+              mode === "portfolio" ? "active" : ""
+            }`}
+            type="button"
+            onClick={() => setMode("portfolio")}
+          >
+            Portfolio grid
+          </button>
+          <button
+            className={`btn btn-outline-primary ${
+              mode === "custom" ? "active" : ""
+            }`}
+            type="button"
+            onClick={() => setMode("custom")}
+          >
+            Custom list
+          </button>
+        </div>
+        <div className="d-flex align-items-center gap-2 ms-auto">
+          <label
+            htmlFor="smaMomentumZoom"
+            className="form-label mb-0 small text-muted"
+          >
+            Zoom
+          </label>
+          <select
+            id="smaMomentumZoom"
+            className="form-select form-select-sm w-auto"
+            value={zoomScale}
+            onChange={(event) => setZoomScale(Number(event.target.value))}
+          >
+            <option value={1}>1x</option>
+            <option value={1.25}>1.25x</option>
+            <option value={1.5}>1.5x</option>
+            <option value={2}>2x</option>
+            <option value={4}>4x</option>
+          </select>
+        </div>
+      </div>
+
+      <p className="text-muted mb-4">{subtitle}</p>
+
+      <div className="card shadow-sm border-0 mb-4">
+        <div className="card-body">
+          <h5 className="card-title mb-3">Plot a custom symbol grid</h5>
+          <form className="row g-3" onSubmit={onSubmitCustom}>
+            <div className="col-md-8">
+              <label htmlFor="smaCustomSymbols" className="form-label">
+                Enter ticker symbols (comma or space separated)
+              </label>
+              <input
+                id="smaCustomSymbols"
+                className="form-control"
+                placeholder="e.g. AAPL, MU, PTON"
+                value={customInput}
+                onChange={(e) => setCustomInput(e.target.value)}
+                aria-describedby="smaCustomSymbolsHelp"
+              />
+            </div>
+            <div className="col-md-4 d-flex align-items-end">
+              <button
+                type="submit"
+                className="btn btn-primary w-100"
+                disabled={customLoading}
+              >
+                {customLoading ? "Loading…" : "Plot custom grid"}
+              </button>
+            </div>
+          </form>
+          <div id="smaCustomSymbolsHelp" className="form-text">
+            Enter any tickers to see how they sit versus their 5-day and 20-day
+            simple moving averages.
+          </div>
+          {customError && (
+            <div className="text-danger small mt-2">{customError}</div>
+          )}
+          {customSymbols.length > 0 && (
+            <div className="text-muted small mt-2">
+              Showing custom list: {customSymbols.join(", ")}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <SmaMomentumGrid
+        data={mode === "portfolio" ? portfolioData : customData}
+        loading={mode === "portfolio" ? portfolioLoading : customLoading}
+        error={mode === "portfolio" ? portfolioError : customError}
+        mode={mode}
+        zoomScale={zoomScale}
+        customSymbols={customSymbols}
+      />
+    </div>
+  );
+}

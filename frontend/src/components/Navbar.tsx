@@ -50,6 +50,14 @@ export default function Navbar() {
           Momentum
         </Link>
         <Link
+          to="/sma-momentum"
+          className={`nav-link ${
+            location.pathname === "/sma-momentum" ? "active" : ""
+          }`}
+        >
+          SMA Momentum
+        </Link>
+        <Link
           to="/mace"
           className={`nav-link ${
             location.pathname === "/mace" ? "active" : ""
