@@ -96,17 +96,17 @@ def _sma_distance_pct(price: float | None, sma: float | None) -> float | None:
 
 
 def _compute_sma_distances(symbols: list[str]) -> dict[str, dict[str, float]]:
-    results: dict[str, dict[str, float]] = {"distance_5d": {}, "distance_20d": {}}
+    results: dict[str, dict[str, float]] = {"distance_12d": {}, "distance_36d": {}}
 
     def _fetch(symbol: str):
         analyser = StockAnalyser(symbol)
         price_now = analyser.get_current_price()
-        dma5 = analyser.calculate_5dma().current
-        dma20 = analyser.calculate_20dma().current
+        dma12 = analyser.calculate_12dma().current
+        dma36 = analyser.calculate_36dma().current
         return {
             "symbol": symbol,
-            "distance_5d": _sma_distance_pct(price_now, dma5),
-            "distance_20d": _sma_distance_pct(price_now, dma20),
+            "distance_12d": _sma_distance_pct(price_now, dma12),
+            "distance_36d": _sma_distance_pct(price_now, dma36),
         }
 
     with ThreadPoolExecutor(max_workers=8) as executor:
@@ -114,10 +114,10 @@ def _compute_sma_distances(symbols: list[str]) -> dict[str, dict[str, float]]:
         for future in as_completed(futures):
             result = future.result()
             symbol = result["symbol"]
-            if isinstance(result["distance_5d"], (int, float)):
-                results["distance_5d"][symbol] = float(result["distance_5d"])
-            if isinstance(result["distance_20d"], (int, float)):
-                results["distance_20d"][symbol] = float(result["distance_20d"])
+            if isinstance(result["distance_12d"], (int, float)):
+                results["distance_12d"][symbol] = float(result["distance_12d"])
+            if isinstance(result["distance_36d"], (int, float)):
+                results["distance_36d"][symbol] = float(result["distance_36d"])
 
     return results
 
@@ -338,7 +338,7 @@ def sma_momentum(
 
     symbols = _sanitize_symbols_list(symbols)
     if not symbols:
-        return {"distance_5d": {}, "distance_20d": {}}
+        return {"distance_12d": {}, "distance_36d": {}}
 
     return convert_numpy_types(_compute_sma_distances(symbols))
 
@@ -347,7 +347,7 @@ def sma_momentum(
 def custom_sma_momentum(payload: CustomSmaMomentumRequest):
     symbols = _sanitize_symbols_list(payload.symbols)
     if not symbols:
-        return {"distance_5d": {}, "distance_20d": {}}
+        return {"distance_12d": {}, "distance_36d": {}}
 
     return convert_numpy_types(_compute_sma_distances(symbols))
 

@@ -2,19 +2,19 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import "./MomentumPage.css";
 
 type SmaMomentumResponse = {
-  distance_5d: Record<string, number>;
-  distance_20d: Record<string, number>;
+  distance_12d: Record<string, number>;
+  distance_36d: Record<string, number>;
 };
 
 type SmaPoint = {
   symbol: string;
-  dma5?: number;
-  dma20?: number;
+  dma12?: number;
+  dma36?: number;
 };
 
 const FALLBACK: SmaMomentumResponse = {
-  distance_5d: {},
-  distance_20d: {},
+  distance_12d: {},
+  distance_36d: {},
 };
 
 type MomentumGridProps = {
@@ -37,23 +37,23 @@ function SmaMomentumGrid({
   const [isGridVisible, setIsGridVisible] = useState(true);
   const points: SmaPoint[] = useMemo(() => {
     const symbols = new Set<string>([
-      ...Object.keys(data.distance_5d || {}),
-      ...Object.keys(data.distance_20d || {}),
+      ...Object.keys(data.distance_12d || {}),
+      ...Object.keys(data.distance_36d || {}),
     ]);
 
     return Array.from(symbols)
       .sort()
       .map((symbol) => ({
         symbol,
-        dma5: data.distance_5d?.[symbol],
-        dma20: data.distance_20d?.[symbol],
+        dma12: data.distance_12d?.[symbol],
+        dma36: data.distance_36d?.[symbol],
       }));
-  }, [data.distance_20d, data.distance_5d]);
+  }, [data.distance_12d, data.distance_36d]);
 
   const extremes = useMemo(() => {
     const scored = points.map((p) => ({
       symbol: p.symbol,
-      score: (p.dma5 ?? 0) + (p.dma20 ?? 0),
+      score: (p.dma12 ?? 0) + (p.dma36 ?? 0),
     }));
 
     const positive = scored
@@ -76,7 +76,7 @@ function SmaMomentumGrid({
 
   const range = useMemo(() => {
     const allValues = points
-      .flatMap((p) => [p.dma5, p.dma20])
+      .flatMap((p) => [p.dma12, p.dma36])
       .filter((value): value is number => typeof value === "number");
     const maxAbs = allValues.length
       ? Math.max(...allValues.map((value) => Math.abs(value)))
@@ -128,7 +128,7 @@ function SmaMomentumGrid({
     <div className="card shadow-sm border-0 mb-4">
       <div className="card-body">
         <div className="d-flex align-items-center justify-content-between mb-3">
-          <h5 className="card-title mb-0">5DMA / 20DMA distance grid</h5>
+          <h5 className="card-title mb-0">12DMA / 36DMA distance grid</h5>
           <button
             type="button"
             className="btn btn-outline-secondary p-0 d-inline-flex align-items-center justify-content-center"
@@ -147,22 +147,22 @@ function SmaMomentumGrid({
             <div className="momentum-grid mb-3" aria-live="polite">
               <div className="momentum-quadrant-label positive-developing">
                 <span className="momentum-quadrant-title">
-                  Above 5DMA, Below 20DMA
+                  Above 12DMA, Below 36DMA
                 </span>
               </div>
               <div className="momentum-quadrant-label positive-trend">
                 <span className="momentum-quadrant-title">
-                  Above 5DMA &amp; 20DMA
+                  Above 12DMA &amp; 36DMA
                 </span>
               </div>
               <div className="momentum-quadrant-label negative-trend">
                 <span className="momentum-quadrant-title">
-                  Below 5DMA &amp; 20DMA
+                  Below 12DMA &amp; 36DMA
                 </span>
               </div>
               <div className="momentum-quadrant-label negative-developing">
                 <span className="momentum-quadrant-title">
-                  Below 5DMA, Above 20DMA
+                  Below 12DMA, Above 36DMA
                 </span>
               </div>
 
@@ -178,10 +178,10 @@ function SmaMomentumGrid({
               />
 
               <div className="momentum-axis-label momentum-axis-label--x">
-                Distance from 5DMA (%)
+                Distance from 12DMA (%)
               </div>
               <div className="momentum-axis-label momentum-axis-label--y">
-                Distance from 20DMA (%)
+                Distance from 36DMA (%)
               </div>
 
               {ticks.map((tick) => (
@@ -213,13 +213,13 @@ function SmaMomentumGrid({
                 const isPositiveExtreme = extremes.positive.has(point.symbol);
                 const isNegativeExtreme = extremes.negative.has(point.symbol);
                 const quadrantClass =
-                  typeof point.dma5 === "number" &&
-                  typeof point.dma20 === "number"
-                    ? point.dma20 >= 0 && point.dma5 >= 0
+                  typeof point.dma12 === "number" &&
+                  typeof point.dma36 === "number"
+                    ? point.dma36 >= 0 && point.dma12 >= 0
                       ? " momentum-point--positive-trend"
-                      : point.dma20 < 0 && point.dma5 >= 0
+                      : point.dma36 < 0 && point.dma12 >= 0
                         ? " momentum-point--positive-developing"
-                        : point.dma20 < 0 && point.dma5 < 0
+                        : point.dma36 < 0 && point.dma12 < 0
                           ? " momentum-point--negative-trend"
                           : " momentum-point--negative-developing"
                     : "";
@@ -238,18 +238,18 @@ function SmaMomentumGrid({
                     }${quadrantClass}`}
                     style={{
                       left: `${
-                        toPosition(point.dma20) +
+                        toPosition(point.dma36) +
                         jitterPercent(point.symbol, "x")
                       }%`,
                       top: `${
                         100 -
-                        toPosition(point.dma5) +
+                        toPosition(point.dma12) +
                         jitterPercent(point.symbol, "y")
                       }%`,
                     }}
-                    title={`${point.symbol}: 5DMA ${formatPercent(
-                      point.dma5,
-                    )}, 20DMA ${formatPercent(point.dma20)}`}
+                    title={`${point.symbol}: 12DMA ${formatPercent(
+                      point.dma12,
+                    )}, 36DMA ${formatPercent(point.dma36)}`}
                   >
                     <span className="momentum-point__label">
                       {point.symbol}
@@ -303,8 +303,8 @@ export default function SmaMomentumPage() {
       })
       .then((json) => {
         setPortfolioData({
-          distance_5d: json.distance_5d || {},
-          distance_20d: json.distance_20d || {},
+          distance_12d: json.distance_12d || {},
+          distance_36d: json.distance_36d || {},
         });
         setPortfolioError(null);
       })
@@ -337,8 +337,8 @@ export default function SmaMomentumPage() {
       })
       .then((json) => {
         setCustomData({
-          distance_5d: json.distance_5d || {},
-          distance_20d: json.distance_20d || {},
+          distance_12d: json.distance_12d || {},
+          distance_36d: json.distance_36d || {},
         });
         setCustomError(null);
       })
@@ -380,8 +380,8 @@ export default function SmaMomentumPage() {
 
   const subtitle =
     mode === "portfolio"
-      ? "Plot of portfolio stocks by percent distance from the 20DMA (x-axis) and 5DMA (y-axis)."
-      : "Plot of your custom stock list by percent distance from the 20DMA (x-axis) and 5DMA (y-axis).";
+      ? "Plot of portfolio stocks by percent distance from the 36DMA (x-axis) and 12DMA (y-axis)."
+      : "Plot of your custom stock list by percent distance from the 36DMA (x-axis) and 12DMA (y-axis).";
 
   return (
     <div className="container-fluid momentum-page py-4">
@@ -463,7 +463,7 @@ export default function SmaMomentumPage() {
             </div>
           </form>
           <div id="smaCustomSymbolsHelp" className="form-text">
-            Enter any tickers to see how they sit versus their 5-day and 20-day
+            Enter any tickers to see how they sit versus their 12-day and 36-day
             simple moving averages.
           </div>
           {customError && (
