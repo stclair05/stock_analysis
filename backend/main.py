@@ -68,6 +68,7 @@ class CustomMomentumRequest(BaseModel):
 
 class CustomSmaMomentumRequest(BaseModel):
     symbols: List[str]
+    timeframe: Literal["daily", "weekly"] = "daily"
 
 class MaceScoresRequest(BaseModel):
     symbols: List[str]
@@ -95,14 +96,30 @@ def _sma_distance_pct(price: float | None, sma: float | None) -> float | None:
     return (price - sma) / sma * 100
 
 
-def _compute_sma_distances(symbols: list[str]) -> dict[str, dict[str, float]]:
+def _compute_sma_distances(
+    symbols: list[str],
+    timeframe: Literal["daily", "weekly"] = "daily",
+) -> dict[str, dict[str, float]]:
     results: dict[str, dict[str, float]] = {"distance_12d": {}, "distance_36d": {}}
 
     def _fetch(symbol: str):
         analyser = StockAnalyser(symbol)
-        price_now = analyser.get_current_price()
-        dma12 = analyser.calculate_12dma().current
-        dma36 = analyser.calculate_36dma().current
+        if timeframe == "weekly":
+            df = analyser.weekly_df
+            if df.empty:
+                return {
+                    "symbol": symbol,
+                    "distance_12d": None,
+                    "distance_36d": None,
+                }
+            close = df["Close"]
+            price_now = close.iloc[-1]
+            dma12 = close.rolling(window=12).mean().iloc[-1]
+            dma36 = close.rolling(window=36).mean().iloc[-1]
+        else:
+            price_now = analyser.get_current_price()
+            dma12 = analyser.calculate_12dma().current
+            dma36 = analyser.calculate_36dma().current
         return {
             "symbol": symbol,
             "distance_12d": _sma_distance_pct(price_now, dma12),
@@ -320,7 +337,8 @@ def custom_momentum(payload: CustomMomentumRequest):
 
 @app.get("/sma_momentum")
 def sma_momentum(
-    list_type: str = Query("portfolio", enum=["portfolio", "watchlist"])
+    list_type: str = Query("portfolio", enum=["portfolio", "watchlist"]),
+    timeframe: Literal["daily", "weekly"] = Query("daily"),
 ):
     if list_type == "portfolio":
         equities = _get_portfolio_equities()
@@ -340,7 +358,7 @@ def sma_momentum(
     if not symbols:
         return {"distance_12d": {}, "distance_36d": {}}
 
-    return convert_numpy_types(_compute_sma_distances(symbols))
+    return convert_numpy_types(_compute_sma_distances(symbols, timeframe))
 
 
 @app.post("/custom_sma_momentum")
@@ -349,7 +367,7 @@ def custom_sma_momentum(payload: CustomSmaMomentumRequest):
     if not symbols:
         return {"distance_12d": {}, "distance_36d": {}}
 
-    return convert_numpy_types(_compute_sma_distances(symbols))
+    return convert_numpy_types(_compute_sma_distances(symbols, payload.timeframe))
 
 
 @app.post("/analyse", response_model=StockAnalysisResponse)

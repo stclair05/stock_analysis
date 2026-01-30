@@ -23,6 +23,7 @@ type MomentumGridProps = {
   error: string | null;
   mode: "portfolio" | "custom";
   zoomScale: number;
+  timeframe: "daily" | "weekly";
   customSymbols: string[];
 };
 
@@ -32,9 +33,11 @@ function SmaMomentumGrid({
   error,
   mode,
   zoomScale,
+  timeframe,
   customSymbols,
 }: MomentumGridProps) {
   const [isGridVisible, setIsGridVisible] = useState(true);
+  const smaLabel = timeframe === "weekly" ? "WMA" : "DMA";
   const points: SmaPoint[] = useMemo(() => {
     const symbols = new Set<string>([
       ...Object.keys(data.distance_12d || {}),
@@ -128,7 +131,9 @@ function SmaMomentumGrid({
     <div className="card shadow-sm border-0 mb-4">
       <div className="card-body">
         <div className="d-flex align-items-center justify-content-between mb-3">
-          <h5 className="card-title mb-0">12DMA / 36DMA distance grid</h5>
+          <h5 className="card-title mb-0">
+            12{smaLabel} / 36{smaLabel} distance grid
+          </h5>
           <button
             type="button"
             className="btn btn-outline-secondary p-0 d-inline-flex align-items-center justify-content-center"
@@ -147,22 +152,22 @@ function SmaMomentumGrid({
             <div className="momentum-grid mb-3" aria-live="polite">
               <div className="momentum-quadrant-label positive-developing">
                 <span className="momentum-quadrant-title">
-                  Above 12DMA, Below 36DMA
+                  Above 12{smaLabel}, Below 36{smaLabel}
                 </span>
               </div>
               <div className="momentum-quadrant-label positive-trend">
                 <span className="momentum-quadrant-title">
-                  Above 12DMA &amp; 36DMA
+                  Above 12{smaLabel} &amp; 36{smaLabel}
                 </span>
               </div>
               <div className="momentum-quadrant-label negative-trend">
                 <span className="momentum-quadrant-title">
-                  Below 12DMA &amp; 36DMA
+                  Below 12{smaLabel} &amp; 36{smaLabel}
                 </span>
               </div>
               <div className="momentum-quadrant-label negative-developing">
                 <span className="momentum-quadrant-title">
-                  Below 12DMA, Above 36DMA
+                  Below 12{smaLabel}, Above 36{smaLabel}
                 </span>
               </div>
 
@@ -176,12 +181,42 @@ function SmaMomentumGrid({
                 style={{ left: "50%" }}
                 aria-hidden
               />
+              <svg
+                viewBox="0 0 100 100"
+                preserveAspectRatio="none"
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  height: "100%",
+                  pointerEvents: "none",
+                  zIndex: 1,
+                }}
+              >
+                <line
+                  x1={`${toPosition(-visibleRange)}`}
+                  y1={`${100 - toPosition(-visibleRange)}`}
+                  x2={`${toPosition(visibleRange)}`}
+                  y2={`${100 - toPosition(visibleRange)}`}
+                  stroke="rgba(15, 23, 42, 0.2)"
+                  strokeWidth="0.2"
+                />
+                <line
+                  x1={`${toPosition(-visibleRange)}`}
+                  y1={`${100 - toPosition(visibleRange)}`}
+                  x2={`${toPosition(visibleRange)}`}
+                  y2={`${100 - toPosition(-visibleRange)}`}
+                  stroke="rgba(15, 23, 42, 0.2)"
+                  strokeWidth="0.2"
+                />
+              </svg>
 
               <div className="momentum-axis-label momentum-axis-label--x">
-                Distance from 12DMA (%)
+                Distance from 12{smaLabel} (%)
               </div>
               <div className="momentum-axis-label momentum-axis-label--y">
-                Distance from 36DMA (%)
+                Distance from 36{smaLabel} (%)
               </div>
 
               {ticks.map((tick) => (
@@ -247,9 +282,9 @@ function SmaMomentumGrid({
                         jitterPercent(point.symbol, "y")
                       }%`,
                     }}
-                    title={`${point.symbol}: 12DMA ${formatPercent(
+                    title={`${point.symbol}: 12${smaLabel} ${formatPercent(
                       point.dma12,
-                    )}, 36DMA ${formatPercent(point.dma36)}`}
+                    )}, 36${smaLabel} ${formatPercent(point.dma36)}`}
                   >
                     <span className="momentum-point__label">
                       {point.symbol}
@@ -291,10 +326,15 @@ export default function SmaMomentumPage() {
   const [customLoading, setCustomLoading] = useState(false);
   const [customError, setCustomError] = useState<string | null>(null);
   const [zoomScale, setZoomScale] = useState(1.25);
+  const [timeframe, setTimeframe] = useState<"daily" | "weekly">("daily");
 
   const fetchPortfolioDistances = () => {
     setPortfolioLoading(true);
-    fetch("http://localhost:8000/sma_momentum?list_type=portfolio")
+    const params = new URLSearchParams({
+      list_type: "portfolio",
+      timeframe,
+    });
+    fetch(`http://localhost:8000/sma_momentum?${params.toString()}`)
       .then((res) => {
         if (!res.ok) {
           throw new Error("Failed to load SMA momentum data");
@@ -318,7 +358,7 @@ export default function SmaMomentumPage() {
 
   useEffect(() => {
     fetchPortfolioDistances();
-  }, []);
+  }, [timeframe]);
 
   const fetchCustomDistances = (symbols: string[]) => {
     setCustomLoading(true);
@@ -327,7 +367,7 @@ export default function SmaMomentumPage() {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ symbols }),
+      body: JSON.stringify({ symbols, timeframe }),
     })
       .then((res) => {
         if (!res.ok) {
@@ -376,12 +416,15 @@ export default function SmaMomentumPage() {
     if (mode === "custom" && customSymbols.length > 0) {
       fetchCustomDistances(customSymbols);
     }
-  }, [customSymbols, mode]);
+  }, [customSymbols, mode, timeframe]);
 
+  const timeframeLabel = timeframe === "weekly" ? "weekly" : "daily";
+  const periodLabel = timeframe === "weekly" ? "12-week" : "12-day";
+  const longPeriodLabel = timeframe === "weekly" ? "36-week" : "36-day";
   const subtitle =
     mode === "portfolio"
-      ? "Plot of portfolio stocks by percent distance from the 36DMA (x-axis) and 12DMA (y-axis)."
-      : "Plot of your custom stock list by percent distance from the 36DMA (x-axis) and 12DMA (y-axis).";
+      ? `Plot of portfolio stocks by percent distance from the ${longPeriodLabel} SMA (x-axis) and ${periodLabel} SMA (y-axis), using ${timeframeLabel} data.`
+      : `Plot of your custom stock list by percent distance from the ${longPeriodLabel} SMA (x-axis) and ${periodLabel} SMA (y-axis), using ${timeframeLabel} data.`;
 
   return (
     <div className="container-fluid momentum-page py-4">
@@ -412,6 +455,30 @@ export default function SmaMomentumPage() {
           </button>
         </div>
         <div className="d-flex align-items-center gap-2 ms-auto">
+          <div
+            className="btn-group"
+            role="group"
+            aria-label="SMA momentum timeframe"
+          >
+            <button
+              className={`btn btn-outline-secondary btn-sm ${
+                timeframe === "daily" ? "active" : ""
+              }`}
+              type="button"
+              onClick={() => setTimeframe("daily")}
+            >
+              Daily
+            </button>
+            <button
+              className={`btn btn-outline-secondary btn-sm ${
+                timeframe === "weekly" ? "active" : ""
+              }`}
+              type="button"
+              onClick={() => setTimeframe("weekly")}
+            >
+              Weekly
+            </button>
+          </div>
           <label
             htmlFor="smaMomentumZoom"
             className="form-label mb-0 small text-muted"
@@ -463,8 +530,8 @@ export default function SmaMomentumPage() {
             </div>
           </form>
           <div id="smaCustomSymbolsHelp" className="form-text">
-            Enter any tickers to see how they sit versus their 12-day and 36-day
-            simple moving averages.
+            Enter any tickers to see how they sit versus their {periodLabel} and{" "}
+            {longPeriodLabel} simple moving averages.
           </div>
           {customError && (
             <div className="text-danger small mt-2">{customError}</div>
@@ -483,6 +550,7 @@ export default function SmaMomentumPage() {
         error={mode === "portfolio" ? portfolioError : customError}
         mode={mode}
         zoomScale={zoomScale}
+        timeframe={timeframe}
         customSymbols={customSymbols}
       />
     </div>
