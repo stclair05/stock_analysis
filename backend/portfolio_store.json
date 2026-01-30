@@ -913,7 +913,7 @@
     },
     {
       "ticker": "CRWD",
-      "shares": 700,
+      "shares": 1200,
       "average_cost": 478.7441,
       "sector": "Technology",
       "player": 2,
@@ -958,7 +958,7 @@
     },
     {
       "ticker": "TSLA",
-      "shares": 3500,
+      "shares": 4500,
       "average_cost": 442.0924,
       "sector": "Technology",
       "player": 2,
