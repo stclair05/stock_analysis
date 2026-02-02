@@ -44,21 +44,6 @@
       "peers": ["MPC", "PSX", "DINO", "PBF", "CVI", "DK"]
     },
     {
-      "ticker": "ISOU",
-      "shares": 35000.0,
-      "average_cost": 8.7167,
-      "sector": "Uranium",
-      "player": 2,
-      "technigrade": [],
-      "peers": ["CCJ", "NXE", "UEC", "DNN", "UUUU", "UROY"],
-      "invalidation_1": 8.3,
-      "invalidation_2": -1,
-      "invalidation_3": -1,
-      "target_1": 11.52,
-      "target_2": 15,
-      "target_3": -1
-    },
-    {
       "ticker": "AR",
       "shares": 72084.0,
       "average_cost": 34.19,
@@ -357,20 +342,6 @@
       "peers": ["U.U", "SRUUF", "URNJ", "URA", "DNN", "UEC"]
     },
     {
-      "ticker": "EU",
-      "shares": 95000,
-      "average_cost": 3.224,
-      "sector": "Uranium",
-      "technigrade": [],
-      "peers": ["UEC", "URG", "UUUU", "DNN", "UROY", "CCJ"],
-      "invalidation_1": 2.05,
-      "invalidation_2": -1,
-      "invalidation_3": -1,
-      "target_1": 3.88,
-      "target_2": 4.85,
-      "target_3": 9.2
-    },
-    {
       "ticker": "DYL.AX",
       "shares": 600000,
       "average_cost": 1.29,
@@ -444,6 +415,21 @@
       "target_1": 18.76,
       "target_2": 30,
       "target_3": 70.11
+    },
+    {
+      "ticker": "OKLO",
+      "shares": 3000,
+      "average_cost": 93.5,
+      "sector": "Uranium",
+      "player": 2,
+      "technigrade": [14, 18, 6, 4, 1],
+      "peers": ["LEU", "SMR", "NNE", "CCJ", "UEC", "NXE"],
+      "invalidation_1": -1,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": -1,
+      "target_2": -1,
+      "target_3": -1
     },
     {
       "ticker": "LEU",
@@ -927,21 +913,6 @@
       "target_3": -1
     },
     {
-      "ticker": "MSFT",
-      "shares": 700,
-      "average_cost": 480.3591,
-      "sector": "Technology",
-      "player": 2,
-      "technigrade": [],
-      "peers": ["AMZN", "GOOGL", "ORCL", "IBM", "CRM"],
-      "invalidation_1": -1,
-      "invalidation_2": -1,
-      "invalidation_3": -1,
-      "target_1": -1,
-      "target_2": -1,
-      "target_3": -1
-    },
-    {
       "ticker": "NVDA",
       "shares": 2000,
       "average_cost": 191.512,
@@ -1059,27 +1030,6 @@
       "target_3": 50
     },
     {
-      "ticker": "2318.HK",
-      "shares": 55000.0,
-      "average_cost": 10.03,
-      "sector": "Hong Kong and China",
-      "peers": [
-        "2628.HK",
-        "2601.HK",
-        "1336.HK",
-        "1299.HK",
-        "601628.SS",
-        "601318.SS"
-      ],
-      "player": 10,
-      "invalidation_1": 52.4,
-      "invalidation_2": 47.5,
-      "invalidation_3": -1,
-      "target_1": 59,
-      "target_2": 66,
-      "target_3": 72.2
-    },
-    {
       "ticker": "0700.HK",
       "shares": 88515.0,
       "average_cost": 52.62,
@@ -1108,56 +1058,6 @@
       "target_1": 171.6,
       "target_2": 185,
       "target_3": 201
-    },
-    {
-      "ticker": "9618.HK",
-      "shares": 6411.0,
-      "average_cost": 0.0,
-      "sector": "Hong Kong and China",
-      "player": 10,
-      "technigrade": [16, 16, 17, 13, 11],
-      "peers": ["JD", "9988.HK", "0700.HK", "PDD", "AMZN", "3690.HK"],
-      "invalidation_1": 127.8,
-      "invalidation_2": 122.4,
-      "invalidation_3": 115,
-      "target_1": 170,
-      "target_2": 192.3,
-      "target_3": 211.0
-    },
-    {
-      "ticker": "3690.HK",
-      "shares": 11022.0,
-      "average_cost": 0.0,
-      "sector": "Hong Kong and China",
-      "peers": ["0700.HK", "9988.HK", "JD", "PDD", "UBER", "TCOM"],
-      "player": 10,
-      "invalidation_1": 106.4,
-      "invalidation_2": 94.7,
-      "invalidation_3": -1,
-      "target_1": 191,
-      "target_2": 216,
-      "target_3": 252
-    },
-    {
-      "ticker": "6181.HK",
-      "shares": 2000,
-      "average_cost": 138.08,
-      "sector": "Hong Kong and China",
-      "peers": [
-        "1929.HK",
-        "1913.HK",
-        "0590.HK",
-        "6168.HK",
-        "3306.HK",
-        "1299.HK"
-      ],
-      "player": 10,
-      "invalidation_1": 711,
-      "invalidation_2": -1,
-      "invalidation_3": -1,
-      "target_1": 1392,
-      "target_2": -1,
-      "target_3": -1
     },
     {
       "ticker": "0020.HK",
