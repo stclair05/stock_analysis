@@ -282,21 +282,6 @@
       "target_3": 104.24
     },
     {
-      "ticker": "NTR",
-      "shares": 29000.0,
-      "average_cost": 56.77,
-      "sector": "Fertilizer",
-      "player": 3,
-      "technigrade": [12, 13, 10, 13, 16],
-      "peers": ["MOS", "CF", "ICL", "SMG", "UAN", "CTVA"],
-      "invalidation_1": 55.79,
-      "invalidation_2": 54.66,
-      "invalidation_3": -1,
-      "target_1": 60.55,
-      "target_2": 65.08,
-      "target_3": 71
-    },
-    {
       "ticker": "0P0000RU80.L",
       "shares": 81700.0,
       "average_cost": 6.54,
@@ -581,13 +566,6 @@
       "target_1": -1,
       "target_2": -1,
       "target_3": -1
-    },
-    {
-      "ticker": "XAUUSD",
-      "shares": 2100,
-      "average_cost": 4564.0484,
-      "sector": "Precious Metals",
-      "player": 8
     },
     {
       "ticker": "PAUSD",
@@ -882,21 +860,6 @@
       "target_3": -1
     },
     {
-      "ticker": "CRWD",
-      "shares": 1200,
-      "average_cost": 478.7441,
-      "sector": "Technology",
-      "player": 2,
-      "technigrade": [],
-      "peers": ["PANW", "S", "MSFT", "ZS", "FTNT"],
-      "invalidation_1": -1,
-      "invalidation_2": -1,
-      "invalidation_3": -1,
-      "target_1": -1,
-      "target_2": -1,
-      "target_3": -1
-    },
-    {
       "ticker": "NVDA",
       "shares": 2000,
       "average_cost": 191.512,
@@ -954,20 +917,6 @@
       "invalidation_3": -1,
       "target_1": 15.7,
       "target_2": 17.2,
-      "target_3": -1
-    },
-    {
-      "ticker": "URA",
-      "shares": 8000.0,
-      "average_cost": 49.89,
-      "sector": "Uranium",
-      "peers": ["URNM", "NLR", "SRUUF", "URAN", "XME"],
-      "player": 2,
-      "invalidation_1": 44.45,
-      "invalidation_2": 42.16,
-      "invalidation_3": -1,
-      "target_1": 64,
-      "target_2": -1,
       "target_3": -1
     },
     {
