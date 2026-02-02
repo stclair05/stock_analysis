@@ -28,6 +28,8 @@ type MaceGridProps = {
   zoomScale: number;
   customSymbols: string[];
   portfolioValues: Record<string, number>;
+  sectorMap: Record<string, string>;
+  selectedSectors: string[];
 };
 
 const BASE_RANGE = 0.5;
@@ -68,6 +70,8 @@ function MaceGrid({
   zoomScale,
   customSymbols,
   portfolioValues,
+  sectorMap,
+  selectedSectors,
 }: MaceGridProps) {
   const [isGridVisible, setIsGridVisible] = useState(true);
   const points: MacePoint[] = useMemo(() => {
@@ -87,8 +91,16 @@ function MaceGrid({
       }));
   }, [data.current, data.twentyone_days_ago, data.recent_weighted_change]);
 
+  const visiblePoints = useMemo(() => {
+    if (mode !== "portfolio") return points;
+    const allowed = new Set(selectedSectors);
+    return points.filter((point) =>
+      allowed.has(sectorMap[point.symbol] ?? "Uncategorized"),
+    );
+  }, [mode, points, sectorMap, selectedSectors]);
+
   const extremes = useMemo(() => {
-    const scored = points.map((p) => ({
+    const scored = visiblePoints.map((p) => ({
       symbol: p.symbol,
       score:
         (toCentered(p.current) ?? 0) + (toCentered(p.twentyoneDaysAgo) ?? 0),
@@ -110,7 +122,7 @@ function MaceGrid({
       positive: new Set(positive),
       negative: new Set(negative),
     };
-  }, [points]);
+  }, [visiblePoints]);
 
   const visibleRange = useMemo(
     () => Math.max(BASE_RANGE / zoomScale, 0.125),
@@ -184,7 +196,7 @@ function MaceGrid({
       return totals;
     }
 
-    points.forEach((point) => {
+    visiblePoints.forEach((point) => {
       if (
         typeof point.current !== "number" ||
         typeof point.twentyoneDaysAgo !== "number"
@@ -209,7 +221,7 @@ function MaceGrid({
     });
 
     return totals;
-  }, [mode, points, portfolioValues]);
+  }, [mode, portfolioValues, visiblePoints]);
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("en-US", {
@@ -219,7 +231,7 @@ function MaceGrid({
     }).format(value);
 
   const hasSymbols =
-    mode === "portfolio" ? points.length > 0 : customSymbols.length > 0;
+    mode === "portfolio" ? visiblePoints.length > 0 : customSymbols.length > 0;
 
   return (
     <div className="card shadow-sm border-0 mb-4">
@@ -422,7 +434,7 @@ function MaceGrid({
                 </div>
               </div>
 
-              {points.map((point) => {
+              {visiblePoints.map((point) => {
                 const currentScaled = point.current;
                 const pastScaled = point.twentyoneDaysAgo;
                 const isPositiveExtreme = extremes.positive.has(point.symbol);
@@ -506,7 +518,7 @@ function MaceGrid({
             </div>
 
             {loading && <div className="text-muted">Loading MACE data…</div>}
-            {!loading && points.length === 0 && (
+            {!loading && visiblePoints.length === 0 && (
               <div className="text-muted">
                 {hasSymbols
                   ? "No MACE data available for these symbols."
@@ -539,6 +551,9 @@ export default function MacePage() {
   const [customLoading, setCustomLoading] = useState(false);
   const [customError, setCustomError] = useState<string | null>(null);
   const [zoomScale, setZoomScale] = useState(1.25);
+  const [sectorMap, setSectorMap] = useState<Record<string, string>>({});
+  const [sectors, setSectors] = useState<string[]>([]);
+  const [selectedSectors, setSelectedSectors] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchPortfolioSymbols = async () => {
@@ -546,16 +561,30 @@ export default function MacePage() {
         const res = await fetch("http://localhost:8000/portfolio_tickers");
         if (!res.ok) throw new Error("Failed to fetch portfolio tickers");
         const json = await res.json();
+        const map: Record<string, string> = {};
         const symbols = Array.isArray(json)
           ? json
-              .map((entry: { ticker?: string }) =>
-                entry?.ticker ? entry.ticker.toUpperCase() : null,
-              )
+              .map((entry: { ticker?: string; sector?: string }) => {
+                if (!entry?.ticker) return null;
+                const sector = entry?.sector?.trim() || "Uncategorized";
+                map[entry.ticker.toUpperCase()] = sector;
+                return entry.ticker.toUpperCase();
+              })
               .filter((ticker: string | null): ticker is string =>
                 Boolean(ticker),
               )
           : [];
+        const uniqueSectors = Array.from(new Set(Object.values(map))).sort(
+          (a, b) => a.localeCompare(b),
+        );
         setPortfolioSymbols(symbols);
+        setSectorMap(map);
+        setSectors(uniqueSectors);
+        setSelectedSectors((prev) =>
+          prev.length > 0
+            ? prev.filter((sector) => uniqueSectors.includes(sector))
+            : uniqueSectors,
+        );
       } catch (err) {
         console.error(err);
         setPortfolioError("Unable to load portfolio tickers.");
@@ -683,105 +712,183 @@ export default function MacePage() {
       ? "Plot of portfolio stocks by current (x-axis) and 21-day (y-axis) MACE scores."
       : "Plot of your custom stock list by current (x-axis) and 21-day (y-axis) MACE scores.";
 
+  const allSectorsSelected =
+    sectors.length > 0 && selectedSectors.length === sectors.length;
+
+  const toggleAllSectors = () => {
+    setSelectedSectors(allSectorsSelected ? [] : sectors);
+  };
+
+  const toggleSector = (sector: string) => {
+    setSelectedSectors((prev) =>
+      prev.includes(sector)
+        ? prev.filter((item) => item !== sector)
+        : [...prev, sector],
+    );
+  };
+
   return (
     <div className="container-fluid momentum-page py-4">
-      <div className="d-flex flex-wrap align-items-center gap-3 mb-3">
-        <h1 className="fw-bold mb-0">MACE</h1>
-        <div className="btn-group" role="group" aria-label="MACE view selector">
-          <button
-            className={`btn btn-outline-primary ${
-              mode === "portfolio" ? "active" : ""
-            }`}
-            type="button"
-            onClick={() => setMode("portfolio")}
-          >
-            Portfolio grid
-          </button>
-          <button
-            className={`btn btn-outline-primary ${
-              mode === "custom" ? "active" : ""
-            }`}
-            type="button"
-            onClick={() => setMode("custom")}
-          >
-            Custom list
-          </button>
-        </div>
-        <div className="d-flex align-items-center gap-2 ms-auto">
-          <label
-            htmlFor="maceZoom"
-            className="form-label mb-0 small text-muted"
-          >
-            Zoom
-          </label>
-          <select
-            id="maceZoom"
-            className="form-select form-select-sm w-auto"
-            value={zoomScale}
-            onChange={(event) => setZoomScale(Number(event.target.value))}
-          >
-            <option value={1}>1x</option>
-            <option value={1.25}>1.25x</option>
-            <option value={1.5}>1.5x</option>
-            <option value={2}>2x</option>
-            <option value={4}>4x</option>
-          </select>
-        </div>
-      </div>
-
-      <p className="text-muted mb-4">{subtitle}</p>
-
-      <div className="card shadow-sm border-0 mb-4">
-        <div className="card-body">
-          <h5 className="card-title mb-3">Plot a custom symbol grid</h5>
-          <form className="row g-3" onSubmit={onSubmitCustom}>
-            <div className="col-md-8">
-              <label htmlFor="customSymbols" className="form-label">
-                Enter ticker symbols (comma or space separated)
-              </label>
-              <input
-                id="customSymbols"
-                className="form-control"
-                placeholder="e.g. AAPL, MU, PTON"
-                value={customInput}
-                onChange={(e) => setCustomInput(e.target.value)}
-                aria-describedby="customSymbolsHelp"
-              />
-            </div>
-            <div className="col-md-4 d-flex align-items-end">
+      <div className="momentum-layout">
+        <div className="momentum-layout__main">
+          <div className="d-flex flex-wrap align-items-center gap-3 mb-3">
+            <h1 className="fw-bold mb-0">MACE</h1>
+            <div
+              className="btn-group"
+              role="group"
+              aria-label="MACE view selector"
+            >
               <button
-                type="submit"
-                className="btn btn-primary w-100"
-                disabled={customLoading}
+                className={`btn btn-outline-primary ${
+                  mode === "portfolio" ? "active" : ""
+                }`}
+                type="button"
+                onClick={() => setMode("portfolio")}
               >
-                {customLoading ? "Loading…" : "Plot custom grid"}
+                Portfolio grid
+              </button>
+              <button
+                className={`btn btn-outline-primary ${
+                  mode === "custom" ? "active" : ""
+                }`}
+                type="button"
+                onClick={() => setMode("custom")}
+              >
+                Custom list
               </button>
             </div>
-          </form>
-          <div id="customSymbolsHelp" className="form-text">
-            Enter any tickers to see how their MACE scores compare, even if they
-            are not in the portfolio.
-          </div>
-          {customError && (
-            <div className="text-danger small mt-2">{customError}</div>
-          )}
-          {customSymbols.length > 0 && (
-            <div className="text-muted small mt-2">
-              Showing custom list: {customSymbols.join(", ")}
+            <div className="d-flex align-items-center gap-2 ms-auto">
+              <label
+                htmlFor="maceZoom"
+                className="form-label mb-0 small text-muted"
+              >
+                Zoom
+              </label>
+              <select
+                id="maceZoom"
+                className="form-select form-select-sm w-auto"
+                value={zoomScale}
+                onChange={(event) => setZoomScale(Number(event.target.value))}
+              >
+                <option value={1}>1x</option>
+                <option value={1.25}>1.25x</option>
+                <option value={1.5}>1.5x</option>
+                <option value={2}>2x</option>
+                <option value={4}>4x</option>
+              </select>
             </div>
-          )}
-        </div>
-      </div>
+          </div>
 
-      <MaceGrid
-        data={mode === "portfolio" ? portfolioData : customData}
-        loading={mode === "portfolio" ? portfolioLoading : customLoading}
-        error={mode === "portfolio" ? portfolioError : customError}
-        mode={mode}
-        zoomScale={zoomScale}
-        customSymbols={customSymbols}
-        portfolioValues={portfolioValues}
-      />
+          <p className="text-muted mb-4">{subtitle}</p>
+
+          <div className="card shadow-sm border-0 mb-4">
+            <div className="card-body">
+              <h5 className="card-title mb-3">Plot a custom symbol grid</h5>
+              <form className="row g-3" onSubmit={onSubmitCustom}>
+                <div className="col-md-8">
+                  <label htmlFor="customSymbols" className="form-label">
+                    Enter ticker symbols (comma or space separated)
+                  </label>
+                  <input
+                    id="customSymbols"
+                    className="form-control"
+                    placeholder="e.g. AAPL, MU, PTON"
+                    value={customInput}
+                    onChange={(e) => setCustomInput(e.target.value)}
+                    aria-describedby="customSymbolsHelp"
+                  />
+                </div>
+                <div className="col-md-4 d-flex align-items-end">
+                  <button
+                    type="submit"
+                    className="btn btn-primary w-100"
+                    disabled={customLoading}
+                  >
+                    {customLoading ? "Loading…" : "Plot custom grid"}
+                  </button>
+                </div>
+              </form>
+              <div id="customSymbolsHelp" className="form-text">
+                Enter any tickers to see how their MACE scores compare, even if
+                they are not in the portfolio.
+              </div>
+              {customError && (
+                <div className="text-danger small mt-2">{customError}</div>
+              )}
+              {customSymbols.length > 0 && (
+                <div className="text-muted small mt-2">
+                  Showing custom list: {customSymbols.join(", ")}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <MaceGrid
+            data={mode === "portfolio" ? portfolioData : customData}
+            loading={mode === "portfolio" ? portfolioLoading : customLoading}
+            error={mode === "portfolio" ? portfolioError : customError}
+            mode={mode}
+            zoomScale={zoomScale}
+            customSymbols={customSymbols}
+            portfolioValues={portfolioValues}
+            sectorMap={sectorMap}
+            selectedSectors={selectedSectors}
+          />
+        </div>
+
+        <aside className="momentum-layout__sidebar">
+          <div className="card shadow-sm border-0">
+            <div className="card-body">
+              <h5 className="card-title mb-3">Sector filters</h5>
+              <div className="form-check mb-2">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  id="mace-sector-all"
+                  checked={allSectorsSelected}
+                  onChange={toggleAllSectors}
+                  disabled={mode !== "portfolio" || sectors.length === 0}
+                />
+                <label className="form-check-label" htmlFor="mace-sector-all">
+                  All sectors
+                </label>
+              </div>
+              <div className="momentum-sector-list">
+                {sectors.length === 0 && (
+                  <div className="text-muted small">
+                    No sector data loaded yet.
+                  </div>
+                )}
+                {sectors.map((sector) => (
+                  <div className="form-check" key={sector}>
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      id={`mace-sector-${sector}`}
+                      checked={selectedSectors.includes(sector)}
+                      onChange={() => toggleSector(sector)}
+                      disabled={mode !== "portfolio"}
+                    />
+                    <label
+                      className="form-check-label"
+                      htmlFor={`mace-sector-${sector}`}
+                    >
+                      {sector}
+                    </label>
+                  </div>
+                ))}
+              </div>
+              <div className="text-muted small mt-3">
+                {mode === "portfolio"
+                  ? `Showing ${selectedSectors.length || 0} of ${
+                      sectors.length
+                    } sectors.`
+                  : "Sector filters apply only to portfolio view."}
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }

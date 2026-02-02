@@ -25,6 +25,8 @@ type MomentumGridProps = {
   zoomScale: number;
   timeframe: "daily" | "weekly";
   customSymbols: string[];
+  sectorMap: Record<string, string>;
+  selectedSectors: string[];
 };
 
 function SmaMomentumGrid({
@@ -35,6 +37,8 @@ function SmaMomentumGrid({
   zoomScale,
   timeframe,
   customSymbols,
+  sectorMap,
+  selectedSectors,
 }: MomentumGridProps) {
   const [isGridVisible, setIsGridVisible] = useState(true);
   const smaLabel = timeframe === "weekly" ? "WMA" : "DMA";
@@ -53,8 +57,16 @@ function SmaMomentumGrid({
       }));
   }, [data.distance_12d, data.distance_36d]);
 
+  const visiblePoints = useMemo(() => {
+    if (mode !== "portfolio") return points;
+    const allowed = new Set(selectedSectors);
+    return points.filter((point) =>
+      allowed.has(sectorMap[point.symbol] ?? "Uncategorized"),
+    );
+  }, [mode, points, sectorMap, selectedSectors]);
+
   const extremes = useMemo(() => {
-    const scored = points.map((p) => ({
+    const scored = visiblePoints.map((p) => ({
       symbol: p.symbol,
       score: (p.dma12 ?? 0) + (p.dma36 ?? 0),
     }));
@@ -75,17 +87,17 @@ function SmaMomentumGrid({
       positive: new Set(positive),
       negative: new Set(negative),
     };
-  }, [points]);
+  }, [visiblePoints]);
 
   const range = useMemo(() => {
-    const allValues = points
+    const allValues = visiblePoints
       .flatMap((p) => [p.dma12, p.dma36])
       .filter((value): value is number => typeof value === "number");
     const maxAbs = allValues.length
       ? Math.max(...allValues.map((value) => Math.abs(value)))
       : 0;
     return Math.max(maxAbs, 0.5);
-  }, [points]);
+  }, [visiblePoints]);
 
   const visibleRange = useMemo(
     () => Math.max(range / zoomScale, 0.5),
@@ -125,7 +137,7 @@ function SmaMomentumGrid({
     typeof value === "number" ? `${value.toFixed(2)}%` : "-";
 
   const hasSymbols =
-    mode === "portfolio" ? points.length > 0 : customSymbols.length > 0;
+    mode === "portfolio" ? visiblePoints.length > 0 : customSymbols.length > 0;
 
   return (
     <div className="card shadow-sm border-0 mb-4">
@@ -258,7 +270,7 @@ function SmaMomentumGrid({
                 </div>
               ))}
 
-              {points.map((point) => {
+              {visiblePoints.map((point) => {
                 const isPositiveExtreme = extremes.positive.has(point.symbol);
                 const isNegativeExtreme = extremes.negative.has(point.symbol);
                 const quadrantClass =
@@ -311,7 +323,7 @@ function SmaMomentumGrid({
             {loading && (
               <div className="text-muted">Loading SMA distances…</div>
             )}
-            {!loading && points.length === 0 && (
+            {!loading && visiblePoints.length === 0 && (
               <div className="text-muted">
                 {hasSymbols
                   ? "No SMA distance data available for these symbols."
@@ -332,6 +344,9 @@ export default function SmaMomentumPage() {
     useState<SmaMomentumResponse>(FALLBACK);
   const [portfolioLoading, setPortfolioLoading] = useState(true);
   const [portfolioError, setPortfolioError] = useState<string | null>(null);
+  const [sectorMap, setSectorMap] = useState<Record<string, string>>({});
+  const [sectors, setSectors] = useState<string[]>([]);
+  const [selectedSectors, setSelectedSectors] = useState<string[]>([]);
 
   const [mode, setMode] = useState<"portfolio" | "custom">("portfolio");
   const [customInput, setCustomInput] = useState("");
@@ -373,6 +388,41 @@ export default function SmaMomentumPage() {
   useEffect(() => {
     fetchPortfolioDistances();
   }, [timeframe]);
+
+  useEffect(() => {
+    const fetchPortfolioSectors = async () => {
+      try {
+        const res = await fetch("http://localhost:8000/portfolio_tickers");
+        if (!res.ok) {
+          throw new Error("Failed to load portfolio sectors");
+        }
+        const json: { ticker?: string; sector?: string }[] = await res.json();
+        const map: Record<string, string> = {};
+        json.forEach((entry) => {
+          if (!entry?.ticker) return;
+          const sector = entry?.sector?.trim() || "Uncategorized";
+          map[entry.ticker.toUpperCase()] = sector;
+        });
+        const uniqueSectors = Array.from(new Set(Object.values(map))).sort(
+          (a, b) => a.localeCompare(b),
+        );
+        setSectorMap(map);
+        setSectors(uniqueSectors);
+        setSelectedSectors((prev) =>
+          prev.length > 0
+            ? prev.filter((sector) => uniqueSectors.includes(sector))
+            : uniqueSectors,
+        );
+      } catch (err) {
+        console.error(err);
+        setSectorMap({});
+        setSectors([]);
+        setSelectedSectors([]);
+      }
+    };
+
+    fetchPortfolioSectors();
+  }, []);
 
   const fetchCustomDistances = (symbols: string[]) => {
     setCustomLoading(true);
@@ -440,133 +490,207 @@ export default function SmaMomentumPage() {
       ? `Plot of portfolio stocks by percent distance from the ${longPeriodLabel} SMA (x-axis) and ${periodLabel} SMA (y-axis), using ${timeframeLabel} data.`
       : `Plot of your custom stock list by percent distance from the ${longPeriodLabel} SMA (x-axis) and ${periodLabel} SMA (y-axis), using ${timeframeLabel} data.`;
 
+  const allSectorsSelected =
+    sectors.length > 0 && selectedSectors.length === sectors.length;
+
+  const toggleAllSectors = () => {
+    setSelectedSectors(allSectorsSelected ? [] : sectors);
+  };
+
+  const toggleSector = (sector: string) => {
+    setSelectedSectors((prev) =>
+      prev.includes(sector)
+        ? prev.filter((item) => item !== sector)
+        : [...prev, sector],
+    );
+  };
+
   return (
     <div className="container-fluid momentum-page py-4">
-      <div className="d-flex flex-wrap align-items-center gap-3 mb-3">
-        <h1 className="fw-bold mb-0">SMA Momentum</h1>
-        <div
-          className="btn-group"
-          role="group"
-          aria-label="SMA momentum view selector"
-        >
-          <button
-            className={`btn btn-outline-primary ${
-              mode === "portfolio" ? "active" : ""
-            }`}
-            type="button"
-            onClick={() => setMode("portfolio")}
-          >
-            Portfolio grid
-          </button>
-          <button
-            className={`btn btn-outline-primary ${
-              mode === "custom" ? "active" : ""
-            }`}
-            type="button"
-            onClick={() => setMode("custom")}
-          >
-            Custom list
-          </button>
-        </div>
-        <div className="d-flex align-items-center gap-2 ms-auto">
-          <div
-            className="btn-group"
-            role="group"
-            aria-label="SMA momentum timeframe"
-          >
-            <button
-              className={`btn btn-outline-secondary btn-sm ${
-                timeframe === "daily" ? "active" : ""
-              }`}
-              type="button"
-              onClick={() => setTimeframe("daily")}
+      <div className="momentum-layout">
+        <div className="momentum-layout__main">
+          <div className="d-flex flex-wrap align-items-center gap-3 mb-3">
+            <h1 className="fw-bold mb-0">SMA Momentum</h1>
+            <div
+              className="btn-group"
+              role="group"
+              aria-label="SMA momentum view selector"
             >
-              Daily
-            </button>
-            <button
-              className={`btn btn-outline-secondary btn-sm ${
-                timeframe === "weekly" ? "active" : ""
-              }`}
-              type="button"
-              onClick={() => setTimeframe("weekly")}
-            >
-              Weekly
-            </button>
-          </div>
-          <label
-            htmlFor="smaMomentumZoom"
-            className="form-label mb-0 small text-muted"
-          >
-            Zoom
-          </label>
-          <select
-            id="smaMomentumZoom"
-            className="form-select form-select-sm w-auto"
-            value={zoomScale}
-            onChange={(event) => setZoomScale(Number(event.target.value))}
-          >
-            <option value={1}>1x</option>
-            <option value={1.25}>1.25x</option>
-            <option value={1.5}>1.5x</option>
-            <option value={2}>2x</option>
-            <option value={4}>4x</option>
-          </select>
-        </div>
-      </div>
-
-      <p className="text-muted mb-4">{subtitle}</p>
-
-      <div className="card shadow-sm border-0 mb-4">
-        <div className="card-body">
-          <h5 className="card-title mb-3">Plot a custom symbol grid</h5>
-          <form className="row g-3" onSubmit={onSubmitCustom}>
-            <div className="col-md-8">
-              <label htmlFor="smaCustomSymbols" className="form-label">
-                Enter ticker symbols (comma or space separated)
-              </label>
-              <input
-                id="smaCustomSymbols"
-                className="form-control"
-                placeholder="e.g. AAPL, MU, PTON"
-                value={customInput}
-                onChange={(e) => setCustomInput(e.target.value)}
-                aria-describedby="smaCustomSymbolsHelp"
-              />
-            </div>
-            <div className="col-md-4 d-flex align-items-end">
               <button
-                type="submit"
-                className="btn btn-primary w-100"
-                disabled={customLoading}
+                className={`btn btn-outline-primary ${
+                  mode === "portfolio" ? "active" : ""
+                }`}
+                type="button"
+                onClick={() => setMode("portfolio")}
               >
-                {customLoading ? "Loading…" : "Plot custom grid"}
+                Portfolio grid
+              </button>
+              <button
+                className={`btn btn-outline-primary ${
+                  mode === "custom" ? "active" : ""
+                }`}
+                type="button"
+                onClick={() => setMode("custom")}
+              >
+                Custom list
               </button>
             </div>
-          </form>
-          <div id="smaCustomSymbolsHelp" className="form-text">
-            Enter any tickers to see how they sit versus their {periodLabel} and{" "}
-            {longPeriodLabel} simple moving averages.
-          </div>
-          {customError && (
-            <div className="text-danger small mt-2">{customError}</div>
-          )}
-          {customSymbols.length > 0 && (
-            <div className="text-muted small mt-2">
-              Showing custom list: {customSymbols.join(", ")}
+            <div className="d-flex align-items-center gap-2 ms-auto">
+              <div
+                className="btn-group"
+                role="group"
+                aria-label="SMA momentum timeframe"
+              >
+                <button
+                  className={`btn btn-outline-secondary btn-sm ${
+                    timeframe === "daily" ? "active" : ""
+                  }`}
+                  type="button"
+                  onClick={() => setTimeframe("daily")}
+                >
+                  Daily
+                </button>
+                <button
+                  className={`btn btn-outline-secondary btn-sm ${
+                    timeframe === "weekly" ? "active" : ""
+                  }`}
+                  type="button"
+                  onClick={() => setTimeframe("weekly")}
+                >
+                  Weekly
+                </button>
+              </div>
+              <label
+                htmlFor="smaMomentumZoom"
+                className="form-label mb-0 small text-muted"
+              >
+                Zoom
+              </label>
+              <select
+                id="smaMomentumZoom"
+                className="form-select form-select-sm w-auto"
+                value={zoomScale}
+                onChange={(event) => setZoomScale(Number(event.target.value))}
+              >
+                <option value={1}>1x</option>
+                <option value={1.25}>1.25x</option>
+                <option value={1.5}>1.5x</option>
+                <option value={2}>2x</option>
+                <option value={4}>4x</option>
+              </select>
             </div>
-          )}
-        </div>
-      </div>
+          </div>
 
-      <SmaMomentumGrid
-        data={mode === "portfolio" ? portfolioData : customData}
-        loading={mode === "portfolio" ? portfolioLoading : customLoading}
-        error={mode === "portfolio" ? portfolioError : customError}
-        mode={mode}
-        zoomScale={zoomScale}
-        timeframe={timeframe}
-        customSymbols={customSymbols}
-      />
+          <p className="text-muted mb-4">{subtitle}</p>
+
+          <div className="card shadow-sm border-0 mb-4">
+            <div className="card-body">
+              <h5 className="card-title mb-3">Plot a custom symbol grid</h5>
+              <form className="row g-3" onSubmit={onSubmitCustom}>
+                <div className="col-md-8">
+                  <label htmlFor="smaCustomSymbols" className="form-label">
+                    Enter ticker symbols (comma or space separated)
+                  </label>
+                  <input
+                    id="smaCustomSymbols"
+                    className="form-control"
+                    placeholder="e.g. AAPL, MU, PTON"
+                    value={customInput}
+                    onChange={(e) => setCustomInput(e.target.value)}
+                    aria-describedby="smaCustomSymbolsHelp"
+                  />
+                </div>
+                <div className="col-md-4 d-flex align-items-end">
+                  <button
+                    type="submit"
+                    className="btn btn-primary w-100"
+                    disabled={customLoading}
+                  >
+                    {customLoading ? "Loading…" : "Plot custom grid"}
+                  </button>
+                </div>
+              </form>
+              <div id="smaCustomSymbolsHelp" className="form-text">
+                Enter any tickers to see how they sit versus their {periodLabel}{" "}
+                and {longPeriodLabel} simple moving averages.
+              </div>
+              {customError && (
+                <div className="text-danger small mt-2">{customError}</div>
+              )}
+              {customSymbols.length > 0 && (
+                <div className="text-muted small mt-2">
+                  Showing custom list: {customSymbols.join(", ")}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <SmaMomentumGrid
+            data={mode === "portfolio" ? portfolioData : customData}
+            loading={mode === "portfolio" ? portfolioLoading : customLoading}
+            error={mode === "portfolio" ? portfolioError : customError}
+            mode={mode}
+            zoomScale={zoomScale}
+            timeframe={timeframe}
+            customSymbols={customSymbols}
+            sectorMap={sectorMap}
+            selectedSectors={selectedSectors}
+          />
+        </div>
+
+        <aside className="momentum-layout__sidebar">
+          <div className="card shadow-sm border-0">
+            <div className="card-body">
+              <h5 className="card-title mb-3">Sector filters</h5>
+              <div className="form-check mb-2">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  id="sma-sector-all"
+                  checked={allSectorsSelected}
+                  onChange={toggleAllSectors}
+                  disabled={mode !== "portfolio" || sectors.length === 0}
+                />
+                <label className="form-check-label" htmlFor="sma-sector-all">
+                  All sectors
+                </label>
+              </div>
+              <div className="momentum-sector-list">
+                {sectors.length === 0 && (
+                  <div className="text-muted small">
+                    No sector data loaded yet.
+                  </div>
+                )}
+                {sectors.map((sector) => (
+                  <div className="form-check" key={sector}>
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      id={`sma-sector-${sector}`}
+                      checked={selectedSectors.includes(sector)}
+                      onChange={() => toggleSector(sector)}
+                      disabled={mode !== "portfolio"}
+                    />
+                    <label
+                      className="form-check-label"
+                      htmlFor={`sma-sector-${sector}`}
+                    >
+                      {sector}
+                    </label>
+                  </div>
+                ))}
+              </div>
+              <div className="text-muted small mt-3">
+                {mode === "portfolio"
+                  ? `Showing ${selectedSectors.length || 0} of ${
+                      sectors.length
+                    } sectors.`
+                  : "Sector filters apply only to portfolio view."}
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }

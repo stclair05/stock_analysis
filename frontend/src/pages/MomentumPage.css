@@ -29,6 +29,27 @@
   overflow: hidden;
 }
 
+.momentum-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.momentum-layout__sidebar {
+  position: sticky;
+  top: 90px;
+  align-self: start;
+}
+
+.momentum-sector-list {
+  display: grid;
+  gap: 0.35rem;
+  max-height: 320px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
 .momentum-axis {
   position: absolute;
   background: rgba(15, 23, 42, 0.35);
@@ -406,4 +427,14 @@
   width: 14px;
   left: 50%;
   transform: translateX(-50%);
+}
+
+@media (max-width: 1200px) {
+  .momentum-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .momentum-layout__sidebar {
+    position: static;
+  }
 }
