@@ -4,17 +4,25 @@ import "./MomentumPage.css";
 type SmaMomentumResponse = {
   distance_12d: Record<string, number>;
   distance_36d: Record<string, number>;
+  distance_12d_prev: Record<string, number>;
+  distance_36d_prev: Record<string, number>;
 };
 
 type SmaPoint = {
   symbol: string;
   dma12?: number;
   dma36?: number;
+  dma12Prev?: number;
+  dma36Prev?: number;
 };
+
+type MovementTone = "up" | "down" | "neutral";
 
 const FALLBACK: SmaMomentumResponse = {
   distance_12d: {},
   distance_36d: {},
+  distance_12d_prev: {},
+  distance_36d_prev: {},
 };
 
 type MomentumGridProps = {
@@ -24,6 +32,8 @@ type MomentumGridProps = {
   mode: "portfolio" | "custom";
   zoomScale: number;
   timeframe: "daily" | "weekly";
+  showMovement: boolean;
+  movementLabel: string;
   customSymbols: string[];
   sectorMap: Record<string, string>;
   selectedSectors: string[];
@@ -36,6 +46,8 @@ function SmaMomentumGrid({
   mode,
   zoomScale,
   timeframe,
+  showMovement,
+  movementLabel,
   customSymbols,
   sectorMap,
   selectedSectors,
@@ -54,8 +66,15 @@ function SmaMomentumGrid({
         symbol,
         dma12: data.distance_12d?.[symbol],
         dma36: data.distance_36d?.[symbol],
+        dma12Prev: data.distance_12d_prev?.[symbol],
+        dma36Prev: data.distance_36d_prev?.[symbol],
       }));
-  }, [data.distance_12d, data.distance_36d]);
+  }, [
+    data.distance_12d,
+    data.distance_36d,
+    data.distance_12d_prev,
+    data.distance_36d_prev,
+  ]);
 
   const visiblePoints = useMemo(() => {
     if (mode !== "portfolio") return points;
@@ -138,6 +157,49 @@ function SmaMomentumGrid({
 
   const hasSymbols =
     mode === "portfolio" ? visiblePoints.length > 0 : customSymbols.length > 0;
+
+  const pointPositions = useMemo(
+    () =>
+      visiblePoints.map((point) => {
+        const jitterX = jitterPercent(point.symbol, "x");
+        const jitterY = jitterPercent(point.symbol, "y");
+        const currentX = toPosition(point.dma36) + jitterX;
+        const currentY = 100 - toPosition(point.dma12) + jitterY;
+        const prevX =
+          typeof point.dma36Prev === "number"
+            ? toPosition(point.dma36Prev) + jitterX
+            : null;
+        const prevY =
+          typeof point.dma12Prev === "number"
+            ? 100 - toPosition(point.dma12Prev) + jitterY
+            : null;
+        const movementTone: MovementTone = (() => {
+          if (
+            typeof point.dma12Prev !== "number" ||
+            typeof point.dma36Prev !== "number" ||
+            typeof point.dma12 !== "number" ||
+            typeof point.dma36 !== "number"
+          ) {
+            return "neutral";
+          }
+          const prevMagnitude = Math.hypot(point.dma12Prev, point.dma36Prev);
+          const currentMagnitude = Math.hypot(point.dma12, point.dma36);
+          if (Math.abs(currentMagnitude - prevMagnitude) < 0.001) {
+            return "neutral";
+          }
+          return currentMagnitude < prevMagnitude ? "up" : "down";
+        })();
+        return {
+          ...point,
+          currentX,
+          currentY,
+          prevX,
+          prevY,
+          movementTone,
+        };
+      }),
+    [visiblePoints, visibleRange],
+  );
 
   return (
     <div className="card shadow-sm border-0 mb-4">
@@ -270,7 +332,124 @@ function SmaMomentumGrid({
                 </div>
               ))}
 
-              {visiblePoints.map((point) => {
+              {showMovement && (
+                <svg
+                  className="momentum-motion-layer"
+                  viewBox="0 0 100 100"
+                  preserveAspectRatio="none"
+                >
+                  <defs>
+                    <marker
+                      id="momentum-arrowhead-up"
+                      markerWidth="4"
+                      markerHeight="4"
+                      refX="4"
+                      refY="2"
+                      orient="auto"
+                      markerUnits="userSpaceOnUse"
+                    >
+                      <path
+                        d="M0,0 L4,2 L0,4 Z"
+                        fill="rgba(22, 163, 74, 0.75)"
+                      />
+                    </marker>
+                    <marker
+                      id="momentum-arrowhead-down"
+                      markerWidth="4"
+                      markerHeight="4"
+                      refX="4"
+                      refY="2"
+                      orient="auto"
+                      markerUnits="userSpaceOnUse"
+                    >
+                      <path
+                        d="M0,0 L4,2 L0,4 Z"
+                        fill="rgba(220, 38, 38, 0.75)"
+                      />
+                    </marker>
+                    <marker
+                      id="momentum-arrowhead-neutral"
+                      markerWidth="4"
+                      markerHeight="4"
+                      refX="4"
+                      refY="2"
+                      orient="auto"
+                      markerUnits="userSpaceOnUse"
+                    >
+                      <path
+                        d="M0,0 L4,2 L0,4 Z"
+                        fill="rgba(37, 99, 235, 0.6)"
+                      />
+                    </marker>
+                  </defs>
+                  {pointPositions.map((point) =>
+                    typeof point.prevX === "number" &&
+                    typeof point.prevY === "number" ? (
+                      <line
+                        key={`${point.symbol}-arrow`}
+                        x1={point.prevX}
+                        y1={point.prevY}
+                        x2={point.currentX}
+                        y2={point.currentY}
+                        stroke={
+                          point.movementTone === "up"
+                            ? "rgba(22, 163, 74, 0.75)"
+                            : point.movementTone === "down"
+                              ? "rgba(220, 38, 38, 0.75)"
+                              : "rgba(37, 99, 235, 0.6)"
+                        }
+                        strokeWidth="0.35"
+                        strokeLinecap="round"
+                        strokeDasharray="1 1.6"
+                        markerEnd={`url(#momentum-arrowhead-${
+                          point.movementTone
+                        })`}
+                      />
+                    ) : null,
+                  )}
+                  {pointPositions.map((point) =>
+                    typeof point.prevX === "number" &&
+                    typeof point.prevY === "number" ? (
+                      <circle
+                        key={`${point.symbol}-prev`}
+                        cx={point.prevX}
+                        cy={point.prevY}
+                        r="1.3"
+                        fill="rgba(37, 99, 235, 0.35)"
+                        stroke="rgba(255, 255, 255, 0.8)"
+                        strokeWidth="0.35"
+                      />
+                    ) : null,
+                  )}
+                </svg>
+              )}
+
+              {showMovement &&
+                pointPositions.map((point) =>
+                  typeof point.prevX === "number" &&
+                  typeof point.prevY === "number" ? (
+                    <div
+                      key={`${point.symbol}-prev`}
+                      className="momentum-point momentum-point--previous"
+                      style={{
+                        left: `${point.prevX}%`,
+                        top: `${point.prevY}%`,
+                      }}
+                      title={`${point.symbol} ${movementLabel}: 12${smaLabel} ${formatPercent(
+                        point.dma12Prev,
+                      )}, 36${smaLabel} ${formatPercent(point.dma36Prev)}`}
+                    >
+                      <span className="momentum-point__label momentum-point__label--previous">
+                        {point.symbol}
+                        <span className="momentum-point__label-meta">
+                          {movementLabel}
+                        </span>
+                      </span>
+                    </div>
+                  ) : null,
+                )}
+
+              {pointPositions.map((point) => {
                 const isPositiveExtreme = extremes.positive.has(point.symbol);
                 const isNegativeExtreme = extremes.negative.has(point.symbol);
                 const quadrantClass =
@@ -283,6 +462,15 @@ function SmaMomentumGrid({
                         : point.dma36 < 0 && point.dma12 < 0
                           ? " momentum-point--negative-trend"
                           : " momentum-point--negative-developing"
+                    : "";
+
+                const previousLabel =
+                  showMovement &&
+                  typeof point.dma12Prev === "number" &&
+                  typeof point.dma36Prev === "number"
+                    ? `, ${movementLabel}: 12${smaLabel} ${formatPercent(
+                        point.dma12Prev,
+                      )}, 36${smaLabel} ${formatPercent(point.dma36Prev)}`
                     : "";
 
                 return (
@@ -298,19 +486,14 @@ function SmaMomentumGrid({
                         : ""
                     }${quadrantClass}`}
                     style={{
-                      left: `${
-                        toPosition(point.dma36) +
-                        jitterPercent(point.symbol, "x")
-                      }%`,
-                      top: `${
-                        100 -
-                        toPosition(point.dma12) +
-                        jitterPercent(point.symbol, "y")
-                      }%`,
+                      left: `${point.currentX}%`,
+                      top: `${point.currentY}%`,
                     }}
                     title={`${point.symbol}: 12${smaLabel} ${formatPercent(
                       point.dma12,
-                    )}, 36${smaLabel} ${formatPercent(point.dma36)}`}
+                    )}, 36${smaLabel} ${formatPercent(
+                      point.dma36,
+                    )}${previousLabel}`}
                   >
                     <span className="momentum-point__label">
                       {point.symbol}
@@ -357,6 +540,7 @@ export default function SmaMomentumPage() {
   const [customError, setCustomError] = useState<string | null>(null);
   const [zoomScale, setZoomScale] = useState(1.25);
   const [timeframe, setTimeframe] = useState<"daily" | "weekly">("daily");
+  const [showMovement, setShowMovement] = useState(true);
 
   const fetchPortfolioDistances = () => {
     setPortfolioLoading(true);
@@ -375,6 +559,8 @@ export default function SmaMomentumPage() {
         setPortfolioData({
           distance_12d: json.distance_12d || {},
           distance_36d: json.distance_36d || {},
+          distance_12d_prev: json.distance_12d_prev || {},
+          distance_36d_prev: json.distance_36d_prev || {},
         });
         setPortfolioError(null);
       })
@@ -444,6 +630,8 @@ export default function SmaMomentumPage() {
         setCustomData({
           distance_12d: json.distance_12d || {},
           distance_36d: json.distance_36d || {},
+          distance_12d_prev: json.distance_12d_prev || {},
+          distance_36d_prev: json.distance_36d_prev || {},
         });
         setCustomError(null);
       })
@@ -486,6 +674,7 @@ export default function SmaMomentumPage() {
   const timeframeLabel = timeframe === "weekly" ? "weekly" : "daily";
   const periodLabel = timeframe === "weekly" ? "12-week" : "12-day";
   const longPeriodLabel = timeframe === "weekly" ? "36-week" : "36-day";
+  const movementLabel = timeframe === "weekly" ? "1w ago" : "5d ago";
   const subtitle =
     mode === "portfolio"
       ? `Plot of portfolio stocks by percent distance from the ${longPeriodLabel} SMA (x-axis) and ${periodLabel} SMA (y-axis), using ${timeframeLabel} data.`
@@ -579,6 +768,21 @@ export default function SmaMomentumPage() {
                 <option value={2}>2x</option>
                 <option value={4}>4x</option>
               </select>
+              <div className="form-check form-switch mb-0 ms-2">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  id="smaMomentumMovement"
+                  checked={showMovement}
+                  onChange={(event) => setShowMovement(event.target.checked)}
+                />
+                <label
+                  className="form-check-label small text-muted"
+                  htmlFor="smaMomentumMovement"
+                >
+                  Show {movementLabel} movement
+                </label>
+              </div>
             </div>
             <button
               type="button"
@@ -642,6 +846,8 @@ export default function SmaMomentumPage() {
             mode={mode}
             zoomScale={zoomScale}
             timeframe={timeframe}
+            showMovement={showMovement}
+            movementLabel={movementLabel}
             customSymbols={customSymbols}
             sectorMap={sectorMap}
             selectedSectors={selectedSectors}

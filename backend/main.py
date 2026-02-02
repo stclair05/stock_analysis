@@ -96,34 +96,55 @@ def _sma_distance_pct(price: float | None, sma: float | None) -> float | None:
     return (price - sma) / sma * 100
 
 
+def _distance_at_index(
+    close: pd.Series, index: int, window: int
+) -> float | None:
+    if len(close) <= abs(index):
+        return None
+    price = close.iloc[index]
+    sma = close.rolling(window=window).mean().iloc[index]
+    if pd.isna(price) or pd.isna(sma):
+        return None
+    return _sma_distance_pct(float(price), float(sma))
+
+
 def _compute_sma_distances(
     symbols: list[str],
     timeframe: Literal["daily", "weekly"] = "daily",
 ) -> dict[str, dict[str, float]]:
-    results: dict[str, dict[str, float]] = {"distance_12d": {}, "distance_36d": {}}
+    results: dict[str, dict[str, float]] = {
+        "distance_12d": {},
+        "distance_36d": {},
+        "distance_12d_prev": {},
+        "distance_36d_prev": {},
+    }
 
     def _fetch(symbol: str):
         analyser = StockAnalyser(symbol)
-        if timeframe == "weekly":
-            df = analyser.weekly_df
-            if df.empty:
-                return {
-                    "symbol": symbol,
-                    "distance_12d": None,
-                    "distance_36d": None,
-                }
-            close = df["Close"]
-            price_now = close.iloc[-1]
-            dma12 = close.rolling(window=12).mean().iloc[-1]
-            dma36 = close.rolling(window=36).mean().iloc[-1]
-        else:
-            price_now = analyser.get_current_price()
-            dma12 = analyser.calculate_12dma().current
-            dma36 = analyser.calculate_36dma().current
+        df = analyser.weekly_df if timeframe == "weekly" else analyser.df
+        if df.empty:
+            return {
+                "symbol": symbol,
+                "distance_12d": None,
+                "distance_36d": None,
+                "distance_12d_prev": None,
+                "distance_36d_prev": None,
+            }
+        close = df["Close"]
+        if isinstance(close, pd.DataFrame):
+            close = close.iloc[:, 0]
+        offset = 1 if timeframe == "weekly" else 5
+        prev_index = -1 - offset
+        distance_12d = _distance_at_index(close, -1, 12)
+        distance_36d = _distance_at_index(close, -1, 36)
+        distance_12d_prev = _distance_at_index(close, prev_index, 12)
+        distance_36d_prev = _distance_at_index(close, prev_index, 36)
         return {
             "symbol": symbol,
-            "distance_12d": _sma_distance_pct(price_now, dma12),
-            "distance_36d": _sma_distance_pct(price_now, dma36),
+            "distance_12d": distance_12d,
+            "distance_36d": distance_36d,
+            "distance_12d_prev": distance_12d_prev,
+            "distance_36d_prev": distance_36d_prev,
         }
 
     with ThreadPoolExecutor(max_workers=8) as executor:
@@ -135,6 +156,14 @@ def _compute_sma_distances(
                 results["distance_12d"][symbol] = float(result["distance_12d"])
             if isinstance(result["distance_36d"], (int, float)):
                 results["distance_36d"][symbol] = float(result["distance_36d"])
+            if isinstance(result["distance_12d_prev"], (int, float)):
+                results["distance_12d_prev"][symbol] = float(
+                    result["distance_12d_prev"]
+                )
+            if isinstance(result["distance_36d_prev"], (int, float)):
+                results["distance_36d_prev"][symbol] = float(
+                    result["distance_36d_prev"]
+                )
 
     return results
 
@@ -356,7 +385,12 @@ def sma_momentum(
 
     symbols = _sanitize_symbols_list(symbols)
     if not symbols:
-        return {"distance_12d": {}, "distance_36d": {}}
+        return {
+            "distance_12d": {},
+            "distance_36d": {},
+            "distance_12d_prev": {},
+            "distance_36d_prev": {},
+        }
 
     return convert_numpy_types(_compute_sma_distances(symbols, timeframe))
 
@@ -365,7 +399,12 @@ def sma_momentum(
 def custom_sma_momentum(payload: CustomSmaMomentumRequest):
     symbols = _sanitize_symbols_list(payload.symbols)
     if not symbols:
-        return {"distance_12d": {}, "distance_36d": {}}
+        return {
+            "distance_12d": {},
+            "distance_36d": {},
+            "distance_12d_prev": {},
+            "distance_36d_prev": {},
+        }
 
     return convert_numpy_types(_compute_sma_distances(symbols, payload.timeframe))
 
