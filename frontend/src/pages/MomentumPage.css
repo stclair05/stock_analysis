@@ -246,6 +246,53 @@
   color: #7c2d12;
 }
 
+.momentum-grid-signal {
+  position: absolute;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: clamp(16px, 2.2vw, 32px);
+  text-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.momentum-grid-signal.signal-close-buy {
+  top: 18%;
+  left: 54%;
+  color: #16a34a;
+}
+
+.momentum-grid-signal.signal-buy {
+  top: 30%;
+  left: 90%;
+  color: #22c55e;
+}
+
+.momentum-grid-signal.signal-negative-developing {
+  top: 58%;
+  right: 10%;
+  color: #f97316;
+}
+
+.momentum-grid-signal.signal-sell {
+  top: 80%;
+  left: 52%;
+  color: #dc2626;
+}
+
+.momentum-grid-signal.signal-negative-trend {
+  bottom: 14%;
+  left: 12%;
+  color: #dc2626;
+}
+
+.momentum-grid-signal.signal-positive-developing {
+  top: 22%;
+  left: 14%;
+  color: #16a34a;
+}
+
 .momentum-note-letter {
   font-weight: 800;
 }

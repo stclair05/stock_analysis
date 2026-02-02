@@ -150,6 +150,20 @@ function SmaMomentumGrid({
         {isGridVisible ? (
           <>
             <div className="momentum-grid mb-3" aria-live="polite">
+              <div className="momentum-grid-signal signal-close-buy">
+                Close to BUY
+              </div>
+              <div className="momentum-grid-signal signal-buy">BUY</div>
+              <div className="momentum-grid-signal signal-negative-developing">
+                Negative developing
+              </div>
+              <div className="momentum-grid-signal signal-sell">SELL</div>
+              <div className="momentum-grid-signal signal-negative-trend">
+                Negative trend
+              </div>
+              <div className="momentum-grid-signal signal-positive-developing">
+                Positive developing
+              </div>
               <div className="momentum-quadrant-label positive-developing">
                 <span className="momentum-quadrant-title">
                   Above 12{smaLabel}, Below 36{smaLabel}
