@@ -206,12 +206,12 @@ function SmaMomentumGrid({
           ) {
             return "neutral";
           }
-          const prevMagnitude = Math.hypot(point.dma12Prev, point.dma36Prev);
-          const currentMagnitude = Math.hypot(point.dma12, point.dma36);
-          if (Math.abs(currentMagnitude - prevMagnitude) < 0.001) {
+          const prevScore = point.dma12Prev + point.dma36Prev;
+          const currentScore = point.dma12 + point.dma36;
+          if (Math.abs(currentScore - prevScore) < 0.001) {
             return "neutral";
           }
-          return currentMagnitude < prevMagnitude ? "up" : "down";
+          return currentScore > prevScore ? "up" : "down";
         })();
 
         return {
