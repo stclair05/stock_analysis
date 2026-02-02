@@ -30,16 +30,42 @@
 }
 
 .momentum-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
-  gap: 1.5rem;
-  align-items: start;
+  position: relative;
+  display: block;
+  width: 100%;
 }
 
-.momentum-layout__sidebar {
-  position: sticky;
-  top: 90px;
-  align-self: start;
+.momentum-layout__main {
+  width: 100%;
+  max-width: 100%;
+}
+
+.momentum-sector-toggle {
+  border-radius: 999px;
+  width: 32px;
+  height: 32px;
+  line-height: 1;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+
+.momentum-sector-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: min(320px, 92vw);
+  z-index: 5;
+}
+
+.momentum-sector-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
 }
 
 .momentum-sector-list {
@@ -430,11 +456,13 @@
 }
 
 @media (max-width: 1200px) {
-  .momentum-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .momentum-layout__sidebar {
-    position: static;
+  .momentum-sector-panel {
+    position: fixed;
+    top: 90px;
+    right: 16px;
+    left: 16px;
+    width: auto;
+    max-width: 420px;
+    margin: 0 auto;
   }
 }

@@ -552,6 +552,7 @@ export default function MacePage() {
   const [customError, setCustomError] = useState<string | null>(null);
   const [zoomScale, setZoomScale] = useState(1.25);
   const [sectorMap, setSectorMap] = useState<Record<string, string>>({});
+  const [isSectorPanelOpen, setIsSectorPanelOpen] = useState(false);
   const [sectors, setSectors] = useState<string[]>([]);
   const [selectedSectors, setSelectedSectors] = useState<string[]>([]);
 
@@ -777,6 +778,15 @@ export default function MacePage() {
                 <option value={4}>4x</option>
               </select>
             </div>
+            <button
+              type="button"
+              className="btn btn-outline-secondary momentum-sector-toggle"
+              onClick={() => setIsSectorPanelOpen((open) => !open)}
+              aria-expanded={isSectorPanelOpen}
+              aria-controls="mace-sector-panel"
+            >
+              <span aria-hidden="true">{isSectorPanelOpen ? "−" : "+"}</span>
+            </button>
           </div>
 
           <p className="text-muted mb-4">{subtitle}</p>
@@ -835,59 +845,70 @@ export default function MacePage() {
             selectedSectors={selectedSectors}
           />
         </div>
-
-        <aside className="momentum-layout__sidebar">
-          <div className="card shadow-sm border-0">
-            <div className="card-body">
-              <h5 className="card-title mb-3">Sector filters</h5>
-              <div className="form-check mb-2">
-                <input
-                  className="form-check-input"
-                  type="checkbox"
-                  id="mace-sector-all"
-                  checked={allSectorsSelected}
-                  onChange={toggleAllSectors}
-                  disabled={mode !== "portfolio" || sectors.length === 0}
-                />
-                <label className="form-check-label" htmlFor="mace-sector-all">
-                  All sectors
-                </label>
-              </div>
-              <div className="momentum-sector-list">
-                {sectors.length === 0 && (
-                  <div className="text-muted small">
-                    No sector data loaded yet.
-                  </div>
-                )}
-                {sectors.map((sector) => (
-                  <div className="form-check" key={sector}>
-                    <input
-                      className="form-check-input"
-                      type="checkbox"
-                      id={`mace-sector-${sector}`}
-                      checked={selectedSectors.includes(sector)}
-                      onChange={() => toggleSector(sector)}
-                      disabled={mode !== "portfolio"}
-                    />
-                    <label
-                      className="form-check-label"
-                      htmlFor={`mace-sector-${sector}`}
-                    >
-                      {sector}
-                    </label>
-                  </div>
-                ))}
-              </div>
-              <div className="text-muted small mt-3">
-                {mode === "portfolio"
-                  ? `Showing ${selectedSectors.length || 0} of ${
-                      sectors.length
-                    } sectors.`
-                  : "Sector filters apply only to portfolio view."}
+        {isSectorPanelOpen && (
+          <aside id="mace-sector-panel" className="momentum-sector-panel">
+            <div className="card shadow-sm border-0">
+              <div className="card-body">
+                <div className="momentum-sector-panel__header">
+                  <h5 className="card-title mb-0">Sector filters</h5>
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary momentum-sector-toggle"
+                    onClick={() => setIsSectorPanelOpen(false)}
+                    aria-label="Close sector filters"
+                  >
+                    <span aria-hidden="true">−</span>
+                  </button>
+                </div>
+                <div className="form-check mb-2">
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
+                    id="mace-sector-all"
+                    checked={allSectorsSelected}
+                    onChange={toggleAllSectors}
+                    disabled={mode !== "portfolio" || sectors.length === 0}
+                  />
+                  <label className="form-check-label" htmlFor="mace-sector-all">
+                    All sectors
+                  </label>
+                </div>
+                <div className="momentum-sector-list">
+                  {sectors.length === 0 && (
+                    <div className="text-muted small">
+                      No sector data loaded yet.
+                    </div>
+                  )}
+                  {sectors.map((sector) => (
+                    <div className="form-check" key={sector}>
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        id={`mace-sector-${sector}`}
+                        checked={selectedSectors.includes(sector)}
+                        onChange={() => toggleSector(sector)}
+                        disabled={mode !== "portfolio"}
+                      />
+                      <label
+                        className="form-check-label"
+                        htmlFor={`mace-sector-${sector}`}
+                      >
+                        {sector}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+                <div className="text-muted small mt-3">
+                  {mode === "portfolio"
+                    ? `Showing ${selectedSectors.length || 0} of ${
+                        sectors.length
+                      } sectors.`
+                    : "Sector filters apply only to portfolio view."}
+                </div>
               </div>
             </div>
-          </div>
-        </aside>
+          </aside>
+        )}
       </div>
     </div>
   );
