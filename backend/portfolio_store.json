@@ -282,21 +282,6 @@
       "target_3": 104.24
     },
     {
-      "ticker": "MOS",
-      "shares": 72200.0,
-      "average_cost": 37.16,
-      "sector": "Fertilizer",
-      "player": 3,
-      "technigrade": [20, 19, 19, 19, 19],
-      "peers": ["NTR", "CF", "ICL", "SMG", "UAN", "CMP"],
-      "invalidation_1": 33.43,
-      "invalidation_2": 32.15,
-      "invalidation_3": 30.09,
-      "target_1": 37.38,
-      "target_2": 42,
-      "target_3": 47
-    },
-    {
       "ticker": "NTR",
       "shares": 29000.0,
       "average_cost": 56.77,
@@ -340,6 +325,20 @@
       "target_2": 37.52,
       "target_3": 41.92,
       "peers": ["U.U", "SRUUF", "URNJ", "URA", "DNN", "UEC"]
+    },
+    {
+      "ticker": "EU",
+      "shares": 50000,
+      "average_cost": 3.224,
+      "sector": "Uranium",
+      "technigrade": [],
+      "peers": ["UEC", "URG", "UUUU", "DNN", "UROY", "CCJ"],
+      "invalidation_1": 2.05,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": 3.88,
+      "target_2": 4.85,
+      "target_3": 9.2
     },
     {
       "ticker": "DYL.AX",
@@ -585,7 +584,7 @@
     },
     {
       "ticker": "XAUUSD",
-      "shares": 6050,
+      "shares": 2100,
       "average_cost": 4564.0484,
       "sector": "Precious Metals",
       "player": 8
@@ -611,21 +610,6 @@
       "target_1": -1,
       "target_2": -1,
       "target_3": -1
-    },
-    {
-      "ticker": "TMC",
-      "shares": 60000.0,
-      "average_cost": 9.03,
-      "sector": "Precious Metals",
-      "player": 8,
-      "technigrade": [4, 17, 18, 13, 3],
-      "peers": ["IONR", "MP", "BHP", "VALE", "CCJ", "TECK"],
-      "invalidation_1": 5.42,
-      "invalidation_2": 4.93,
-      "invalidation_3": 4.37,
-      "target_1": 7,
-      "target_2": 11,
-      "target_3": 11.96
     },
     {
       "ticker": "RIO.AX",
