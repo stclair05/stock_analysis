@@ -28,7 +28,7 @@ function App() {
         <Route
           path="/portfolio"
           element={
-            <Navigate to="/portfolio/buy_sell_signals/portfolio" replace />
+            <Navigate to="/portfolio/daily" replace />
           }
         />
         <Route path="/portfolio/:tab" element={<PortfolioPage />} />

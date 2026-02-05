@@ -34,7 +34,7 @@ function PortfolioPage() {
   };
 
   const [activeTab, setActiveTab] = useState(
-    pathToTab[tab ?? ""] || "Buy/Sell Signals"
+    pathToTab[tab ?? ""] || "Daily"
   );
 
   const [signalListType, setSignalListType] = useState<

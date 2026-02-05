@@ -18,7 +18,7 @@ export default function Navbar() {
           Search
         </Link>
         <Link
-          to="/portfolio/buy_sell_signals/portfolio"
+          to="/portfolio/daily"
           className={`nav-link ${
             location.pathname.startsWith("/portfolio") ? "active" : ""
           }`}

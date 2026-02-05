@@ -25,8 +25,8 @@
     },
     {
       "ticker": "MPC",
-      "shares": 9116.0,
-      "average_cost": 177.12,
+      "shares": 11116.0,
+      "average_cost": 179.2557,
       "sector": "Energy",
       "target_1": 218.4,
       "player": 2,
@@ -299,8 +299,8 @@
     },
     {
       "ticker": "U-UN.TO",
-      "shares": 64000,
-      "average_cost": 23.1694,
+      "shares": 84000,
+      "average_cost": 21.34,
       "sector": "Uranium",
       "player": 5,
       "invalidation_1": 26,
@@ -539,8 +539,8 @@
     },
     {
       "ticker": "TEM",
-      "shares": 56000,
-      "average_cost": 82.0164,
+      "shares": 53000,
+      "average_cost": 89.0,
       "sector": "Healthcare",
       "player": 2,
       "technigrade": [9, 13, 15, 13, 3],
@@ -551,21 +551,6 @@
       "target_1": 107,
       "target_2": 120,
       "target_3": 135
-    },
-    {
-      "ticker": "MDGL",
-      "shares": 700,
-      "average_cost": 496.947,
-      "sector": "Healthcare",
-      "player": 2,
-      "technigrade": [],
-      "peers": ["VKTX", "LLY", "NVO", "AKRO", "TERN", "ETNB"],
-      "invalidation_1": -1,
-      "invalidation_2": -1,
-      "invalidation_3": -1,
-      "target_1": -1,
-      "target_2": -1,
-      "target_3": -1
     },
     {
       "ticker": "PAUSD",
@@ -860,21 +845,6 @@
       "target_3": -1
     },
     {
-      "ticker": "NVDA",
-      "shares": 2000,
-      "average_cost": 191.512,
-      "sector": "Technology",
-      "player": 2,
-      "technigrade": [],
-      "peers": ["MSFT", "AVGO", "AMD", "INTC", "QCOM"],
-      "invalidation_1": -1,
-      "invalidation_2": -1,
-      "invalidation_3": -1,
-      "target_1": -1,
-      "target_2": -1,
-      "target_3": -1
-    },
-    {
       "ticker": "TSLA",
       "shares": 4500,
       "average_cost": 442.0924,
@@ -921,8 +891,22 @@
     },
     {
       "ticker": "URNM",
-      "shares": 12000,
-      "average_cost": 75.4083,
+      "shares": 14000,
+      "average_cost": 75.5628,
+      "sector": "Uranium",
+      "peers": ["URA", "NLR", "SRUUF", "URAN", "XME"],
+      "player": 2,
+      "invalidation_1": -1,
+      "invalidation_2": -1,
+      "invalidation_3": -1,
+      "target_1": -1,
+      "target_2": -1,
+      "target_3": -1
+    },
+    {
+      "ticker": "NEE",
+      "shares": 6735,
+      "average_cost": 89.73,
       "sector": "Uranium",
       "peers": ["URA", "NLR", "SRUUF", "URAN", "XME"],
       "player": 2,
