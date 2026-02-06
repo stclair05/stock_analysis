@@ -315,7 +315,7 @@
     {
       "ticker": "U-UN.TO",
       "shares": 84000,
-      "average_cost": 22.9981,
+      "average_cost": 20.94,
       "sector": "Uranium",
       "player": 5,
       "invalidation_1": 26,
@@ -569,7 +569,7 @@
     {
       "ticker": "TEM",
       "shares": 53000,
-      "average_cost": 82.0164,
+      "average_cost": 85.25,
       "sector": "Healthcare",
       "player": 2,
       "technigrade": [9, 13, 15, 13, 3],
